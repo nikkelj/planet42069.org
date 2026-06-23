@@ -297,6 +297,9 @@ components:
           type: integer
         lastLaunchYear:
           type: integer
+        starlinkActive:
+          type: integer
+          description: Number of active Starlink satellites in orbit
         cacheAge:
           type: integer
           description: How old the cached data is in seconds
@@ -305,6 +308,7 @@ components:
         - totalPayloads
         - totalMassKg
         - activePayloads
+        - starlinkActive
         - countries
         - launchVehicles
         - firstLaunchYear

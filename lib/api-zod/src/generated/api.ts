@@ -114,6 +114,7 @@ export const GetSatcatSummaryResponse = zod.object({
   "totalPayloads": zod.number(),
   "totalMassKg": zod.number(),
   "activePayloads": zod.number(),
+  "starlinkActive": zod.number().describe('Number of active Starlink satellites in orbit'),
   "countries": zod.number(),
   "launchVehicles": zod.number(),
   "firstLaunchYear": zod.number(),

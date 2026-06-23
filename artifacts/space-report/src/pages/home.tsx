@@ -1,6 +1,6 @@
 import { useGetSatcatSummary } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert } from "lucide-react";
+import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert, Signal } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -182,7 +182,7 @@ export default function Home() {
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
+            {Array.from({ length: 7 }).map((_, i) => (
               <Card key={i} className="border-border bg-card/50">
                 <CardHeader className="pb-2">
                   <Skeleton className="h-4 w-24 bg-muted" />
@@ -199,6 +199,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <StarlinkCard value={formatNumber(summary?.starlinkActive)} />
             <StatCard 
               title="Total Objects Tracked" 
               value={formatNumber(summary?.totalObjects)} 
@@ -267,6 +268,31 @@ export default function Home() {
         </Link>
       </div>
     </div>
+  );
+}
+
+function StarlinkCard({ value }: { value: string }) {
+  return (
+    <Card className="border-2 border-cyan-400/60 bg-cyan-950/20 hover:border-cyan-400 transition-colors relative overflow-hidden group md:col-span-2 lg:col-span-1">
+      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute right-0 top-0 opacity-15 scale-150 -translate-y-1/4 translate-x-1/4 group-hover:scale-110 transition-transform duration-500">
+        <Signal className="w-32 h-32 text-cyan-400" />
+      </div>
+      <CardHeader className="pb-1">
+        <CardTitle className="text-xs uppercase text-cyan-400/80 flex items-center gap-2 tracking-widest">
+          <Signal className="w-3 h-3" />
+          Starlink Satellites Active
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pb-4">
+        <div className="text-4xl font-bold font-display text-cyan-300" style={{ textShadow: "0 0 20px rgba(34,211,238,0.5)" }}>
+          {value}
+        </div>
+        <p className="text-[10px] uppercase tracking-widest text-cyan-400/50 mt-1">
+          operational payloads · name match "STARLINK"
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 

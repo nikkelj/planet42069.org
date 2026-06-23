@@ -18,6 +18,11 @@ router.get("/satcat/summary", async (req, res): Promise<void> => {
     e.satState === "O" || e.satState === "OX",
   ).length;
 
+  const starlinkActive = payloads.filter((e) =>
+    (e.satState === "O" || e.satState === "OX") &&
+    e.name.toUpperCase().includes("STARLINK"),
+  ).length;
+
   const totalMassKg = payloads.reduce(
     (sum, e) => sum + (e.massKg ?? 0),
     0,
@@ -36,6 +41,7 @@ router.get("/satcat/summary", async (req, res): Promise<void> => {
     totalPayloads: payloads.length,
     totalMassKg: Math.round(totalMassKg),
     activePayloads,
+    starlinkActive,
     countries: owners.size,
     launchVehicles: lvs.size,
     firstLaunchYear: years.length ? Math.min(...years) : 0,
