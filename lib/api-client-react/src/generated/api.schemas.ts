@@ -127,6 +127,7 @@ export interface SatcatStats {
   byYear: MassAggregate[];
   byCountry: MassAggregate[];
   byOrbit: MassAggregate[];
+  byObjectClass: MassAggregate[];
   byLaunchVehicle: MassAggregate[];
 }
 

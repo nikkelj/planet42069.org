@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { getLaunchMap } from "./launch";
 
 const SATCAT_URL = "https://planet4589.org/space/gcat/tsv/cat/satcat.tsv";
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -117,22 +118,23 @@ function parseTsv(raw: string): SatcatEntry[] {
 
   // Column indices using real (lowercased) column names from the TSV
   const C = {
-    jcat:    idx("jcat"),
-    satcat:  idx("satcat"),
-    type:    idx("type"),     // object class: P/R/D...
-    name:    idx("name"),
-    plname:  idx("plname"),
-    ldate:   idx("ldate"),
-    ddate:   idx("ddate"),
-    status:  idx("status"),   // operational status: O/D/R...
-    owner:   idx("owner"),
-    state:   idx("state"),
-    mass:    idx("mass"),
-    perigee: idx("perigee"),
-    apogee:  idx("apogee"),
-    inc:     idx("inc"),
+    jcat:       idx("jcat"),
+    satcat:     idx("satcat"),
+    launch_tag: idx("launch_tag"), // used to cross-reference launch.tsv
+    type:       idx("type"),       // object class: P/R/D...
+    name:       idx("name"),
+    plname:     idx("plname"),
+    ldate:      idx("ldate"),
+    ddate:      idx("ddate"),
+    status:     idx("status"),     // operational status: O/D/R...
+    owner:      idx("owner"),
+    state:      idx("state"),
+    mass:       idx("mass"),
+    perigee:    idx("perigee"),
+    apogee:     idx("apogee"),
+    inc:        idx("inc"),
     // "OpOrbit".toLowerCase() === "oporbit"
-    oporbit: idx("oporbit"),
+    oporbit:    idx("oporbit"),
   };
 
   logger.info({ indices: C }, "satcat: column indices");
@@ -164,9 +166,10 @@ function parseTsv(raw: string): SatcatEntry[] {
       name: parseStr(get(C.name)) ?? jcat,
       plName: parseStr(get(C.plname)),
       ldate: parseLDate(get(C.ldate)),
-      lv: null,       // not in satcat.tsv
-      lvFamily: null, // not in satcat.tsv
-      site: null,     // not in satcat.tsv
+      _launchTag: parseStr(get(C.launch_tag)), // internal — used for LV enrichment
+      lv: null,       // populated by enrichWithLaunchData
+      lvFamily: null, // populated by enrichWithLaunchData
+      site: null,     // populated by enrichWithLaunchData
       owner: parseStr(get(C.owner)),
       state: parseStr(get(C.state)),
       objectClass,
@@ -179,7 +182,7 @@ function parseTsv(raw: string): SatcatEntry[] {
       incDeg: parseNum(get(C.inc)),
       periodMin: null, // not in satcat.tsv
       decayDate: parseStr(get(C.ddate)),
-    });
+    } as SatcatEntry & { _launchTag: string | null });
   }
 
   return entries;
@@ -188,15 +191,37 @@ function parseTsv(raw: string): SatcatEntry[] {
 // ── fetch + cache ──────────────────────────────────────────────────────────
 
 async function fetchAndParse(): Promise<SatcatEntry[]> {
+  // Fetch satcat and launch data concurrently
   logger.info({ url: SATCAT_URL }, "satcat: fetching");
-  const res = await fetch(SATCAT_URL, {
-    headers: { "User-Agent": "planet42069-space-report/1.0" },
-  });
-  if (!res.ok) throw new Error(`satcat fetch failed: ${res.status} ${res.statusText}`);
-  const text = await res.text();
+  const [satcatRes, launchMap] = await Promise.all([
+    fetch(SATCAT_URL, { headers: { "User-Agent": "planet42069-space-report/1.0" } }),
+    getLaunchMap().catch((err) => {
+      logger.warn({ err }, "satcat: launch cross-ref fetch failed, lv data will be null");
+      return new Map<string, import("./launch").LaunchEntry>();
+    }),
+  ]);
+
+  if (!satcatRes.ok) throw new Error(`satcat fetch failed: ${satcatRes.status} ${satcatRes.statusText}`);
+  const text = await satcatRes.text();
   logger.info({ bytes: text.length }, "satcat: fetched, parsing");
-  const entries = parseTsv(text);
-  logger.info({ count: entries.length }, "satcat: parsed");
+  const rawEntries = parseTsv(text) as Array<SatcatEntry & { _launchTag: string | null }>;
+  logger.info({ count: rawEntries.length, launchMapSize: launchMap.size }, "satcat: parsed");
+
+  // Enrich with launch vehicle data from the launch map
+  for (const entry of rawEntries) {
+    const lt = entry._launchTag;
+    if (lt) {
+      const lv = launchMap.get(lt);
+      if (lv) {
+        entry.lv = lv.lv;
+        entry.lvFamily = lv.lvFamily;
+        entry.site = lv.site;
+      }
+    }
+    delete (entry as Partial<typeof entry>)._launchTag;
+  }
+
+  const entries: SatcatEntry[] = rawEntries;
   if (entries.length > 0) {
     logger.info({ e0: entries[0], e1: entries[1] }, "satcat: first 2 entries");
   }

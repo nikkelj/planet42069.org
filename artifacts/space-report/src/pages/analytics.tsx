@@ -173,7 +173,7 @@ export default function Analytics() {
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={(stats as any).byObjectClass ?? []}
+                  data={stats.byObjectClass}
                   layout="vertical"
                   margin={{ top: 5, right: 50, left: 90, bottom: 5 }}
                 >
@@ -186,7 +186,7 @@ export default function Analytics() {
                     labelStyle={{ color: 'hsl(var(--primary))' }}
                   />
                   <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                    {((stats as any).byObjectClass ?? []).map((_: any, index: number) => (
+                    {stats.byObjectClass.map((_: unknown, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
                     ))}
                   </Bar>
@@ -198,6 +198,36 @@ export default function Analytics() {
 
         {/* Orbit Types */}
         <OrbitPieChart byOrbit={stats.byOrbit} />
+
+        {/* Top Launch Vehicles by Mass */}
+        <Card className="border-2 border-border bg-card relative overflow-hidden lg:col-span-2">
+          <CardHeader className="bg-muted/30 border-b border-border">
+            <CardTitle className="text-accent uppercase flex items-center gap-2 text-sm">
+              <Activity className="w-4 h-4" /> Top Launch Vehicles by Mass to Orbit
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 pb-2 pl-0">
+            <div className="h-[350px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={stats.byLaunchVehicle.slice(0, 15)}
+                  layout="vertical"
+                  margin={{ top: 5, right: 60, left: 130, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} tickFormatter={(val: number) => `${(val / 1000).toFixed(0)}t`} />
+                  <YAxis type="category" dataKey="label" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(180 100% 50%)', fontSize: 11 }} width={140} />
+                  <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+                  <Bar dataKey="massKg" radius={[0, 4, 4, 0]}>
+                    {stats.byLaunchVehicle.slice(0, 15).map((_: unknown, index: number) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
       </div>
     </div>

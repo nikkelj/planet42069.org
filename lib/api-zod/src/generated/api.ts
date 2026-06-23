@@ -90,6 +90,12 @@ export const GetSatcatStatsResponse = zod.object({
   "count": zod.number(),
   "payloadCount": zod.number()
 })),
+  "byObjectClass": zod.array(zod.object({
+  "label": zod.string(),
+  "massKg": zod.number(),
+  "count": zod.number(),
+  "payloadCount": zod.number()
+})),
   "byLaunchVehicle": zod.array(zod.object({
   "label": zod.string(),
   "massKg": zod.number(),

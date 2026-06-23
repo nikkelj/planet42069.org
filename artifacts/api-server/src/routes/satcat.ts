@@ -157,11 +157,20 @@ router.get("/satcat", async (req, res): Promise<void> => {
     filtered = filtered.filter((e) => e.satState === stateFilter);
   }
 
-  // Sort
+  // Sort — use a typed whitelist to avoid TS2352 index-access errors
+  const SORTABLE = [
+    "jcat", "satno", "name", "plName", "ldate", "lv", "lvFamily", "site",
+    "owner", "state", "objectClass", "objType", "opOrbit", "satState",
+    "massKg", "apogeeKm", "perigeeKm", "incDeg",
+  ] as const;
+  type Sortable = (typeof SORTABLE)[number];
+  const safeSortField: Sortable = (SORTABLE as readonly string[]).includes(sortField)
+    ? (sortField as Sortable)
+    : "ldate";
   const sortDir = sortOrder === "desc" ? -1 : 1;
   filtered = [...filtered].sort((a, b) => {
-    const av = (a as Record<string, unknown>)[sortField];
-    const bv = (b as Record<string, unknown>)[sortField];
+    const av = a[safeSortField];
+    const bv = b[safeSortField];
     if (av == null && bv == null) return 0;
     if (av == null) return 1;   // nulls always last regardless of direction
     if (bv == null) return -1;

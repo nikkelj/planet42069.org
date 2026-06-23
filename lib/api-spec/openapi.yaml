@@ -263,6 +263,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MassAggregate"
+        byObjectClass:
+          type: array
+          items:
+            $ref: "#/components/schemas/MassAggregate"
         byLaunchVehicle:
           type: array
           items:
@@ -271,6 +275,7 @@ components:
         - byYear
         - byCountry
         - byOrbit
+        - byObjectClass
         - byLaunchVehicle
 
     SatcatSummary:
