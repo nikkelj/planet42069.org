@@ -105,6 +105,17 @@ export default function Analytics() {
         {/* Orbital Distribution Map - IDL-style scatter plot */}
         <OrbitalMap />
 
+        {/* Orbital map context note */}
+        <div className="lg:col-span-2 -mt-2 px-1">
+          <p className="text-xs font-mono text-muted-foreground/60 leading-relaxed">
+            <span className="text-primary/50">// NOTE:</span>{" "}
+            The clusters you see are not merely data points. Several represent debris fields from anti-satellite weapons tests —
+            objects launched not to orbit, but to destroy something already orbiting. They are in the catalog now, alongside everything else.
+            The catalog does not distinguish between science and ordnance. It simply records what is up there.
+            <span className="text-muted-foreground/40"> What goes up is everyone's problem.</span>
+          </p>
+        </div>
+
         {/* Mass by Year - Full Width on large screens if we wanted, but let's keep 2-col layout */}
         <Card className="border-2 border-border bg-card lg:col-span-2 overflow-hidden relative">
           <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-scanline opacity-30" />

@@ -1,6 +1,6 @@
 import { useGetSatcatSummary } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale } from "lucide-react";
+import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -104,6 +104,71 @@ export default function Home() {
             <div className="flex items-center gap-2 text-[10px] text-yellow-500/50 uppercase tracking-wider border-t border-yellow-500/20 pt-2">
               <Scale className="w-3 h-3" />
               <span>No actual harm intended — Jonathan McDowell's catalog is otherwise an extraordinary achievement.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FIELD DISPATCH */}
+      <div className="border border-blue-400/25 bg-blue-950/20 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-400/50 via-blue-400/15 to-transparent" />
+        <div className="flex items-start gap-3">
+          <ShieldAlert className="w-5 h-5 text-blue-400/80 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-400/20 pb-2">
+              <span className="text-blue-300/80 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Field Dispatch
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Dispatch #OC-0042 · Classification: Unclassified / For Public Record</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-blue-400/60">From:</span> Commander, Orbital Bureaucracy Command</span>
+              <span><span className="text-blue-400/60">Re:</span> The Commons, and What Is Being Done to Them</span>
+              <span><span className="text-blue-400/60">Severity:</span> Civilization-Scale / Logged Under Protest</span>
+            </div>
+            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                The Outer Space Treaty of 1967 declared orbital space the{" "}
+                <em>"province of all mankind."</em> This was optimistic.
+                It remains technically true. It is becoming increasingly theoretical in practice.
+              </p>
+              <p>
+                Four nations have conducted direct-ascent anti-satellite weapons tests.
+                Each one generated a debris cloud that raised collision risk for every operator
+                in the affected altitude band — commercial, scientific, crewed, and military alike.
+                None of the nations responsible offered to clean up afterward.{" "}
+                <span className="text-blue-300/70">This is noted.</span>
+              </p>
+              <p>
+                The major powers are openly developing co-orbital attack vehicles, electronic
+                warfare platforms, and <em>"inspector"</em> satellites with maneuvering profiles
+                inconsistent with their stated peaceful purposes. The Space Police maintain no
+                illusions about what "inspection" means at those closing velocities.
+              </p>
+              <p>
+                We would like to formally register our objection. We have been registering our
+                objection since approximately 1985. We will continue to do so.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-blue-400/20 pl-3">
+                We are also aware that space war — if not already underway in the gray zones of
+                jamming, blinding, and spoofing — is a matter of <em>when</em> for the domain
+                in its entirety. History has not identified a useful commons it was ultimately
+                unwilling to militarize. We see no reason orbit should be different, and we
+                resent this about history.
+              </p>
+              <p>
+                The Space Police will track every object. Every debris fragment from every
+                weapons test. Every "peaceful" dual-use constellation. Every maneuvering inspector.
+                The catalog does not adjudicate intent. It simply records what is up there.
+              </p>
+              <p className="text-blue-200/60 font-semibold">
+                Space belongs to everyone. It is also, apparently, becoming a warfighting domain.
+                Both of these things are true simultaneously. We find this deeply inconvenient.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 border-t border-blue-400/20 pt-2 text-[10px] text-blue-400/40 uppercase tracking-wider">
+              <span>— Orbital Bureaucracy Command</span>
+              <span>Filed under protest · Submitted for the record · Fully expecting to be ignored</span>
             </div>
           </div>
         </div>
