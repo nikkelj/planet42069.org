@@ -100,7 +100,33 @@ export default function Catalog() {
         );
       },
     },
-    { accessorKey: "jcat", header: "JCAT" },
+    {
+      accessorKey: "jcat",
+      header: () => (
+        <span
+          className="cursor-help inline-flex items-center gap-1"
+          title="CASE #JCAT-0001: Primary keys begin with 'S' — a mandatory string prefix with zero semantic value. Numeric sorting requires stripping it first. Case open."
+        >
+          JCAT <span className="text-destructive text-[10px]">⚠</span>
+        </span>
+      ),
+      cell: ({ row }: any) => {
+        const jcat: string = row.original.jcat ?? "";
+        const prefix = jcat.charAt(0);
+        const numeric = jcat.slice(1);
+        return (
+          <span className="font-mono text-xs">
+            <span
+              className="text-destructive/50 line-through cursor-help"
+              title="CASE #JCAT-0001: Unnecessary string prefix. Contributes nothing. The catalog is called the Satellite Catalog. We know."
+            >
+              {prefix}
+            </span>
+            <span>{numeric}</span>
+          </span>
+        );
+      },
+    },
     { accessorKey: "name", header: "NAME" },
     { accessorKey: "ldate", header: "LAUNCH DATE" },
     { accessorKey: "owner", header: "OWNER" },
