@@ -104,6 +104,38 @@ router.get("/satcat/stats", async (_req, res): Promise<void> => {
   res.json({ byYear, byCountry, byOrbit, byObjectClass, byLaunchVehicle });
 });
 
+router.get("/satcat/by-year-provider", async (_req, res): Promise<void> => {
+  const data = await getSatcat();
+
+  // Only payloads; SpaceX = any Falcon-family vehicle
+  const payloads = data.filter((e) => e.objectClass === "P");
+
+  type YearRow = { year: string; spacex: number; others: number; spacexCount: number; othersCount: number };
+  const map = new Map<string, YearRow>();
+
+  for (const e of payloads) {
+    const year = getYear(e.ldate);
+    if (!year) continue;
+    const mass = e.massKg ?? 0;
+    const isSpaceX = (e.lvFamily ?? "").toLowerCase().includes("falcon");
+    const row = map.get(year) ?? { year, spacex: 0, others: 0, spacexCount: 0, othersCount: 0 };
+    if (isSpaceX) {
+      row.spacex += mass;
+      row.spacexCount += 1;
+    } else {
+      row.others += mass;
+      row.othersCount += 1;
+    }
+    map.set(year, row);
+  }
+
+  const byYearProvider = Array.from(map.values())
+    .map((r) => ({ ...r, spacex: Math.round(r.spacex), others: Math.round(r.others) }))
+    .sort((a, b) => a.year.localeCompare(b.year));
+
+  res.json({ byYearProvider });
+});
+
 router.get("/satcat/orbital-map", async (_req, res): Promise<void> => {
   const data = await getSatcat();
   const points = data

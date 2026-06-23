@@ -18,6 +18,7 @@ import type {
 import type {
   GetSatcatParams,
   HealthStatus,
+  SatcatByYearProvider,
   SatcatFilters,
   SatcatListResponse,
   SatcatStats,
@@ -354,6 +355,50 @@ export function useGetSatcatSummary<TData = Awaited<ReturnType<typeof getSatcatS
 
 
 
+
+export const getGetSatcatByYearProviderUrl = () => {
+  return `/api/satcat/by-year-provider`
+}
+
+/**
+ * Annual mass-to-orbit split by SpaceX (Falcon family) vs all other providers
+ * @summary SpaceX vs Rest-of-World mass by year
+ */
+export const getSatcatByYearProvider = async ( options?: RequestInit): Promise<SatcatByYearProvider> => {
+  return customFetch<SatcatByYearProvider>(getGetSatcatByYearProviderUrl(),
+  {
+    ...options,
+    method: 'GET'
+  }
+);}
+
+export const getGetSatcatByYearProviderQueryKey = () => {
+    return [
+    `/api/satcat/by-year-provider`
+    ] as const;
+    }
+
+export const getGetSatcatByYearProviderQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatByYearProvider>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatByYearProvider>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+const {query: queryOptions, request: requestOptions} = options ?? {};
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatByYearProviderQueryKey();
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatByYearProvider>>> = ({ signal }) => getSatcatByYearProvider({ signal, ...requestOptions });
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatByYearProvider>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatByYearProviderQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatByYearProvider>>>
+export type GetSatcatByYearProviderQueryError = ErrorType<unknown>
+
+/**
+ * @summary SpaceX vs Rest-of-World mass by year
+ */
+export function useGetSatcatByYearProvider<TData = Awaited<ReturnType<typeof getSatcatByYearProvider>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatByYearProvider>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetSatcatByYearProviderQueryOptions(options)
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 export const getGetSatcatFiltersUrl = () => {
 

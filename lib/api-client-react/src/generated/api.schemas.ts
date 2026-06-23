@@ -181,6 +181,18 @@ sort?: string;
 order?: GetSatcatOrder;
 };
 
+export interface ProviderYearRow {
+  year: string;
+  spacex: number;
+  others: number;
+  spacexCount: number;
+  othersCount: number;
+}
+
+export interface SatcatByYearProvider {
+  byYearProvider: ProviderYearRow[];
+}
+
 export type GetSatcatOrder = typeof GetSatcatOrder[keyof typeof GetSatcatOrder];
 
 

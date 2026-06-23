@@ -1,4 +1,4 @@
-import { useGetSatcatStats } from "@workspace/api-client-react";
+import { useGetSatcatStats, useGetSatcatByYearProvider } from "@workspace/api-client-react";
 import { useState } from "react";
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -53,6 +53,155 @@ function OrbitPieChart({ byOrbit }: { byOrbit: Array<{ label: string; massKg: nu
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+const SPACEX_COLOR = 'hsl(0 90% 60%)';
+const OTHERS_COLOR = 'hsl(180 100% 45%)';
+
+function SpaceXComparisonChart() {
+  const { data, isLoading, isError } = useGetSatcatByYearProvider();
+  const [view, setView] = useState<'all' | 'recent'>('all');
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center h-[400px] text-muted-foreground font-mono text-sm animate-pulse uppercase">
+      Aggregating provider vectors...
+    </div>
+  );
+  if (isError || !data) return null;
+
+  const rows = view === 'recent'
+    ? data.byYearProvider.filter((r) => parseInt(r.year) >= 2010)
+    : data.byYearProvider;
+
+  const totalSpaceX = rows.reduce((s, r) => s + r.spacex, 0);
+  const totalOthers = rows.reduce((s, r) => s + r.others, 0);
+  const totalAll = totalSpaceX + totalOthers;
+  const spacexPct = totalAll > 0 ? ((totalSpaceX / totalAll) * 100).toFixed(1) : '—';
+
+  const postRows = data.byYearProvider.filter((r) => parseInt(r.year) >= 2020);
+  const postSpaceX = postRows.reduce((s, r) => s + r.spacex, 0);
+  const postOthers = postRows.reduce((s, r) => s + r.others, 0);
+  const postAll = postSpaceX + postOthers;
+  const postSpaceXPct = postAll > 0 ? ((postSpaceX / postAll) * 100).toFixed(1) : '—';
+
+  const ProviderTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    const spacexVal = payload.find((p: any) => p.dataKey === 'spacex')?.value ?? 0;
+    const othersVal = payload.find((p: any) => p.dataKey === 'others')?.value ?? 0;
+    const total = spacexVal + othersVal;
+    const pct = total > 0 ? ((spacexVal / total) * 100).toFixed(0) : '0';
+    return (
+      <div className="bg-card border-2 border-primary p-3 box-glow-cyan shadow-xl font-mono text-sm z-50">
+        <p className="text-primary font-bold mb-2 pb-1 border-b border-primary/30 uppercase">{label}</p>
+        <div className="space-y-1 text-card-foreground">
+          <p><span style={{ color: SPACEX_COLOR }}>■</span> <span className="text-muted-foreground">SpaceX (Falcon):</span> {(spacexVal / 1000).toFixed(1)}t</p>
+          <p><span style={{ color: OTHERS_COLOR }}>■</span> <span className="text-muted-foreground">Rest of World:</span> {(othersVal / 1000).toFixed(1)}t</p>
+          <p className="border-t border-border/50 mt-1 pt-1"><span className="text-muted-foreground">SpaceX share:</span> <span style={{ color: SPACEX_COLOR }}>{pct}%</span></p>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Card className="border-2 border-border bg-card lg:col-span-2 overflow-hidden relative">
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-scanline opacity-30" />
+
+      <CardHeader className="bg-muted/30 border-b border-border">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
+            <Zap className="w-4 h-4" /> SpaceX vs Rest-of-World — Annual Mass to Orbit
+          </CardTitle>
+          <div className="flex items-center gap-1 font-mono text-xs border border-border rounded overflow-hidden self-start sm:self-auto">
+            <button
+              onClick={() => setView('all')}
+              className={`px-3 py-1.5 uppercase transition-colors ${view === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+            >
+              All Years
+            </button>
+            <button
+              onClick={() => setView('recent')}
+              className={`px-3 py-1.5 uppercase transition-colors ${view === 'recent' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+            >
+              2010+
+            </button>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="pt-6 pb-2 pl-0">
+        {/* Stats row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 pb-5">
+          <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">SpaceX All-Time</div>
+            <div className="text-lg font-bold" style={{ color: SPACEX_COLOR }}>{(totalSpaceX / 1000).toFixed(0)}t</div>
+            <div className="text-xs text-muted-foreground">{spacexPct}% of total</div>
+          </div>
+          <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">Rest of World</div>
+            <div className="text-lg font-bold" style={{ color: OTHERS_COLOR }}>{(totalOthers / 1000).toFixed(0)}t</div>
+            <div className="text-xs text-muted-foreground">{totalAll > 0 ? (100 - parseFloat(spacexPct)).toFixed(1) : '—'}% of total</div>
+          </div>
+          <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">SpaceX Post-2020</div>
+            <div className="text-lg font-bold" style={{ color: SPACEX_COLOR }}>{(postSpaceX / 1000).toFixed(0)}t</div>
+            <div className="text-xs text-muted-foreground">{postSpaceXPct}% of launches</div>
+          </div>
+          <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">Others Post-2020</div>
+            <div className="text-lg font-bold" style={{ color: OTHERS_COLOR }}>{(postOthers / 1000).toFixed(0)}t</div>
+            <div className="text-xs text-muted-foreground">{postAll > 0 ? (100 - parseFloat(postSpaceXPct)).toFixed(1) : '—'}% of launches</div>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 px-6 pb-4 font-mono text-xs">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: SPACEX_COLOR }} />
+            <span className="text-muted-foreground">SpaceX (Falcon 9 / Falcon Heavy)</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: OTHERS_COLOR }} />
+            <span className="text-muted-foreground">All Other Providers</span>
+          </span>
+        </div>
+
+        <div className="h-[380px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={rows} margin={{ top: 10, right: 30, left: 20, bottom: 0 }}>
+              <ReferenceArea x1="2020" x2={rows[rows.length - 1]?.year ?? "2026"} fill="hsl(0 80% 50% / 0.06)" fillOpacity={1} />
+              <ReferenceLine x="2020" stroke="hsl(0 80% 60% / 0.6)" strokeWidth={1.5} strokeDasharray="4 4">
+                <Label value="▲ STARLINK ERA" position="insideTopRight" fill="hsl(0 80% 65%)" fontSize={9} fontFamily="monospace" fontWeight="bold" offset={4} />
+              </ReferenceLine>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis
+                dataKey="year"
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: view === 'all' ? 9 : 11 }}
+                interval={view === 'all' ? 4 : 0}
+              />
+              <YAxis
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                tickFormatter={(val) => `${(val / 1000).toFixed(0)}t`}
+                width={55}
+              />
+              <RechartsTooltip content={<ProviderTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+              <Bar dataKey="others" name="Rest of World" stackId="a" fill={OTHERS_COLOR} radius={[0, 0, 0, 0]} />
+              <Bar dataKey="spacex" name="SpaceX" stackId="a" fill={SPACEX_COLOR} radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="px-6 pt-3 pb-1">
+          <p className="text-xs font-mono text-muted-foreground/60">
+            <span className="text-red-400/70">// </span>
+            After 2020, SpaceX Falcon 9 batch launches for Starlink swamp every other operator on the planet.
+            One rocket family. One company. {postSpaceXPct}% of all mass to orbit since 2020.
+          </p>
         </div>
       </CardContent>
     </Card>
@@ -121,6 +270,9 @@ export default function Analytics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* SpaceX vs Rest-of-World comparison */}
+        <SpaceXComparisonChart />
+
         {/* Orbital Distribution Map */}
         <OrbitalMap />
 
