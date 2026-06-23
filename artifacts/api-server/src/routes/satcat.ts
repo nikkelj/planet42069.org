@@ -187,7 +187,8 @@ router.get("/satcat", async (req, res): Promise<void> => {
       (e) =>
         e.name.toLowerCase().includes(search) ||
         (e.plName?.toLowerCase().includes(search) ?? false) ||
-        e.jcat.toLowerCase().includes(search),
+        e.jcat.toLowerCase().includes(search) ||
+        (e.satno != null && String(e.satno).includes(search)),
     );
   }
   if (ownerFilter) {
