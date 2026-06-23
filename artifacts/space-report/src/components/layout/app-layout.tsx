@@ -54,10 +54,31 @@ export function AppLayout({ children }: AppLayoutProps) {
         {children}
       </main>
 
-      <footer className="mt-12 pt-6 border-t border-muted/50 text-center text-xs text-muted-foreground uppercase flex flex-col items-center gap-2">
-        <p>A PARODY OF JONATHAN MCDOWELL'S PLANET4589.ORG</p>
-        <p>NOT AFFILIATED WITH ANY ACTUAL SPACE POLICE OR SPACE AGENCY.</p>
-        <div className="flex items-center gap-2 mt-2">
+      <footer className="mt-12 pt-6 border-t border-muted/50 text-center text-xs text-muted-foreground font-mono flex flex-col items-center gap-3">
+        <div className="border border-muted/40 px-6 py-4 max-w-2xl space-y-2 text-left w-full">
+          <p className="text-primary/80 uppercase tracking-widest text-[10px]">// DATA ATTRIBUTION</p>
+          <p className="leading-relaxed normal-case">
+            All orbital data is sourced from the{" "}
+            <span className="text-primary font-bold">General Catalog of Artificial Space Objects (GCAT)</span>,
+            maintained by{" "}
+            <a
+              href="https://planet4589.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent underline underline-offset-2 hover:text-primary transition-colors"
+            >
+              Jonathan McDowell (planet4589.org)
+            </a>
+            . Jonathan's meticulous work tracking every nut, bolt, and derelict rocket stage
+            in Earth orbit is what makes this parody possible — and frankly embarrassing to contemplate.
+          </p>
+          <p className="leading-relaxed normal-case text-muted-foreground/70">
+            This site is a fan parody. It is not affiliated with Jonathan McDowell,
+            Harvard-Smithsonian CfA, nor any actual Space Police force
+            (which, for the record, we fully support creating).
+          </p>
+        </div>
+        <div className="flex items-center gap-2 uppercase tracking-widest text-[10px]">
           <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
           <span>SYSTEM ONLINE</span>
         </div>

@@ -30,7 +30,29 @@ export default function Home() {
                 Welcome to <span className="text-primary font-bold">PLANET 42069.ORG</span>. The Space Police have mandated total transparency regarding orbital litter. We track every satellite, every rocket body, and every piece of debris currently cluttering up the neighborhood.
               </p>
               <p>
-                Data is beamed directly from the GCAT uplink. If the numbers look scary, it's because there is a lot of junk up there. Proceed to Analytics for mass evaluation or the Explorer to track specific targets.
+                All data is sourced directly from the{" "}
+                <a
+                  href="https://planet4589.org/space/gcat/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent underline underline-offset-2 hover:text-primary transition-colors font-semibold"
+                >
+                  GCAT (General Catalog of Artificial Space Objects)
+                </a>
+                , maintained by the heroic{" "}
+                <a
+                  href="https://planet4589.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline underline-offset-2 hover:text-accent transition-colors font-semibold"
+                >
+                  Jonathan McDowell
+                </a>
+                , who has been painstakingly counting humanity's orbital mess since before half of it existed.
+                If the numbers look scary, blame the humans — not the catalog.
+              </p>
+              <p className="text-muted-foreground text-xs uppercase tracking-wider">
+                ⚠ This is a fan parody. Jonathan McDowell is not responsible for any of this.
               </p>
             </div>
           </div>
