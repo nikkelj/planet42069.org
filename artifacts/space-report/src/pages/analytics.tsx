@@ -1,5 +1,6 @@
 import { useGetSatcatStats, useGetSatcatByYearProvider } from "@workspace/api-client-react";
 import { useState } from "react";
+import { useSearch, useLocation } from "wouter";
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   BarChart, Bar, Cell, ReferenceArea, ReferenceLine, Label
@@ -210,7 +211,22 @@ function SpaceXComparisonChart() {
 
 export default function Analytics() {
   const { data: stats, isLoading, isError } = useGetSatcatStats();
-  const [chartView, setChartView] = useState<'all' | 'recent'>('all');
+  const search = useSearch();
+  const [location, navigate] = useLocation();
+
+  const chartView: 'all' | 'recent' =
+    new URLSearchParams(search).get('chartView') === 'recent' ? 'recent' : 'all';
+
+  const setChartView = (view: 'all' | 'recent') => {
+    const params = new URLSearchParams(search);
+    if (view === 'all') {
+      params.delete('chartView');
+    } else {
+      params.set('chartView', view);
+    }
+    const qs = params.toString();
+    navigate(location + (qs ? '?' + qs : ''));
+  };
 
   if (isLoading) {
     return (
