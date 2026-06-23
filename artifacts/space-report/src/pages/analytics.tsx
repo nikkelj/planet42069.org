@@ -1,20 +1,28 @@
 import { useGetSatcatStats } from "@workspace/api-client-react";
+import { useState } from "react";
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell, Legend
+  BarChart, Bar, Cell, ReferenceArea, ReferenceLine, Label
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Radar, Activity, Loader2 } from "lucide-react";
+import { Radar, Activity, Loader2, TrendingUp, Zap } from "lucide-react";
 import { OrbitalMap } from "@/components/OrbitalMap";
 
 const COLORS = [
-  'hsl(140 100% 50%)', // primary
-  'hsl(180 100% 50%)', // accent
-  'hsl(35 100% 50%)',  // secondary
-  'hsl(280 100% 60%)', // chart-4
-  'hsl(0 100% 60%)',   // destructive
+  'hsl(140 100% 50%)',
+  'hsl(180 100% 50%)',
+  'hsl(35 100% 50%)',
+  'hsl(280 100% 60%)',
+  'hsl(0 100% 60%)',
   'hsl(220 100% 70%)',
   'hsl(320 100% 60%)',
+];
+
+const ERAS = [
+  { label: 'COLD WAR',  start: '1957', end: '1991', color: 'hsl(220 80% 50% / 0.08)', textColor: 'hsl(220 80% 70%)' },
+  { label: 'SHUTTLE ERA', start: '1981', end: '2011', color: 'hsl(35 80% 50% / 0.07)',  textColor: 'hsl(35 80% 70%)' },
+  { label: 'COMMERCIAL', start: '2010', end: '2019', color: 'hsl(140 80% 50% / 0.08)', textColor: 'hsl(140 80% 60%)' },
+  { label: 'STARLINK ERA', start: '2020', end: '2026', color: 'hsl(0 80% 50% / 0.12)',   textColor: 'hsl(0 80% 65%)' },
 ];
 
 function OrbitPieChart({ byOrbit }: { byOrbit: Array<{ label: string; massKg: number; count: number; payloadCount: number }> }) {
@@ -53,6 +61,7 @@ function OrbitPieChart({ byOrbit }: { byOrbit: Array<{ label: string; massKg: nu
 
 export default function Analytics() {
   const { data: stats, isLoading, isError } = useGetSatcatStats();
+  const [chartView, setChartView] = useState<'all' | 'recent'>('all');
 
   if (isLoading) {
     return (
@@ -91,6 +100,16 @@ export default function Analytics() {
     return null;
   };
 
+  // Surge stats: compare pre-2020 decade vs 2020-present
+  const recentYears = stats.byYear.filter((y: any) => parseInt(y.label) >= 2010);
+  const pre2020 = stats.byYear.filter((y: any) => parseInt(y.label) >= 2010 && parseInt(y.label) < 2020);
+  const post2020 = stats.byYear.filter((y: any) => parseInt(y.label) >= 2020);
+  const pre2020Total = pre2020.reduce((s: number, y: any) => s + y.massKg, 0);
+  const post2020Total = post2020.reduce((s: number, y: any) => s + y.massKg, 0);
+  const pre2020Avg = pre2020.length ? pre2020Total / pre2020.length : 0;
+  const post2020Avg = post2020.length ? post2020Total / post2020.length : 0;
+  const peakYear = [...stats.byYear].sort((a: any, b: any) => b.massKg - a.massKg)[0];
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex items-center gap-3 border-b-2 border-border pb-4 mb-6">
@@ -102,7 +121,7 @@ export default function Analytics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Orbital Distribution Map - IDL-style scatter plot */}
+        {/* Orbital Distribution Map */}
         <OrbitalMap />
 
         {/* Orbital map context note */}
@@ -116,37 +135,182 @@ export default function Analytics() {
           </p>
         </div>
 
-        {/* Mass by Year - Full Width on large screens if we wanted, but let's keep 2-col layout */}
+        {/* ── TEMPORAL CHART ── */}
         <Card className="border-2 border-border bg-card lg:col-span-2 overflow-hidden relative">
           <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-scanline opacity-30" />
+
           <CardHeader className="bg-muted/30 border-b border-border">
-            <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
-              <Activity className="w-4 h-4" /> Temporal Mass Distribution (Yearly)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6 pb-2 pl-0">
-            <div className="h-[350px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={stats.byYear} margin={{ top: 10, right: 30, left: 20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorMassYear" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(180 100% 50%)" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="hsl(180 100% 50%)" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))" 
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                    tickFormatter={(val) => `${(val / 1000).toFixed(0)}t`}
-                    width={60}
-                  />
-                  <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                  <Area type="monotone" dataKey="massKg" stroke="hsl(180 100% 50%)" strokeWidth={2} fillOpacity={1} fill="url(#colorMassYear)" activeDot={{ r: 6, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2 }} />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
+                <Activity className="w-4 h-4" />
+                {chartView === 'all' ? 'Temporal Mass Distribution — Full History' : 'Starlink Era Zoom — 2010 to 2026'}
+              </CardTitle>
+              <div className="flex items-center gap-1 font-mono text-xs border border-border rounded overflow-hidden self-start sm:self-auto">
+                <button
+                  onClick={() => setChartView('all')}
+                  className={`px-3 py-1.5 uppercase transition-colors ${chartView === 'all' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                >
+                  All Years
+                </button>
+                <button
+                  onClick={() => setChartView('recent')}
+                  className={`px-3 py-1.5 uppercase transition-colors flex items-center gap-1 ${chartView === 'recent' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                >
+                  <Zap className="w-3 h-3" /> Starlink Surge
+                </button>
+              </div>
             </div>
+          </CardHeader>
+
+          <CardContent className="pt-6 pb-2 pl-0">
+            {chartView === 'all' ? (
+              <>
+                {/* Era legend */}
+                <div className="flex flex-wrap gap-x-4 gap-y-1 px-6 pb-4 font-mono text-xs">
+                  {ERAS.map(era => (
+                    <span key={era.label} style={{ color: era.textColor }} className="flex items-center gap-1">
+                      <span className="inline-block w-2 h-2 rounded-sm" style={{ background: era.textColor, opacity: 0.7 }} />
+                      {era.label}
+                    </span>
+                  ))}
+                </div>
+                <div className="h-[380px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={stats.byYear} margin={{ top: 10, right: 30, left: 20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorMassYear" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(180 100% 50%)" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="hsl(180 100% 50%)" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+
+                      {/* Era shading bands */}
+                      {ERAS.map(era => (
+                        <ReferenceArea key={era.label} x1={era.start} x2={era.end} fill={era.color} fillOpacity={1} />
+                      ))}
+
+                      {/* Era boundary lines with labels */}
+                      <ReferenceLine x="1957" stroke="hsl(220 80% 60% / 0.4)" strokeDasharray="3 3">
+                        <Label value="SPUTNIK" position="insideTopRight" fill="hsl(220 80% 70%)" fontSize={9} fontFamily="monospace" offset={4} />
+                      </ReferenceLine>
+                      <ReferenceLine x="1981" stroke="hsl(35 80% 60% / 0.4)" strokeDasharray="3 3">
+                        <Label value="STS-1" position="insideTopRight" fill="hsl(35 80% 70%)" fontSize={9} fontFamily="monospace" offset={4} />
+                      </ReferenceLine>
+                      <ReferenceLine x="2011" stroke="hsl(35 80% 60% / 0.4)" strokeDasharray="3 3">
+                        <Label value="SHUTTLE END" position="insideTopRight" fill="hsl(35 80% 70%)" fontSize={9} fontFamily="monospace" offset={4} />
+                      </ReferenceLine>
+                      <ReferenceLine x="2020" stroke="hsl(0 80% 60% / 0.6)" strokeWidth={1.5}>
+                        <Label value="▲ STARLINK" position="insideTopRight" fill="hsl(0 80% 65%)" fontSize={10} fontFamily="monospace" fontWeight="bold" offset={4} />
+                      </ReferenceLine>
+
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        stroke="hsl(var(--muted-foreground))"
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                        interval={9}
+                      />
+                      <YAxis
+                        stroke="hsl(var(--muted-foreground))"
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        tickFormatter={(val) => `${(val / 1000).toFixed(0)}t`}
+                        width={60}
+                      />
+                      <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                      <Area type="monotone" dataKey="massKg" stroke="hsl(180 100% 50%)" strokeWidth={2} fillOpacity={1} fill="url(#colorMassYear)" activeDot={{ r: 6, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2 }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Starlink surge surge stats */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 pb-5">
+                  <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+                    <div className="text-[10px] text-muted-foreground uppercase mb-1">Peak Year</div>
+                    <div className="text-lg font-bold text-red-400">{peakYear?.label}</div>
+                    <div className="text-xs text-muted-foreground">{peakYear ? (peakYear.massKg / 1000).toFixed(0) : '—'}t</div>
+                  </div>
+                  <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+                    <div className="text-[10px] text-muted-foreground uppercase mb-1">2020–Now Total</div>
+                    <div className="text-lg font-bold text-red-400">{(post2020Total / 1000).toFixed(0)}t</div>
+                    <div className="text-xs text-muted-foreground">{post2020.length} years</div>
+                  </div>
+                  <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+                    <div className="text-[10px] text-muted-foreground uppercase mb-1">Avg/yr 2010–19</div>
+                    <div className="text-lg font-bold text-primary">{(pre2020Avg / 1000).toFixed(0)}t</div>
+                  </div>
+                  <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+                    <div className="text-[10px] text-muted-foreground uppercase mb-1">Avg/yr 2020+</div>
+                    <div className="text-lg font-bold text-red-400 flex items-center justify-center gap-1">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      {(post2020Avg / 1000).toFixed(0)}t
+                    </div>
+                    <div className="text-xs text-red-400/70">
+                      {pre2020Avg > 0 ? `${(post2020Avg / pre2020Avg).toFixed(1)}× prior decade` : ''}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-[380px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={recentYears} margin={{ top: 10, right: 30, left: 20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="starlinkGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(0 80% 60%)" stopOpacity={0.9}/>
+                          <stop offset="95%" stopColor="hsl(0 80% 40%)" stopOpacity={0.7}/>
+                        </linearGradient>
+                      </defs>
+
+                      {/* Shade the Starlink era */}
+                      <ReferenceArea x1="2020" x2="2026" fill="hsl(0 80% 50% / 0.07)" fillOpacity={1} />
+
+                      {/* Starlink boundary */}
+                      <ReferenceLine x="2020" stroke="hsl(0 80% 60% / 0.8)" strokeWidth={2} strokeDasharray="4 4">
+                        <Label value="◀ Pre-Starlink   Starlink Era ▶" position="top" fill="hsl(0 80% 65%)" fontSize={10} fontFamily="monospace" />
+                      </ReferenceLine>
+
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        stroke="hsl(var(--muted-foreground))"
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      />
+                      <YAxis
+                        stroke="hsl(var(--muted-foreground))"
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        tickFormatter={(val) => `${(val / 1000).toFixed(0)}t`}
+                        width={60}
+                      />
+                      <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+                      <Bar dataKey="massKg" radius={[3, 3, 0, 0]}>
+                        {recentYears.map((entry: any) => {
+                          const yr = parseInt(entry.label);
+                          const isStarlink = yr >= 2020;
+                          const isPeak = entry.label === peakYear?.label;
+                          return (
+                            <Cell
+                              key={`cell-${entry.label}`}
+                              fill={isPeak ? 'hsl(0 100% 65%)' : isStarlink ? 'hsl(0 80% 55%)' : 'hsl(180 100% 45%)'}
+                              opacity={isPeak ? 1 : 0.85}
+                            />
+                          );
+                        })}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Footnote */}
+                <div className="px-6 pt-3 pb-1">
+                  <p className="text-xs font-mono text-muted-foreground/60">
+                    <span className="text-red-400/70">// </span>
+                    Bars after 2020 reflect the Starlink mass-to-orbit surge driven by SpaceX Falcon 9 batch launches.
+                    The {peakYear?.label} peak of {peakYear ? (peakYear.massKg / 1000).toFixed(0) : '?'}t exceeds the entire Cold War decade output.
+                  </p>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -167,7 +331,7 @@ export default function Analytics() {
                   <YAxis type="category" dataKey="label" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--secondary))', fontSize: 12, fontWeight: 'bold' }} width={80} />
                   <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.5)' }} />
                   <Bar dataKey="massKg" fill="hsl(35 100% 50%)" radius={[0, 4, 4, 0]}>
-                    {stats.byCountry.slice(0, 10).map((entry, index) => (
+                    {stats.byCountry.slice(0, 10).map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Bar>
