@@ -104,6 +104,14 @@ router.get("/satcat/stats", async (_req, res): Promise<void> => {
   res.json({ byYear, byCountry, byOrbit, byObjectClass, byLaunchVehicle });
 });
 
+router.get("/satcat/orbital-map", async (_req, res): Promise<void> => {
+  const data = await getSatcat();
+  const points = data
+    .filter((e) => e.perigeeKm != null && e.incDeg != null)
+    .map((e) => ({ p: e.perigeeKm!, i: e.incDeg!, c: e.objectClass ?? "U" }));
+  res.json({ points, total: points.length });
+});
+
 router.get("/satcat/filters", async (_req, res): Promise<void> => {
   const data = await getSatcat();
 

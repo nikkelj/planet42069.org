@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Radar, Activity, Loader2 } from "lucide-react";
+import { OrbitalMap } from "@/components/OrbitalMap";
 
 const COLORS = [
   'hsl(140 100% 50%)', // primary
@@ -101,6 +102,9 @@ export default function Analytics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Orbital Distribution Map - IDL-style scatter plot */}
+        <OrbitalMap />
+
         {/* Mass by Year - Full Width on large screens if we wanted, but let's keep 2-col layout */}
         <Card className="border-2 border-border bg-card lg:col-span-2 overflow-hidden relative">
           <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-scanline opacity-30" />
