@@ -79,7 +79,7 @@ export default function Home() {
             <div className="space-y-2 text-muted-foreground leading-relaxed normal-case">
               <p>
                 <span className="text-yellow-400 font-bold">Nature of offense:</span>{" "}
-                All {(69671).toLocaleString()} catalog primary keys (JCATs) are prefixed with the letter{" "}
+                All {summary?.totalObjects !== undefined ? formatNumber(summary.totalObjects) : "69,000+"} catalog primary keys (JCATs) are prefixed with the letter{" "}
                 <span className="text-destructive font-bold">"S"</span>, as in <span className="font-bold text-foreground/70">S00001</span>,{" "}
                 <span className="font-bold text-foreground/70">S00002</span>, etc. The "S" stands for "Satellite."
                 The catalog is called the <em>Satellite</em> Catalog. We know. We have always known.

@@ -23,7 +23,16 @@ export function AppLayout({ children }: AppLayoutProps) {
             <Satellite className="w-8 h-8 animate-pulse" />
             <h1 className="text-3xl md:text-4xl font-bold text-glow">PLANET 42069</h1>
           </div>
-          <p className="text-muted-foreground text-sm uppercase tracking-widest font-sans">
+          <p className="text-muted-foreground text-sm uppercase tracking-widest font-sans flex items-center gap-2 flex-wrap">
+            <span
+              className="police-beacon shrink-0"
+              role="img"
+              aria-label="Space Police dispatch beacon active"
+              title="Space Police — on duty"
+            >
+              <span className="beacon-dot beacon-red" />
+              <span className="beacon-dot beacon-blue" />
+            </span>
             Other Jonathan's Space Report // Orbital Bureaucracy Command
           </p>
         </div>

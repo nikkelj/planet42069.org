@@ -212,4 +212,53 @@
   .border-scanline {
     border: 1px solid hsl(var(--border));
   }
+
+  /* Space Police beacon — tasteful alternating red/blue dispatch light */
+  .police-beacon {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .police-beacon .beacon-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+  }
+  .police-beacon .beacon-red {
+    background: hsl(0 100% 55%);
+    animation: beacon-red 1.4s ease-in-out infinite;
+  }
+  .police-beacon .beacon-blue {
+    background: hsl(220 100% 60%);
+    animation: beacon-blue 1.4s ease-in-out infinite;
+  }
+
+  @keyframes beacon-red {
+    0%, 44% {
+      opacity: 1;
+      box-shadow: 0 0 8px 2px hsl(0 100% 55% / 0.85);
+    }
+    50%, 100% {
+      opacity: 0.22;
+      box-shadow: 0 0 2px 0 hsl(0 100% 55% / 0.25);
+    }
+  }
+  @keyframes beacon-blue {
+    0%, 44% {
+      opacity: 0.22;
+      box-shadow: 0 0 2px 0 hsl(220 100% 60% / 0.25);
+    }
+    50%, 100% {
+      opacity: 1;
+      box-shadow: 0 0 8px 2px hsl(220 100% 60% / 0.85);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .police-beacon .beacon-red,
+    .police-beacon .beacon-blue {
+      animation: none;
+      opacity: 1;
+    }
+  }
 }
