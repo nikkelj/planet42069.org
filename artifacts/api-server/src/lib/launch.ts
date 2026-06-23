@@ -1,7 +1,9 @@
 import { logger } from "./logger";
+import fs from "node:fs/promises";
 
 const LAUNCH_URL = "https://planet4589.org/space/gcat/tsv/launch/launch.tsv";
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const DISK_CACHE_PATH = "/tmp/gcat-launch.tsv";
 
 export interface LaunchEntry {
   launchTag: string;
@@ -86,14 +88,38 @@ function parseLaunchTsv(raw: string): Map<string, LaunchEntry> {
   return map;
 }
 
+async function readDiskCache(): Promise<string | null> {
+  try {
+    const stat = await fs.stat(DISK_CACHE_PATH);
+    const ageMs = Date.now() - stat.mtimeMs;
+    if (ageMs < CACHE_TTL_MS) {
+      const text = await fs.readFile(DISK_CACHE_PATH, "utf8");
+      logger.info({ ageMs: Math.round(ageMs / 1000), bytes: text.length }, "launch: disk cache hit");
+      return text;
+    }
+    logger.info({ ageMs: Math.round(ageMs / 1000) }, "launch: disk cache stale");
+  } catch {
+    logger.info("launch: no disk cache found");
+  }
+  return null;
+}
+
 async function fetchAndParse(): Promise<Map<string, LaunchEntry>> {
-  logger.info({ url: LAUNCH_URL }, "launch: fetching");
+  const cached = await readDiskCache();
+  if (cached !== null) {
+    return parseLaunchTsv(cached);
+  }
+
+  logger.info({ url: LAUNCH_URL }, "launch: fetching from network");
   const res = await fetch(LAUNCH_URL, {
     headers: { "User-Agent": "planet42069-space-report/1.0" },
   });
   if (!res.ok) throw new Error(`launch fetch failed: ${res.status} ${res.statusText}`);
   const text = await res.text();
   logger.info({ bytes: text.length }, "launch: fetched, parsing");
+  fs.writeFile(DISK_CACHE_PATH, text, "utf8").catch((err) =>
+    logger.warn({ err }, "launch: failed to write disk cache"),
+  );
   return parseLaunchTsv(text);
 }
 

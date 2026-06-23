@@ -1,8 +1,10 @@
 import { logger } from "./logger";
 import { getLaunchMap } from "./launch";
+import fs from "node:fs/promises";
 
 const SATCAT_URL = "https://planet4589.org/space/gcat/tsv/cat/satcat.tsv";
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const DISK_CACHE_PATH = "/tmp/gcat-satcat.tsv";
 
 export interface SatcatEntry {
   jcat: string;
@@ -190,20 +192,45 @@ function parseTsv(raw: string): SatcatEntry[] {
 
 // ── fetch + cache ──────────────────────────────────────────────────────────
 
+async function readDiskCache(): Promise<string | null> {
+  try {
+    const stat = await fs.stat(DISK_CACHE_PATH);
+    const ageMs = Date.now() - stat.mtimeMs;
+    if (ageMs < CACHE_TTL_MS) {
+      const text = await fs.readFile(DISK_CACHE_PATH, "utf8");
+      logger.info({ ageMs: Math.round(ageMs / 1000), bytes: text.length }, "satcat: disk cache hit");
+      return text;
+    }
+    logger.info({ ageMs: Math.round(ageMs / 1000) }, "satcat: disk cache stale");
+  } catch {
+    logger.info("satcat: no disk cache found");
+  }
+  return null;
+}
+
 async function fetchAndParse(): Promise<SatcatEntry[]> {
-  // Fetch satcat and launch data concurrently
-  logger.info({ url: SATCAT_URL }, "satcat: fetching");
-  const [satcatRes, launchMap] = await Promise.all([
-    fetch(SATCAT_URL, { headers: { "User-Agent": "planet42069-space-report/1.0" } }),
+  // Try disk cache first, fetch from network if missing/stale
+  const [cachedText, launchMap] = await Promise.all([
+    readDiskCache(),
     getLaunchMap().catch((err) => {
       logger.warn({ err }, "satcat: launch cross-ref fetch failed, lv data will be null");
       return new Map<string, import("./launch").LaunchEntry>();
     }),
   ]);
 
-  if (!satcatRes.ok) throw new Error(`satcat fetch failed: ${satcatRes.status} ${satcatRes.statusText}`);
-  const text = await satcatRes.text();
-  logger.info({ bytes: text.length }, "satcat: fetched, parsing");
+  let text: string;
+  if (cachedText !== null) {
+    text = cachedText;
+  } else {
+    logger.info({ url: SATCAT_URL }, "satcat: fetching from network");
+    const satcatRes = await fetch(SATCAT_URL, { headers: { "User-Agent": "planet42069-space-report/1.0" } });
+    if (!satcatRes.ok) throw new Error(`satcat fetch failed: ${satcatRes.status} ${satcatRes.statusText}`);
+    text = await satcatRes.text();
+    fs.writeFile(DISK_CACHE_PATH, text, "utf8").catch((err) =>
+      logger.warn({ err }, "satcat: failed to write disk cache"),
+    );
+  }
+  logger.info({ bytes: text.length }, "satcat: parsing");
   const rawEntries = parseTsv(text) as Array<SatcatEntry & { _launchTag: string | null }>;
   logger.info({ count: rawEntries.length, launchMapSize: launchMap.size }, "satcat: parsed");
 
