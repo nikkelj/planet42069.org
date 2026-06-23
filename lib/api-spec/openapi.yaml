@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: satcat
+    description: Satellite catalog operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,110 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /satcat:
+    get:
+      operationId: getSatcat
+      tags: [satcat]
+      summary: List satellite catalog entries
+      description: Paginated, filterable, sortable list of McDowell GCAT satellite catalog entries
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Text search across name fields
+        - name: owner
+          in: query
+          schema:
+            type: string
+          description: Filter by owner/country code
+        - name: objectClass
+          in: query
+          schema:
+            type: string
+          description: "Filter by object class: P (payload), R (rocket body), D (debris), U (unknown)"
+        - name: orbit
+          in: query
+          schema:
+            type: string
+          description: Filter by operational orbit type (LEO, MEO, GEO, HEO, etc.)
+        - name: satState
+          in: query
+          schema:
+            type: string
+          description: Filter by satellite state
+        - name: sort
+          in: query
+          schema:
+            type: string
+          description: Field to sort by
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        "200":
+          description: Paginated satellite catalog list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SatcatListResponse"
+
+  /satcat/stats:
+    get:
+      operationId: getSatcatStats
+      tags: [satcat]
+      summary: Mass-to-orbit statistics
+      description: Pre-aggregated mass-to-orbit analytics by year, country, orbit type, and launch vehicle
+      responses:
+        "200":
+          description: Aggregated statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SatcatStats"
+
+  /satcat/summary:
+    get:
+      operationId: getSatcatSummary
+      tags: [satcat]
+      summary: Satellite catalog summary
+      description: Top-level summary counts for hero display
+      responses:
+        "200":
+          description: Summary statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SatcatSummary"
+
+  /satcat/filters:
+    get:
+      operationId: getSatcatFilters
+      tags: [satcat]
+      summary: Available filter values
+      description: Returns distinct values for filter dropdowns (owners, orbits, states)
+      responses:
+        "200":
+          description: Available filter options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SatcatFilters"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +140,193 @@ components:
       required:
         - status
 
+    SatcatEntry:
+      type: object
+      properties:
+        jcat:
+          type: string
+          description: Jonathan's catalog number
+        satno:
+          type: ["integer", "null"]
+          description: US Space Command catalog number
+        name:
+          type: string
+          description: Object name
+        plName:
+          type: ["string", "null"]
+          description: Payload name
+        ldate:
+          type: ["string", "null"]
+          description: Launch date (YYYY-MM-DD)
+        lv:
+          type: ["string", "null"]
+          description: Launch vehicle
+        lvFamily:
+          type: ["string", "null"]
+          description: Launch vehicle family
+        site:
+          type: ["string", "null"]
+          description: Launch site code
+        owner:
+          type: ["string", "null"]
+          description: Owner country or organization
+        state:
+          type: ["string", "null"]
+          description: Country/state code
+        objectClass:
+          type: ["string", "null"]
+          description: "Object class: P=payload, R=rocket body, D=debris, U=unknown"
+        objType:
+          type: ["string", "null"]
+          description: More specific object type
+        opOrbit:
+          type: ["string", "null"]
+          description: Operational orbit type (LEO, MEO, GEO, HEO, etc.)
+        satState:
+          type: ["string", "null"]
+          description: Satellite state (Operational, Dead, Reentry, etc.)
+        massKg:
+          type: ["number", "null"]
+          description: Dry mass in kilograms
+        apogeeKm:
+          type: ["number", "null"]
+          description: Apogee altitude in km
+        perigeeKm:
+          type: ["number", "null"]
+          description: Perigee altitude in km
+        incDeg:
+          type: ["number", "null"]
+          description: Orbital inclination in degrees
+        periodMin:
+          type: ["number", "null"]
+          description: Orbital period in minutes
+        decayDate:
+          type: ["string", "null"]
+          description: Decay or reentry date
+      required:
+        - jcat
+        - name
+
+    SatcatListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SatcatEntry"
+        total:
+          type: integer
+          description: Total matching records
+        page:
+          type: integer
+        limit:
+          type: integer
+        pages:
+          type: integer
+          description: Total pages
+      required:
+        - data
+        - total
+        - page
+        - limit
+        - pages
+
+    MassAggregate:
+      type: object
+      properties:
+        label:
+          type: string
+        massKg:
+          type: number
+        count:
+          type: integer
+        payloadCount:
+          type: integer
+      required:
+        - label
+        - massKg
+        - count
+        - payloadCount
+
+    SatcatStats:
+      type: object
+      properties:
+        byYear:
+          type: array
+          items:
+            $ref: "#/components/schemas/MassAggregate"
+        byCountry:
+          type: array
+          items:
+            $ref: "#/components/schemas/MassAggregate"
+        byOrbit:
+          type: array
+          items:
+            $ref: "#/components/schemas/MassAggregate"
+        byLaunchVehicle:
+          type: array
+          items:
+            $ref: "#/components/schemas/MassAggregate"
+      required:
+        - byYear
+        - byCountry
+        - byOrbit
+        - byLaunchVehicle
+
+    SatcatSummary:
+      type: object
+      properties:
+        totalObjects:
+          type: integer
+        totalPayloads:
+          type: integer
+        totalMassKg:
+          type: number
+        activePayloads:
+          type: integer
+        countries:
+          type: integer
+        launchVehicles:
+          type: integer
+        firstLaunchYear:
+          type: integer
+        lastLaunchYear:
+          type: integer
+        cacheAge:
+          type: integer
+          description: How old the cached data is in seconds
+      required:
+        - totalObjects
+        - totalPayloads
+        - totalMassKg
+        - activePayloads
+        - countries
+        - launchVehicles
+        - firstLaunchYear
+        - lastLaunchYear
+        - cacheAge
+
+    SatcatFilters:
+      type: object
+      properties:
+        owners:
+          type: array
+          items:
+            type: string
+        orbits:
+          type: array
+          items:
+            type: string
+        satStates:
+          type: array
+          items:
+            type: string
+        objectClasses:
+          type: array
+          items:
+            type: string
+      required:
+        - owners
+        - orbits
+        - satStates
+        - objectClasses

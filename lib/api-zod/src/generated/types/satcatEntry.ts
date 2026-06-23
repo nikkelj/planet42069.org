@@ -5,9 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
 
 export interface SatcatEntry {
   /** Jonathan's catalog number */
@@ -105,86 +102,3 @@ export interface SatcatEntry {
      */
   decayDate?: string | null;
 }
-
-export interface SatcatListResponse {
-  data: SatcatEntry[];
-  /** Total matching records */
-  total: number;
-  page: number;
-  limit: number;
-  /** Total pages */
-  pages: number;
-}
-
-export interface MassAggregate {
-  label: string;
-  massKg: number;
-  count: number;
-  payloadCount: number;
-}
-
-export interface SatcatStats {
-  byYear: MassAggregate[];
-  byCountry: MassAggregate[];
-  byOrbit: MassAggregate[];
-  byLaunchVehicle: MassAggregate[];
-}
-
-export interface SatcatSummary {
-  totalObjects: number;
-  totalPayloads: number;
-  totalMassKg: number;
-  activePayloads: number;
-  countries: number;
-  launchVehicles: number;
-  firstLaunchYear: number;
-  lastLaunchYear: number;
-  /** How old the cached data is in seconds */
-  cacheAge: number;
-}
-
-export interface SatcatFilters {
-  owners: string[];
-  orbits: string[];
-  satStates: string[];
-  objectClasses: string[];
-}
-
-export type GetSatcatParams = {
-page?: number;
-limit?: number;
-/**
- * Text search across name fields
- */
-search?: string;
-/**
- * Filter by owner/country code
- */
-owner?: string;
-/**
- * Filter by object class: P (payload), R (rocket body), D (debris), U (unknown)
- */
-objectClass?: string;
-/**
- * Filter by operational orbit type (LEO, MEO, GEO, HEO, etc.)
- */
-orbit?: string;
-/**
- * Filter by satellite state
- */
-satState?: string;
-/**
- * Field to sort by
- */
-sort?: string;
-order?: GetSatcatOrder;
-};
-
-export type GetSatcatOrder = typeof GetSatcatOrder[keyof typeof GetSatcatOrder];
-
-
-export const GetSatcatOrder = {
-  asc: 'asc',
-  desc: 'desc',
-} as const;
-

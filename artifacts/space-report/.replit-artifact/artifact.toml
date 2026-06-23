@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Other Jonathan's Space Report"
+version = "1.0.0"
+id = "artifacts/space-report"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22749
+
+[services.development]
+run = "pnpm --filter @workspace/space-report run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/space-report", "run", "build" ]
+publicDir = "artifacts/space-report/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22749"
+BASE_PATH = "/"

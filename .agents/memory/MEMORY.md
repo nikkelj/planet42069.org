@@ -1,0 +1,3 @@
+- [GCAT satcat column quirks](gcat-satcat-columns.md) — real column names and status codes; status 'O'/'OX' = operational, NOT substring 'op'.
+- [Recharts PieChart blank bug](recharts-pie-blank.md) — PieChart/Pie inside overflow-hidden Card renders blank; replace with BarChart.
+- [Recharts Cell-data mismatch](recharts-cell-mismatch.md) — Pie/Bar Cell children must map the same filtered/sorted array used in the data prop.
