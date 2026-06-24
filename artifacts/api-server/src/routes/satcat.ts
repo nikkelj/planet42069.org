@@ -142,6 +142,37 @@ router.get("/satcat/by-year-provider", async (_req, res): Promise<void> => {
   res.json({ byYearProvider });
 });
 
+// SpaceX Falcon vs Starship mass by year (2010+)
+router.get("/satcat/falcon-vs-starship", async (_req, res): Promise<void> => {
+  const data = await getSatcat();
+  const payloads = data.filter((e) => e.objectClass === "P");
+
+  type Row = { year: string; falcon: number; starship: number };
+  const map = new Map<string, Row>();
+
+  for (const e of payloads) {
+    const year = getYear(e.ldate);
+    if (!year || parseInt(year) < 2010) continue;
+    const mass = e.massKg ?? 0;
+    const lv = ((e.lvFamily ?? "") + " " + (e.lv ?? "")).toLowerCase();
+    if (!lv.includes("falcon") && !lv.includes("starship")) continue;
+    const row = map.get(year) ?? { year, falcon: 0, starship: 0 };
+    if (lv.includes("falcon")) {
+      row.falcon += mass;
+    } else {
+      row.starship += mass;
+    }
+    map.set(year, row);
+  }
+
+  const rows = Array.from(map.values())
+    .map((r) => ({ ...r, falcon: Math.round(r.falcon), starship: Math.round(r.starship) }))
+    .sort((a, b) => a.year.localeCompare(b.year));
+
+  const starshipTotal = rows.reduce((s, r) => s + r.starship, 0);
+  res.json({ rows, starshipTotal });
+});
+
 // SpaceX (Falcon family) mass by launch site, 2010+
 router.get("/satcat/spacex-by-site", async (_req, res): Promise<void> => {
   const data = await getSatcat();

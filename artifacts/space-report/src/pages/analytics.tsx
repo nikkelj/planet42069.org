@@ -61,6 +61,120 @@ function OrbitPieChart({ byOrbit }: { byOrbit: Array<{ label: string; massKg: nu
   );
 }
 
+const FALCON_COLOR   = 'hsl(140 100% 50%)';
+const STARSHIP_COLOR = 'hsl(35 100% 55%)';
+
+function FalconVsStarshipChart() {
+  const { data, isLoading } = useQuery<{
+    rows: Array<{ year: string; falcon: number; starship: number }>;
+    starshipTotal: number;
+  }>({
+    queryKey: ['falcon-vs-starship'],
+    queryFn: () => fetch('/api/satcat/falcon-vs-starship').then((r) => r.json()),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading || !data) return (
+    <div className="flex items-center justify-center h-[420px] text-muted-foreground font-mono text-sm animate-pulse uppercase lg:col-span-2">
+      Computing vehicle trajectories...
+    </div>
+  );
+
+  const rows = data.rows;
+  const falconTotal = rows.reduce((s, r) => s + r.falcon, 0);
+  const peakRow = [...rows].sort((a, b) => b.falcon - a.falcon)[0];
+  const noStarship = data.starshipTotal === 0;
+
+  const FvsTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    const falcon   = payload.find((p: any) => p.dataKey === 'falcon')?.value ?? 0;
+    const starship = payload.find((p: any) => p.dataKey === 'starship')?.value ?? 0;
+    return (
+      <div className="bg-card border-2 border-primary p-3 shadow-xl font-mono text-sm z-50">
+        <p className="text-primary font-bold mb-2 pb-1 border-b border-primary/30 uppercase">{label}</p>
+        <div className="space-y-1 text-card-foreground">
+          <p><span style={{ color: FALCON_COLOR }}>■</span> <span className="text-muted-foreground">Falcon 9 / Heavy:</span> {(falcon / 1000).toFixed(1)}t</p>
+          <p><span style={{ color: STARSHIP_COLOR }}>■</span> <span className="text-muted-foreground">Starship:</span> {starship > 0 ? `${(starship / 1000).toFixed(1)}t` : '—'}</p>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Card className="border-2 border-border bg-card lg:col-span-2 overflow-hidden relative">
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-scanline opacity-30" />
+      <CardHeader className="bg-muted/30 border-b border-border">
+        <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
+          <Zap className="w-4 h-4" /> Falcon vs Starship — Mass to Orbit (2010+)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-4 pb-2 pl-0">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 pb-5">
+          <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">Falcon All-Time</div>
+            <div className="text-lg font-bold" style={{ color: FALCON_COLOR }}>{(falconTotal / 1000).toFixed(0)}t</div>
+            <div className="text-xs text-muted-foreground">Falcon 9 + Heavy</div>
+          </div>
+          <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">Peak Year</div>
+            <div className="text-lg font-bold" style={{ color: FALCON_COLOR }}>{peakRow?.year}</div>
+            <div className="text-xs text-muted-foreground">{peakRow ? (peakRow.falcon / 1000).toFixed(0) : '—'}t</div>
+          </div>
+          <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">Starship Total</div>
+            <div className="text-lg font-bold" style={{ color: STARSHIP_COLOR }}>{noStarship ? '—' : `${(data.starshipTotal / 1000).toFixed(0)}t`}</div>
+            <div className="text-xs text-muted-foreground">{noStarship ? 'Not yet in GCAT' : 'Orbital payloads'}</div>
+          </div>
+          <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">Starship Capacity</div>
+            <div className="text-lg font-bold" style={{ color: STARSHIP_COLOR }}>~150t</div>
+            <div className="text-xs text-muted-foreground">per flight (LEO)</div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 px-6 pb-4 font-mono text-xs flex-wrap">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: FALCON_COLOR }} />
+            <span className="text-muted-foreground">Falcon 9 / Falcon Heavy</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: STARSHIP_COLOR }} />
+            <span className="text-muted-foreground">Starship</span>
+          </span>
+          {noStarship && (
+            <span className="ml-auto text-amber-400/70 border border-amber-400/30 px-2 py-0.5 rounded text-[10px] uppercase tracking-wide">
+              ⚠ Starship: test flights catalogued — orbital payload deployments pending GCAT entry
+            </span>
+          )}
+        </div>
+
+        <div className="h-[360px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={rows} margin={{ top: 10, right: 30, left: 20, bottom: 0 }} barCategoryGap="20%">
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+              <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}t`} width={55} />
+              <RechartsTooltip content={<FvsTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+              <Bar dataKey="falcon" name="Falcon" fill={FALCON_COLOR} radius={[3, 3, 0, 0]} />
+              <Bar dataKey="starship" name="Starship" fill={STARSHIP_COLOR} radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="px-6 pt-3 pb-1">
+          <p className="text-xs font-mono text-muted-foreground/60">
+            <span className="text-amber-400/70">// </span>
+            {noStarship
+              ? 'Starship has conducted orbital test flights but has not yet deployed commercially catalogued payloads in the GCAT database. When it does, a single Starship flight (~150t LEO) will dwarf an entire Falcon 9 year from before 2020.'
+              : `Starship is now in the catalog. Watch this space.`
+            }
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 const CAPE_COLOR    = 'hsl(180 100% 45%)';
 const VAND_COLOR    = 'hsl(140 100% 50%)';
 const OTHER_SITE_COLOR = 'hsl(35 100% 50%)';
@@ -486,6 +600,9 @@ export default function Analytics() {
 
         {/* SpaceX segmented by customer */}
         <SpaceXByEntityChart />
+
+        {/* Falcon vs Starship vehicle comparison */}
+        <FalconVsStarshipChart />
 
         {/* SpaceX vs Rest-of-World comparison */}
         <SpaceXComparisonChart />
