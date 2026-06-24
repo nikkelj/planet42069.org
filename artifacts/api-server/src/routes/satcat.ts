@@ -299,6 +299,35 @@ router.get("/satcat/spacex-by-entity", async (_req, res): Promise<void> => {
   res.json({ rows });
 });
 
+router.get("/satcat/deorbit-history", async (_req, res): Promise<void> => {
+  const data = await getSatcat();
+
+  const objects: { y: number; p: number; a: number; i: number; c: string }[] = [];
+
+  for (const e of data) {
+    if (!e.decayDate || e.perigeeKm == null || e.incDeg == null) continue;
+    const yearStr = e.decayDate.trim().substring(0, 4);
+    const year = parseInt(yearStr, 10);
+    if (isNaN(year) || year < 1957 || year > 2030) continue;
+    objects.push({
+      y: year,
+      p: Math.round(e.perigeeKm),
+      a: Math.round(e.apogeeKm ?? e.perigeeKm),
+      i: Math.round(e.incDeg * 10) / 10,
+      c: e.objectClass ?? "U",
+    });
+  }
+
+  objects.sort((a, b) => a.y - b.y);
+  const years = objects.map((o) => o.y);
+  res.json({
+    objects,
+    total: objects.length,
+    yearMin: Math.min(...years),
+    yearMax: Math.max(...years),
+  });
+});
+
 router.get("/satcat/orbital-map", async (_req, res): Promise<void> => {
   const data = await getSatcat();
   const points = data
