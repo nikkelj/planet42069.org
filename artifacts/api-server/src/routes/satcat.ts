@@ -299,18 +299,39 @@ router.get("/satcat/spacex-by-entity", async (_req, res): Promise<void> => {
   res.json({ rows });
 });
 
+const DEORBIT_MONTHS: Record<string, number> = {
+  Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+  Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+};
+const DEORBIT_EPOCH = Date.UTC(1957, 0, 1);
+
+function decayDateToDayNum(raw: string): number | null {
+  const s = raw.trim();
+  const full = s.match(/^(\d{4})\s+([A-Za-z]{3})\s+(\d+)/);
+  if (full) {
+    const yr = parseInt(full[1], 10);
+    const mo = DEORBIT_MONTHS[full[2]] ?? 0;
+    const dy = parseInt(full[3], 10);
+    return Math.round((Date.UTC(yr, mo, dy) - DEORBIT_EPOCH) / 86400000);
+  }
+  const yearOnly = s.match(/^(\d{4})/);
+  if (yearOnly) {
+    return Math.round((Date.UTC(parseInt(yearOnly[1], 10), 0, 1) - DEORBIT_EPOCH) / 86400000);
+  }
+  return null;
+}
+
 router.get("/satcat/deorbit-history", async (_req, res): Promise<void> => {
   const data = await getSatcat();
 
-  const objects: { y: number; p: number; a: number; i: number; c: string }[] = [];
+  const objects: { day: number; p: number; a: number; i: number; c: string }[] = [];
 
   for (const e of data) {
     if (!e.decayDate || e.perigeeKm == null || e.incDeg == null) continue;
-    const yearStr = e.decayDate.trim().substring(0, 4);
-    const year = parseInt(yearStr, 10);
-    if (isNaN(year) || year < 1957 || year > 2030) continue;
+    const day = decayDateToDayNum(e.decayDate);
+    if (day == null || day < 0 || day > 30000) continue;
     objects.push({
-      y: year,
+      day,
       p: Math.round(e.perigeeKm),
       a: Math.round(e.apogeeKm ?? e.perigeeKm),
       i: Math.round(e.incDeg * 10) / 10,
@@ -318,14 +339,61 @@ router.get("/satcat/deorbit-history", async (_req, res): Promise<void> => {
     });
   }
 
-  objects.sort((a, b) => a.y - b.y);
-  const years = objects.map((o) => o.y);
+  objects.sort((a, b) => a.day - b.day);
+  const days = objects.map((o) => o.day);
   res.json({
     objects,
     total: objects.length,
-    yearMin: Math.min(...years),
-    yearMax: Math.max(...years),
+    dayMin: Math.min(...days),
+    dayMax: Math.max(...days),
   });
+});
+
+router.get("/satcat/mass-cdf", async (_req, res): Promise<void> => {
+  const data = await getSatcat();
+  const valid = data.filter((e) => e.massKg != null && e.massKg > 0) as (typeof data[0] & { massKg: number })[];
+
+  function cdf(items: typeof valid, nPts = 250): { m: number; f: number }[] {
+    if (items.length === 0) return [];
+    const sorted = items.map((e) => e.massKg).sort((a, b) => a - b);
+    const total = sorted.length;
+    const result: { m: number; f: number }[] = [];
+    const step = Math.max(1, Math.floor(total / nPts));
+    for (let i = 0; i < total; i += step) {
+      result.push({ m: sorted[i], f: (i + 1) / total });
+    }
+    if (result[result.length - 1]?.m !== sorted[total - 1]) {
+      result.push({ m: sorted[total - 1], f: 1.0 });
+    }
+    return result;
+  }
+
+  // Aggregate
+  const aggregate = cdf(valid);
+
+  // By type
+  const TYPE_KEYS = ["P", "R", "D", "C"];
+  const byType: Record<string, { m: number; f: number }[]> = {};
+  for (const t of TYPE_KEYS) {
+    const sub = valid.filter((e) => e.objectClass === t);
+    if (sub.length > 20) byType[t] = cdf(sub);
+  }
+
+  // By nation — top 7 by count with mass data
+  const nationCount = new Map<string, number>();
+  for (const e of valid) if (e.state) nationCount.set(e.state, (nationCount.get(e.state) ?? 0) + 1);
+  const topNations = [...nationCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 7).map(([k]) => k);
+  const byNation: Record<string, { m: number; f: number }[]> = {};
+  for (const n of topNations) byNation[n] = cdf(valid.filter((e) => e.state === n));
+
+  // By site — top 7 by count with mass data
+  const siteCount = new Map<string, number>();
+  for (const e of valid) if (e.site) siteCount.set(e.site, (siteCount.get(e.site) ?? 0) + 1);
+  const topSites = [...siteCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 7).map(([k]) => k);
+  const bySite: Record<string, { m: number; f: number }[]> = {};
+  for (const s of topSites) bySite[s] = cdf(valid.filter((e) => e.site === s));
+
+  res.json({ aggregate, byType, byNation, bySite, total: valid.length });
 });
 
 router.get("/satcat/orbital-map", async (_req, res): Promise<void> => {

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Radar, Activity, Loader2, TrendingUp, Zap, MapPin, Building2 } from "lucide-react";
 import { OrbitalMap } from "@/components/OrbitalMap";
 import { DeorbitAnimation } from "@/components/DeorbitAnimation";
+import { MassCDFChart } from "@/components/MassCDFChart";
 
 const COLORS = [
   'hsl(140 100% 50%)',
@@ -701,6 +702,9 @@ export default function Analytics() {
 
         {/* Deorbit Animation */}
         <DeorbitAnimation />
+
+        {/* Mass CDF */}
+        <MassCDFChart />
 
         {/* Orbital map context note */}
         <div className="lg:col-span-2 -mt-2 px-1">

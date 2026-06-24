@@ -3,12 +3,13 @@ import { useRef, useEffect, useCallback, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, TrendingDown, Play, Pause, RotateCcw } from "lucide-react";
 
-type DeorbitObj   = { y: number; p: number; a: number; i: number; c: string };
-type DeorbitData  = { objects: DeorbitObj[]; total: number; yearMin: number; yearMax: number };
-type View         = "pi" | "ap";
+type DeorbitObj  = { day: number; p: number; a: number; i: number; c: string };
+type DeorbitData = { objects: DeorbitObj[]; total: number; dayMin: number; dayMax: number };
+type View        = "pi" | "ap";
 
-const TRAIL       = 12;  // years of trail to show
-const MS_PER_YEAR = 140; // playback speed
+const TRAIL      = 90;   // day trail
+const MS_PER_DAY = 2;    // playback speed (ms per day step)
+const EPOCH_MS   = Date.UTC(1957, 0, 1);
 
 const CLS_COLOR: Record<string, string> = {
   P: "0,255,100",
@@ -17,7 +18,6 @@ const CLS_COLOR: Record<string, string> = {
   C: "80,200,255",
   U: "180,180,180",
 };
-const defaultRgb = "180,180,180";
 
 const LEGEND = [
   { c: "P", label: "PAYLOAD"     },
@@ -26,21 +26,31 @@ const LEGEND = [
   { c: "C", label: "COMPONENT"   },
 ];
 
-function buildYearMap(objects: DeorbitObj[]): Map<number, DeorbitObj[]> {
+function dayToDateStr(day: number): string {
+  const d = new Date(EPOCH_MS + day * 86400000);
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+
+function dayToYearLabel(day: number): string {
+  const d = new Date(EPOCH_MS + day * 86400000);
+  return d.getFullYear().toString();
+}
+
+function buildDayMap(objects: DeorbitObj[]): Map<number, DeorbitObj[]> {
   const m = new Map<number, DeorbitObj[]>();
   for (const o of objects) {
-    if (!m.has(o.y)) m.set(o.y, []);
-    m.get(o.y)!.push(o);
+    if (!m.has(o.day)) m.set(o.day, []);
+    m.get(o.day)!.push(o);
   }
   return m;
 }
 
 function drawFrame(
   canvas: HTMLCanvasElement,
-  yearMap: Map<number, DeorbitObj[]>,
-  curYear: number,
+  dayMap: Map<number, DeorbitObj[]>,
+  curDay: number,
   view: View,
-  yearMin: number,
+  dayMin: number,
   total: number,
 ) {
   const W = canvas.clientWidth;
@@ -60,28 +70,22 @@ function drawFrame(
   const ph = H - m.top  - m.bottom;
   const font = '"Chakra Petch","Share Tech Mono",monospace';
 
-  // Background
   ctx.fillStyle = "#050d0d";
   ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = "#060e0e";
   ctx.fillRect(m.left, m.top, pw, ph);
 
-  // Axes helpers
   const MAX_P = 2000;
   const MAX_X = view === "pi" ? 180 : 2500;
 
-  const mapX = (v: number) =>
-    m.left + Math.max(0, Math.min(v, MAX_X)) / MAX_X * pw;
-  const mapY = (p: number) =>
-    m.top + ph - Math.max(0, Math.min(p, MAX_P)) / MAX_P * ph;
+  const mapX = (v: number) => m.left + Math.max(0, Math.min(v, MAX_X)) / MAX_X * pw;
+  const mapY = (p: number) => m.top + ph - Math.max(0, Math.min(p, MAX_P)) / MAX_P * ph;
 
   // Grid
-  ctx.lineWidth = 0.4;
-  const xTicks = view === "pi"
-    ? [0, 30, 60, 90, 120, 150, 180]
-    : [0, 500, 1000, 1500, 2000, 2500];
+  const xTicks = view === "pi" ? [0, 30, 60, 90, 120, 150, 180] : [0, 500, 1000, 1500, 2000, 2500];
   const yTicks = [0, 400, 800, 1200, 1600, 2000];
 
+  ctx.lineWidth = 0.4;
   for (const v of xTicks) {
     ctx.strokeStyle = "rgba(0,255,100,0.06)";
     ctx.beginPath(); ctx.moveTo(mapX(v), m.top); ctx.lineTo(mapX(v), m.top + ph); ctx.stroke();
@@ -90,22 +94,20 @@ function drawFrame(
     ctx.strokeStyle = "rgba(0,255,100,0.06)";
     ctx.beginPath(); ctx.moveTo(m.left, mapY(p)); ctx.lineTo(m.left + pw, mapY(p)); ctx.stroke();
   }
-
-  // Border
   ctx.strokeStyle = "rgba(0,255,100,0.20)";
   ctx.lineWidth = 1;
   ctx.strokeRect(m.left, m.top, pw, ph);
 
-  // Draw trail
-  let countThisYear = 0;
-  for (let dy = TRAIL; dy >= 0; dy--) {
-    const yr  = curYear - dy;
-    const age = dy;
-    if (yr < yearMin) continue;
-    const objs = yearMap.get(yr) ?? [];
-    if (dy === 0) countThisYear = objs.length;
+  // Draw trail — deadened fade: from 0.92 (age=0) down to 0.18 (age=TRAIL)
+  let countToday = 0;
+  for (let age = TRAIL; age >= 0; age--) {
+    const day = curDay - age;
+    if (day < dayMin) continue;
+    const objs = dayMap.get(day) ?? [];
+    if (age === 0) countToday = objs.length;
 
-    const alpha = dy === 0 ? 0.95 : Math.max(0, 0.75 * (1 - age / TRAIL));
+    // Deadened: minimum opacity 0.18 so old events stay visible
+    const alpha = 0.18 + 0.74 * (1 - age / TRAIL);
 
     for (const o of objs) {
       const xVal = view === "pi" ? o.i : o.a;
@@ -114,14 +116,13 @@ function drawFrame(
       const y = mapY(yVal);
       if (x < m.left || x > m.left + pw || y < m.top || y > m.top + ph) continue;
 
-      const rgb = CLS_COLOR[o.c] ?? defaultRgb;
-      const r   = dy === 0 ? 2.2 : 1.4;
+      const rgb = CLS_COLOR[o.c] ?? "180,180,180";
+      const r   = age === 0 ? 2.4 : 1.5;
 
-      if (dy === 0) {
-        // Glow for current year
+      if (age === 0) {
         ctx.beginPath();
-        ctx.arc(x, y, r + 3, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${rgb},0.12)`;
+        ctx.arc(x, y, r + 4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${rgb},0.14)`;
         ctx.fill();
       }
       ctx.beginPath();
@@ -137,7 +138,7 @@ function drawFrame(
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
   for (const v of xTicks) {
-    const label = view === "pi" ? `${v}°` : v >= 1000 ? `${v/1000}k` : `${v}`;
+    const label = view === "pi" ? `${v}°` : v >= 1000 ? `${v / 1000}k` : `${v}`;
     ctx.fillText(label, mapX(v), m.top + ph + 8);
   }
   ctx.fillText(
@@ -148,11 +149,8 @@ function drawFrame(
   // Y axis labels
   ctx.textAlign = "right";
   ctx.textBaseline = "middle";
-  for (const p of yTicks) {
-    ctx.fillText(`${p}`, m.left - 6, mapY(p));
-  }
+  for (const p of yTicks) ctx.fillText(`${p}`, m.left - 6, mapY(p));
 
-  // Y axis title
   ctx.save();
   ctx.translate(14, m.top + ph / 2);
   ctx.rotate(-Math.PI / 2);
@@ -162,22 +160,25 @@ function drawFrame(
   ctx.fillText("PERIGEE  (km)", 0, 0);
   ctx.restore();
 
-  // Year overlay (big)
-  ctx.font = `bold 52px ${font}`;
+  // Year big label
+  ctx.font = `bold 48px ${font}`;
   ctx.fillStyle = "rgba(0,255,100,0.08)";
   ctx.textAlign = "right";
   ctx.textBaseline = "top";
-  ctx.fillText(`${curYear}`, m.left + pw - 8, m.top + 8);
+  ctx.fillText(dayToYearLabel(curDay), m.left + pw - 8, m.top + 8);
 
   // Stats
+  const logged = (() => {
+    let n = 0;
+    dayMap.forEach((v, k) => { if (k <= curDay) n += v.length; });
+    return n;
+  })();
+
   ctx.font = `9px ${font}`;
   ctx.fillStyle = "rgba(0,255,100,0.55)";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  const logged = [...yearMap.entries()]
-    .filter(([y]) => y <= curYear)
-    .reduce((s, [, v]) => s + v.length, 0);
-  ctx.fillText(`REENTRIES ${curYear}: ${countThisYear}`, m.left + 6, m.top + 6);
+  ctx.fillText(`REENTRIES TODAY: ${countToday}`, m.left + 6, m.top + 6);
   ctx.fillStyle = "rgba(0,255,100,0.35)";
   ctx.fillText(`TOTAL LOGGED: ${logged.toLocaleString()} / ${total.toLocaleString()}`, m.left + 6, m.top + 19);
 
@@ -200,14 +201,14 @@ export function DeorbitAnimation() {
   const canvasRef    = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [view,        setView]        = useState<View>("pi");
-  const [curYear,     setCurYear]     = useState(1957);
-  const [isPlaying,   setIsPlaying]   = useState(false);
-  const [hasStarted,  setHasStarted]  = useState(false);
+  const [view,       setView]       = useState<View>("pi");
+  const [curDay,     setCurDay]     = useState(0);
+  const [isPlaying,  setIsPlaying]  = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
 
-  const yearRef      = useRef(1957);
-  const playingRef   = useRef(false);
-  const timerRef     = useRef<ReturnType<typeof setInterval> | null>(null);
+  const dayRef     = useRef(0);
+  const playingRef = useRef(false);
+  const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data, isLoading, isError } = useQuery<DeorbitData>({
     queryKey: ["deorbit-history"],
@@ -215,16 +216,23 @@ export function DeorbitAnimation() {
     staleTime: 30 * 60 * 1000,
   });
 
-  const yearMap = data ? buildYearMap(data.objects) : null;
-  const maxYear = data?.yearMax ?? 2026;
-  const minYear = data?.yearMin ?? 1957;
+  const dayMap = data ? buildDayMap(data.objects) : null;
+  const maxDay = data?.dayMax ?? 25200;
+  const minDay = data?.dayMin ?? 0;
+
+  // Initialise slider to start of data
+  useEffect(() => {
+    if (data && curDay === 0) {
+      dayRef.current = minDay;
+      setCurDay(minDay);
+    }
+  }, [data, minDay, curDay]);
 
   const redraw = useCallback(() => {
-    if (!canvasRef.current || !yearMap || !data) return;
-    drawFrame(canvasRef.current, yearMap, yearRef.current, view, minYear, data.total);
-  }, [yearMap, view, data, minYear]);
+    if (!canvasRef.current || !dayMap || !data) return;
+    drawFrame(canvasRef.current, dayMap, dayRef.current, view, minDay, data.total);
+  }, [dayMap, view, data, minDay]);
 
-  // Redraw on resize
   useEffect(() => {
     if (!containerRef.current || !data) return;
     redraw();
@@ -233,7 +241,6 @@ export function DeorbitAnimation() {
     return () => ro.disconnect();
   }, [redraw, data]);
 
-  // Playback timer
   const stopTimer = () => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
   };
@@ -242,23 +249,23 @@ export function DeorbitAnimation() {
     stopTimer();
     timerRef.current = setInterval(() => {
       if (!playingRef.current) return;
-      const next = yearRef.current + 1;
-      if (next > maxYear) {
+      const next = dayRef.current + 1;
+      if (next > maxDay) {
         playingRef.current = false;
         setIsPlaying(false);
         stopTimer();
         return;
       }
-      yearRef.current = next;
-      setCurYear(next);
+      dayRef.current = next;
+      setCurDay(next);
       redraw();
-    }, MS_PER_YEAR);
-  }, [maxYear, redraw]);
+    }, MS_PER_DAY);
+  }, [maxDay, redraw]);
 
   const handlePlay = () => {
-    if (yearRef.current >= maxYear) {
-      yearRef.current = minYear;
-      setCurYear(minYear);
+    if (dayRef.current >= maxDay) {
+      dayRef.current = minDay;
+      setCurDay(minDay);
     }
     playingRef.current = true;
     setIsPlaying(true);
@@ -274,21 +281,19 @@ export function DeorbitAnimation() {
 
   const handleReset = () => {
     handlePause();
-    yearRef.current = minYear;
-    setCurYear(minYear);
+    dayRef.current = minDay;
+    setCurDay(minDay);
     redraw();
   };
 
   const handleScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const yr = parseInt(e.target.value);
-    yearRef.current = yr;
-    setCurYear(yr);
+    const d = parseInt(e.target.value);
+    dayRef.current = d;
+    setCurDay(d);
     redraw();
   };
 
   useEffect(() => () => stopTimer(), []);
-
-  // Redraw when view changes
   useEffect(() => { redraw(); }, [view, redraw]);
 
   return (
@@ -304,21 +309,19 @@ export function DeorbitAnimation() {
               </span>
             )}
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 font-mono text-xs border border-border rounded overflow-hidden">
-              <button
-                onClick={() => setView("pi")}
-                className={`px-3 py-1.5 uppercase transition-colors ${view === "pi" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
-              >
-                Inc / Perigee
-              </button>
-              <button
-                onClick={() => setView("ap")}
-                className={`px-3 py-1.5 uppercase transition-colors ${view === "ap" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
-              >
-                Apogee / Perigee
-              </button>
-            </div>
+          <div className="flex items-center gap-1 font-mono text-xs border border-border rounded overflow-hidden">
+            <button
+              onClick={() => setView("pi")}
+              className={`px-3 py-1.5 uppercase transition-colors ${view === "pi" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
+            >
+              Inc / Perigee
+            </button>
+            <button
+              onClick={() => setView("ap")}
+              className={`px-3 py-1.5 uppercase transition-colors ${view === "ap" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
+            >
+              Apogee / Perigee
+            </button>
           </div>
         </div>
       </CardHeader>
@@ -344,7 +347,6 @@ export function DeorbitAnimation() {
                 style={{ width: "100%", height: "100%", display: "block" }}
               />
             </div>
-            {/* Controls */}
             <div className="border-t border-border bg-muted/20 px-4 py-3 flex flex-col gap-2">
               <div className="flex items-center gap-3">
                 {!isPlaying ? (
@@ -353,7 +355,7 @@ export function DeorbitAnimation() {
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground font-mono text-xs uppercase rounded hover:bg-primary/90 transition-colors"
                   >
                     <Play className="w-3 h-3" />
-                    {hasStarted && curYear < maxYear ? "Resume" : "Play"}
+                    {hasStarted && curDay < maxDay ? "Resume" : "Play"}
                   </button>
                 ) : (
                   <button
@@ -369,22 +371,22 @@ export function DeorbitAnimation() {
                 >
                   <RotateCcw className="w-3 h-3" /> Reset
                 </button>
-                <span className="ml-auto font-mono text-xs text-primary tabular-nums">
-                  {curYear}
+                <span className="ml-auto font-mono text-xs text-primary tabular-nums tracking-wide">
+                  {dayToDateStr(curDay)}
                 </span>
               </div>
               <input
                 type="range"
-                min={minYear}
-                max={maxYear}
-                value={curYear}
+                min={minDay}
+                max={maxDay}
+                value={curDay}
                 onChange={handleScrub}
                 className="w-full h-1 accent-primary cursor-pointer"
               />
               <p className="text-[10px] font-mono text-muted-foreground/50 leading-relaxed">
                 <span className="text-primary/40">// </span>
-                Each dot = one catalogued reentry at that year's final perigee altitude and inclination.
-                Trailing glow = last {TRAIL} years. Green = payload · Orange = rocket body · Red = debris.
+                Day-precision reentry positions. Trail = {TRAIL}-day window — dots persist dimly so structural patterns remain visible.
+                Green = payload · Orange = rocket body · Red = debris · Cyan = component.
               </p>
             </div>
           </>
