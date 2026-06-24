@@ -92,7 +92,7 @@ router.get("/satcat/stats", async (_req, res): Promise<void> => {
     .sort((a, b) => a.label.localeCompare(b.label))
     .filter((y) => y.label !== "Unknown");
 
-  const byCountry = agg(payloads, (e) => e.owner).slice(0, 30);
+  const byCountry = agg(payloads, (e) => e.state).slice(0, 30);
   const byOrbit = agg(payloads, (e) => e.opOrbit).slice(0, 20);
 
   // Object class breakdown across all objects (not just payloads)
