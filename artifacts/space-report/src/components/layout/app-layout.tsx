@@ -10,9 +10,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [location] = useLocation();
 
   const navItems = [
-    { href: "/", label: "MISSION BRIEFING", icon: TerminalSquare },
-    { href: "/analytics", label: "MASS ANALYTICS", icon: Radar },
+    { href: "/", label: "MASS ANALYTICS", icon: Radar },
     { href: "/catalog", label: "SATCAT EXPLORER", icon: Database },
+    { href: "/briefing", label: "BRIEFING", icon: TerminalSquare },
   ];
 
   return (
@@ -39,7 +39,9 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         <nav className="flex flex-wrap gap-2">
           {navItems.map((item) => {
-            const isActive = location === item.href;
+            const isActive = item.href === "/"
+              ? (location === "/" || location === "/analytics")
+              : location === item.href;
             const Icon = item.icon;
             return (
               <Link

@@ -1,12 +1,13 @@
 import { useGetSatcatStats, useGetSatcatByYearProvider } from "@workspace/api-client-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSearch, useLocation } from "wouter";
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   BarChart, Bar, Cell, ReferenceArea, ReferenceLine, Label
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Radar, Activity, Loader2, TrendingUp, Zap } from "lucide-react";
+import { Radar, Activity, Loader2, TrendingUp, Zap, MapPin, Building2 } from "lucide-react";
 import { OrbitalMap } from "@/components/OrbitalMap";
 
 const COLORS = [
@@ -52,6 +53,200 @@ function OrbitPieChart({ byOrbit }: { byOrbit: Array<{ label: string; massKg: nu
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+const CAPE_COLOR    = 'hsl(180 100% 45%)';
+const VAND_COLOR    = 'hsl(140 100% 50%)';
+const OTHER_SITE_COLOR = 'hsl(35 100% 50%)';
+
+function SpaceXBySiteChart() {
+  const { data, isLoading } = useQuery<{
+    rows: Array<{ year: string; capeCanaveral: number; vandenberg: number; other: number }>;
+  }>({
+    queryKey: ['spacex-by-site'],
+    queryFn: () => fetch('/api/satcat/spacex-by-site').then((r) => r.json()),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading || !data) return (
+    <div className="flex items-center justify-center h-[360px] text-muted-foreground font-mono text-sm animate-pulse uppercase">
+      Triangulating launch vectors...
+    </div>
+  );
+
+  const rows = data.rows;
+  const totalCape = rows.reduce((s, r) => s + r.capeCanaveral, 0);
+  const totalVand = rows.reduce((s, r) => s + r.vandenberg, 0);
+  const totalOther = rows.reduce((s, r) => s + r.other, 0);
+  const totalAll = totalCape + totalVand + totalOther;
+  const pct = (n: number) => totalAll > 0 ? ((n / totalAll) * 100).toFixed(0) : '0';
+
+  const SiteTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    const cape = payload.find((p: any) => p.dataKey === 'capeCanaveral')?.value ?? 0;
+    const vand = payload.find((p: any) => p.dataKey === 'vandenberg')?.value ?? 0;
+    const other = payload.find((p: any) => p.dataKey === 'other')?.value ?? 0;
+    const total = cape + vand + other;
+    return (
+      <div className="bg-card border-2 border-primary p-3 shadow-xl font-mono text-sm z-50">
+        <p className="text-primary font-bold mb-2 pb-1 border-b border-primary/30 uppercase">{label}</p>
+        <div className="space-y-1 text-card-foreground">
+          <p><span style={{ color: CAPE_COLOR }}>■</span> <span className="text-muted-foreground">Cape Canaveral / KSC:</span> {(cape / 1000).toFixed(1)}t</p>
+          <p><span style={{ color: VAND_COLOR }}>■</span> <span className="text-muted-foreground">Vandenberg SFB:</span> {(vand / 1000).toFixed(1)}t</p>
+          {other > 0 && <p><span style={{ color: OTHER_SITE_COLOR }}>■</span> <span className="text-muted-foreground">Other:</span> {(other / 1000).toFixed(1)}t</p>}
+          <p className="border-t border-border/50 mt-1 pt-1 text-muted-foreground">Total: {(total / 1000).toFixed(1)}t</p>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Card className="border-2 border-border bg-card overflow-hidden relative">
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-scanline opacity-30" />
+      <CardHeader className="bg-muted/30 border-b border-border">
+        <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
+          <MapPin className="w-4 h-4" /> SpaceX — Mass by Launch Site (2010+)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-4 pb-2 pl-0">
+        <div className="grid grid-cols-3 gap-2 px-6 pb-4">
+          {([
+            { label: 'Cape / KSC', value: totalCape, color: CAPE_COLOR },
+            { label: 'Vandenberg', value: totalVand, color: VAND_COLOR },
+            { label: 'Other Sites', value: totalOther, color: OTHER_SITE_COLOR },
+          ] as const).map(({ label, value, color }) => (
+            <div key={label} className="border border-border bg-muted/20 p-2 font-mono text-center">
+              <div className="text-[9px] text-muted-foreground uppercase mb-0.5">{label}</div>
+              <div className="text-base font-bold" style={{ color }}>{(value / 1000).toFixed(0)}t</div>
+              <div className="text-[10px] text-muted-foreground">{pct(value)}%</div>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 px-6 pb-3 font-mono text-xs flex-wrap">
+          {([
+            { color: CAPE_COLOR, label: 'Cape Canaveral / KSC' },
+            { color: VAND_COLOR, label: 'Vandenberg SFB' },
+            { color: OTHER_SITE_COLOR, label: 'Other' },
+          ] as const).map(({ color, label }) => (
+            <span key={label} className="flex items-center gap-1.5">
+              <span className="inline-block w-3 h-3 rounded-sm" style={{ background: color }} />
+              <span className="text-muted-foreground">{label}</span>
+            </span>
+          ))}
+        </div>
+        <div className="h-[280px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={rows} margin={{ top: 5, right: 20, left: 20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+              <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}t`} width={45} />
+              <RechartsTooltip content={<SiteTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+              <Bar dataKey="capeCanaveral" stackId="a" fill={CAPE_COLOR} />
+              <Bar dataKey="vandenberg" stackId="a" fill={VAND_COLOR} />
+              <Bar dataKey="other" stackId="a" fill={OTHER_SITE_COLOR} radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+const STARLINK_COLOR   = 'hsl(0 90% 60%)';
+const USGOV_COLOR      = 'hsl(220 100% 65%)';
+const COMMERCIAL_COLOR = 'hsl(35 100% 50%)';
+
+function SpaceXByEntityChart() {
+  const { data, isLoading } = useQuery<{
+    rows: Array<{ year: string; starlink: number; usGov: number; commercial: number }>;
+  }>({
+    queryKey: ['spacex-by-entity'],
+    queryFn: () => fetch('/api/satcat/spacex-by-entity').then((r) => r.json()),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading || !data) return (
+    <div className="flex items-center justify-center h-[360px] text-muted-foreground font-mono text-sm animate-pulse uppercase">
+      Classifying payload customers...
+    </div>
+  );
+
+  const rows = data.rows;
+  const totalStarlink = rows.reduce((s, r) => s + r.starlink, 0);
+  const totalGov      = rows.reduce((s, r) => s + r.usGov, 0);
+  const totalComm     = rows.reduce((s, r) => s + r.commercial, 0);
+  const totalAll      = totalStarlink + totalGov + totalComm;
+  const pct = (n: number) => totalAll > 0 ? ((n / totalAll) * 100).toFixed(0) : '0';
+
+  const EntityTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    const sl   = payload.find((p: any) => p.dataKey === 'starlink')?.value ?? 0;
+    const gov  = payload.find((p: any) => p.dataKey === 'usGov')?.value ?? 0;
+    const comm = payload.find((p: any) => p.dataKey === 'commercial')?.value ?? 0;
+    const total = sl + gov + comm;
+    return (
+      <div className="bg-card border-2 border-primary p-3 shadow-xl font-mono text-sm z-50">
+        <p className="text-primary font-bold mb-2 pb-1 border-b border-primary/30 uppercase">{label}</p>
+        <div className="space-y-1 text-card-foreground">
+          <p><span style={{ color: STARLINK_COLOR }}>■</span> <span className="text-muted-foreground">Starlink:</span> {(sl / 1000).toFixed(1)}t</p>
+          <p><span style={{ color: USGOV_COLOR }}>■</span> <span className="text-muted-foreground">US Government:</span> {(gov / 1000).toFixed(1)}t</p>
+          <p><span style={{ color: COMMERCIAL_COLOR }}>■</span> <span className="text-muted-foreground">Commercial / Intl:</span> {(comm / 1000).toFixed(1)}t</p>
+          <p className="border-t border-border/50 mt-1 pt-1 text-muted-foreground">Total: {(total / 1000).toFixed(1)}t</p>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Card className="border-2 border-border bg-card overflow-hidden relative">
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-scanline opacity-30" />
+      <CardHeader className="bg-muted/30 border-b border-border">
+        <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
+          <Building2 className="w-4 h-4" /> SpaceX — Mass by Customer Segment (2010+)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-4 pb-2 pl-0">
+        <div className="grid grid-cols-3 gap-2 px-6 pb-4">
+          {([
+            { label: 'Starlink', value: totalStarlink, color: STARLINK_COLOR },
+            { label: 'US Government', value: totalGov, color: USGOV_COLOR },
+            { label: 'Commercial/Intl', value: totalComm, color: COMMERCIAL_COLOR },
+          ] as const).map(({ label, value, color }) => (
+            <div key={label} className="border border-border bg-muted/20 p-2 font-mono text-center">
+              <div className="text-[9px] text-muted-foreground uppercase mb-0.5">{label}</div>
+              <div className="text-base font-bold" style={{ color }}>{(value / 1000).toFixed(0)}t</div>
+              <div className="text-[10px] text-muted-foreground">{pct(value)}%</div>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 px-6 pb-3 font-mono text-xs flex-wrap">
+          {([
+            { color: STARLINK_COLOR, label: 'Starlink (SpaceX own)' },
+            { color: USGOV_COLOR, label: 'US Government' },
+            { color: COMMERCIAL_COLOR, label: 'Commercial & International' },
+          ] as const).map(({ color, label }) => (
+            <span key={label} className="flex items-center gap-1.5">
+              <span className="inline-block w-3 h-3 rounded-sm" style={{ background: color }} />
+              <span className="text-muted-foreground">{label}</span>
+            </span>
+          ))}
+        </div>
+        <div className="h-[280px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={rows} margin={{ top: 5, right: 20, left: 20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+              <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}t`} width={45} />
+              <RechartsTooltip content={<EntityTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+              <Bar dataKey="starlink" stackId="a" fill={STARLINK_COLOR} />
+              <Bar dataKey="usGov" stackId="a" fill={USGOV_COLOR} />
+              <Bar dataKey="commercial" stackId="a" fill={COMMERCIAL_COLOR} radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -286,6 +481,12 @@ export default function Analytics() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* SpaceX segmented by launch site */}
+        <SpaceXBySiteChart />
+
+        {/* SpaceX segmented by customer */}
+        <SpaceXByEntityChart />
+
         {/* SpaceX vs Rest-of-World comparison */}
         <SpaceXComparisonChart />
 

@@ -142,6 +142,87 @@ router.get("/satcat/by-year-provider", async (_req, res): Promise<void> => {
   res.json({ byYearProvider });
 });
 
+// SpaceX (Falcon family) mass by launch site, 2010+
+router.get("/satcat/spacex-by-site", async (_req, res): Promise<void> => {
+  const data = await getSatcat();
+  const payloads = data.filter(
+    (e) => e.objectClass === "P" && (e.lvFamily ?? "").toLowerCase().includes("falcon"),
+  );
+
+  type SiteRow = { year: string; capeCanaveral: number; vandenberg: number; other: number };
+  const map = new Map<string, SiteRow>();
+
+  for (const e of payloads) {
+    const year = getYear(e.ldate);
+    if (!year || parseInt(year) < 2010) continue;
+    const mass = e.massKg ?? 0;
+    const site = (e.site ?? "").toUpperCase();
+    const row = map.get(year) ?? { year, capeCanaveral: 0, vandenberg: 0, other: 0 };
+    if (site === "CC" || site.startsWith("KSC")) {
+      row.capeCanaveral += mass;
+    } else if (site.startsWith("VSFB") || site.startsWith("VAFB")) {
+      row.vandenberg += mass;
+    } else {
+      row.other += mass;
+    }
+    map.set(year, row);
+  }
+
+  const rows = Array.from(map.values())
+    .map((r) => ({
+      ...r,
+      capeCanaveral: Math.round(r.capeCanaveral),
+      vandenberg: Math.round(r.vandenberg),
+      other: Math.round(r.other),
+    }))
+    .sort((a, b) => a.year.localeCompare(b.year));
+
+  res.json({ rows });
+});
+
+// SpaceX (Falcon family) mass by customer segment, 2010+
+const US_GOV_OWNERS = new Set([
+  "NASA", "USAF", "USSF", "USN", "USA", "NRO", "NOAA", "USGS", "NSF",
+  "DARPA", "DOD", "USDOD", "AFRL", "MDA", "USDOE", "USCG",
+]);
+
+router.get("/satcat/spacex-by-entity", async (_req, res): Promise<void> => {
+  const data = await getSatcat();
+  const payloads = data.filter(
+    (e) => e.objectClass === "P" && (e.lvFamily ?? "").toLowerCase().includes("falcon"),
+  );
+
+  type EntityRow = { year: string; starlink: number; usGov: number; commercial: number };
+  const map = new Map<string, EntityRow>();
+
+  for (const e of payloads) {
+    const year = getYear(e.ldate);
+    if (!year || parseInt(year) < 2010) continue;
+    const mass = e.massKg ?? 0;
+    const row = map.get(year) ?? { year, starlink: 0, usGov: 0, commercial: 0 };
+
+    if (e.name.toUpperCase().includes("STARLINK")) {
+      row.starlink += mass;
+    } else if (e.state === "US" && e.owner && US_GOV_OWNERS.has(e.owner)) {
+      row.usGov += mass;
+    } else {
+      row.commercial += mass;
+    }
+    map.set(year, row);
+  }
+
+  const rows = Array.from(map.values())
+    .map((r) => ({
+      ...r,
+      starlink: Math.round(r.starlink),
+      usGov: Math.round(r.usGov),
+      commercial: Math.round(r.commercial),
+    }))
+    .sort((a, b) => a.year.localeCompare(b.year));
+
+  res.json({ rows });
+});
+
 router.get("/satcat/orbital-map", async (_req, res): Promise<void> => {
   const data = await getSatcat();
   const points = data

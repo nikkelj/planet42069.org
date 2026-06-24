@@ -21,8 +21,9 @@ function Router() {
   return (
     <AppLayout>
       <Switch>
-        <Route path="/" component={Home} />
+        <Route path="/" component={Analytics} />
         <Route path="/analytics" component={Analytics} />
+        <Route path="/briefing" component={Home} />
         <Route path="/catalog" component={Catalog} />
         <Route component={NotFound} />
       </Switch>
