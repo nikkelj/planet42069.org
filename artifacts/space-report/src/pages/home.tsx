@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert, Signal } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import bryceUpmassChart from "@assets/image_1782288004026.png";
 
 export default function Home() {
   const { data: summary, isLoading, isError } = useGetSatcatSummary();
@@ -104,6 +105,82 @@ export default function Home() {
             <div className="flex items-center gap-2 text-[10px] text-yellow-500/50 uppercase tracking-wider border-t border-yellow-500/20 pt-2">
               <Scale className="w-3 h-3" />
               <span>No actual harm intended — Jonathan McDowell's catalog is otherwise an extraordinary achievement.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* OFFICIAL COMPLAINT — BRYCE TECH UPMASS CHART */}
+      <div className="border border-yellow-500/40 bg-yellow-500/5 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-yellow-500/60 via-yellow-500/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <FileWarning className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-yellow-500/20 pb-2">
+              <span className="text-yellow-500 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Official Complaint
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #AXIS-0009 · Status: OPEN (BEGRUDGINGLY)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-yellow-500/70">Filed by:</span> Bureau of Logarithmic Decency</span>
+              <span><span className="text-yellow-500/70">Against:</span> Bryce Tech Upmass Chart, Q1 2026</span>
+              <span><span className="text-yellow-500/70">Severity:</span> Atrociously Brilliant</span>
+            </div>
+
+            <figure className="my-1 border border-yellow-500/20 bg-background/40 p-2">
+              <img
+                src={bryceUpmassChart}
+                alt="Bryce Tech — Spacecraft Upmass Carried by Launch Provider, Q1 2026. SpaceX's 556,057 kg bar dwarfs every other provider, forcing a zoomed inset box just to make the sub-5,000 kg providers visible."
+                className="w-full h-auto"
+                loading="lazy"
+              />
+              <figcaption className="text-[10px] text-muted-foreground/70 uppercase tracking-wider pt-2 text-center">
+                Exhibit A · Source:{" "}
+                <a
+                  href="https://brycetech.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent underline underline-offset-2 hover:text-primary transition-colors"
+                >
+                  Bryce Tech
+                </a>{" "}
+                — reproduced for editorial commentary
+              </figcaption>
+            </figure>
+
+            <div className="space-y-2 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                <span className="text-yellow-400 font-bold">Nature of offense:</span>{" "}
+                This is a linear bar chart spanning <span className="text-foreground/70 font-bold">zero to 600,000 kg</span>.
+                SpaceX alone accounts for <span className="text-destructive font-bold">556,057 kg</span>. Consequently every
+                other launch provider on Earth — CASC, Roscosmos, Arianespace, ULA, ISRO, Rocket Lab, and the entire
+                Chinese commercial fleet — is compressed into a smear of pixels so thin it required a <em>second chart,
+                bolted into the corner of the first chart</em>, just to confirm they exist at all. A 69 kg provider
+                (Space One) shares an axis with a 556-tonne one. The reader is asked to perform a manual zoom of their
+                own eyeballs.
+              </p>
+              <p>
+                <span className="text-yellow-400 font-bold">Proposed corrective action:</span>{" "}
+                Plot it on a <span className="text-primary font-bold">logarithmic y-axis</span>. A single log scale renders
+                69 kg and 556,057 kg legible on the same canvas without the indignity of an inset rectangle apologizing
+                for the data. This is a solved problem. It has been solved since John Napier, 1614.
+              </p>
+              <p>
+                <span className="text-yellow-400 font-bold">However.</span>{" "}
+                The Space Police are obligated to note that the linear axis is, accidentally, the most honest chart ever
+                produced. By refusing to flatter the small providers with a forgiving scale, it shows — viscerally, at a
+                glance — <em>exactly</em> how irrelevant everyone who is not SpaceX has become. The inset box is not a
+                design failure. It is a monument. A tiny, humiliating monument to market share. We are forced to applaud.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-yellow-500/20 pl-3">
+                It is terribly brilliant. It is brilliantly terrible. We cannot decide which, and we suspect Bryce Tech
+                cannot either. Complaint filed and commendation issued <span className="text-yellow-300/70">in the same envelope</span>.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-[10px] text-yellow-500/50 uppercase tracking-wider border-t border-yellow-500/20 pt-2">
+              <Scale className="w-3 h-3" />
+              <span>Chart © Bryce Tech, used here for commentary. The underlying market dominance is, regrettably, not a parody.</span>
             </div>
           </div>
         </div>
