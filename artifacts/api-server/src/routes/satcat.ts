@@ -324,17 +324,27 @@ function decayDateToDayNum(raw: string): number | null {
 router.get("/satcat/deorbit-history", async (_req, res): Promise<void> => {
   const data = await getSatcat();
 
+  // dday === -1 is a sentinel meaning "still in orbit" (no catalogued decay date)
   const objects: { lday: number; dday: number; p: number; a: number; i: number; c: string }[] = [];
 
   for (const e of data) {
-    if (!e.decayDate || !e.ldate || e.perigeeKm == null || e.incDeg == null) continue;
-    const dday = decayDateToDayNum(e.decayDate);
-    if (dday == null || dday < 0 || dday > 30000) continue;
+    if (!e.ldate || e.perigeeKm == null || e.incDeg == null) continue;
     // Parse ISO ldate "YYYY-MM-DD"
     const ld = new Date(e.ldate + "T00:00:00Z");
     if (isNaN(ld.getTime())) continue;
     const lday = Math.round((ld.getTime() - DEORBIT_EPOCH) / 86400000);
-    if (lday < 0 || lday > dday) continue;
+    if (lday < 0) continue;
+
+    let dday: number;
+    if (e.decayDate) {
+      const d = decayDateToDayNum(e.decayDate);
+      if (d == null || d < 0 || d > 30000 || lday > d) continue;
+      dday = d;
+    } else {
+      // Still in orbit — persists, never drains
+      dday = -1;
+    }
+
     objects.push({
       lday,
       dday,
@@ -346,13 +356,18 @@ router.get("/satcat/deorbit-history", async (_req, res): Promise<void> => {
   }
 
   objects.sort((a, b) => a.lday - b.lday);
+  const todayNum = Math.round((Date.now() - DEORBIT_EPOCH) / 86400000);
+  const decayed = objects.reduce((n, o) => n + (o.dday >= 0 ? 1 : 0), 0);
+  const inOrbit = objects.length - decayed;
   const ldayMin = objects[0]?.lday ?? 0;
-  const ddayMax = objects.reduce((m, o) => Math.max(m, o.dday), 0);
+  const ddayMax = objects.reduce((m, o) => Math.max(m, o.dday >= 0 ? o.dday : o.lday), 0);
   res.json({
     objects,
     total: objects.length,
+    decayed,
+    inOrbit,
     dayMin: ldayMin,
-    dayMax: ddayMax,
+    dayMax: Math.max(ddayMax, todayNum),
   });
 });
 

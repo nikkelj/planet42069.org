@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, TrendingDown, Play, Pause, RotateCcw } from "lucide-react";
 
 // Each object: launch day, decay day, initial perigee/apogee/inc, class
+// dday === -1 means "still in orbit" (no catalogued decay date) — persists, never drains
 type DeorbitObj  = { lday: number; dday: number; p: number; a: number; i: number; c: string };
-type DeorbitData = { objects: DeorbitObj[]; total: number; dayMin: number; dayMax: number };
-type View        = "pi" | "ap";
+type DeorbitData = { objects: DeorbitObj[]; total: number; decayed: number; inOrbit: number; dayMin: number; dayMax: number };
+type View        = "ap" | "pi";
 
 // Playback: 2ms per day ⟹ ~50 seconds for full 1957-2026 history
 const MS_PER_DAY = 2;
@@ -41,7 +42,7 @@ function buildActive(sorted: DeorbitObj[], day: number): { list: DeorbitObj[]; n
   for (; nextIdx < sorted.length; nextIdx++) {
     const o = sorted[nextIdx];
     if (o.lday > day) break;
-    if (o.dday >= day) list.push(o);
+    if (o.dday < 0 || o.dday >= day) list.push(o);   // still-in-orbit (-1) always persist
   }
   return { list, nextIdx };
 }
@@ -99,11 +100,18 @@ function drawFrame(
   // Draw active objects at their interpolated position
   let nearReentryCount = 0;
   for (const o of active) {
-    const lifetime = Math.max(1, o.dday - o.lday);
-    const age      = curDay - o.lday;
-    const frac     = Math.max(0, 1 - age / lifetime);   // 1.0 at launch → 0.0 at decay
-    const curP     = o.p * frac;
-    const curA     = o.a * frac;
+    // Still-in-orbit objects (dday < 0) stay fixed at their catalogued altitude.
+    // Decayed objects interpolate from catalogued altitude → 0 over their real lifetime.
+    let frac: number;
+    if (o.dday < 0) {
+      frac = 1;
+    } else {
+      const lifetime = Math.max(1, o.dday - o.lday);
+      const age      = curDay - o.lday;
+      frac           = Math.max(0, 1 - age / lifetime);   // 1.0 at launch → 0.0 at decay
+    }
+    const curP = o.p * frac;
+    const curA = o.a * frac;
 
     const xVal = view === "pi" ? o.i : curA;
     const yVal = curP;
@@ -112,7 +120,7 @@ function drawFrame(
     if (x < m.left - 2 || x > m.left + pw + 2 || y < m.top - 2 || y > m.top + ph + 2) continue;
 
     const rgb     = CLS_COLOR[o.c] ?? "180,180,180";
-    const isHot   = curP < 100;   // approaching reentry
+    const isHot   = o.dday >= 0 && curP < 100;   // decaying object approaching reentry
     if (isHot) nearReentryCount++;
 
     const alpha = isHot ? 1.0 : 0.70;
@@ -197,7 +205,7 @@ export function DeorbitAnimation() {
   const canvasRef    = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [view,       setView]       = useState<View>("pi");
+  const [view,       setView]       = useState<View>("ap");
   const [curDay,     setCurDay]     = useState(0);
   const [isPlaying,  setIsPlaying]  = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
@@ -205,7 +213,7 @@ export function DeorbitAnimation() {
   // Mutable refs — no re-render on update
   const curDayRef    = useRef(0);
   const playingRef   = useRef(false);
-  const viewRef      = useRef<View>("pi");
+  const viewRef      = useRef<View>("ap");
   const activeRef    = useRef<DeorbitObj[]>([]);
   const sortedRef    = useRef<DeorbitObj[]>([]);
   const launchIdxRef = useRef(0);
@@ -261,9 +269,9 @@ export function DeorbitAnimation() {
           launchIdxRef.current++;
         }
 
-        // Remove objects that have re-entered
+        // Remove objects that have re-entered (still-in-orbit sentinels persist)
         if (advance > 0) {
-          activeRef.current = activeRef.current.filter((o) => o.dday >= newDay);
+          activeRef.current = activeRef.current.filter((o) => o.dday < 0 || o.dday >= newDay);
         }
 
         curDayRef.current = newDay;
@@ -352,22 +360,22 @@ export function DeorbitAnimation() {
             Orbital Decay — Live Reentry Simulation
             {data && (
               <span className="ml-2 text-muted-foreground font-normal text-xs normal-case">
-                {data.total.toLocaleString()} catalogued reentries
+                {data.inOrbit.toLocaleString()} in orbit · {data.decayed.toLocaleString()} reentered
               </span>
             )}
           </CardTitle>
           <div className="flex items-center gap-1 font-mono text-xs border border-border rounded overflow-hidden">
             <button
-              onClick={() => setView("pi")}
-              className={`px-3 py-1.5 uppercase transition-colors ${view === "pi" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
-            >
-              Inc / Perigee
-            </button>
-            <button
               onClick={() => setView("ap")}
               className={`px-3 py-1.5 uppercase transition-colors ${view === "ap" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
             >
               Apogee / Perigee
+            </button>
+            <button
+              onClick={() => setView("pi")}
+              className={`px-3 py-1.5 uppercase transition-colors ${view === "pi" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
+            >
+              Inc / Perigee
             </button>
           </div>
         </div>
@@ -432,8 +440,9 @@ export function DeorbitAnimation() {
               />
               <p className="text-[10px] font-mono text-muted-foreground/50 leading-relaxed">
                 <span className="text-primary/40">// </span>
-                Each dot = a real catalogued object. Position interpolated from its catalogued perigee at launch to 0 km at actual decay date.
-                Objects accumulate and physically drop off the plot as they re-enter. Bright glow = perigee &lt; 100 km (imminent reentry).
+                Each dot = a real catalogued object. Decayed objects descend from their catalogued altitude to 0 km over their real lifetime
+                and drop off the plot on their actual reentry date. Objects still in orbit stay fixed at altitude — which is why the plot stays
+                populated at present day. Bright glow = perigee &lt; 100 km (imminent reentry).
               </p>
             </div>
           </>

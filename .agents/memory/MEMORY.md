@@ -1,4 +1,5 @@
 - [GCAT satcat column quirks](gcat-satcat-columns.md) — real column names and status codes; status 'O'/'OX' = operational, NOT substring 'op'.
 - [Recharts PieChart blank bug](recharts-pie-blank.md) — PieChart/Pie inside overflow-hidden Card renders blank; replace with BarChart.
 - [Recharts Cell-data mismatch](recharts-cell-mismatch.md) — Pie/Bar Cell children must map the same filtered/sorted array used in the data prop.
+- [Deorbit sim in-orbit objects](deorbit-history-in-orbit.md) — orbital-decay animation must include still-in-orbit sats (dday=-1 sentinel) or plot empties at present day.
 - [Recharts log scale workaround](recharts-log-scale.md) — native scale="log" on XAxis is unreliable; pre-transform to log10 and use linear axis with custom tick labels instead.
