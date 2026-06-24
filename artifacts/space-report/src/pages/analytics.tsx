@@ -180,6 +180,8 @@ const VAND_COLOR    = 'hsl(140 100% 50%)';
 const OTHER_SITE_COLOR = 'hsl(35 100% 50%)';
 
 function SpaceXBySiteChart() {
+  const [view, setView] = useState<'annual' | 'monthly'>('annual');
+
   const { data, isLoading } = useQuery<{
     rows: Array<{ year: string; capeCanaveral: number; vandenberg: number; other: number }>;
   }>({
@@ -188,23 +190,42 @@ function SpaceXBySiteChart() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const currentYear = data?.rows.length
+    ? data.rows[data.rows.length - 1].year
+    : String(new Date().getFullYear());
+
+  const { data: monthlyData, isLoading: monthlyLoading } = useQuery<{
+    year: string;
+    rows: Array<{ month: string; monthNum: number; capeCanaveral: number; vandenberg: number; other: number }>;
+  }>({
+    queryKey: ['spacex-by-site-monthly', currentYear],
+    queryFn: () => fetch(`/api/satcat/spacex-by-site-monthly?year=${currentYear}`).then((r) => r.json()),
+    staleTime: 5 * 60 * 1000,
+    enabled: view === 'monthly',
+  });
+
   if (isLoading || !data) return (
     <div className="flex items-center justify-center h-[360px] text-muted-foreground font-mono text-sm animate-pulse uppercase">
       Triangulating launch vectors...
     </div>
   );
 
-  const rows = data.rows;
-  const totalCape = rows.reduce((s, r) => s + r.capeCanaveral, 0);
-  const totalVand = rows.reduce((s, r) => s + r.vandenberg, 0);
-  const totalOther = rows.reduce((s, r) => s + r.other, 0);
-  const totalAll = totalCape + totalVand + totalOther;
+  const annualRows  = data.rows;
+  const monthlyRows = monthlyData?.rows ?? [];
+  const activeRows  = view === 'monthly' ? monthlyRows : annualRows;
+
+  const totalCape  = activeRows.reduce((s, r) => s + r.capeCanaveral, 0);
+  const totalVand  = activeRows.reduce((s, r) => s + r.vandenberg, 0);
+  const totalOther = activeRows.reduce((s, r) => s + r.other, 0);
+  const totalAll   = totalCape + totalVand + totalOther;
   const pct = (n: number) => totalAll > 0 ? ((n / totalAll) * 100).toFixed(0) : '0';
+
+  const currentMonthIdx = new Date().getMonth(); // 0-based
 
   const SiteTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
-    const cape = payload.find((p: any) => p.dataKey === 'capeCanaveral')?.value ?? 0;
-    const vand = payload.find((p: any) => p.dataKey === 'vandenberg')?.value ?? 0;
+    const cape  = payload.find((p: any) => p.dataKey === 'capeCanaveral')?.value ?? 0;
+    const vand  = payload.find((p: any) => p.dataKey === 'vandenberg')?.value ?? 0;
     const other = payload.find((p: any) => p.dataKey === 'other')?.value ?? 0;
     const total = cape + vand + other;
     return (
@@ -214,7 +235,8 @@ function SpaceXBySiteChart() {
           <p><span style={{ color: CAPE_COLOR }}>■</span> <span className="text-muted-foreground">Cape Canaveral / KSC:</span> {(cape / 1000).toFixed(1)}t</p>
           <p><span style={{ color: VAND_COLOR }}>■</span> <span className="text-muted-foreground">Vandenberg SFB:</span> {(vand / 1000).toFixed(1)}t</p>
           {other > 0 && <p><span style={{ color: OTHER_SITE_COLOR }}>■</span> <span className="text-muted-foreground">Other:</span> {(other / 1000).toFixed(1)}t</p>}
-          <p className="border-t border-border/50 mt-1 pt-1 text-muted-foreground">Total: {(total / 1000).toFixed(1)}t</p>
+          {total > 0 && <p className="border-t border-border/50 mt-1 pt-1 text-muted-foreground">Total: {(total / 1000).toFixed(1)}t</p>}
+          {total === 0 && <p className="text-muted-foreground/50 italic">No launches catalogued yet</p>}
         </div>
       </div>
     );
@@ -224,49 +246,115 @@ function SpaceXBySiteChart() {
     <Card className="border-2 border-border bg-card overflow-hidden relative">
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-scanline opacity-30" />
       <CardHeader className="bg-muted/30 border-b border-border">
-        <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
-          <MapPin className="w-4 h-4" /> SpaceX — Mass by Launch Site (2010+)
-        </CardTitle>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
+            <MapPin className="w-4 h-4" />
+            {view === 'annual'
+              ? 'SpaceX — Mass by Launch Site (2010+)'
+              : `SpaceX — ${currentYear} Monthly Launch Cadence`}
+          </CardTitle>
+          <div className="flex items-center gap-1 font-mono text-xs border border-border rounded overflow-hidden self-start sm:self-auto">
+            <button
+              onClick={() => setView('annual')}
+              className={`px-3 py-1.5 uppercase transition-colors ${view === 'annual' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+            >
+              Annual
+            </button>
+            <button
+              onClick={() => setView('monthly')}
+              className={`px-3 py-1.5 uppercase transition-colors flex items-center gap-1 ${view === 'monthly' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+            >
+              <Zap className="w-3 h-3" /> {currentYear} Now
+            </button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="pt-4 pb-2 pl-0">
-        <div className="grid grid-cols-3 gap-2 px-6 pb-4">
-          {([
-            { label: 'Cape / KSC', value: totalCape, color: CAPE_COLOR },
-            { label: 'Vandenberg', value: totalVand, color: VAND_COLOR },
-            { label: 'Other Sites', value: totalOther, color: OTHER_SITE_COLOR },
-          ] as const).map(({ label, value, color }) => (
-            <div key={label} className="border border-border bg-muted/20 p-2 font-mono text-center">
-              <div className="text-[9px] text-muted-foreground uppercase mb-0.5">{label}</div>
-              <div className="text-base font-bold" style={{ color }}>{(value / 1000).toFixed(0)}t</div>
-              <div className="text-[10px] text-muted-foreground">{pct(value)}%</div>
+        {view === 'monthly' && monthlyLoading ? (
+          <div className="flex items-center justify-center h-[360px] text-muted-foreground font-mono text-sm animate-pulse uppercase">
+            Pulling monthly sortie data...
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-2 px-6 pb-4">
+              {([
+                { label: view === 'monthly' ? 'Cape YTD' : 'Cape / KSC', value: totalCape,  color: CAPE_COLOR },
+                { label: view === 'monthly' ? 'Vand YTD' : 'Vandenberg',  value: totalVand,  color: VAND_COLOR },
+                { label: view === 'monthly' ? 'Other YTD' : 'Other Sites', value: totalOther, color: OTHER_SITE_COLOR },
+              ] as const).map(({ label, value, color }) => (
+                <div key={label} className="border border-border bg-muted/20 p-2 font-mono text-center">
+                  <div className="text-[9px] text-muted-foreground uppercase mb-0.5">{label}</div>
+                  <div className="text-base font-bold" style={{ color }}>{(value / 1000).toFixed(0)}t</div>
+                  <div className="text-[10px] text-muted-foreground">{pct(value)}%</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="flex items-center gap-3 px-6 pb-3 font-mono text-xs flex-wrap">
-          {([
-            { color: CAPE_COLOR, label: 'Cape Canaveral / KSC' },
-            { color: VAND_COLOR, label: 'Vandenberg SFB' },
-            { color: OTHER_SITE_COLOR, label: 'Other' },
-          ] as const).map(({ color, label }) => (
-            <span key={label} className="flex items-center gap-1.5">
-              <span className="inline-block w-3 h-3 rounded-sm" style={{ background: color }} />
-              <span className="text-muted-foreground">{label}</span>
-            </span>
-          ))}
-        </div>
-        <div className="h-[280px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={rows} margin={{ top: 5, right: 20, left: 20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
-              <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}t`} width={45} />
-              <RechartsTooltip content={<SiteTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
-              <Bar dataKey="capeCanaveral" stackId="a" fill={CAPE_COLOR} />
-              <Bar dataKey="vandenberg" stackId="a" fill={VAND_COLOR} />
-              <Bar dataKey="other" stackId="a" fill={OTHER_SITE_COLOR} radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+
+            <div className="flex items-center gap-3 px-6 pb-3 font-mono text-xs flex-wrap">
+              {([
+                { color: CAPE_COLOR, label: 'Cape Canaveral / KSC' },
+                { color: VAND_COLOR, label: 'Vandenberg SFB' },
+                { color: OTHER_SITE_COLOR, label: 'Other' },
+              ] as const).map(({ color, label }) => (
+                <span key={label} className="flex items-center gap-1.5">
+                  <span className="inline-block w-3 h-3 rounded-sm" style={{ background: color }} />
+                  <span className="text-muted-foreground">{label}</span>
+                </span>
+              ))}
+              {view === 'monthly' && (
+                <span className="ml-auto text-primary/60 text-[10px] uppercase tracking-wide font-mono">
+                  YTD · {new Date().toLocaleString('en', { month: 'long' })} {currentYear}
+                </span>
+              )}
+            </div>
+
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={view === 'monthly' ? monthlyRows : annualRows}
+                  margin={{ top: 5, right: 20, left: 20, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis
+                    dataKey={view === 'monthly' ? 'month' : 'year'}
+                    stroke="hsl(var(--muted-foreground))"
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                    tickFormatter={(v) => `${(v / 1000).toFixed(1)}t`}
+                    width={48}
+                  />
+                  <RechartsTooltip content={<SiteTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+                  {view === 'monthly' && (
+                    <ReferenceLine
+                      x={['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][currentMonthIdx]}
+                      stroke="hsl(var(--primary) / 0.6)"
+                      strokeWidth={2}
+                      strokeDasharray="4 3"
+                    >
+                      <Label value="◀ NOW" position="insideTopRight" fill="hsl(var(--primary))" fontSize={9} fontFamily="monospace" fontWeight="bold" />
+                    </ReferenceLine>
+                  )}
+                  <Bar dataKey="capeCanaveral" stackId="a" fill={CAPE_COLOR} />
+                  <Bar dataKey="vandenberg"    stackId="a" fill={VAND_COLOR} />
+                  <Bar dataKey="other"         stackId="a" fill={OTHER_SITE_COLOR} radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {view === 'monthly' && (
+              <div className="px-6 pt-2 pb-1">
+                <p className="text-xs font-mono text-muted-foreground/60">
+                  <span className="text-primary/50">// </span>
+                  Each bar = all Falcon 9 / Heavy payloads catalogued in GCAT for that month.
+                  Empty bars ahead are open launch windows — waiting to be filled.
+                </p>
+              </div>
+            )}
+          </>
+        )}
       </CardContent>
     </Card>
   );

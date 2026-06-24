@@ -173,6 +173,51 @@ router.get("/satcat/falcon-vs-starship", async (_req, res): Promise<void> => {
   res.json({ rows, starshipTotal });
 });
 
+// SpaceX (Falcon family) monthly mass by launch site for a given year
+router.get("/satcat/spacex-by-site-monthly", async (req, res): Promise<void> => {
+  const data = await getSatcat();
+  const year = String(req.query.year ?? new Date().getFullYear()).trim();
+
+  const payloads = data.filter(
+    (e) =>
+      e.objectClass === "P" &&
+      (e.lvFamily ?? "").toLowerCase().includes("falcon") &&
+      getYear(e.ldate) === year,
+  );
+
+  const MONTH_NAMES = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+  type MonthRow = { month: string; monthNum: number; capeCanaveral: number; vandenberg: number; other: number };
+  const rows: MonthRow[] = MONTH_NAMES.map((month, i) => ({
+    month, monthNum: i + 1, capeCanaveral: 0, vandenberg: 0, other: 0,
+  }));
+
+  for (const e of payloads) {
+    if (!e.ldate) continue;
+    const monthNum = parseInt(e.ldate.split("-")[1] ?? "0", 10);
+    if (monthNum < 1 || monthNum > 12) continue;
+    const mass = e.massKg ?? 0;
+    const site = (e.site ?? "").toUpperCase();
+    const row = rows[monthNum - 1];
+    if (site === "CC" || site.startsWith("KSC")) {
+      row.capeCanaveral += mass;
+    } else if (site.startsWith("VSFB") || site.startsWith("VAFB")) {
+      row.vandenberg += mass;
+    } else {
+      row.other += mass;
+    }
+  }
+
+  const result = rows.map((r) => ({
+    ...r,
+    capeCanaveral: Math.round(r.capeCanaveral),
+    vandenberg: Math.round(r.vandenberg),
+    other: Math.round(r.other),
+  }));
+
+  res.json({ year, rows: result });
+});
+
 // SpaceX (Falcon family) mass by launch site, 2010+
 router.get("/satcat/spacex-by-site", async (_req, res): Promise<void> => {
   const data = await getSatcat();
