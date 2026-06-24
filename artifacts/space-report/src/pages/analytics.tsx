@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearch, useLocation } from "wouter";
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  BarChart, Bar, Cell, ReferenceArea, ReferenceLine, Label
+  BarChart, Bar, Cell, ReferenceArea, ReferenceLine, Label, LabelList
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Radar, Activity, Loader2, TrendingUp, Zap, MapPin, Building2 } from "lucide-react";
@@ -975,6 +975,11 @@ export default function Analytics() {
                     {stats.byLaunchVehicle.slice(0, 15).map((_: unknown, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
+                    <LabelList
+                      dataKey="label"
+                      position="insideLeft"
+                      style={{ fill: 'hsl(var(--background))', fontSize: 10, fontFamily: 'monospace', fontWeight: 'bold' }}
+                    />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
