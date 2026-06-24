@@ -965,21 +965,16 @@ export default function Analytics() {
                 <BarChart
                   data={stats.byLaunchVehicle.slice(0, 15)}
                   layout="vertical"
-                  margin={{ top: 5, right: 60, left: 130, bottom: 5 }}
+                  margin={{ top: 20, right: 60, left: 10, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                   <XAxis type="number" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} tickFormatter={(val: number) => `${(val / 1000).toFixed(0)}t`} />
-                  <YAxis type="category" dataKey="label" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(180 100% 50%)', fontSize: 11 }} width={140} />
+                  <YAxis type="category" dataKey="label" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(180 100% 50%)', fontSize: 11 }} width={140} interval={0} />
                   <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
                   <Bar dataKey="massKg" radius={[0, 4, 4, 0]}>
                     {stats.byLaunchVehicle.slice(0, 15).map((_: unknown, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
-                    <LabelList
-                      dataKey="label"
-                      position="insideLeft"
-                      style={{ fill: 'hsl(var(--background))', fontSize: 10, fontFamily: 'monospace', fontWeight: 'bold' }}
-                    />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
