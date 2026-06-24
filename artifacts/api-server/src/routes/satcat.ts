@@ -97,7 +97,7 @@ router.get("/satcat/stats", async (_req, res): Promise<void> => {
 
   // Object class breakdown across all objects (not just payloads)
   const classLabels: Record<string, string> = {
-    P: "Payload", R: "Rocket Body", D: "Debris", C: "Crewed", Z: "Other",
+    P: "Payload", R: "Rocket Body", D: "Debris", C: "Component", Z: "Other",
   };
   const byObjectClass = agg(data, (e) => {
     const c = e.objectClass ?? "-";

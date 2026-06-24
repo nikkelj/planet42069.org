@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Radar } from "lucide-react";
 
 type OrbitalPoint = { p: number; i: number; c: string };
 type OrbitalMapData = { points: OrbitalPoint[]; total: number };
+type Zoom = "full" | "leo";
 
 const CLASS_COLORS: Record<string, string> = {
   P: "rgba(0, 255, 100, 0.65)",
@@ -16,45 +17,58 @@ const DEFAULT_COLOR = "rgba(180, 180, 180, 0.38)";
 const DRAW_ORDER = ["D", "R", "_other", "P", "C"];
 const DOT_RADIUS: Record<string, number> = { D: 0.85, R: 1.1, P: 1.2, C: 2.0, _other: 0.9 };
 
-const X_MIN_LOG = Math.log10(150);
-const X_MAX_LOG = Math.log10(62000);
-const X_TICKS = [200, 500, 1000, 2000, 5000, 10000, 20000, 36000];
+const FULL_X_MAX = 62000;
+const LEO_X_MAX  = 2500;
+
+const FULL_X_TICKS = [200, 500, 1000, 2000, 5000, 10000, 20000, 36000];
+const LEO_X_TICKS  = [200, 300, 400, 500, 600, 800, 1000, 1500, 2000];
 const Y_TICKS = [0, 30, 60, 90, 120, 150, 180];
 
-const ANNOTATIONS = [
-  { p: 420, i: 51.6, label: "ISS", color: "rgba(80, 200, 255, 0.90)", dx: 8, dy: -12 },
-  { p: 560, i: 53, label: "STARLINK", color: "rgba(0, 255, 100, 0.75)", dx: 8, dy: -12 },
-  { p: 20200, i: 55, label: "GPS / MEO", color: "rgba(255, 165, 40, 0.90)", dx: 8, dy: -12 },
-  { p: 35786, i: 1, label: "GEO", color: "rgba(255, 220, 60, 0.90)", dx: 8, dy: -12 },
+const FULL_ANNOTATIONS = [
+  { p: 420,   i: 51.6, label: "ISS",      color: "rgba(80, 200, 255, 0.90)", dx: 8,  dy: -12 },
+  { p: 560,   i: 53,   label: "STARLINK",  color: "rgba(0, 255, 100, 0.75)", dx: 8,  dy: -12 },
+  { p: 20200, i: 55,   label: "GPS / MEO", color: "rgba(255, 165, 40, 0.90)", dx: 8,  dy: -12 },
+  { p: 35786, i: 1,    label: "GEO",       color: "rgba(255, 220, 60, 0.90)", dx: 8,  dy: -12 },
+];
+const LEO_ANNOTATIONS = [
+  { p: 420, i: 51.6, label: "ISS",     color: "rgba(80, 200, 255, 0.90)", dx: 8,  dy: -12 },
+  { p: 560, i: 53,   label: "STARLINK", color: "rgba(0, 255, 100, 0.75)", dx: 8,  dy: -12 },
 ];
 
 const LEGEND_ITEMS = [
-  { label: "PAYLOAD", color: CLASS_COLORS["P"] },
-  { label: "ROCKET BODY", color: CLASS_COLORS["R"] },
-  { label: "DEBRIS", color: CLASS_COLORS["D"] },
-  { label: "CREWED", color: CLASS_COLORS["C"] },
+  { label: "PAYLOAD",        color: CLASS_COLORS["P"] },
+  { label: "ROCKET BODY",    color: CLASS_COLORS["R"] },
+  { label: "DEBRIS",         color: CLASS_COLORS["D"] },
+  { label: "COMPONENT",      color: CLASS_COLORS["C"] },
   { label: "OTHER / UNKNOWN", color: DEFAULT_COLOR },
 ];
 
-function drawMap(canvas: HTMLCanvasElement, points: OrbitalPoint[]) {
+function drawMap(canvas: HTMLCanvasElement, points: OrbitalPoint[], zoom: Zoom) {
   const W = canvas.clientWidth;
   const H = canvas.clientHeight;
   if (W === 0 || H === 0) return;
 
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = W * dpr;
+  canvas.width  = W * dpr;
   canvas.height = H * dpr;
 
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   ctx.scale(dpr, dpr);
 
-  const m = { top: 32, right: 148, bottom: 52, left: 60 };
+  const xMax   = zoom === "leo" ? LEO_X_MAX  : FULL_X_MAX;
+  const xTicks = zoom === "leo" ? LEO_X_TICKS : FULL_X_TICKS;
+  const annotations = zoom === "leo" ? LEO_ANNOTATIONS : FULL_ANNOTATIONS;
+
+  const X_MIN_LOG = Math.log10(150);
+  const X_MAX_LOG = Math.log10(xMax);
+
+  const m  = { top: 32, right: 148, bottom: 52, left: 60 };
   const pw = W - m.left - m.right;
-  const ph = H - m.top - m.bottom;
+  const ph = H - m.top  - m.bottom;
 
   const mapX = (km: number) => {
-    const log = Math.log10(Math.max(150, Math.min(km, 62000)));
+    const log = Math.log10(Math.max(150, Math.min(km, xMax)));
     return m.left + ((log - X_MIN_LOG) / (X_MAX_LOG - X_MIN_LOG)) * pw;
   };
   const mapY = (inc: number) =>
@@ -68,7 +82,7 @@ function drawMap(canvas: HTMLCanvasElement, points: OrbitalPoint[]) {
   ctx.fillRect(m.left, m.top, pw, ph);
 
   ctx.lineWidth = 0.5;
-  for (const km of X_TICKS) {
+  for (const km of xTicks) {
     ctx.strokeStyle = "rgba(0,255,100,0.07)";
     ctx.beginPath();
     ctx.moveTo(mapX(km), m.top);
@@ -83,22 +97,44 @@ function drawMap(canvas: HTMLCanvasElement, points: OrbitalPoint[]) {
     ctx.stroke();
   }
 
+  // SSO dashed line (~98°)
   ctx.lineWidth = 1;
   ctx.setLineDash([3, 6]);
   ctx.strokeStyle = "rgba(255,240,80,0.14)";
   ctx.beginPath();
   ctx.moveTo(m.left, mapY(98));
-  ctx.lineTo(mapX(1400), mapY(98));
+  ctx.lineTo(m.left + pw, mapY(98));
   ctx.stroke();
-  ctx.strokeStyle = "rgba(255,220,60,0.12)";
-  ctx.beginPath();
-  ctx.moveTo(mapX(35786), m.top);
-  ctx.lineTo(mapX(35786), m.top + ph);
-  ctx.stroke();
+
+  if (zoom === "full") {
+    ctx.strokeStyle = "rgba(255,220,60,0.12)";
+    ctx.beginPath();
+    ctx.moveTo(mapX(35786), m.top);
+    ctx.lineTo(mapX(35786), m.top + ph);
+    ctx.stroke();
+  }
   ctx.setLineDash([]);
+
+  // LEO boundary line at 2000 km (only in full view)
+  if (zoom === "full") {
+    ctx.lineWidth = 0.8;
+    ctx.setLineDash([2, 5]);
+    ctx.strokeStyle = "rgba(80,200,255,0.15)";
+    ctx.beginPath();
+    ctx.moveTo(mapX(2000), m.top);
+    ctx.lineTo(mapX(2000), m.top + ph);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = `9px ${font}`;
+    ctx.fillStyle = "rgba(80,200,255,0.30)";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText("LEO", mapX(2000) - 20, m.top + 4);
+  }
 
   const byClass = new Map<string, OrbitalPoint[]>();
   for (const pt of points) {
+    if (zoom === "leo" && pt.p > LEO_X_MAX) continue;
     const key = CLASS_COLORS[pt.c] ? pt.c : "_other";
     if (!byClass.has(key)) byClass.set(key, []);
     byClass.get(key)!.push(pt);
@@ -112,7 +148,7 @@ function drawMap(canvas: HTMLCanvasElement, points: OrbitalPoint[]) {
       const x = mapX(p);
       const y = mapY(i);
       if (x < m.left - 2 || x > m.left + pw + 2) continue;
-      if (y < m.top - 2 || y > m.top + ph + 2) continue;
+      if (y < m.top  - 2 || y > m.top  + ph + 2) continue;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fill();
@@ -123,21 +159,24 @@ function drawMap(canvas: HTMLCanvasElement, points: OrbitalPoint[]) {
   ctx.lineWidth = 1;
   ctx.strokeRect(m.left, m.top, pw, ph);
 
+  // X axis labels
   ctx.font = `10px ${font}`;
   ctx.fillStyle = "rgba(0,255,100,0.52)";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  for (const km of X_TICKS) {
+  for (const km of xTicks) {
     const label = km >= 1000 ? `${km / 1000}k` : `${km}`;
     ctx.fillText(label, mapX(km), m.top + ph + 9);
   }
 
+  // Y axis labels
   ctx.textAlign = "right";
   ctx.textBaseline = "middle";
   for (const inc of Y_TICKS) {
     ctx.fillText(`${inc}°`, m.left - 7, mapY(inc));
   }
 
+  // Y axis title
   ctx.save();
   ctx.translate(12, m.top + ph / 2);
   ctx.rotate(-Math.PI / 2);
@@ -148,19 +187,22 @@ function drawMap(canvas: HTMLCanvasElement, points: OrbitalPoint[]) {
   ctx.fillText("INCLINATION (deg)", 0, 0);
   ctx.restore();
 
+  // X axis title
   ctx.font = `10px ${font}`;
   ctx.fillStyle = "rgba(0,255,100,0.38)";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
   ctx.fillText("PERIGEE ALTITUDE  (km, log scale)", m.left + pw / 2, m.top + ph + 34);
 
+  // SSO label
   ctx.font = `10px ${font}`;
   ctx.fillStyle = "rgba(255,240,80,0.45)";
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText("SSO", m.left + 4, mapY(98) - 8);
 
-  for (const { p, i, label, color, dx, dy } of ANNOTATIONS) {
+  // Annotations
+  for (const { p, i, label, color, dx, dy } of annotations) {
     const x = mapX(p);
     const y = mapY(i);
     if (x < m.left || x > m.left + pw || y < m.top || y > m.top + ph) continue;
@@ -173,11 +215,12 @@ function drawMap(canvas: HTMLCanvasElement, points: OrbitalPoint[]) {
     ctx.stroke();
     ctx.fillStyle = color;
     ctx.font = `bold 9px ${font}`;
-    ctx.textAlign = dx > 0 ? "left" : "right";
+    ctx.textAlign  = dx > 0 ? "left" : "right";
     ctx.textBaseline = dy < 0 ? "bottom" : "top";
     ctx.fillText(label, x + dx, y + dy);
   }
 
+  // Legend
   const lgX = m.left + pw + 16;
   let lgY = m.top + 16;
   ctx.font = `9px ${font}`;
@@ -193,6 +236,7 @@ function drawMap(canvas: HTMLCanvasElement, points: OrbitalPoint[]) {
     lgY += 19;
   }
 
+  // Watermark
   ctx.font = `bold 9px ${font}`;
   ctx.fillStyle = "rgba(0,255,100,0.10)";
   ctx.textAlign = "right";
@@ -201,8 +245,9 @@ function drawMap(canvas: HTMLCanvasElement, points: OrbitalPoint[]) {
 }
 
 export function OrbitalMap() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef    = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState<Zoom>("full");
 
   const { data, isLoading, isError } = useQuery<OrbitalMapData>({
     queryKey: ["satcat-orbital-map"],
@@ -216,9 +261,9 @@ export function OrbitalMap() {
 
   const redraw = useCallback(() => {
     if (canvasRef.current && data?.points) {
-      drawMap(canvasRef.current, data.points);
+      drawMap(canvasRef.current, data.points, zoom);
     }
-  }, [data]);
+  }, [data, zoom]);
 
   useEffect(() => {
     if (!data?.points || !containerRef.current) return;
@@ -231,15 +276,31 @@ export function OrbitalMap() {
   return (
     <Card className="border-2 border-border bg-card relative overflow-hidden lg:col-span-2">
       <CardHeader className="bg-muted/30 border-b border-border">
-        <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
-          <Radar className="w-4 h-4 animate-[spin_6s_linear_infinite]" />
-          Orbital Distribution — Perigee Altitude vs Inclination
-          {data && (
-            <span className="ml-auto text-muted-foreground font-normal text-xs normal-case">
-              {data.total.toLocaleString()} objects plotted
-            </span>
-          )}
-        </CardTitle>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
+            <Radar className="w-4 h-4 animate-[spin_6s_linear_infinite]" />
+            Orbital Distribution — Perigee Altitude vs Inclination
+            {data && (
+              <span className="ml-2 text-muted-foreground font-normal text-xs normal-case">
+                {data.total.toLocaleString()} objects
+              </span>
+            )}
+          </CardTitle>
+          <div className="flex items-center gap-1 font-mono text-xs border border-border rounded overflow-hidden self-start sm:self-auto">
+            <button
+              onClick={() => setZoom("full")}
+              className={`px-3 py-1.5 uppercase transition-colors ${zoom === "full" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
+            >
+              Full
+            </button>
+            <button
+              onClick={() => setZoom("leo")}
+              className={`px-3 py-1.5 uppercase transition-colors ${zoom === "leo" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
+            >
+              LEO Only
+            </button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         {isLoading && (
