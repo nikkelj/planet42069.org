@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import bryceUpmassChart from "@assets/image_1782288004026.png";
 import alpha5Faq from "@assets/image_1782450578315.png";
+import { UpmassAudit } from "@/components/UpmassAudit";
 
 export default function Home() {
   const { data: summary, isLoading, isError } = useGetSatcatSummary();
@@ -246,6 +247,9 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* FORENSIC AUDIT — BRYCE vs GCAT UPMASS */}
+      <UpmassAudit />
 
       {/* FIELD DISPATCH */}
       <div className="border border-blue-400/25 bg-blue-950/20 p-5 font-mono text-xs relative">

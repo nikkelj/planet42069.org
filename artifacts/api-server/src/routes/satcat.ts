@@ -142,6 +142,85 @@ router.get("/satcat/by-year-provider", async (_req, res): Promise<void> => {
   res.json({ byYearProvider });
 });
 
+// Map a satellite's launch vehicle to its launch-service provider.
+// Order matters: commercial Chinese families must be matched BEFORE the
+// generic Chang Zheng / Long March (CASC) rule, since several commercial
+// providers fly CASC-derived vehicles but are billed separately.
+function classifyProvider(e: SatcatEntry): string {
+  const fam = ((e.lvFamily ?? "") + " " + (e.lv ?? "")).toLowerCase();
+  if (!fam.trim()) return "Unknown";
+  if (fam.includes("falcon") || fam.includes("starship")) return "SpaceX";
+  if (fam.includes("ariane") || fam.includes("vega")) return "Arianespace";
+  if (
+    fam.includes("vulcan") || fam.includes("atlas") ||
+    fam.includes("delta iv") || fam.includes("delta 4")
+  ) return "ULA";
+  if (fam.includes("electron") || fam.includes("neutron")) return "Rocket Lab";
+  if (fam.includes("firefly")) return "Firefly Aerospace";
+  if (fam.includes("kairos")) return "Space One";
+  if (
+    fam.includes("pslv") || fam.includes("gslv") ||
+    fam.includes("sslv") || fam.includes("lvm3") || fam.includes("lvm-3")
+  ) return "ISRO";
+  if (
+    fam.includes("soyuz") || fam.includes("proton") ||
+    fam.includes("angara") || fam.includes("rokot") || fam.includes("dnepr")
+  ) return "Roscosmos";
+  // Chinese commercial — before the generic CASC rule below
+  if (fam.includes("lijian") || fam.includes("kinetica")) return "CAS Space";
+  if (
+    fam.includes("gushenxing") || fam.includes("ceres") || fam.includes("pallas")
+  ) return "Galactic Energy";
+  if (fam.includes("jielong") || fam.includes("smart dragon")) return "Chinarocket Co. Ltd.";
+  if (fam.includes("kuaizhou")) return "ExPace";
+  if (fam.includes("zhuque")) return "LandSpace";
+  if (fam.includes("hyperbola") || fam.includes("shuang quxian")) return "iSpace";
+  // CASC state launcher (Long March / Chang Zheng) — generic, matched last
+  if (
+    fam.includes("chang zheng") || fam.includes("long march") ||
+    fam.startsWith("cz-") || fam.startsWith("cz ") || fam.includes(" cz-")
+  ) return "CASC";
+  return "Other";
+}
+
+// Q1 2026 upmass by launch-service provider, computed live from GCAT.
+// Mirrors the Bryce Tech "Spacecraft Upmass Carried by Launch Provider"
+// chart so the two sources can be compared directly on the Briefing page.
+router.get("/satcat/upmass-by-provider", async (req, res): Promise<void> => {
+  const data = await getSatcat();
+  const start = String(req.query.start ?? "2026-01-01");
+  const end = String(req.query.end ?? "2026-03-31");
+
+  const payloads = data.filter(
+    (e) =>
+      e.objectClass === "P" &&
+      e.ldate != null &&
+      e.ldate >= start &&
+      e.ldate <= end,
+  );
+
+  type Row = { provider: string; massKg: number; count: number };
+  const map = new Map<string, Row>();
+  for (const e of payloads) {
+    const provider = classifyProvider(e);
+    const row = map.get(provider) ?? { provider, massKg: 0, count: 0 };
+    row.massKg += e.massKg ?? 0;
+    row.count += 1;
+    map.set(provider, row);
+  }
+
+  const providers = Array.from(map.values())
+    .map((r) => ({ ...r, massKg: Math.round(r.massKg) }))
+    .sort((a, b) => b.massKg - a.massKg);
+
+  res.json({
+    window: { start, end },
+    providers,
+    totalMassKg: providers.reduce((s, r) => s + r.massKg, 0),
+    totalCount: payloads.length,
+  });
+});
+
 // SpaceX Falcon vs Starship mass by year (2010+)
 router.get("/satcat/falcon-vs-starship", async (_req, res): Promise<void> => {
   const data = await getSatcat();
