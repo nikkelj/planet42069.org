@@ -4,6 +4,7 @@ import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Databa
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import bryceUpmassChart from "@assets/image_1782288004026.png";
+import alpha5Faq from "@assets/image_1782450578315.png";
 
 export default function Home() {
   const { data: summary, isLoading, isError } = useGetSatcatSummary();
@@ -70,12 +71,12 @@ export default function Home() {
               <span className="text-yellow-500 font-bold uppercase tracking-widest text-[11px]">
                 Space Police — Official Complaint
               </span>
-              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #JCAT-0001 · Status: OPEN</span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #JCAT-0001 · Status: WITHDRAWN WITH APOLOGY</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
               <span><span className="text-yellow-500/70">Filed by:</span> Numeric Standards Division</span>
               <span><span className="text-yellow-500/70">Against:</span> GCAT Primary Key Schema</span>
-              <span><span className="text-yellow-500/70">Severity:</span> Mildly Infuriating</span>
+              <span><span className="text-yellow-500/70">Severity:</span> Mildly Infuriating → Humbling</span>
             </div>
             <div className="space-y-2 text-muted-foreground leading-relaxed normal-case">
               <p>
@@ -102,9 +103,69 @@ export default function Home() {
                 . It is aware of what it has done.
               </p>
             </div>
+
+            <div className="border-t border-yellow-500/30 mt-3 pt-3 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-yellow-300 font-bold uppercase tracking-widest text-[11px]">
+                  Addendum — The Defendant Was Right
+                </span>
+                <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Filed: 2026-06-26 · The Space Police eat crow</span>
+              </div>
+
+              <figure className="my-1 border border-yellow-500/20 bg-background/40 p-2">
+                <img
+                  src={alpha5Faq}
+                  alt="Space-Track.org FAQ — 'What is Alpha-5?' Alpha-5 replaces the first digit of the 5-digit object number with an alphanumeric character (A=10, B=11, and so on; I and O are not used), allowing 240,000 more numbers up to 339,999 within the legacy fixed-width TLE format."
+                  className="w-full h-auto max-w-md mx-auto"
+                  loading="lazy"
+                />
+                <figcaption className="text-[10px] text-muted-foreground/70 uppercase tracking-wider pt-2 text-center">
+                  Exhibit A · Source:{" "}
+                  <a
+                    href="https://www.space-track.org/documentation#/tle-alpha5"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent underline underline-offset-2 hover:text-primary transition-colors"
+                  >
+                    Space-Track.org
+                  </a>{" "}
+                  — entered into evidence against ourselves
+                </figcaption>
+              </figure>
+
+              <div className="space-y-2 text-muted-foreground leading-relaxed normal-case">
+                <p>
+                  <span className="text-yellow-400 font-bold">New evidence:</span>{" "}
+                  The Space Police must now, through gritted teeth, withdraw the above. The Other Jonathan was not
+                  committing a crime against numeric purity. He was <em>ahead of his time</em>. Decades before it
+                  became official, his catalog already understood the truth the rest of us avoided: a satellite
+                  identifier is not merely a number, and a fixed-width field will, eventually, run out of room.
+                </p>
+                <p>
+                  <span className="text-yellow-400 font-bold">The vindication:</span>{" "}
+                  In order to keep the venerable 5-digit NORAD catalog number alive for legacy systems that cannot
+                  parse a wider field, the US Space Force was forced to adopt{" "}
+                  <span className="text-primary font-bold">Alpha-5</span> — replacing the first digit of the object
+                  number with an <span className="text-foreground/70 font-bold">alphanumeric character</span>{" "}
+                  (<span className="font-mono text-foreground/70">A = 10, B = 11, C = 12…</span>, skipping{" "}
+                  <span className="font-mono text-destructive">I</span> and <span className="font-mono text-destructive">O</span>{" "}
+                  for legibility). The result: <span className="text-foreground/70 font-bold">240,000</span> additional
+                  objects — up to <span className="text-foreground/70 font-bold">339,999</span> — crammed into the same
+                  immovable fixed-width slot. A letter. Bolted onto the front of a number. To extend its range.
+                  Sound familiar?
+                </p>
+                <p className="text-muted-foreground/80 border-l-2 border-yellow-500/30 pl-3">
+                  The man we cited for putting a letter in front of a satellite number lived to watch the Space Force
+                  do <em>exactly that</em>, by necessity, and call it innovation. Complaint{" "}
+                  <span className="text-yellow-300/80 font-bold">withdrawn</span>. The "S" stays struck through in the
+                  Satcat Explorer — not as a citation now, but as a <span className="text-yellow-300/70">monument to being early</span>.
+                </p>
+              </div>
+            </div>
+
             <div className="flex items-center gap-2 text-[10px] text-yellow-500/50 uppercase tracking-wider border-t border-yellow-500/20 pt-2">
               <Scale className="w-3 h-3" />
-              <span>No actual harm intended — Jonathan McDowell's catalog is otherwise an extraordinary achievement.</span>
+              <span>No actual harm intended — Jonathan McDowell's catalog is otherwise an extraordinary achievement. As, it turns out, was the prefix.</span>
             </div>
           </div>
         </div>
