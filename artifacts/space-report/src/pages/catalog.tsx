@@ -215,7 +215,7 @@ export default function Catalog() {
       header: () => (
         <span
           className="cursor-help inline-flex items-center gap-1"
-          title="CASE #JCAT-0001: Primary keys begin with 'S' — a mandatory string prefix with zero semantic value. Numeric sorting requires stripping it first. Case open."
+          title="CASE #JCAT-0001: Primary keys begin with 'S' — a mandatory string prefix with zero semantic value. Numeric sorting requires stripping it first. ADDENDUM (case reluctantly reopened): The defendant's alphanumeric-prefix instinct was later VINDICATED. The US Space Force itself adopted 'Alpha-5' — replacing the first digit of the 5-digit NORAD catalog ID with a letter (A=10, B=11... skipping I and O) to cram 240,000 more objects (up to 339,999) into a legacy fixed-width TLE format. The Other Jonathan was, regrettably, prescient. The Space Police hate it when this happens. Case adjourned."
         >
           JCAT <span className="text-destructive text-[10px]">⚠</span>
         </span>
@@ -228,7 +228,7 @@ export default function Catalog() {
           <span className="font-mono text-xs">
             <span
               className="text-destructive/50 line-through cursor-help"
-              title="CASE #JCAT-0001: Unnecessary string prefix. Contributes nothing. The catalog is called the Satellite Catalog. We know."
+              title="CASE #JCAT-0001: Unnecessary string prefix. Contributes nothing. The catalog is called the Satellite Catalog. We know. ...Although we now concede this exact alphanumeric-prefix instinct foreshadowed the Space Force's own 'Alpha-5' patch on the NORAD catalog ID. Don't let it go to your head."
             >
               {prefix}
             </span>
