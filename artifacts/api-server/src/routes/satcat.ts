@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { getSatcat, getCacheAge, type SatcatEntry } from "../lib/satcat";
+import { getLaunchMap } from "../lib/launch";
 
 const router: IRouter = Router();
 
@@ -146,16 +147,19 @@ router.get("/satcat/by-year-provider", async (_req, res): Promise<void> => {
 // Order matters: commercial Chinese families must be matched BEFORE the
 // generic Chang Zheng / Long March (CASC) rule, since several commercial
 // providers fly CASC-derived vehicles but are billed separately.
-function classifyProvider(e: SatcatEntry): string {
-  const fam = ((e.lvFamily ?? "") + " " + (e.lv ?? "")).toLowerCase();
+function providerFromLv(lvFamily: string | null, lv: string | null): string {
+  const fam = ((lvFamily ?? "") + " " + (lv ?? "")).toLowerCase();
   if (!fam.trim()) return "Unknown";
   if (fam.includes("falcon") || fam.includes("starship")) return "SpaceX";
+  if (fam.includes("new glenn") || fam.includes("new shepard")) return "Blue Origin";
   if (fam.includes("ariane") || fam.includes("vega")) return "Arianespace";
   if (
     fam.includes("vulcan") || fam.includes("atlas") ||
     fam.includes("delta iv") || fam.includes("delta 4")
   ) return "ULA";
   if (fam.includes("electron") || fam.includes("neutron")) return "Rocket Lab";
+  if (fam.includes("terran") || fam.includes("relativity")) return "Relativity Space";
+  if (fam.includes("nova") || fam.includes("stoke")) return "Stoke Space";
   if (fam.includes("firefly")) return "Firefly Aerospace";
   if (fam.includes("kairos")) return "Space One";
   if (
@@ -181,6 +185,10 @@ function classifyProvider(e: SatcatEntry): string {
     fam.startsWith("cz-") || fam.startsWith("cz ") || fam.includes(" cz-")
   ) return "CASC";
   return "Other";
+}
+
+function classifyProvider(e: SatcatEntry): string {
+  return providerFromLv(e.lvFamily, e.lv);
 }
 
 // Q1 2026 upmass by launch-service provider, computed live from GCAT.
@@ -219,6 +227,125 @@ router.get("/satcat/upmass-by-provider", async (req, res): Promise<void> => {
     totalMassKg: providers.reduce((s, r) => s + r.massKg, 0),
     totalCount: payloads.length,
   });
+});
+
+// Orbital launch cadence by provider AND vehicle, computed live from the GCAT
+// launch table (NOT satcat payloads — rideshares would distort cadence). Counts
+// orbital-class launch ATTEMPTS (LaunchCode O*/D*); excludes suborbital, weapon,
+// and sounding-rocket flights. Highlights high-cadence operators like Rocket Lab.
+const LAUNCH_RATE_MIN_YEAR = 2019;
+
+// Heavy-lift / next-gen contenders we "anticipate" the way we already track
+// Starship — they surface here automatically once GCAT catalogs their flights.
+const CONTENDER_WATCHLIST: Array<{ vehicle: string; provider: string; match: string[] }> = [
+  { vehicle: "Starship", provider: "SpaceX", match: ["starship"] },
+  { vehicle: "New Glenn (NG 7x2 / 9x4)", provider: "Blue Origin", match: ["new glenn"] },
+  { vehicle: "Vulcan", provider: "ULA", match: ["vulcan"] },
+  { vehicle: "Neutron", provider: "Rocket Lab", match: ["neutron"] },
+  { vehicle: "Terran R", provider: "Relativity Space", match: ["terran r", "terran-r"] },
+  { vehicle: "Nova", provider: "Stoke Space", match: ["stoke", "nova"] },
+  { vehicle: "Zhuque-3", provider: "LandSpace", match: ["zhuque-3", "zhuque 3"] },
+];
+
+router.get("/satcat/launch-rate", async (_req, res): Promise<void> => {
+  const launches = await getLaunchMap();
+
+  // year -> provider -> count
+  const provByYear = new Map<string, Map<string, number>>();
+  // year -> provider -> vehicle -> count
+  const vehByYearProv = new Map<string, Map<string, Map<string, number>>>();
+  // year -> vehicle -> { count, provider }
+  const vehByYear = new Map<string, Map<string, { count: number; provider: string }>>();
+  const yearsSet = new Set<string>();
+
+  // Watchlist accumulation across ALL years (orbital only).
+  const watchAcc = CONTENDER_WATCHLIST.map((w) => ({
+    ...w,
+    totalLaunches: 0,
+    firstYear: null as string | null,
+  }));
+
+  for (const l of launches.values()) {
+    if (!l.orbital || !l.ldate) continue;
+    const year = l.ldate.slice(0, 4);
+    const yNum = parseInt(year, 10);
+    if (Number.isNaN(yNum)) continue;
+
+    const provider = providerFromLv(l.lvFamily, l.lv);
+    const vehicle = l.lvFamily ?? l.lv ?? "Unknown";
+    const lvStr = ((l.lvFamily ?? "") + " " + (l.lv ?? "")).toLowerCase();
+
+    // Watchlist (all years, so first flights before the window still register).
+    for (const w of watchAcc) {
+      if (w.match.some((m) => lvStr.includes(m))) {
+        w.totalLaunches += 1;
+        if (!w.firstYear || year < w.firstYear) w.firstYear = year;
+      }
+    }
+
+    if (yNum < LAUNCH_RATE_MIN_YEAR) continue;
+    yearsSet.add(year);
+
+    // provider counts
+    let pm = provByYear.get(year);
+    if (!pm) { pm = new Map(); provByYear.set(year, pm); }
+    pm.set(provider, (pm.get(provider) ?? 0) + 1);
+
+    // provider -> vehicle counts
+    let pv = vehByYearProv.get(year);
+    if (!pv) { pv = new Map(); vehByYearProv.set(year, pv); }
+    let vm = pv.get(provider);
+    if (!vm) { vm = new Map(); pv.set(provider, vm); }
+    vm.set(vehicle, (vm.get(vehicle) ?? 0) + 1);
+
+    // vehicle counts
+    let vy = vehByYear.get(year);
+    if (!vy) { vy = new Map(); vehByYear.set(year, vy); }
+    const cur = vy.get(vehicle);
+    if (cur) cur.count += 1;
+    else vy.set(vehicle, { count: 1, provider });
+  }
+
+  const years = Array.from(yearsSet).sort();
+
+  const data: Record<string, {
+    providers: Array<{ name: string; count: number; vehicles: Array<{ name: string; count: number }> }>;
+    vehicles: Array<{ name: string; count: number; provider: string }>;
+    total: number;
+  }> = {};
+
+  for (const year of years) {
+    const pm = provByYear.get(year)!;
+    const pv = vehByYearProv.get(year)!;
+    const vy = vehByYear.get(year)!;
+
+    const providers = Array.from(pm.entries())
+      .map(([name, count]) => ({
+        name,
+        count,
+        vehicles: Array.from((pv.get(name) ?? new Map<string, number>()).entries())
+          .map(([vn, vc]) => ({ name: vn, count: vc }))
+          .sort((a, b) => b.count - a.count),
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    const vehicles = Array.from(vy.entries())
+      .map(([name, v]) => ({ name, count: v.count, provider: v.provider }))
+      .sort((a, b) => b.count - a.count);
+
+    const total = providers.reduce((s, p) => s + p.count, 0);
+    data[year] = { providers, vehicles, total };
+  }
+
+  const anticipated = watchAcc.map((w) => ({
+    vehicle: w.vehicle,
+    provider: w.provider,
+    status: w.totalLaunches > 0 ? "FLYING" : "AWAITING",
+    firstYear: w.firstYear,
+    totalLaunches: w.totalLaunches,
+  }));
+
+  res.json({ years, data, anticipated, cacheAgeMs: getCacheAge() });
 });
 
 // SpaceX Falcon vs Starship mass by year (2010+)

@@ -608,6 +608,245 @@ function SpaceXComparisonChart() {
   );
 }
 
+interface LaunchRateResponse {
+  years: string[];
+  data: Record<string, {
+    providers: Array<{ name: string; count: number; vehicles: Array<{ name: string; count: number }> }>;
+    vehicles: Array<{ name: string; count: number; provider: string }>;
+    total: number;
+  }>;
+  anticipated: Array<{
+    vehicle: string;
+    provider: string;
+    status: 'FLYING' | 'AWAITING';
+    firstYear: string | null;
+    totalLaunches: number;
+  }>;
+}
+
+const ROCKET_LAB_COLOR = 'hsl(140 100% 50%)';
+const PROVIDER_DIM = 'hsl(180 60% 40%)';
+
+function LaunchRateChart() {
+  const { data, isLoading, isError } = useQuery<LaunchRateResponse>({
+    queryKey: ['launch-rate'],
+    queryFn: () => fetch('/api/satcat/launch-rate').then((r) => r.json()),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const [view, setView] = useState<'provider' | 'vehicle'>('provider');
+  const [year, setYear] = useState<string | null>(null);
+
+  if (isLoading) return (
+    <Card className="border-2 border-border bg-card lg:col-span-2 overflow-hidden relative">
+      <div className="flex items-center justify-center h-[460px] text-muted-foreground font-mono text-sm animate-pulse uppercase">
+        Tabulating launch cadence vectors...
+      </div>
+    </Card>
+  );
+  if (isError || !data || data.years.length === 0) return null;
+
+  // Default to the latest COMPLETE year (current year tends to be partial).
+  const latest = data.years[data.years.length - 1];
+  const defaultYear = data.years.length > 1 ? data.years[data.years.length - 2] : latest;
+  const selectedYear = year && data.data[year] ? year : defaultYear;
+  const yd = data.data[selectedYear];
+
+  const HIGHLIGHT = 'Rocket Lab';
+
+  const providerRows = yd.providers.slice(0, 12).map((p) => ({
+    name: p.name,
+    count: p.count,
+    vehicles: p.vehicles,
+    isHighlight: p.name === HIGHLIGHT,
+  }));
+
+  const vehicleRows = yd.vehicles.slice(0, 14).map((v) => ({
+    name: v.name,
+    count: v.count,
+    provider: v.provider,
+    isHighlight: v.provider === HIGHLIGHT,
+  }));
+
+  const rows = view === 'provider' ? providerRows : vehicleRows;
+
+  // Stats: Rocket Lab cadence callout
+  const rlIdx = yd.providers.findIndex((p) => p.name === HIGHLIGHT);
+  const rl = rlIdx >= 0 ? yd.providers[rlIdx] : null;
+  const rlRank = rlIdx >= 0 ? rlIdx + 1 : null;
+  const topProvider = yd.providers[0];
+  const topShare = yd.total > 0 ? ((topProvider.count / yd.total) * 100).toFixed(0) : '—';
+
+  const LaunchTooltip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    const row = payload[0].payload;
+    return (
+      <div className="bg-card border-2 border-primary p-3 box-glow-cyan shadow-xl font-mono text-sm z-50 max-w-[260px]">
+        <p className="text-primary font-bold mb-1 pb-1 border-b border-primary/30 uppercase">{row.name}</p>
+        <p className="text-card-foreground mb-1">
+          <span className="text-muted-foreground">Orbital launches:</span> {row.count}
+        </p>
+        {view === 'provider' && row.vehicles?.length > 0 && (
+          <div className="border-t border-border/50 mt-1 pt-1 space-y-0.5">
+            {row.vehicles.slice(0, 6).map((v: any) => (
+              <p key={v.name} className="text-xs text-muted-foreground">
+                {v.name}: <span className="text-card-foreground">{v.count}</span>
+              </p>
+            ))}
+            {row.vehicles.length > 6 && (
+              <p className="text-xs text-muted-foreground/60">+{row.vehicles.length - 6} more…</p>
+            )}
+          </div>
+        )}
+        {view === 'vehicle' && (
+          <p className="text-xs text-muted-foreground border-t border-border/50 mt-1 pt-1">{row.provider}</p>
+        )}
+      </div>
+    );
+  };
+
+  const recentYears = data.years.slice(-6);
+
+  return (
+    <Card className="border-2 border-border bg-card lg:col-span-2 overflow-hidden relative">
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-scanline opacity-30" />
+
+      <CardHeader className="bg-muted/30 border-b border-border">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
+            <TrendingUp className="w-4 h-4" /> Orbital Launch Cadence — by Provider & Vehicle
+          </CardTitle>
+          <div className="flex items-center gap-1 font-mono text-xs border border-border rounded overflow-hidden self-start sm:self-auto">
+            <button
+              onClick={() => setView('provider')}
+              className={`px-3 py-1.5 uppercase transition-colors ${view === 'provider' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+            >
+              By Provider
+            </button>
+            <button
+              onClick={() => setView('vehicle')}
+              className={`px-3 py-1.5 uppercase transition-colors ${view === 'vehicle' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+            >
+              By Vehicle
+            </button>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="pt-6 pb-2 px-4 sm:px-6">
+        {/* Year selector */}
+        <div className="flex flex-wrap items-center gap-1.5 pb-5 font-mono text-xs">
+          <span className="text-muted-foreground uppercase mr-1">Year:</span>
+          {recentYears.map((y) => (
+            <button
+              key={y}
+              onClick={() => setYear(y)}
+              className={`px-2.5 py-1 rounded border transition-colors ${y === selectedYear ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+            >
+              {y}{y === latest ? '*' : ''}
+            </button>
+          ))}
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pb-5">
+          <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">Orbital Launches {selectedYear}</div>
+            <div className="text-lg font-bold text-primary">{yd.total}</div>
+            <div className="text-xs text-muted-foreground">all providers</div>
+          </div>
+          <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">Cadence Leader</div>
+            <div className="text-lg font-bold" style={{ color: SPACEX_COLOR }}>{topProvider.name}</div>
+            <div className="text-xs text-muted-foreground">{topProvider.count} ({topShare}%)</div>
+          </div>
+          <div className="border rounded p-3 font-mono text-center" style={{ borderColor: ROCKET_LAB_COLOR, background: 'hsl(140 100% 50% / 0.06)' }}>
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">Rocket Lab Rank</div>
+            <div className="text-lg font-bold" style={{ color: ROCKET_LAB_COLOR }}>{rlRank ? `#${rlRank}` : '—'}</div>
+            <div className="text-xs text-muted-foreground">{rl ? `${rl.count} Electron flights` : 'no orbital flights'}</div>
+          </div>
+          <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">Distinct Vehicles</div>
+            <div className="text-lg font-bold text-primary">{yd.vehicles.length}</div>
+            <div className="text-xs text-muted-foreground">families flown</div>
+          </div>
+        </div>
+
+        <div style={{ height: Math.max(320, rows.length * 30 + 40) }} className="w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={rows} layout="vertical" margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+              <XAxis type="number" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                width={view === 'provider' ? 120 : 110}
+              />
+              <RechartsTooltip content={<LaunchTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+              <Bar dataKey="count" radius={[0, 3, 3, 0]}>
+                {rows.map((r, i) => (
+                  <Cell key={i} fill={r.isHighlight ? ROCKET_LAB_COLOR : PROVIDER_DIM} />
+                ))}
+                <LabelList dataKey="count" position="right" fill="hsl(var(--muted-foreground))" fontSize={10} fontFamily="monospace" />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="pt-2">
+          <p className="text-xs font-mono text-muted-foreground/60">
+            <span className="text-primary/50">// </span>
+            {selectedYear === latest && <span className="text-amber-400/70">* {latest} partial (year-to-date). </span>}
+            Cadence ≠ tonnage. Rocket Lab's Electron lofts tiny payloads, yet its flight count rivals national programs —
+            proof that launch <span className="text-primary">rate</span> and mass <span className="text-primary">to orbit</span> are very different scoreboards.
+          </p>
+        </div>
+
+        {/* Anticipated contenders watchlist */}
+        <div className="mt-5 border border-border rounded bg-muted/10 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Radar className="w-4 h-4 text-primary" />
+            <h3 className="font-mono text-xs uppercase text-primary tracking-wider">Anticipated Heavy-Lift Contenders — Cadence Watchlist</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {data.anticipated.map((a) => (
+              <div
+                key={a.vehicle}
+                className="flex items-center justify-between gap-2 border border-border/60 rounded px-3 py-2 font-mono text-xs bg-card/40"
+              >
+                <div className="min-w-0">
+                  <div className="text-card-foreground truncate">{a.vehicle}</div>
+                  <div className="text-[10px] text-muted-foreground truncate">{a.provider}</div>
+                </div>
+                <div className="text-right shrink-0">
+                  {a.status === 'FLYING' ? (
+                    <>
+                      <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: 'hsl(140 100% 50% / 0.15)', color: ROCKET_LAB_COLOR }}>
+                        FLYING
+                      </span>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">{a.totalLaunches} since {a.firstYear}</div>
+                    </>
+                  ) : (
+                    <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: 'hsl(35 100% 50% / 0.12)', color: 'hsl(35 100% 60%)' }}>
+                      AWAITING
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] font-mono text-muted-foreground/50 mt-3">
+            <span className="text-amber-400/60">// </span>
+            These vehicles surface automatically the moment GCAT logs their first orbital flight — just like Starship did.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Analytics() {
   const { data: stats, isLoading, isError } = useGetSatcatStats();
   const search = useSearch();
@@ -696,6 +935,9 @@ export default function Analytics() {
 
         {/* SpaceX vs Rest-of-World comparison */}
         <SpaceXComparisonChart />
+
+        {/* Orbital launch cadence by provider & vehicle */}
+        <LaunchRateChart />
 
         {/* Orbital Distribution Map */}
         <OrbitalMap />

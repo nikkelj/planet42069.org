@@ -10,6 +10,8 @@ export interface LaunchEntry {
   lv: string | null;        // LV_Type from launch.tsv
   lvFamily: string | null;  // Derived family name
   site: string | null;      // Launch_Site code
+  ldate: string | null;     // ISO date "YYYY-MM-DD" parsed from Launch_Date
+  orbital: boolean;         // true for orbital / deep-space launches (LaunchCode O*/D*)
 }
 
 interface Cache {
@@ -23,6 +25,21 @@ let inflight: Promise<Map<string, LaunchEntry>> | null = null;
 function parseStr(val: string): string | null {
   const s = val?.trim();
   return s && s !== "-" ? s : null;
+}
+
+const MONTH_MAP: Record<string, string> = {
+  Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
+  Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12",
+};
+
+/** "2025 Jan  4 0127" → "2025-01-04". Returns null for "-" or unparseable. */
+function parseLDate(raw: string): string | null {
+  const s = raw?.trim();
+  if (!s || s === "-") return null;
+  const m = s.match(/^(\d{4})\s+([A-Za-z]{3})\s+(\d{1,2})/);
+  if (!m) return null;
+  const mo = MONTH_MAP[m[2]];
+  return mo ? `${m[1]}-${mo}-${m[3].padStart(2, "0")}` : null;
 }
 
 /**
@@ -58,9 +75,11 @@ function parseLaunchTsv(raw: string): Map<string, LaunchEntry> {
 
   const idx = (name: string) => headers.indexOf(name);
   const C = {
-    launchTag: idx("launch_tag"),
-    lvType:    idx("lv_type"),
-    site:      idx("launch_site"),
+    launchTag:  idx("launch_tag"),
+    lvType:     idx("lv_type"),
+    site:       idx("launch_site"),
+    launchDate: idx("launch_date"),
+    launchCode: idx("launchcode"),
   };
 
   logger.info({ headerCount: headers.length, indices: C }, "launch: parsed header");
@@ -76,11 +95,15 @@ function parseLaunchTsv(raw: string): Map<string, LaunchEntry> {
     if (!launchTag) continue;
 
     const lvRaw = parseStr(get(C.lvType));
+    const code = get(C.launchCode).trim().toUpperCase();
+    const first = code.charAt(0);
     map.set(launchTag, {
       launchTag,
       lv: lvRaw,
       lvFamily: lvRaw ? deriveLvFamily(lvRaw) : null,
       site: parseStr(get(C.site)),
+      ldate: parseLDate(get(C.launchDate)),
+      orbital: first === "O" || first === "D",
     });
   }
 
