@@ -1,6 +1,7 @@
+import { useEffect, useState } from "react";
 import { useGetSatcatSummary } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert, Signal } from "lucide-react";
+import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert, Signal, Link2, Check } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import bryceUpmassChart from "@assets/image_1782288004026.png";
@@ -10,6 +11,7 @@ import { ShuttleMassComplaint } from "@/components/ShuttleMassComplaint";
 
 export default function Home() {
   const { data: summary, isLoading, isError } = useGetSatcatSummary();
+  useScrollToHashOnLoad();
 
   const formatNumber = (num?: number) => {
     if (num === undefined) return "---";
@@ -424,6 +426,46 @@ export default function Home() {
   );
 }
 
+function useScrollToHashOnLoad() {
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+
+    let cancelled = false;
+    let timer: number | undefined;
+    let attempts = 0;
+
+    const cancel = () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+
+    // Async-loaded dossiers (audit charts) shift the layout after mount,
+    // so re-correct the scroll position a few times until it settles —
+    // unless the user starts scrolling on their own.
+    const tryScroll = () => {
+      if (cancelled) return;
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: "auto", block: "start" });
+      attempts += 1;
+      if (attempts < 5) timer = window.setTimeout(tryScroll, 350);
+    };
+
+    window.addEventListener("wheel", cancel, { passive: true });
+    window.addEventListener("touchstart", cancel, { passive: true });
+    window.addEventListener("keydown", cancel);
+
+    timer = window.setTimeout(tryScroll, 50);
+
+    return () => {
+      cancel();
+      window.removeEventListener("wheel", cancel);
+      window.removeEventListener("touchstart", cancel);
+      window.removeEventListener("keydown", cancel);
+    };
+  }, []);
+}
+
 const DOSSIERS = [
   {
     id: "drymass-0090",
@@ -488,10 +530,22 @@ const DOSSIERS = [
 ] as const;
 
 function DossierIndex() {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   const scrollTo = (id: string) => (e: { preventDefault: () => void }) => {
     e.preventDefault();
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     window.history.pushState(null, "", `#${id}`);
+  };
+
+  const copyLink = (id: string) => (e: { preventDefault: () => void; stopPropagation: () => void }) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}${window.location.pathname}#${id}`;
+    navigator.clipboard?.writeText(url).then(() => {
+      setCopiedId(id);
+      window.setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1500);
+    });
   };
 
   return (
@@ -508,11 +562,11 @@ function DossierIndex() {
       </div>
       <ol className="space-y-1.5">
         {DOSSIERS.map((d) => (
-          <li key={d.id}>
+          <li key={d.id} className="flex items-stretch gap-1">
             <a
               href={`#${d.id}`}
               onClick={scrollTo(d.id)}
-              className={`group grid grid-cols-[auto_1fr] sm:grid-cols-[7rem_9rem_1fr_auto] items-baseline gap-x-3 gap-y-0.5 border border-transparent px-2 py-1.5 transition-colors ${d.hover}`}
+              className={`group flex-1 grid grid-cols-[auto_1fr] sm:grid-cols-[7rem_9rem_1fr_auto] items-baseline gap-x-3 gap-y-0.5 border border-transparent px-2 py-1.5 transition-colors ${d.hover}`}
             >
               <span className="text-muted-foreground/70 text-[10px] uppercase tracking-wider tabular-nums">
                 {d.posted}
@@ -529,6 +583,17 @@ function DossierIndex() {
                 {d.kind} · {d.status}
               </span>
             </a>
+            <button
+              type="button"
+              onClick={copyLink(d.id)}
+              title={copiedId === d.id ? "Link copied" : `Copy direct link to #${d.caseNo}`}
+              aria-label={`Copy direct link to case ${d.caseNo}`}
+              className={`shrink-0 px-2 border border-transparent transition-colors ${
+                copiedId === d.id ? "text-primary" : "text-muted-foreground/40 hover:text-primary"
+              } ${d.hover}`}
+            >
+              {copiedId === d.id ? <Check className="w-3 h-3" /> : <Link2 className="w-3 h-3" />}
+            </button>
           </li>
         ))}
       </ol>
