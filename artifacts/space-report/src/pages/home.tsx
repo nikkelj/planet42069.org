@@ -63,8 +63,162 @@ export default function Home() {
         </div>
       </div>
 
+      {/* BRIEFING DOCKET — CASE INDEX */}
+      <DossierIndex />
+
+      {/* OFFICIAL COMPLAINT — THE SHUTTLE MASS MYSTERY */}
+      <section id="drymass-0090" className="scroll-mt-24">
+        <ShuttleMassComplaint />
+      </section>
+
+      {/* FIELD DISPATCH */}
+      <div id="oc-0042" className="scroll-mt-24 border border-blue-400/25 bg-blue-950/20 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-400/50 via-blue-400/15 to-transparent" />
+        <div className="flex items-start gap-3">
+          <ShieldAlert className="w-5 h-5 text-blue-400/80 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-400/20 pb-2">
+              <span className="text-blue-300/80 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Field Dispatch
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Dispatch #OC-0042 · Posted: 2026-07-05 · Classification: Unclassified / For Public Record</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-blue-400/60">From:</span> Commander, Orbital Bureaucracy Command</span>
+              <span><span className="text-blue-400/60">Re:</span> The Commons, and What Is Being Done to Them</span>
+              <span><span className="text-blue-400/60">Severity:</span> Civilization-Scale / Logged Under Protest</span>
+            </div>
+            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                The Outer Space Treaty of 1967 declared orbital space the{" "}
+                <em>"province of all mankind."</em> This was optimistic.
+                It remains technically true. It is becoming increasingly theoretical in practice.
+              </p>
+              <p>
+                Four nations have conducted direct-ascent anti-satellite weapons tests.
+                Each one generated a debris cloud that raised collision risk for every operator
+                in the affected altitude band — commercial, scientific, crewed, and military alike.
+                None of the nations responsible offered to clean up afterward.{" "}
+                <span className="text-blue-300/70">This is noted.</span>
+              </p>
+              <p>
+                The major powers are openly developing co-orbital attack vehicles, electronic
+                warfare platforms, and <em>"inspector"</em> satellites with maneuvering profiles
+                inconsistent with their stated peaceful purposes. The Space Police maintain no
+                illusions about what "inspection" means at those closing velocities.
+              </p>
+              <p>
+                We would like to formally register our objection. We have been registering our
+                objection since approximately 1985. We will continue to do so.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-blue-400/20 pl-3">
+                We are also aware that space war — if not already underway in the gray zones of
+                jamming, blinding, and spoofing — is a matter of <em>when</em> for the domain
+                in its entirety. History has not identified a useful commons it was ultimately
+                unwilling to militarize. We see no reason orbit should be different, and we
+                resent this about history.
+              </p>
+              <p>
+                The Space Police will track every object. Every debris fragment from every
+                weapons test. Every "peaceful" dual-use constellation. Every maneuvering inspector.
+                The catalog does not adjudicate intent. It simply records what is up there.
+              </p>
+              <p className="text-blue-200/60 font-semibold">
+                Space belongs to everyone. It is also, apparently, becoming a warfighting domain.
+                Both of these things are true simultaneously. We find this deeply inconvenient.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 border-t border-blue-400/20 pt-2 text-[10px] text-blue-400/40 uppercase tracking-wider">
+              <span>— Orbital Bureaucracy Command</span>
+              <span>Filed under protest · Submitted for the record · Fully expecting to be ignored</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FORENSIC AUDIT — BRYCE vs GCAT UPMASS */}
+      <section id="upmass-q1" className="scroll-mt-24">
+        <UpmassAudit />
+      </section>
+
+      {/* OFFICIAL COMPLAINT — BRYCE TECH UPMASS CHART */}
+      <div id="axis-0009" className="scroll-mt-24 border border-yellow-500/40 bg-yellow-500/5 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-yellow-500/60 via-yellow-500/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <FileWarning className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-yellow-500/20 pb-2">
+              <span className="text-yellow-500 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Official Complaint
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #AXIS-0009 · Posted: 2026-06-30 · Status: OPEN (BEGRUDGINGLY)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-yellow-500/70">Filed by:</span> Bureau of Logarithmic Decency</span>
+              <span><span className="text-yellow-500/70">Against:</span> Bryce Tech Upmass Chart, Q1 2026</span>
+              <span><span className="text-yellow-500/70">Severity:</span> Atrociously Brilliant</span>
+            </div>
+
+            <figure className="my-1 border border-yellow-500/20 bg-background/40 p-2">
+              <img
+                src={bryceUpmassChart}
+                alt="Bryce Tech — Spacecraft Upmass Carried by Launch Provider, Q1 2026. SpaceX's 556,057 kg bar dwarfs every other provider, forcing a zoomed inset box just to make the sub-5,000 kg providers visible."
+                className="w-full h-auto"
+                loading="lazy"
+              />
+              <figcaption className="text-[10px] text-muted-foreground/70 uppercase tracking-wider pt-2 text-center">
+                Exhibit A · Source:{" "}
+                <a
+                  href="https://brycetech.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent underline underline-offset-2 hover:text-primary transition-colors"
+                >
+                  Bryce Tech
+                </a>{" "}
+                — reproduced for editorial commentary
+              </figcaption>
+            </figure>
+
+            <div className="space-y-2 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                <span className="text-yellow-400 font-bold">Nature of offense:</span>{" "}
+                This is a linear bar chart spanning <span className="text-foreground/70 font-bold">zero to 600,000 kg</span>.
+                SpaceX alone accounts for <span className="text-destructive font-bold">556,057 kg</span>. Consequently every
+                other launch provider on Earth — CASC, Roscosmos, Arianespace, ULA, ISRO, Rocket Lab, and the entire
+                Chinese commercial fleet — is compressed into a smear of pixels so thin it required a <em>second chart,
+                bolted into the corner of the first chart</em>, just to confirm they exist at all. A 69 kg provider
+                (Space One) shares an axis with a 556-tonne one. The reader is asked to perform a manual zoom of their
+                own eyeballs.
+              </p>
+              <p>
+                <span className="text-yellow-400 font-bold">Proposed corrective action:</span>{" "}
+                Plot it on a <span className="text-primary font-bold">logarithmic y-axis</span>. A single log scale renders
+                69 kg and 556,057 kg legible on the same canvas without the indignity of an inset rectangle apologizing
+                for the data. This is a solved problem. It has been solved since John Napier, 1614.
+              </p>
+              <p>
+                <span className="text-yellow-400 font-bold">However.</span>{" "}
+                The Space Police are obligated to note that the linear axis is, accidentally, the most honest chart ever
+                produced. By refusing to flatter the small providers with a forgiving scale, it shows — viscerally, at a
+                glance — <em>exactly</em> how irrelevant everyone who is not SpaceX has become. The inset box is not a
+                design failure. It is a monument. A tiny, humiliating monument to market share. We are forced to applaud.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-yellow-500/20 pl-3">
+                It is terribly brilliant. It is brilliantly terrible. We cannot decide which, and we suspect Bryce Tech
+                cannot either. Complaint filed and commendation issued <span className="text-yellow-300/70">in the same envelope</span>.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-[10px] text-yellow-500/50 uppercase tracking-wider border-t border-yellow-500/20 pt-2">
+              <Scale className="w-3 h-3" />
+              <span>Chart © Bryce Tech, used here for commentary. The underlying market dominance is, regrettably, not a parody.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* OFFICIAL COMPLAINT */}
-      <div className="border border-yellow-500/40 bg-yellow-500/5 p-5 font-mono text-xs relative">
+      <div id="jcat-0001" className="scroll-mt-24 border border-yellow-500/40 bg-yellow-500/5 p-5 font-mono text-xs relative">
         <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-yellow-500/60 via-yellow-500/20 to-transparent" />
         <div className="flex items-start gap-3">
           <FileWarning className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
@@ -173,153 +327,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* OFFICIAL COMPLAINT — BRYCE TECH UPMASS CHART */}
-      <div className="border border-yellow-500/40 bg-yellow-500/5 p-5 font-mono text-xs relative">
-        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-yellow-500/60 via-yellow-500/20 to-transparent" />
-        <div className="flex items-start gap-3">
-          <FileWarning className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
-          <div className="space-y-3 w-full">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-yellow-500/20 pb-2">
-              <span className="text-yellow-500 font-bold uppercase tracking-widest text-[11px]">
-                Space Police — Official Complaint
-              </span>
-              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #AXIS-0009 · Posted: 2026-06-30 · Status: OPEN (BEGRUDGINGLY)</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
-              <span><span className="text-yellow-500/70">Filed by:</span> Bureau of Logarithmic Decency</span>
-              <span><span className="text-yellow-500/70">Against:</span> Bryce Tech Upmass Chart, Q1 2026</span>
-              <span><span className="text-yellow-500/70">Severity:</span> Atrociously Brilliant</span>
-            </div>
-
-            <figure className="my-1 border border-yellow-500/20 bg-background/40 p-2">
-              <img
-                src={bryceUpmassChart}
-                alt="Bryce Tech — Spacecraft Upmass Carried by Launch Provider, Q1 2026. SpaceX's 556,057 kg bar dwarfs every other provider, forcing a zoomed inset box just to make the sub-5,000 kg providers visible."
-                className="w-full h-auto"
-                loading="lazy"
-              />
-              <figcaption className="text-[10px] text-muted-foreground/70 uppercase tracking-wider pt-2 text-center">
-                Exhibit A · Source:{" "}
-                <a
-                  href="https://brycetech.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-accent underline underline-offset-2 hover:text-primary transition-colors"
-                >
-                  Bryce Tech
-                </a>{" "}
-                — reproduced for editorial commentary
-              </figcaption>
-            </figure>
-
-            <div className="space-y-2 text-muted-foreground leading-relaxed normal-case">
-              <p>
-                <span className="text-yellow-400 font-bold">Nature of offense:</span>{" "}
-                This is a linear bar chart spanning <span className="text-foreground/70 font-bold">zero to 600,000 kg</span>.
-                SpaceX alone accounts for <span className="text-destructive font-bold">556,057 kg</span>. Consequently every
-                other launch provider on Earth — CASC, Roscosmos, Arianespace, ULA, ISRO, Rocket Lab, and the entire
-                Chinese commercial fleet — is compressed into a smear of pixels so thin it required a <em>second chart,
-                bolted into the corner of the first chart</em>, just to confirm they exist at all. A 69 kg provider
-                (Space One) shares an axis with a 556-tonne one. The reader is asked to perform a manual zoom of their
-                own eyeballs.
-              </p>
-              <p>
-                <span className="text-yellow-400 font-bold">Proposed corrective action:</span>{" "}
-                Plot it on a <span className="text-primary font-bold">logarithmic y-axis</span>. A single log scale renders
-                69 kg and 556,057 kg legible on the same canvas without the indignity of an inset rectangle apologizing
-                for the data. This is a solved problem. It has been solved since John Napier, 1614.
-              </p>
-              <p>
-                <span className="text-yellow-400 font-bold">However.</span>{" "}
-                The Space Police are obligated to note that the linear axis is, accidentally, the most honest chart ever
-                produced. By refusing to flatter the small providers with a forgiving scale, it shows — viscerally, at a
-                glance — <em>exactly</em> how irrelevant everyone who is not SpaceX has become. The inset box is not a
-                design failure. It is a monument. A tiny, humiliating monument to market share. We are forced to applaud.
-              </p>
-              <p className="text-muted-foreground/80 border-l-2 border-yellow-500/20 pl-3">
-                It is terribly brilliant. It is brilliantly terrible. We cannot decide which, and we suspect Bryce Tech
-                cannot either. Complaint filed and commendation issued <span className="text-yellow-300/70">in the same envelope</span>.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-[10px] text-yellow-500/50 uppercase tracking-wider border-t border-yellow-500/20 pt-2">
-              <Scale className="w-3 h-3" />
-              <span>Chart © Bryce Tech, used here for commentary. The underlying market dominance is, regrettably, not a parody.</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* FORENSIC AUDIT — BRYCE vs GCAT UPMASS */}
-      <UpmassAudit />
-
-      {/* FIELD DISPATCH */}
-      <div className="border border-blue-400/25 bg-blue-950/20 p-5 font-mono text-xs relative">
-        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-400/50 via-blue-400/15 to-transparent" />
-        <div className="flex items-start gap-3">
-          <ShieldAlert className="w-5 h-5 text-blue-400/80 shrink-0 mt-0.5" />
-          <div className="space-y-3 w-full">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-400/20 pb-2">
-              <span className="text-blue-300/80 font-bold uppercase tracking-widest text-[11px]">
-                Space Police — Field Dispatch
-              </span>
-              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Dispatch #OC-0042 · Posted: 2026-07-05 · Classification: Unclassified / For Public Record</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
-              <span><span className="text-blue-400/60">From:</span> Commander, Orbital Bureaucracy Command</span>
-              <span><span className="text-blue-400/60">Re:</span> The Commons, and What Is Being Done to Them</span>
-              <span><span className="text-blue-400/60">Severity:</span> Civilization-Scale / Logged Under Protest</span>
-            </div>
-            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
-              <p>
-                The Outer Space Treaty of 1967 declared orbital space the{" "}
-                <em>"province of all mankind."</em> This was optimistic.
-                It remains technically true. It is becoming increasingly theoretical in practice.
-              </p>
-              <p>
-                Four nations have conducted direct-ascent anti-satellite weapons tests.
-                Each one generated a debris cloud that raised collision risk for every operator
-                in the affected altitude band — commercial, scientific, crewed, and military alike.
-                None of the nations responsible offered to clean up afterward.{" "}
-                <span className="text-blue-300/70">This is noted.</span>
-              </p>
-              <p>
-                The major powers are openly developing co-orbital attack vehicles, electronic
-                warfare platforms, and <em>"inspector"</em> satellites with maneuvering profiles
-                inconsistent with their stated peaceful purposes. The Space Police maintain no
-                illusions about what "inspection" means at those closing velocities.
-              </p>
-              <p>
-                We would like to formally register our objection. We have been registering our
-                objection since approximately 1985. We will continue to do so.
-              </p>
-              <p className="text-muted-foreground/80 border-l-2 border-blue-400/20 pl-3">
-                We are also aware that space war — if not already underway in the gray zones of
-                jamming, blinding, and spoofing — is a matter of <em>when</em> for the domain
-                in its entirety. History has not identified a useful commons it was ultimately
-                unwilling to militarize. We see no reason orbit should be different, and we
-                resent this about history.
-              </p>
-              <p>
-                The Space Police will track every object. Every debris fragment from every
-                weapons test. Every "peaceful" dual-use constellation. Every maneuvering inspector.
-                The catalog does not adjudicate intent. It simply records what is up there.
-              </p>
-              <p className="text-blue-200/60 font-semibold">
-                Space belongs to everyone. It is also, apparently, becoming a warfighting domain.
-                Both of these things are true simultaneously. We find this deeply inconvenient.
-              </p>
-            </div>
-            <div className="flex flex-col gap-1 border-t border-blue-400/20 pt-2 text-[10px] text-blue-400/40 uppercase tracking-wider">
-              <span>— Orbital Bureaucracy Command</span>
-              <span>Filed under protest · Submitted for the record · Fully expecting to be ignored</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* OFFICIAL COMPLAINT — THE SHUTTLE MASS MYSTERY */}
-      <ShuttleMassComplaint />
-
       <div>
         <div className="flex items-center gap-2 mb-4">
           <Activity className="w-5 h-5 text-accent" />
@@ -414,6 +421,118 @@ export default function Home() {
         </Link>
       </div>
     </div>
+  );
+}
+
+const DOSSIERS = [
+  {
+    id: "drymass-0090",
+    caseNo: "DRYMASS-0090",
+    kind: "Official Complaint",
+    posted: "2026-07-08",
+    title: "The Shuttle Mass Mystery",
+    status: "SOLVED",
+    icon: FileWarning,
+    tone: "text-yellow-500",
+    toneDim: "text-yellow-500/60",
+    hover: "hover:border-yellow-500/50 hover:bg-yellow-500/5",
+  },
+  {
+    id: "oc-0042",
+    caseNo: "OC-0042",
+    kind: "Field Dispatch",
+    posted: "2026-07-05",
+    title: "The Commons, and What Is Being Done to Them",
+    status: "FOR THE RECORD",
+    icon: ShieldAlert,
+    tone: "text-blue-300/90",
+    toneDim: "text-blue-400/60",
+    hover: "hover:border-blue-400/50 hover:bg-blue-950/30",
+  },
+  {
+    id: "upmass-q1",
+    caseNo: "UPMASS-Q1",
+    kind: "Forensic Audit",
+    posted: "2026-07-02",
+    title: "Bryce Tech vs GCAT — The Numbers Check Out",
+    status: "CORROBORATED",
+    icon: Scale,
+    tone: "text-accent",
+    toneDim: "text-accent/60",
+    hover: "hover:border-accent/50 hover:bg-accent/5",
+  },
+  {
+    id: "axis-0009",
+    caseNo: "AXIS-0009",
+    kind: "Official Complaint",
+    posted: "2026-06-30",
+    title: "The Linear Axis Atrocity",
+    status: "OPEN",
+    icon: FileWarning,
+    tone: "text-yellow-500",
+    toneDim: "text-yellow-500/60",
+    hover: "hover:border-yellow-500/50 hover:bg-yellow-500/5",
+  },
+  {
+    id: "jcat-0001",
+    caseNo: "JCAT-0001",
+    kind: "Official Complaint",
+    posted: "2026-06-18",
+    title: 'The "S" Prefix Affair',
+    status: "WITHDRAWN",
+    icon: FileWarning,
+    tone: "text-yellow-500",
+    toneDim: "text-yellow-500/60",
+    hover: "hover:border-yellow-500/50 hover:bg-yellow-500/5",
+  },
+] as const;
+
+function DossierIndex() {
+  const scrollTo = (id: string) => (e: { preventDefault: () => void }) => {
+    e.preventDefault();
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.history.pushState(null, "", `#${id}`);
+  };
+
+  return (
+    <nav aria-label="Briefing docket" className="border border-border bg-card/60 p-5 font-mono text-xs relative">
+      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/60 via-primary/20 to-transparent" />
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 mb-3">
+        <span className="text-primary font-bold uppercase tracking-widest text-[11px] flex items-center gap-2">
+          <Database className="w-4 h-4" />
+          Briefing Docket — Case Index
+        </span>
+        <span className="text-muted-foreground text-[10px] uppercase tracking-wider">
+          {DOSSIERS.length} entries · Reverse chronological · Most recent first
+        </span>
+      </div>
+      <ol className="space-y-1.5">
+        {DOSSIERS.map((d) => (
+          <li key={d.id}>
+            <a
+              href={`#${d.id}`}
+              onClick={scrollTo(d.id)}
+              className={`group grid grid-cols-[auto_1fr] sm:grid-cols-[7rem_9rem_1fr_auto] items-baseline gap-x-3 gap-y-0.5 border border-transparent px-2 py-1.5 transition-colors ${d.hover}`}
+            >
+              <span className="text-muted-foreground/70 text-[10px] uppercase tracking-wider tabular-nums">
+                {d.posted}
+              </span>
+              <span className={`${d.toneDim} text-[10px] uppercase tracking-wider whitespace-nowrap`}>
+                #{d.caseNo}
+              </span>
+              <span className="col-span-2 sm:col-span-1 text-foreground/80 group-hover:text-foreground transition-colors normal-case flex items-center gap-1.5">
+                <d.icon className={`w-3 h-3 shrink-0 ${d.toneDim}`} />
+                {d.title}
+                <ChevronRight className={`w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${d.tone}`} />
+              </span>
+              <span className={`hidden sm:block ${d.tone} text-[10px] uppercase tracking-wider text-right`}>
+                {d.kind} · {d.status}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
   );
 }
 
