@@ -98,7 +98,7 @@ export function UpmassAudit() {
               Space Police — Forensic Audit
             </span>
             <span className="text-muted-foreground text-[10px] uppercase tracking-wider">
-              Case #UPMASS-Q1 · Bryce Tech vs GCAT · Status: CORROBORATED
+              Case #UPMASS-Q1 · Posted: 2026-07-02 · Status: CORROBORATED
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">

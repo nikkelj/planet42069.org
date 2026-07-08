@@ -11,6 +11,7 @@ import { Radar, Activity, Loader2, TrendingUp, Zap, MapPin, Building2 } from "lu
 import { OrbitalMap } from "@/components/OrbitalMap";
 import { DeorbitAnimation } from "@/components/DeorbitAnimation";
 import { MassCDFChart } from "@/components/MassCDFChart";
+import { VehicleMassChart } from "@/components/VehicleMassChart";
 
 const COLORS = [
   'hsl(140 100% 50%)',
@@ -1202,35 +1203,8 @@ export default function Analytics() {
         {/* Orbit Types */}
         <OrbitPieChart byOrbit={stats.byOrbit} />
 
-        {/* Top Launch Vehicles by Mass */}
-        <Card className="border-2 border-border bg-card relative overflow-hidden lg:col-span-2">
-          <CardHeader className="bg-muted/30 border-b border-border">
-            <CardTitle className="text-accent uppercase flex items-center gap-2 text-sm">
-              <Activity className="w-4 h-4" /> Top Launch Vehicles by Mass to Orbit
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6 pb-2 pl-0">
-            <div className="h-[350px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={stats.byLaunchVehicle.slice(0, 15)}
-                  layout="vertical"
-                  margin={{ top: 20, right: 60, left: 10, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} tickFormatter={(val: number) => `${(val / 1000).toFixed(0)}t`} />
-                  <YAxis type="category" dataKey="label" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(180 100% 50%)', fontSize: 11 }} width={140} interval={0} />
-                  <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
-                  <Bar dataKey="massKg" radius={[0, 4, 4, 0]}>
-                    {stats.byLaunchVehicle.slice(0, 15).map((_: unknown, index: number) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Top Launch Vehicles by Mass — segmented (orbiter vs delivered), see Case #DRYMASS-0090 */}
+        <VehicleMassChart byLaunchVehicle={stats.byLaunchVehicle} />
 
       </div>
     </div>

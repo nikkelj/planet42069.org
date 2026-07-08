@@ -229,6 +229,94 @@ router.get("/satcat/upmass-by-provider", async (req, res): Promise<void> => {
   });
 });
 
+// ── Shuttle mass forensics ──────────────────────────────────────────────────
+// GCAT catalogs the Shuttle ORBITER itself as a payload on every flight
+// (~90-100t each, PLName OV-xxx). That is why "Space Shuttle" tops the
+// mass-by-vehicle chart despite only ~135 flights. This endpoint quantifies
+// the split: orbiter rows vs actual deployed-cargo rows (GCAT actuals), plus
+// a theorized split using published orbiter dry masses.
+const ORBITERS: Record<string, { name: string; publishedDryKg: number }> = {
+  "OV-102": { name: "Columbia", publishedDryKg: 81600 },
+  "OV-099": { name: "Challenger", publishedDryKg: 79500 },
+  "OV-103": { name: "Discovery", publishedDryKg: 78450 },
+  "OV-104": { name: "Atlantis", publishedDryKg: 78020 },
+  "OV-105": { name: "Endeavour", publishedDryKg: 78000 },
+};
+
+router.get("/satcat/shuttle-audit", async (_req, res): Promise<void> => {
+  const data = await getSatcat();
+  const payloads = data.filter((e) => e.objectClass === "P");
+
+  const shuttleRows = payloads.filter(
+    (e) => (e.lvFamily ?? "").toLowerCase() === "space shuttle",
+  );
+
+  const perOrbiter = Object.entries(ORBITERS).map(([ov, meta]) => ({
+    ov,
+    name: meta.name,
+    publishedDryKg: meta.publishedDryKg,
+    flights: 0,
+    gcatMassKg: 0,
+  }));
+  const byOv = new Map(perOrbiter.map((o) => [o.ov, o]));
+
+  let orbiterGcatKg = 0;
+  let cargoGcatKg = 0;
+  let cargoObjects = 0;
+
+  for (const e of shuttleRows) {
+    const o = e.plName ? byOv.get(e.plName) : undefined;
+    if (o) {
+      o.flights += 1;
+      o.gcatMassKg += e.massKg ?? 0;
+      orbiterGcatKg += e.massKg ?? 0;
+    } else {
+      cargoGcatKg += e.massKg ?? 0;
+      cargoObjects += 1;
+    }
+  }
+
+  const gcatTotalKg = orbiterGcatKg + cargoGcatKg;
+  const flights = perOrbiter.reduce((s, o) => s + o.flights, 0);
+  const theorizedOrbiterDryKg = perOrbiter.reduce(
+    (s, o) => s + o.flights * o.publishedDryKg,
+    0,
+  );
+  const theorizedDeliveredKg = Math.max(0, gcatTotalKg - theorizedOrbiterDryKg);
+
+  // Falcon 9 reference (genuine payloads only — no vehicle rides along)
+  const falcon9Rows = payloads.filter(
+    (e) => (e.lvFamily ?? "").toLowerCase() === "falcon 9",
+  );
+  const falcon9TotalKg = falcon9Rows.reduce((s, e) => s + (e.massKg ?? 0), 0);
+
+  res.json({
+    gcat: {
+      totalKg: Math.round(gcatTotalKg),
+      orbiterKg: Math.round(orbiterGcatKg),
+      cargoKg: Math.round(cargoGcatKg),
+      flights,
+      cargoObjects,
+    },
+    theorized: {
+      orbiterDryKg: Math.round(theorizedOrbiterDryKg),
+      deliveredKg: Math.round(theorizedDeliveredKg),
+    },
+    perOrbiter: perOrbiter
+      .map((o) => ({
+        ...o,
+        gcatMassKg: Math.round(o.gcatMassKg),
+        theorizedDryTotalKg: o.flights * o.publishedDryKg,
+      }))
+      .sort((a, b) => b.flights - a.flights),
+    falcon9: {
+      totalKg: Math.round(falcon9TotalKg),
+      payloadCount: falcon9Rows.length,
+    },
+    cacheAgeMs: getCacheAge(),
+  });
+});
+
 // Orbital launch cadence by provider AND vehicle, computed live from the GCAT
 // launch table (NOT satcat payloads — rideshares would distort cadence). Counts
 // orbital-class launch ATTEMPTS (LaunchCode O*/D*); excludes suborbital, weapon,

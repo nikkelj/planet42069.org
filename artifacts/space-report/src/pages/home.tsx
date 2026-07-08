@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import bryceUpmassChart from "@assets/image_1782288004026.png";
 import alpha5Faq from "@assets/image_1782450578315.png";
 import { UpmassAudit } from "@/components/UpmassAudit";
+import { ShuttleMassComplaint } from "@/components/ShuttleMassComplaint";
 
 export default function Home() {
   const { data: summary, isLoading, isError } = useGetSatcatSummary();
@@ -72,7 +73,7 @@ export default function Home() {
               <span className="text-yellow-500 font-bold uppercase tracking-widest text-[11px]">
                 Space Police — Official Complaint
               </span>
-              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #JCAT-0001 · Status: WITHDRAWN WITH APOLOGY</span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #JCAT-0001 · Posted: 2026-06-18 · Status: WITHDRAWN WITH APOLOGY</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
               <span><span className="text-yellow-500/70">Filed by:</span> Numeric Standards Division</span>
@@ -182,7 +183,7 @@ export default function Home() {
               <span className="text-yellow-500 font-bold uppercase tracking-widest text-[11px]">
                 Space Police — Official Complaint
               </span>
-              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #AXIS-0009 · Status: OPEN (BEGRUDGINGLY)</span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #AXIS-0009 · Posted: 2026-06-30 · Status: OPEN (BEGRUDGINGLY)</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
               <span><span className="text-yellow-500/70">Filed by:</span> Bureau of Logarithmic Decency</span>
@@ -261,7 +262,7 @@ export default function Home() {
               <span className="text-blue-300/80 font-bold uppercase tracking-widest text-[11px]">
                 Space Police — Field Dispatch
               </span>
-              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Dispatch #OC-0042 · Classification: Unclassified / For Public Record</span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Dispatch #OC-0042 · Posted: 2026-07-05 · Classification: Unclassified / For Public Record</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
               <span><span className="text-blue-400/60">From:</span> Commander, Orbital Bureaucracy Command</span>
@@ -315,6 +316,9 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* OFFICIAL COMPLAINT — THE SHUTTLE MASS MYSTERY */}
+      <ShuttleMassComplaint />
 
       <div>
         <div className="flex items-center gap-2 mb-4">
