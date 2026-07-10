@@ -333,6 +333,8 @@ const CONTENDER_WATCHLIST: Array<{ vehicle: string; provider: string; match: str
   { vehicle: "Terran R", provider: "Relativity Space", match: ["terran r", "terran-r"] },
   { vehicle: "Nova", provider: "Stoke Space", match: ["stoke", "nova"] },
   { vehicle: "Zhuque-3", provider: "LandSpace", match: ["zhuque-3", "zhuque 3"] },
+  { vehicle: "Long March 10B", provider: "CASC", match: ["long march 10", "chang zheng 10", "cz-10"] },
+  { vehicle: "Cowboy Space (TBD)", provider: "Cowboy Space", match: ["cowboy"] },
 ];
 
 router.get("/satcat/launch-rate", async (_req, res): Promise<void> => {

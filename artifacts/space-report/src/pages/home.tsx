@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useGetSatcatSummary } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert, Signal, Link2, Check } from "lucide-react";
+import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert, Signal, Link2, Check, Anchor } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import bryceUpmassChart from "@assets/image_1782288004026.png";
 import alpha5Faq from "@assets/image_1782450578315.png";
 import { UpmassAudit } from "@/components/UpmassAudit";
 import { ShuttleMassComplaint } from "@/components/ShuttleMassComplaint";
+import { LongMarchCatchBulletin } from "@/components/LongMarchCatchBulletin";
 
 export default function Home() {
   const { data: summary, isLoading, isError } = useGetSatcatSummary();
@@ -67,6 +68,11 @@ export default function Home() {
 
       {/* BRIEFING DOCKET — CASE INDEX */}
       <DossierIndex />
+
+      {/* FIELD BULLETIN — LONG MARCH 10B BARGE CATCH */}
+      <section id="lm10b-0001" className="scroll-mt-24">
+        <LongMarchCatchBulletin />
+      </section>
 
       {/* OFFICIAL COMPLAINT — THE SHUTTLE MASS MYSTERY */}
       <section id="drymass-0090" className="scroll-mt-24">
@@ -467,6 +473,18 @@ function useScrollToHashOnLoad() {
 }
 
 const DOSSIERS = [
+  {
+    id: "lm10b-0001",
+    caseNo: "LM10B-0001",
+    kind: "Field Bulletin",
+    posted: "2026-07-10",
+    title: "Long March 10B — Barge Catch on a Wire",
+    status: "NOTED",
+    icon: Anchor,
+    tone: "text-red-300/90",
+    toneDim: "text-red-400/60",
+    hover: "hover:border-red-400/50 hover:bg-red-950/25",
+  },
   {
     id: "drymass-0090",
     caseNo: "DRYMASS-0090",
