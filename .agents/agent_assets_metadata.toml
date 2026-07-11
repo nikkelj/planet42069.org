@@ -42,6 +42,24 @@ uri = "file://attached_assets/generated_images/obc_x_logo_nocuffs.png"
 type = "image"
 title = "Badge logo without handcuffs"
 
+[[generated]]
+id = "eaYm8WVjEBzoTzuZEnkHI"
+uri = "file://attached_assets/generated_images/obc_concept_boot.png"
+type = "image"
+title = "Satellite parking boot concept"
+
+[[generated]]
+id = "-FDLmHcga9VBNss6c18XL"
+uri = "file://attached_assets/generated_images/obc_concept_stamp.png"
+type = "image"
+title = "Rubber stamp planet concept"
+
+[[generated]]
+id = "lj4HaabcZwb-A-PHpACzv"
+uri = "file://attached_assets/generated_images/obc_concept_radar.png"
+type = "image"
+title = "Orbital speed trap concept"
+
 [[outputs]]
 id = "g8WeDbUwXmnCo1c-oubl5"
 uri = "file://attached_assets/generated_images/obc_x_logo.png"
@@ -77,3 +95,21 @@ id = "VM2Hrrw_Qtnzlx1bcO9fE"
 uri = "file://attached_assets/generated_images/obc_x_logo_nocuffs.png"
 type = "image"
 title = "Orbital Bureaucracy Command — badge without handcuffs"
+
+[[outputs]]
+id = "DetYoxXvJktwmaxlmvKaG"
+uri = "file://attached_assets/generated_images/obc_concept_boot.png"
+type = "image"
+title = "Concept A — Satellite with parking boot + citation"
+
+[[outputs]]
+id = "CKijboGta5Wk-PCBff6dF"
+uri = "file://attached_assets/generated_images/obc_concept_stamp.png"
+type = "image"
+title = "Concept B — Rubber stamp descending on Earth"
+
+[[outputs]]
+id = "GR4WSGPbGCSBtdN4-OCxV"
+uri = "file://attached_assets/generated_images/obc_concept_radar.png"
+type = "image"
+title = "Concept C — Orbital speed trap with compliance clipboard"
