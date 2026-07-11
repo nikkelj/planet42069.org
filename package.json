@@ -11,6 +11,7 @@
   "private": true,
   "devDependencies": {
     "prettier": "^3.8.3",
+    "twitter-api-v2": "^1.29.0",
     "typescript": "~5.9.3"
   }
 }
