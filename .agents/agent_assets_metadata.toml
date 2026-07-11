@@ -18,6 +18,12 @@ uri = "file://attached_assets/generated_images/obc_x_logo_police.png"
 type = "image"
 title = "Space police badge logo"
 
+[[generated]]
+id = "e1Ibad0nilIcINLAGsfJ3"
+uri = "file://attached_assets/generated_images/obc_x_logo_lights.png"
+type = "image"
+title = "Badge logo with siren lights"
+
 [[outputs]]
 id = "g8WeDbUwXmnCo1c-oubl5"
 uri = "file://attached_assets/generated_images/obc_x_logo.png"
@@ -29,3 +35,9 @@ id = "Nwb4CD_U3CKlavbYglLwo"
 uri = "file://attached_assets/generated_images/obc_x_logo_police.png"
 type = "image"
 title = "Orbital Bureaucracy Command — Space Police badge logo"
+
+[[outputs]]
+id = "KK5FuOljzQHwOtc1jFvw6"
+uri = "file://attached_assets/generated_images/obc_x_logo_lights.png"
+type = "image"
+title = "Orbital Bureaucracy Command — badge with siren lights"
