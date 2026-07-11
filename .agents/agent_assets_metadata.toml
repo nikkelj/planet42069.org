@@ -30,6 +30,12 @@ uri = "file://attached_assets/generated_images/obc_x_logo_dots.png"
 type = "image"
 title = "Badge logo with LED dots"
 
+[[generated]]
+id = "eflaNfB7zyAou4KgVlblh"
+uri = "file://attached_assets/generated_images/obc_x_logo_final.png"
+type = "image"
+title = "Striped badge with LED dots"
+
 [[outputs]]
 id = "g8WeDbUwXmnCo1c-oubl5"
 uri = "file://attached_assets/generated_images/obc_x_logo.png"
@@ -53,3 +59,9 @@ id = "jxSFiP8jfOe-bV25cF6dv"
 uri = "file://attached_assets/generated_images/obc_x_logo_dots.png"
 type = "image"
 title = "Orbital Bureaucracy Command — badge with red/blue light dots"
+
+[[outputs]]
+id = "Dd0uTMWrnvga_1ffqXpdG"
+uri = "file://attached_assets/generated_images/obc_x_logo_final.png"
+type = "image"
+title = "Orbital Bureaucracy Command — final badge logo"
