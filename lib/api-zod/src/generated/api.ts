@@ -114,12 +114,232 @@ export const GetSatcatSummaryResponse = zod.object({
   "totalPayloads": zod.number(),
   "totalMassKg": zod.number(),
   "activePayloads": zod.number(),
-  "starlinkActive": zod.number().describe('Number of active Starlink satellites in orbit'),
   "countries": zod.number(),
   "launchVehicles": zod.number(),
   "firstLaunchYear": zod.number(),
   "lastLaunchYear": zod.number(),
+  "starlinkActive": zod.number().describe('Number of active Starlink satellites in orbit'),
   "cacheAge": zod.number().describe('How old the cached data is in seconds')
+})
+
+
+/**
+ * Payload mass to orbit per year, split between SpaceX (Falcon family) and the rest of the world
+ * @summary Yearly payload mass by provider
+ */
+export const GetSatcatByYearProviderResponse = zod.object({
+  "byYearProvider": zod.array(zod.object({
+  "year": zod.string(),
+  "spacex": zod.number().describe('SpaceX (Falcon family) payload mass in kg'),
+  "others": zod.number().describe('Rest-of-world payload mass in kg'),
+  "spacexCount": zod.number(),
+  "othersCount": zod.number()
+}))
+})
+
+
+/**
+ * Payload mass delivered to orbit per launch provider within a date window
+ * @summary Upmass by provider for a date window
+ */
+export const GetSatcatUpmassByProviderQueryParams = zod.object({
+  "start": zod.coerce.string().optional().describe('Window start date (YYYY-MM-DD)'),
+  "end": zod.coerce.string().optional().describe('Window end date (YYYY-MM-DD)')
+})
+
+export const GetSatcatUpmassByProviderResponse = zod.object({
+  "window": zod.object({
+  "start": zod.string(),
+  "end": zod.string()
+}),
+  "providers": zod.array(zod.object({
+  "provider": zod.string(),
+  "massKg": zod.number(),
+  "count": zod.number()
+})),
+  "totalMassKg": zod.number(),
+  "totalCount": zod.number()
+})
+
+
+/**
+ * Splits GCAT Shuttle tonnage into orbiter rows vs deployed cargo, with theorized dry-mass split and Falcon 9 reference
+ * @summary Space Shuttle mass forensics
+ */
+export const GetSatcatShuttleAuditResponse = zod.object({
+  "gcat": zod.object({
+  "totalKg": zod.number(),
+  "orbiterKg": zod.number(),
+  "cargoKg": zod.number(),
+  "flights": zod.number(),
+  "cargoObjects": zod.number()
+}),
+  "theorized": zod.object({
+  "orbiterDryKg": zod.number(),
+  "deliveredKg": zod.number()
+}),
+  "perOrbiter": zod.array(zod.object({
+  "ov": zod.string(),
+  "name": zod.string(),
+  "publishedDryKg": zod.number(),
+  "flights": zod.number(),
+  "gcatMassKg": zod.number(),
+  "theorizedDryTotalKg": zod.number()
+})),
+  "falcon9": zod.object({
+  "totalKg": zod.number(),
+  "payloadCount": zod.number()
+}),
+  "cacheAgeMs": zod.number()
+})
+
+
+/**
+ * Orbital-class launch attempts per year by provider and vehicle, plus anticipated heavy-lift contender watchlist
+ * @summary Orbital launch cadence by provider and vehicle
+ */
+export const GetSatcatLaunchRateResponse = zod.object({
+  "years": zod.array(zod.string()),
+  "data": zod.record(zod.string(), zod.object({
+  "providers": zod.array(zod.object({
+  "name": zod.string(),
+  "count": zod.number(),
+  "vehicles": zod.array(zod.object({
+  "name": zod.string(),
+  "count": zod.number()
+}))
+})),
+  "vehicles": zod.array(zod.object({
+  "name": zod.string(),
+  "count": zod.number(),
+  "provider": zod.string()
+})),
+  "total": zod.number()
+})),
+  "anticipated": zod.array(zod.object({
+  "vehicle": zod.string(),
+  "provider": zod.string(),
+  "status": zod.enum(['FLYING', 'AWAITING']),
+  "firstYear": zod.string().nullable(),
+  "totalLaunches": zod.number()
+})),
+  "cacheAgeMs": zod.number()
+})
+
+
+/**
+ * @summary Falcon vs Starship payload mass by year
+ */
+export const GetSatcatFalconVsStarshipResponse = zod.object({
+  "rows": zod.array(zod.object({
+  "year": zod.string(),
+  "falcon": zod.number(),
+  "starship": zod.number()
+})),
+  "starshipTotal": zod.number()
+})
+
+
+/**
+ * @summary SpaceX monthly payload mass by launch site
+ */
+export const GetSatcatSpacexBySiteMonthlyQueryParams = zod.object({
+  "year": zod.coerce.string().optional().describe('Year (YYYY), defaults to current year')
+})
+
+export const GetSatcatSpacexBySiteMonthlyResponse = zod.object({
+  "year": zod.string(),
+  "rows": zod.array(zod.object({
+  "month": zod.string(),
+  "monthNum": zod.number(),
+  "capeCanaveral": zod.number(),
+  "vandenberg": zod.number(),
+  "other": zod.number()
+}))
+})
+
+
+/**
+ * @summary SpaceX yearly payload mass by launch site
+ */
+export const GetSatcatSpacexBySiteResponse = zod.object({
+  "rows": zod.array(zod.object({
+  "year": zod.string(),
+  "capeCanaveral": zod.number(),
+  "vandenberg": zod.number(),
+  "other": zod.number()
+}))
+})
+
+
+/**
+ * @summary SpaceX yearly payload mass by customer segment
+ */
+export const GetSatcatSpacexByEntityResponse = zod.object({
+  "rows": zod.array(zod.object({
+  "year": zod.string(),
+  "starlink": zod.number(),
+  "usGov": zod.number(),
+  "commercial": zod.number()
+}))
+})
+
+
+/**
+ * Per-object launch/decay day numbers since 1957-01-01 for deorbit animation; dday of -1 means still in orbit
+ * @summary Launch and decay day-numbers for orbital objects
+ */
+export const GetSatcatDeorbitHistoryResponse = zod.object({
+  "objects": zod.array(zod.object({
+  "lday": zod.number().describe('Launch day number since 1957-01-01'),
+  "dday": zod.number().describe('Decay day number since 1957-01-01, or -1 if still in orbit'),
+  "p": zod.number().describe('Perigee (km)'),
+  "a": zod.number().describe('Apogee (km)'),
+  "i": zod.number().describe('Inclination (deg)'),
+  "c": zod.string().describe('Object class')
+})),
+  "total": zod.number(),
+  "decayed": zod.number(),
+  "inOrbit": zod.number(),
+  "dayMin": zod.number(),
+  "dayMax": zod.number()
+})
+
+
+/**
+ * @summary Cumulative distribution of object masses
+ */
+export const GetSatcatMassCdfResponse = zod.object({
+  "aggregate": zod.array(zod.object({
+  "m": zod.number().describe('Mass (kg)'),
+  "f": zod.number().describe('Cumulative fraction')
+})),
+  "byType": zod.record(zod.string(), zod.array(zod.object({
+  "m": zod.number().describe('Mass (kg)'),
+  "f": zod.number().describe('Cumulative fraction')
+}))),
+  "byNation": zod.record(zod.string(), zod.array(zod.object({
+  "m": zod.number().describe('Mass (kg)'),
+  "f": zod.number().describe('Cumulative fraction')
+}))),
+  "bySite": zod.record(zod.string(), zod.array(zod.object({
+  "m": zod.number().describe('Mass (kg)'),
+  "f": zod.number().describe('Cumulative fraction')
+}))),
+  "total": zod.number()
+})
+
+
+/**
+ * @summary Perigee vs inclination scatter points
+ */
+export const GetSatcatOrbitalMapResponse = zod.object({
+  "points": zod.array(zod.object({
+  "p": zod.number().describe('Perigee (km)'),
+  "i": zod.number().describe('Inclination (deg)'),
+  "c": zod.string().describe('Object class')
+})),
+  "total": zod.number()
 })
 
 

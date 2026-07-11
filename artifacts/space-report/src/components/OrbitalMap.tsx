@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useGetSatcatOrbitalMap, getGetSatcatOrbitalMapQueryKey } from "@workspace/api-client-react";
 import { useRef, useEffect, useCallback, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Radar } from "lucide-react";
@@ -249,14 +249,8 @@ export function OrbitalMap() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState<Zoom>("full");
 
-  const { data, isLoading, isError } = useQuery<OrbitalMapData>({
-    queryKey: ["satcat-orbital-map"],
-    queryFn: async () => {
-      const res = await fetch("/api/satcat/orbital-map");
-      if (!res.ok) throw new Error("orbital map fetch failed");
-      return res.json();
-    },
-    staleTime: 10 * 60 * 1000,
+  const { data, isLoading, isError } = useGetSatcatOrbitalMap({
+    query: { queryKey: getGetSatcatOrbitalMapQueryKey(), staleTime: 10 * 60 * 1000 },
   });
 
   const redraw = useCallback(() => {

@@ -1,6 +1,18 @@
-import { useGetSatcatStats, useGetSatcatByYearProvider } from "@workspace/api-client-react";
+import {
+  useGetSatcatStats,
+  useGetSatcatByYearProvider,
+  useGetSatcatFalconVsStarship,
+  useGetSatcatSpacexBySite,
+  useGetSatcatSpacexBySiteMonthly,
+  useGetSatcatSpacexByEntity,
+  useGetSatcatLaunchRate,
+  getGetSatcatFalconVsStarshipQueryKey,
+  getGetSatcatSpacexBySiteQueryKey,
+  getGetSatcatSpacexBySiteMonthlyQueryKey,
+  getGetSatcatSpacexByEntityQueryKey,
+  getGetSatcatLaunchRateQueryKey,
+} from "@workspace/api-client-react";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useSearch, useLocation } from "wouter";
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -68,13 +80,8 @@ const FALCON_COLOR   = 'hsl(140 100% 50%)';
 const STARSHIP_COLOR = 'hsl(35 100% 55%)';
 
 function FalconVsStarshipChart() {
-  const { data, isLoading } = useQuery<{
-    rows: Array<{ year: string; falcon: number; starship: number }>;
-    starshipTotal: number;
-  }>({
-    queryKey: ['falcon-vs-starship'],
-    queryFn: () => fetch('/api/satcat/falcon-vs-starship').then((r) => r.json()),
-    staleTime: 5 * 60 * 1000,
+  const { data, isLoading } = useGetSatcatFalconVsStarship({
+    query: { queryKey: getGetSatcatFalconVsStarshipQueryKey(), staleTime: 5 * 60 * 1000 },
   });
 
   if (isLoading || !data) return (
@@ -185,27 +192,18 @@ const OTHER_SITE_COLOR = 'hsl(35 100% 50%)';
 function SpaceXBySiteChart() {
   const [view, setView] = useState<'annual' | 'monthly'>('annual');
 
-  const { data, isLoading } = useQuery<{
-    rows: Array<{ year: string; capeCanaveral: number; vandenberg: number; other: number }>;
-  }>({
-    queryKey: ['spacex-by-site'],
-    queryFn: () => fetch('/api/satcat/spacex-by-site').then((r) => r.json()),
-    staleTime: 5 * 60 * 1000,
+  const { data, isLoading } = useGetSatcatSpacexBySite({
+    query: { queryKey: getGetSatcatSpacexBySiteQueryKey(), staleTime: 5 * 60 * 1000 },
   });
 
   const currentYear = data?.rows.length
     ? data.rows[data.rows.length - 1].year
     : String(new Date().getFullYear());
 
-  const { data: monthlyData, isLoading: monthlyLoading } = useQuery<{
-    year: string;
-    rows: Array<{ month: string; monthNum: number; capeCanaveral: number; vandenberg: number; other: number }>;
-  }>({
-    queryKey: ['spacex-by-site-monthly', currentYear],
-    queryFn: () => fetch(`/api/satcat/spacex-by-site-monthly?year=${currentYear}`).then((r) => r.json()),
-    staleTime: 5 * 60 * 1000,
-    enabled: view === 'monthly',
-  });
+  const { data: monthlyData, isLoading: monthlyLoading } = useGetSatcatSpacexBySiteMonthly(
+    { year: currentYear },
+    { query: { queryKey: getGetSatcatSpacexBySiteMonthlyQueryKey({ year: currentYear }), staleTime: 5 * 60 * 1000, enabled: view === 'monthly' } },
+  );
 
   if (isLoading || !data) return (
     <div className="flex items-center justify-center h-[360px] text-muted-foreground font-mono text-sm animate-pulse uppercase">
@@ -368,12 +366,8 @@ const USGOV_COLOR      = 'hsl(220 100% 65%)';
 const COMMERCIAL_COLOR = 'hsl(35 100% 50%)';
 
 function SpaceXByEntityChart() {
-  const { data, isLoading } = useQuery<{
-    rows: Array<{ year: string; starlink: number; usGov: number; commercial: number }>;
-  }>({
-    queryKey: ['spacex-by-entity'],
-    queryFn: () => fetch('/api/satcat/spacex-by-entity').then((r) => r.json()),
-    staleTime: 5 * 60 * 1000,
+  const { data, isLoading } = useGetSatcatSpacexByEntity({
+    query: { queryKey: getGetSatcatSpacexByEntityQueryKey(), staleTime: 5 * 60 * 1000 },
   });
 
   if (isLoading || !data) return (
@@ -629,10 +623,8 @@ const ROCKET_LAB_COLOR = 'hsl(140 100% 50%)';
 const PROVIDER_DIM = 'hsl(180 60% 40%)';
 
 function LaunchRateChart() {
-  const { data, isLoading, isError } = useQuery<LaunchRateResponse>({
-    queryKey: ['launch-rate'],
-    queryFn: () => fetch('/api/satcat/launch-rate').then((r) => r.json()),
-    staleTime: 5 * 60 * 1000,
+  const { data, isLoading, isError } = useGetSatcatLaunchRate({
+    query: { queryKey: getGetSatcatLaunchRateQueryKey(), staleTime: 5 * 60 * 1000 },
   });
 
   const [view, setView] = useState<'provider' | 'vehicle'>('provider');

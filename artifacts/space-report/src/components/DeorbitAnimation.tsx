@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useGetSatcatDeorbitHistory, getGetSatcatDeorbitHistoryQueryKey } from "@workspace/api-client-react";
 import { useRef, useEffect, useCallback, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, TrendingDown, Play, Pause, RotateCcw } from "lucide-react";
@@ -220,10 +220,8 @@ export function DeorbitAnimation() {
   const rafIdRef     = useRef<number>(0);
   const lastRafTsRef = useRef<number>(0);
 
-  const { data, isLoading, isError } = useQuery<DeorbitData>({
-    queryKey: ["deorbit-history"],
-    queryFn: () => fetch("/api/satcat/deorbit-history").then((r) => r.json()),
-    staleTime: 30 * 60 * 1000,
+  const { data, isLoading, isError } = useGetSatcatDeorbitHistory({
+    query: { queryKey: getGetSatcatDeorbitHistoryQueryKey(), staleTime: 30 * 60 * 1000 },
   });
 
   const maxDay = data?.dayMax ?? 25400;

@@ -16,13 +16,25 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  DeorbitHistory,
+  FalconVsStarship,
   GetSatcatParams,
+  GetSatcatSpacexBySiteMonthlyParams,
+  GetSatcatUpmassByProviderParams,
   HealthStatus,
+  LaunchRate,
+  MassCdf,
+  OrbitalMap,
   SatcatByYearProvider,
   SatcatFilters,
   SatcatListResponse,
   SatcatStats,
-  SatcatSummary
+  SatcatSummary,
+  ShuttleAudit,
+  SpacexByEntity,
+  SpacexBySite,
+  SpacexBySiteMonthly,
+  UpmassByProvider
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -357,20 +369,31 @@ export function useGetSatcatSummary<TData = Awaited<ReturnType<typeof getSatcatS
 
 
 export const getGetSatcatByYearProviderUrl = () => {
+
+
+
+
   return `/api/satcat/by-year-provider`
 }
 
 /**
- * Annual mass-to-orbit split by SpaceX (Falcon family) vs all other providers
- * @summary SpaceX vs Rest-of-World mass by year
+ * Payload mass to orbit per year, split between SpaceX (Falcon family) and the rest of the world
+ * @summary Yearly payload mass by provider
  */
 export const getSatcatByYearProvider = async ( options?: RequestInit): Promise<SatcatByYearProvider> => {
+
   return customFetch<SatcatByYearProvider>(getGetSatcatByYearProviderUrl(),
   {
     ...options,
     method: 'GET'
+
+
   }
 );}
+
+
+
+
 
 export const getGetSatcatByYearProviderQueryKey = () => {
     return [
@@ -378,27 +401,838 @@ export const getGetSatcatByYearProviderQueryKey = () => {
     ] as const;
     }
 
+
 export const getGetSatcatByYearProviderQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatByYearProvider>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatByYearProvider>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
+
 const {query: queryOptions, request: requestOptions} = options ?? {};
+
   const queryKey =  queryOptions?.queryKey ?? getGetSatcatByYearProviderQueryKey();
+
+
+
     const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatByYearProvider>>> = ({ signal }) => getSatcatByYearProvider({ signal, ...requestOptions });
+
+
+
+
+
    return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatByYearProvider>>, TError, TData> & { queryKey: QueryKey }
 }
 
 export type GetSatcatByYearProviderQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatByYearProvider>>>
 export type GetSatcatByYearProviderQueryError = ErrorType<unknown>
 
+
 /**
- * @summary SpaceX vs Rest-of-World mass by year
+ * @summary Yearly payload mass by provider
  */
+
 export function useGetSatcatByYearProvider<TData = Awaited<ReturnType<typeof getSatcatByYearProvider>>, TError = ErrorType<unknown>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatByYearProvider>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
   const queryOptions = getGetSatcatByYearProviderQueryOptions(options)
+
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+
+
+
+
+
+
+export const getGetSatcatUpmassByProviderUrl = (params?: GetSatcatUpmassByProviderParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/satcat/upmass-by-provider?${stringifiedParams}` : `/api/satcat/upmass-by-provider`
+}
+
+/**
+ * Payload mass delivered to orbit per launch provider within a date window
+ * @summary Upmass by provider for a date window
+ */
+export const getSatcatUpmassByProvider = async (params?: GetSatcatUpmassByProviderParams, options?: RequestInit): Promise<UpmassByProvider> => {
+
+  return customFetch<UpmassByProvider>(getGetSatcatUpmassByProviderUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatUpmassByProviderQueryKey = (params?: GetSatcatUpmassByProviderParams,) => {
+    return [
+    `/api/satcat/upmass-by-provider`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSatcatUpmassByProviderQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatUpmassByProvider>>, TError = ErrorType<unknown>>(params?: GetSatcatUpmassByProviderParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatUpmassByProvider>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatUpmassByProviderQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatUpmassByProvider>>> = ({ signal }) => getSatcatUpmassByProvider(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatUpmassByProvider>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatUpmassByProviderQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatUpmassByProvider>>>
+export type GetSatcatUpmassByProviderQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Upmass by provider for a date window
+ */
+
+export function useGetSatcatUpmassByProvider<TData = Awaited<ReturnType<typeof getSatcatUpmassByProvider>>, TError = ErrorType<unknown>>(
+ params?: GetSatcatUpmassByProviderParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatUpmassByProvider>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatUpmassByProviderQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSatcatShuttleAuditUrl = () => {
+
+
+
+
+  return `/api/satcat/shuttle-audit`
+}
+
+/**
+ * Splits GCAT Shuttle tonnage into orbiter rows vs deployed cargo, with theorized dry-mass split and Falcon 9 reference
+ * @summary Space Shuttle mass forensics
+ */
+export const getSatcatShuttleAudit = async ( options?: RequestInit): Promise<ShuttleAudit> => {
+
+  return customFetch<ShuttleAudit>(getGetSatcatShuttleAuditUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatShuttleAuditQueryKey = () => {
+    return [
+    `/api/satcat/shuttle-audit`
+    ] as const;
+    }
+
+
+export const getGetSatcatShuttleAuditQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatShuttleAudit>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatShuttleAudit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatShuttleAuditQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatShuttleAudit>>> = ({ signal }) => getSatcatShuttleAudit({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatShuttleAudit>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatShuttleAuditQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatShuttleAudit>>>
+export type GetSatcatShuttleAuditQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Space Shuttle mass forensics
+ */
+
+export function useGetSatcatShuttleAudit<TData = Awaited<ReturnType<typeof getSatcatShuttleAudit>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatShuttleAudit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatShuttleAuditQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSatcatLaunchRateUrl = () => {
+
+
+
+
+  return `/api/satcat/launch-rate`
+}
+
+/**
+ * Orbital-class launch attempts per year by provider and vehicle, plus anticipated heavy-lift contender watchlist
+ * @summary Orbital launch cadence by provider and vehicle
+ */
+export const getSatcatLaunchRate = async ( options?: RequestInit): Promise<LaunchRate> => {
+
+  return customFetch<LaunchRate>(getGetSatcatLaunchRateUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatLaunchRateQueryKey = () => {
+    return [
+    `/api/satcat/launch-rate`
+    ] as const;
+    }
+
+
+export const getGetSatcatLaunchRateQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatLaunchRate>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatLaunchRate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatLaunchRateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatLaunchRate>>> = ({ signal }) => getSatcatLaunchRate({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatLaunchRate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatLaunchRateQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatLaunchRate>>>
+export type GetSatcatLaunchRateQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Orbital launch cadence by provider and vehicle
+ */
+
+export function useGetSatcatLaunchRate<TData = Awaited<ReturnType<typeof getSatcatLaunchRate>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatLaunchRate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatLaunchRateQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSatcatFalconVsStarshipUrl = () => {
+
+
+
+
+  return `/api/satcat/falcon-vs-starship`
+}
+
+/**
+ * @summary Falcon vs Starship payload mass by year
+ */
+export const getSatcatFalconVsStarship = async ( options?: RequestInit): Promise<FalconVsStarship> => {
+
+  return customFetch<FalconVsStarship>(getGetSatcatFalconVsStarshipUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatFalconVsStarshipQueryKey = () => {
+    return [
+    `/api/satcat/falcon-vs-starship`
+    ] as const;
+    }
+
+
+export const getGetSatcatFalconVsStarshipQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatFalconVsStarship>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatFalconVsStarship>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatFalconVsStarshipQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatFalconVsStarship>>> = ({ signal }) => getSatcatFalconVsStarship({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatFalconVsStarship>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatFalconVsStarshipQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatFalconVsStarship>>>
+export type GetSatcatFalconVsStarshipQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Falcon vs Starship payload mass by year
+ */
+
+export function useGetSatcatFalconVsStarship<TData = Awaited<ReturnType<typeof getSatcatFalconVsStarship>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatFalconVsStarship>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatFalconVsStarshipQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSatcatSpacexBySiteMonthlyUrl = (params?: GetSatcatSpacexBySiteMonthlyParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/satcat/spacex-by-site-monthly?${stringifiedParams}` : `/api/satcat/spacex-by-site-monthly`
+}
+
+/**
+ * @summary SpaceX monthly payload mass by launch site
+ */
+export const getSatcatSpacexBySiteMonthly = async (params?: GetSatcatSpacexBySiteMonthlyParams, options?: RequestInit): Promise<SpacexBySiteMonthly> => {
+
+  return customFetch<SpacexBySiteMonthly>(getGetSatcatSpacexBySiteMonthlyUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatSpacexBySiteMonthlyQueryKey = (params?: GetSatcatSpacexBySiteMonthlyParams,) => {
+    return [
+    `/api/satcat/spacex-by-site-monthly`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSatcatSpacexBySiteMonthlyQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatSpacexBySiteMonthly>>, TError = ErrorType<unknown>>(params?: GetSatcatSpacexBySiteMonthlyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatSpacexBySiteMonthly>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatSpacexBySiteMonthlyQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatSpacexBySiteMonthly>>> = ({ signal }) => getSatcatSpacexBySiteMonthly(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatSpacexBySiteMonthly>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatSpacexBySiteMonthlyQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatSpacexBySiteMonthly>>>
+export type GetSatcatSpacexBySiteMonthlyQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary SpaceX monthly payload mass by launch site
+ */
+
+export function useGetSatcatSpacexBySiteMonthly<TData = Awaited<ReturnType<typeof getSatcatSpacexBySiteMonthly>>, TError = ErrorType<unknown>>(
+ params?: GetSatcatSpacexBySiteMonthlyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatSpacexBySiteMonthly>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatSpacexBySiteMonthlyQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSatcatSpacexBySiteUrl = () => {
+
+
+
+
+  return `/api/satcat/spacex-by-site`
+}
+
+/**
+ * @summary SpaceX yearly payload mass by launch site
+ */
+export const getSatcatSpacexBySite = async ( options?: RequestInit): Promise<SpacexBySite> => {
+
+  return customFetch<SpacexBySite>(getGetSatcatSpacexBySiteUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatSpacexBySiteQueryKey = () => {
+    return [
+    `/api/satcat/spacex-by-site`
+    ] as const;
+    }
+
+
+export const getGetSatcatSpacexBySiteQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatSpacexBySite>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatSpacexBySite>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatSpacexBySiteQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatSpacexBySite>>> = ({ signal }) => getSatcatSpacexBySite({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatSpacexBySite>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatSpacexBySiteQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatSpacexBySite>>>
+export type GetSatcatSpacexBySiteQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary SpaceX yearly payload mass by launch site
+ */
+
+export function useGetSatcatSpacexBySite<TData = Awaited<ReturnType<typeof getSatcatSpacexBySite>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatSpacexBySite>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatSpacexBySiteQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSatcatSpacexByEntityUrl = () => {
+
+
+
+
+  return `/api/satcat/spacex-by-entity`
+}
+
+/**
+ * @summary SpaceX yearly payload mass by customer segment
+ */
+export const getSatcatSpacexByEntity = async ( options?: RequestInit): Promise<SpacexByEntity> => {
+
+  return customFetch<SpacexByEntity>(getGetSatcatSpacexByEntityUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatSpacexByEntityQueryKey = () => {
+    return [
+    `/api/satcat/spacex-by-entity`
+    ] as const;
+    }
+
+
+export const getGetSatcatSpacexByEntityQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatSpacexByEntity>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatSpacexByEntity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatSpacexByEntityQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatSpacexByEntity>>> = ({ signal }) => getSatcatSpacexByEntity({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatSpacexByEntity>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatSpacexByEntityQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatSpacexByEntity>>>
+export type GetSatcatSpacexByEntityQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary SpaceX yearly payload mass by customer segment
+ */
+
+export function useGetSatcatSpacexByEntity<TData = Awaited<ReturnType<typeof getSatcatSpacexByEntity>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatSpacexByEntity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatSpacexByEntityQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSatcatDeorbitHistoryUrl = () => {
+
+
+
+
+  return `/api/satcat/deorbit-history`
+}
+
+/**
+ * Per-object launch/decay day numbers since 1957-01-01 for deorbit animation; dday of -1 means still in orbit
+ * @summary Launch and decay day-numbers for orbital objects
+ */
+export const getSatcatDeorbitHistory = async ( options?: RequestInit): Promise<DeorbitHistory> => {
+
+  return customFetch<DeorbitHistory>(getGetSatcatDeorbitHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatDeorbitHistoryQueryKey = () => {
+    return [
+    `/api/satcat/deorbit-history`
+    ] as const;
+    }
+
+
+export const getGetSatcatDeorbitHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatDeorbitHistory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatDeorbitHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatDeorbitHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatDeorbitHistory>>> = ({ signal }) => getSatcatDeorbitHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatDeorbitHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatDeorbitHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatDeorbitHistory>>>
+export type GetSatcatDeorbitHistoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Launch and decay day-numbers for orbital objects
+ */
+
+export function useGetSatcatDeorbitHistory<TData = Awaited<ReturnType<typeof getSatcatDeorbitHistory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatDeorbitHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatDeorbitHistoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSatcatMassCdfUrl = () => {
+
+
+
+
+  return `/api/satcat/mass-cdf`
+}
+
+/**
+ * @summary Cumulative distribution of object masses
+ */
+export const getSatcatMassCdf = async ( options?: RequestInit): Promise<MassCdf> => {
+
+  return customFetch<MassCdf>(getGetSatcatMassCdfUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatMassCdfQueryKey = () => {
+    return [
+    `/api/satcat/mass-cdf`
+    ] as const;
+    }
+
+
+export const getGetSatcatMassCdfQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatMassCdf>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatMassCdf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatMassCdfQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatMassCdf>>> = ({ signal }) => getSatcatMassCdf({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatMassCdf>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatMassCdfQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatMassCdf>>>
+export type GetSatcatMassCdfQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Cumulative distribution of object masses
+ */
+
+export function useGetSatcatMassCdf<TData = Awaited<ReturnType<typeof getSatcatMassCdf>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatMassCdf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatMassCdfQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSatcatOrbitalMapUrl = () => {
+
+
+
+
+  return `/api/satcat/orbital-map`
+}
+
+/**
+ * @summary Perigee vs inclination scatter points
+ */
+export const getSatcatOrbitalMap = async ( options?: RequestInit): Promise<OrbitalMap> => {
+
+  return customFetch<OrbitalMap>(getGetSatcatOrbitalMapUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatOrbitalMapQueryKey = () => {
+    return [
+    `/api/satcat/orbital-map`
+    ] as const;
+    }
+
+
+export const getGetSatcatOrbitalMapQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatOrbitalMap>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatOrbitalMap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatOrbitalMapQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatOrbitalMap>>> = ({ signal }) => getSatcatOrbitalMap({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatOrbitalMap>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatOrbitalMapQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatOrbitalMap>>>
+export type GetSatcatOrbitalMapQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Perigee vs inclination scatter points
+ */
+
+export function useGetSatcatOrbitalMap<TData = Awaited<ReturnType<typeof getSatcatOrbitalMap>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatOrbitalMap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatOrbitalMapQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetSatcatFiltersUrl = () => {
 

@@ -136,14 +136,235 @@ export interface SatcatSummary {
   totalPayloads: number;
   totalMassKg: number;
   activePayloads: number;
-  /** Number of active Starlink satellites in orbit */
-  starlinkActive: number;
   countries: number;
   launchVehicles: number;
   firstLaunchYear: number;
   lastLaunchYear: number;
+  /** Number of active Starlink satellites in orbit */
+  starlinkActive: number;
   /** How old the cached data is in seconds */
   cacheAge: number;
+}
+
+export interface YearProviderRow {
+  year: string;
+  /** SpaceX (Falcon family) payload mass in kg */
+  spacex: number;
+  /** Rest-of-world payload mass in kg */
+  others: number;
+  spacexCount: number;
+  othersCount: number;
+}
+
+export interface SatcatByYearProvider {
+  byYearProvider: YearProviderRow[];
+}
+
+export interface ProviderUpmassRow {
+  provider: string;
+  massKg: number;
+  count: number;
+}
+
+export type UpmassByProviderWindow = {
+  start: string;
+  end: string;
+};
+
+export interface UpmassByProvider {
+  window: UpmassByProviderWindow;
+  providers: ProviderUpmassRow[];
+  totalMassKg: number;
+  totalCount: number;
+}
+
+export type ShuttleAuditGcat = {
+  totalKg: number;
+  orbiterKg: number;
+  cargoKg: number;
+  flights: number;
+  cargoObjects: number;
+};
+
+export type ShuttleAuditTheorized = {
+  orbiterDryKg: number;
+  deliveredKg: number;
+};
+
+export type ShuttleAuditPerOrbiterItem = {
+  ov: string;
+  name: string;
+  publishedDryKg: number;
+  flights: number;
+  gcatMassKg: number;
+  theorizedDryTotalKg: number;
+};
+
+export type ShuttleAuditFalcon9 = {
+  totalKg: number;
+  payloadCount: number;
+};
+
+export interface ShuttleAudit {
+  gcat: ShuttleAuditGcat;
+  theorized: ShuttleAuditTheorized;
+  perOrbiter: ShuttleAuditPerOrbiterItem[];
+  falcon9: ShuttleAuditFalcon9;
+  cacheAgeMs: number;
+}
+
+export interface VehicleCount {
+  name: string;
+  count: number;
+}
+
+export type LaunchRateYearProvidersItem = {
+  name: string;
+  count: number;
+  vehicles: VehicleCount[];
+};
+
+export type LaunchRateYearVehiclesItem = {
+  name: string;
+  count: number;
+  provider: string;
+};
+
+export interface LaunchRateYear {
+  providers: LaunchRateYearProvidersItem[];
+  vehicles: LaunchRateYearVehiclesItem[];
+  total: number;
+}
+
+export type AnticipatedVehicleStatus = typeof AnticipatedVehicleStatus[keyof typeof AnticipatedVehicleStatus];
+
+
+export const AnticipatedVehicleStatus = {
+  FLYING: 'FLYING',
+  AWAITING: 'AWAITING',
+} as const;
+
+export interface AnticipatedVehicle {
+  vehicle: string;
+  provider: string;
+  status: AnticipatedVehicleStatus;
+  /** @nullable */
+  firstYear: string | null;
+  totalLaunches: number;
+}
+
+export type LaunchRateData = {[key: string]: LaunchRateYear};
+
+export interface LaunchRate {
+  years: string[];
+  data: LaunchRateData;
+  anticipated: AnticipatedVehicle[];
+  cacheAgeMs: number;
+}
+
+export type FalconVsStarshipRowsItem = {
+  year: string;
+  falcon: number;
+  starship: number;
+};
+
+export interface FalconVsStarship {
+  rows: FalconVsStarshipRowsItem[];
+  starshipTotal: number;
+}
+
+export type SpacexBySiteMonthlyRowsItem = {
+  month: string;
+  monthNum: number;
+  capeCanaveral: number;
+  vandenberg: number;
+  other: number;
+};
+
+export interface SpacexBySiteMonthly {
+  year: string;
+  rows: SpacexBySiteMonthlyRowsItem[];
+}
+
+export type SpacexBySiteRowsItem = {
+  year: string;
+  capeCanaveral: number;
+  vandenberg: number;
+  other: number;
+};
+
+export interface SpacexBySite {
+  rows: SpacexBySiteRowsItem[];
+}
+
+export type SpacexByEntityRowsItem = {
+  year: string;
+  starlink: number;
+  usGov: number;
+  commercial: number;
+};
+
+export interface SpacexByEntity {
+  rows: SpacexByEntityRowsItem[];
+}
+
+export interface DeorbitObject {
+  /** Launch day number since 1957-01-01 */
+  lday: number;
+  /** Decay day number since 1957-01-01, or -1 if still in orbit */
+  dday: number;
+  /** Perigee (km) */
+  p: number;
+  /** Apogee (km) */
+  a: number;
+  /** Inclination (deg) */
+  i: number;
+  /** Object class */
+  c: string;
+}
+
+export interface DeorbitHistory {
+  objects: DeorbitObject[];
+  total: number;
+  decayed: number;
+  inOrbit: number;
+  dayMin: number;
+  dayMax: number;
+}
+
+export interface CDFPoint {
+  /** Mass (kg) */
+  m: number;
+  /** Cumulative fraction */
+  f: number;
+}
+
+export type MassCdfByType = {[key: string]: CDFPoint[]};
+
+export type MassCdfByNation = {[key: string]: CDFPoint[]};
+
+export type MassCdfBySite = {[key: string]: CDFPoint[]};
+
+export interface MassCdf {
+  aggregate: CDFPoint[];
+  byType: MassCdfByType;
+  byNation: MassCdfByNation;
+  bySite: MassCdfBySite;
+  total: number;
+}
+
+export interface OrbitalMapPoint {
+  /** Perigee (km) */
+  p: number;
+  /** Inclination (deg) */
+  i: number;
+  /** Object class */
+  c: string;
+}
+
+export interface OrbitalMap {
+  points: OrbitalMapPoint[];
+  total: number;
 }
 
 export interface SatcatFilters {
@@ -183,18 +404,6 @@ sort?: string;
 order?: GetSatcatOrder;
 };
 
-export interface ProviderYearRow {
-  year: string;
-  spacex: number;
-  others: number;
-  spacexCount: number;
-  othersCount: number;
-}
-
-export interface SatcatByYearProvider {
-  byYearProvider: ProviderYearRow[];
-}
-
 export type GetSatcatOrder = typeof GetSatcatOrder[keyof typeof GetSatcatOrder];
 
 
@@ -202,4 +411,22 @@ export const GetSatcatOrder = {
   asc: 'asc',
   desc: 'desc',
 } as const;
+
+export type GetSatcatUpmassByProviderParams = {
+/**
+ * Window start date (YYYY-MM-DD)
+ */
+start?: string;
+/**
+ * Window end date (YYYY-MM-DD)
+ */
+end?: string;
+};
+
+export type GetSatcatSpacexBySiteMonthlyParams = {
+/**
+ * Year (YYYY), defaults to current year
+ */
+year?: string;
+};
 

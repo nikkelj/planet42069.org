@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useGetSatcatMassCdf, getGetSatcatMassCdfQueryKey } from "@workspace/api-client-react";
 import { useState, useMemo } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -40,7 +40,7 @@ function massFmt(kg: number): string {
 
 // Ticks in log10(mass) space, with display values
 const LOG_TICKS = [-2, -1, 0, 1, 2, 3, 4, 5];
-const LOG_TICK_LABELS: Record<number, string> = {
+const LOG_TICK_LABELS: Record<string, string> = {
   "-2": "10g", "-1": "100g", "0": "1kg", "1": "10kg",
   "2":  "100kg", "3": "1t", "4": "10t", "5": "100t",
 };
@@ -88,10 +88,8 @@ const pctFmt = (v: number) => `${(v * 100).toFixed(0)}%`;
 export function MassCDFChart() {
   const [seg, setSeg] = useState<Seg>("all");
 
-  const { data, isLoading, isError } = useQuery<MassCDFData>({
-    queryKey: ["mass-cdf"],
-    queryFn: () => fetch("/api/satcat/mass-cdf").then((r) => r.json()),
-    staleTime: 30 * 60 * 1000,
+  const { data, isLoading, isError } = useGetSatcatMassCdf({
+    query: { queryKey: getGetSatcatMassCdfQueryKey(), staleTime: 30 * 60 * 1000 },
   });
 
   const { series, chartData } = useMemo(() => {

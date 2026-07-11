@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useGetSatcatShuttleAudit } from "@workspace/api-client-react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -43,14 +43,7 @@ export type ShuttleAudit = {
 };
 
 export function useShuttleAudit() {
-  return useQuery<ShuttleAudit>({
-    queryKey: ["shuttle-audit"],
-    queryFn: () =>
-      fetch("/api/satcat/shuttle-audit").then((r) => {
-        if (!r.ok) throw new Error(`Shuttle audit request failed: ${r.status}`);
-        return r.json();
-      }),
-  });
+  return useGetSatcatShuttleAudit();
 }
 
 type ChartRow = {

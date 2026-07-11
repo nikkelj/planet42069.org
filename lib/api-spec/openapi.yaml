@@ -116,6 +116,174 @@ paths:
               schema:
                 $ref: "#/components/schemas/SatcatSummary"
 
+  /satcat/by-year-provider:
+    get:
+      operationId: getSatcatByYearProvider
+      tags: [satcat]
+      summary: Yearly payload mass by provider
+      description: Payload mass to orbit per year, split between SpaceX (Falcon family) and the rest of the world
+      responses:
+        "200":
+          description: Yearly provider split
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SatcatByYearProvider"
+
+  /satcat/upmass-by-provider:
+    get:
+      operationId: getSatcatUpmassByProvider
+      tags: [satcat]
+      summary: Upmass by provider for a date window
+      description: Payload mass delivered to orbit per launch provider within a date window
+      parameters:
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Window start date (YYYY-MM-DD)
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Window end date (YYYY-MM-DD)
+      responses:
+        "200":
+          description: Provider upmass totals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpmassByProvider"
+
+  /satcat/shuttle-audit:
+    get:
+      operationId: getSatcatShuttleAudit
+      tags: [satcat]
+      summary: Space Shuttle mass forensics
+      description: Splits GCAT Shuttle tonnage into orbiter rows vs deployed cargo, with theorized dry-mass split and Falcon 9 reference
+      responses:
+        "200":
+          description: Shuttle audit breakdown
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShuttleAudit"
+
+  /satcat/launch-rate:
+    get:
+      operationId: getSatcatLaunchRate
+      tags: [satcat]
+      summary: Orbital launch cadence by provider and vehicle
+      description: Orbital-class launch attempts per year by provider and vehicle, plus anticipated heavy-lift contender watchlist
+      responses:
+        "200":
+          description: Launch cadence data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LaunchRate"
+
+  /satcat/falcon-vs-starship:
+    get:
+      operationId: getSatcatFalconVsStarship
+      tags: [satcat]
+      summary: Falcon vs Starship payload mass by year
+      responses:
+        "200":
+          description: Yearly Falcon vs Starship mass
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FalconVsStarship"
+
+  /satcat/spacex-by-site-monthly:
+    get:
+      operationId: getSatcatSpacexBySiteMonthly
+      tags: [satcat]
+      summary: SpaceX monthly payload mass by launch site
+      parameters:
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Year (YYYY), defaults to current year
+      responses:
+        "200":
+          description: Monthly site breakdown for the year
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpacexBySiteMonthly"
+
+  /satcat/spacex-by-site:
+    get:
+      operationId: getSatcatSpacexBySite
+      tags: [satcat]
+      summary: SpaceX yearly payload mass by launch site
+      responses:
+        "200":
+          description: Yearly site breakdown
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpacexBySite"
+
+  /satcat/spacex-by-entity:
+    get:
+      operationId: getSatcatSpacexByEntity
+      tags: [satcat]
+      summary: SpaceX yearly payload mass by customer segment
+      responses:
+        "200":
+          description: Yearly customer-segment breakdown
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpacexByEntity"
+
+  /satcat/deorbit-history:
+    get:
+      operationId: getSatcatDeorbitHistory
+      tags: [satcat]
+      summary: Launch and decay day-numbers for orbital objects
+      description: Per-object launch/decay day numbers since 1957-01-01 for deorbit animation; dday of -1 means still in orbit
+      responses:
+        "200":
+          description: Deorbit history dataset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeorbitHistory"
+
+  /satcat/mass-cdf:
+    get:
+      operationId: getSatcatMassCdf
+      tags: [satcat]
+      summary: Cumulative distribution of object masses
+      responses:
+        "200":
+          description: Mass CDF series
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MassCdf"
+
+  /satcat/orbital-map:
+    get:
+      operationId: getSatcatOrbitalMap
+      tags: [satcat]
+      summary: Perigee vs inclination scatter points
+      responses:
+        "200":
+          description: Orbital map points
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrbitalMap"
+
   /satcat/filters:
     get:
       operationId: getSatcatFilters
@@ -314,6 +482,484 @@ components:
         - firstLaunchYear
         - lastLaunchYear
         - cacheAge
+
+    YearProviderRow:
+      type: object
+      properties:
+        year:
+          type: string
+        spacex:
+          type: number
+          description: SpaceX (Falcon family) payload mass in kg
+        others:
+          type: number
+          description: Rest-of-world payload mass in kg
+        spacexCount:
+          type: integer
+        othersCount:
+          type: integer
+      required:
+        - year
+        - spacex
+        - others
+        - spacexCount
+        - othersCount
+
+    SatcatByYearProvider:
+      type: object
+      properties:
+        byYearProvider:
+          type: array
+          items:
+            $ref: "#/components/schemas/YearProviderRow"
+      required:
+        - byYearProvider
+
+    ProviderUpmassRow:
+      type: object
+      properties:
+        provider:
+          type: string
+        massKg:
+          type: number
+        count:
+          type: integer
+      required:
+        - provider
+        - massKg
+        - count
+
+    UpmassByProvider:
+      type: object
+      properties:
+        window:
+          type: object
+          properties:
+            start:
+              type: string
+            end:
+              type: string
+          required:
+            - start
+            - end
+        providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProviderUpmassRow"
+        totalMassKg:
+          type: number
+        totalCount:
+          type: integer
+      required:
+        - window
+        - providers
+        - totalMassKg
+        - totalCount
+
+    ShuttleAudit:
+      type: object
+      properties:
+        gcat:
+          type: object
+          properties:
+            totalKg:
+              type: number
+            orbiterKg:
+              type: number
+            cargoKg:
+              type: number
+            flights:
+              type: integer
+            cargoObjects:
+              type: integer
+          required:
+            - totalKg
+            - orbiterKg
+            - cargoKg
+            - flights
+            - cargoObjects
+        theorized:
+          type: object
+          properties:
+            orbiterDryKg:
+              type: number
+            deliveredKg:
+              type: number
+          required:
+            - orbiterDryKg
+            - deliveredKg
+        perOrbiter:
+          type: array
+          items:
+            type: object
+            properties:
+              ov:
+                type: string
+              name:
+                type: string
+              publishedDryKg:
+                type: number
+              flights:
+                type: integer
+              gcatMassKg:
+                type: number
+              theorizedDryTotalKg:
+                type: number
+            required:
+              - ov
+              - name
+              - publishedDryKg
+              - flights
+              - gcatMassKg
+              - theorizedDryTotalKg
+        falcon9:
+          type: object
+          properties:
+            totalKg:
+              type: number
+            payloadCount:
+              type: integer
+          required:
+            - totalKg
+            - payloadCount
+        cacheAgeMs:
+          type: integer
+      required:
+        - gcat
+        - theorized
+        - perOrbiter
+        - falcon9
+        - cacheAgeMs
+
+    VehicleCount:
+      type: object
+      properties:
+        name:
+          type: string
+        count:
+          type: integer
+      required:
+        - name
+        - count
+
+    LaunchRateYear:
+      type: object
+      properties:
+        providers:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              count:
+                type: integer
+              vehicles:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VehicleCount"
+            required:
+              - name
+              - count
+              - vehicles
+        vehicles:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              count:
+                type: integer
+              provider:
+                type: string
+            required:
+              - name
+              - count
+              - provider
+        total:
+          type: integer
+      required:
+        - providers
+        - vehicles
+        - total
+
+    AnticipatedVehicle:
+      type: object
+      properties:
+        vehicle:
+          type: string
+        provider:
+          type: string
+        status:
+          type: string
+          enum: [FLYING, AWAITING]
+        firstYear:
+          type: ["string", "null"]
+        totalLaunches:
+          type: integer
+      required:
+        - vehicle
+        - provider
+        - status
+        - firstYear
+        - totalLaunches
+
+    LaunchRate:
+      type: object
+      properties:
+        years:
+          type: array
+          items:
+            type: string
+        data:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/LaunchRateYear"
+        anticipated:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnticipatedVehicle"
+        cacheAgeMs:
+          type: integer
+      required:
+        - years
+        - data
+        - anticipated
+        - cacheAgeMs
+
+    FalconVsStarship:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            properties:
+              year:
+                type: string
+              falcon:
+                type: number
+              starship:
+                type: number
+            required:
+              - year
+              - falcon
+              - starship
+        starshipTotal:
+          type: number
+      required:
+        - rows
+        - starshipTotal
+
+    SpacexBySiteMonthly:
+      type: object
+      properties:
+        year:
+          type: string
+        rows:
+          type: array
+          items:
+            type: object
+            properties:
+              month:
+                type: string
+              monthNum:
+                type: integer
+              capeCanaveral:
+                type: number
+              vandenberg:
+                type: number
+              other:
+                type: number
+            required:
+              - month
+              - monthNum
+              - capeCanaveral
+              - vandenberg
+              - other
+      required:
+        - year
+        - rows
+
+    SpacexBySite:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            properties:
+              year:
+                type: string
+              capeCanaveral:
+                type: number
+              vandenberg:
+                type: number
+              other:
+                type: number
+            required:
+              - year
+              - capeCanaveral
+              - vandenberg
+              - other
+      required:
+        - rows
+
+    SpacexByEntity:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            properties:
+              year:
+                type: string
+              starlink:
+                type: number
+              usGov:
+                type: number
+              commercial:
+                type: number
+            required:
+              - year
+              - starlink
+              - usGov
+              - commercial
+      required:
+        - rows
+
+    DeorbitObject:
+      type: object
+      properties:
+        lday:
+          type: integer
+          description: Launch day number since 1957-01-01
+        dday:
+          type: integer
+          description: Decay day number since 1957-01-01, or -1 if still in orbit
+        p:
+          type: number
+          description: Perigee (km)
+        a:
+          type: number
+          description: Apogee (km)
+        i:
+          type: number
+          description: Inclination (deg)
+        c:
+          type: string
+          description: Object class
+      required:
+        - lday
+        - dday
+        - p
+        - a
+        - i
+        - c
+
+    DeorbitHistory:
+      type: object
+      properties:
+        objects:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeorbitObject"
+        total:
+          type: integer
+        decayed:
+          type: integer
+        inOrbit:
+          type: integer
+        dayMin:
+          type: integer
+        dayMax:
+          type: integer
+      required:
+        - objects
+        - total
+        - decayed
+        - inOrbit
+        - dayMin
+        - dayMax
+
+    CDFPoint:
+      type: object
+      properties:
+        m:
+          type: number
+          description: Mass (kg)
+        f:
+          type: number
+          description: Cumulative fraction
+      required:
+        - m
+        - f
+
+    MassCdf:
+      type: object
+      properties:
+        aggregate:
+          type: array
+          items:
+            $ref: "#/components/schemas/CDFPoint"
+        byType:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/CDFPoint"
+        byNation:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/CDFPoint"
+        bySite:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/CDFPoint"
+        total:
+          type: integer
+      required:
+        - aggregate
+        - byType
+        - byNation
+        - bySite
+        - total
+
+    OrbitalMapPoint:
+      type: object
+      properties:
+        p:
+          type: number
+          description: Perigee (km)
+        i:
+          type: number
+          description: Inclination (deg)
+        c:
+          type: string
+          description: Object class
+      required:
+        - p
+        - i
+        - c
+
+    OrbitalMap:
+      type: object
+      properties:
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrbitalMapPoint"
+        total:
+          type: integer
+      required:
+        - points
+        - total
 
     SatcatFilters:
       type: object

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useGetSatcatUpmassByProvider } from "@workspace/api-client-react";
 import { Scale, Loader2, FileSearch } from "lucide-react";
 
 type ProviderRow = { provider: string; massKg: number; count: number };
@@ -53,14 +53,7 @@ function verdict(bryce: number, gcat: number): Verdict {
 }
 
 export function UpmassAudit() {
-  const { data, isLoading, isError } = useQuery<UpmassResponse>({
-    queryKey: ["upmass-by-provider"],
-    queryFn: () =>
-      fetch("/api/satcat/upmass-by-provider").then((r) => {
-        if (!r.ok) throw new Error(`Upmass audit request failed: ${r.status}`);
-        return r.json();
-      }),
-  });
+  const { data, isLoading, isError } = useGetSatcatUpmassByProvider();
 
   const gcatMap = new Map<string, ProviderRow>();
   for (const p of data?.providers ?? []) gcatMap.set(p.provider, p);

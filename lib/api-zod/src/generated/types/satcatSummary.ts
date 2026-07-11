@@ -11,12 +11,12 @@ export interface SatcatSummary {
   totalPayloads: number;
   totalMassKg: number;
   activePayloads: number;
-  /** Number of active Starlink satellites in orbit */
-  starlinkActive: number;
   countries: number;
   launchVehicles: number;
   firstLaunchYear: number;
   lastLaunchYear: number;
+  /** Number of active Starlink satellites in orbit */
+  starlinkActive: number;
   /** How old the cached data is in seconds */
   cacheAge: number;
 }
