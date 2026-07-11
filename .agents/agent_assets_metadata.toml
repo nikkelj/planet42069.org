@@ -60,6 +60,12 @@ uri = "file://attached_assets/generated_images/obc_concept_radar.png"
 type = "image"
 title = "Orbital speed trap concept"
 
+[[generated]]
+id = "6fbiISQqNFoO-EOUnqzN-"
+uri = "file://attached_assets/generated_images/obc_x_header.png"
+type = "image"
+title = "OBC X header banner"
+
 [[outputs]]
 id = "g8WeDbUwXmnCo1c-oubl5"
 uri = "file://attached_assets/generated_images/obc_x_logo.png"
@@ -113,3 +119,15 @@ id = "GR4WSGPbGCSBtdN4-OCxV"
 uri = "file://attached_assets/generated_images/obc_concept_radar.png"
 type = "image"
 title = "Concept C — Orbital speed trap with compliance clipboard"
+
+[[outputs]]
+id = "_ZOemEgYVGl0RBNns56tv"
+uri = "file://attached_assets/generated_images/obc_x_header_1500x500.png"
+type = "image"
+title = "X header — 1500×500 (upload this one)"
+
+[[outputs]]
+id = "VNiH0gjsXpEkwWFSrUvFZ"
+uri = "file://attached_assets/generated_images/obc_x_header.png"
+type = "image"
+title = "Header artwork — full 16:9 version"
