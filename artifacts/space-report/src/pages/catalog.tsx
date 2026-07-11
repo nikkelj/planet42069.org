@@ -133,8 +133,11 @@ function OrbitDiagram({ apogeeKm, perigeeKm, incDeg }: {
 export default function Catalog() {
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [initialSearch] = useState(
+    () => new URLSearchParams(window.location.search).get("search") ?? "",
+  );
+  const [search, setSearch] = useState(initialSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
   
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [classFilter, setObjectClassFilter] = useState<string>("all");

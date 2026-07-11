@@ -1,4 +1,5 @@
 import { Anchor, ExternalLink } from "lucide-react";
+import { Link } from "wouter";
 import wireCatchImage from "@assets/image_1783733021394.png";
 
 export function LongMarchCatchBulletin() {
@@ -74,14 +75,52 @@ export function LongMarchCatchBulletin() {
               . The Space Police did not shoot this footage, do not own it, and credit the source. We are a catalog,
               not a newsroom — but we know where we got the tip, and we say so.
             </p>
-            <p className="text-muted-foreground/80 border-l-2 border-red-400/20 pl-3">
-              A barge recovery is not an orbital flight, so nothing has entered the catalog yet. The moment a Long
-              March 10 logs its first orbital payload, it will surface automatically on the{" "}
-              <span className="text-red-300/70">Anticipated Heavy-Lift Contenders watchlist</span> over in Mass
-              Analytics — where it, and one considerably less finished newcomer called{" "}
-              <span className="text-foreground/70">Cowboy Space</span>, have already been added to the list of
-              vehicles we are keeping an eye on.
-            </p>
+            <div className="border border-red-400/25 bg-black/30 p-3 space-y-2">
+              <div className="text-red-300/90 font-bold uppercase tracking-widest text-[10px]">
+                Update · Catalog Entry Confirmed — Launch 2026-158
+              </div>
+              <p>
+                This was not a suborbital stunt. The GCAT now carries the launch, and the paperwork is real:
+                the flight delivered{" "}
+                <Link
+                  href="/catalog?search=CX-26"
+                  className="text-red-300/90 underline underline-offset-2 hover:text-red-200 transition-colors font-semibold"
+                >
+                  CX-26
+                </Link>{" "}
+                (S69972 — a 10,000 kg CNSA payload; orbital elements still being typed up) plus its{" "}
+                <Link
+                  href="/catalog?search=CX-26 adapter"
+                  className="text-red-300/90 underline underline-offset-2 hover:text-red-200 transition-colors font-semibold"
+                >
+                  100 kg adapter
+                </Link>{" "}
+                (S69973). Both duly booked. First flight, first catch, first payload — an efficient day of
+                paperwork generation.
+              </p>
+              <p>
+                <span className="text-red-300 font-bold">However.</span>{" "}
+                <Link
+                  href="/catalog?search=CZ-10B Stage 2"
+                  className="text-red-300/90 underline underline-offset-2 hover:text-red-200 transition-colors font-semibold"
+                >
+                  CZ-10B Stage 2
+                </Link>{" "}
+                (S69974, five tonnes of freshly minted rocket body) is <em>still up there</em> — no deorbit
+                burn on record, no decay date on file. You caught the first stage on a boat with piano wire,
+                and then left the second stage in orbit like a receipt on the floor of the getaway car. We
+                would be angrier, but honesty compels us to note that even Falcon 9 — rarely, and always with
+                a sheepish press release — has left a second stage loitering upstairs. Welcome to the
+                reusability club. The initiation ritual is apparently a five-tonne donation to our catalog.
+              </p>
+              <p className="text-muted-foreground/80">
+                The Long March 10 now also counts as flown on the{" "}
+                <span className="text-red-300/70">Anticipated Heavy-Lift Contenders watchlist</span> over in
+                Mass Analytics — where one considerably less finished newcomer called{" "}
+                <span className="text-foreground/70">Cowboy Space</span> remains, as filed, a rumor with a
+                logo.
+              </p>
+            </div>
           </div>
           <div className="flex flex-col gap-1 border-t border-red-400/20 pt-2 text-[10px] text-red-400/40 uppercase tracking-wider">
             <span>— Bureau of Reusable Hardware</span>
