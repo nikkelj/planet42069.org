@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "W5pVuMzDwER4MXSQdVIBh"
+uri = "file://artifacts/space-report/src/assets/lm10b_wire_catch.png"
+type = "image"
+title = "rocket booster wire catch barge"

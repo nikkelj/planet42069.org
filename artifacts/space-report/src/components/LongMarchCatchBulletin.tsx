@@ -1,4 +1,5 @@
 import { Anchor, ExternalLink } from "lucide-react";
+import wireCatchImage from "@assets/image_1783733021394.png";
 
 export function LongMarchCatchBulletin() {
   return (
@@ -38,11 +39,31 @@ export function LongMarchCatchBulletin() {
               for "catch the falling rocket" was more or less explored. We were wrong. We are frequently wrong. It
               is the one constant in this catalog.
             </p>
+            <figure className="border border-red-400/20 bg-black/40 p-2">
+              <img
+                src={wireCatchImage}
+                alt="Long March 10B first stage descending toward the wire-catch recovery structure on the ocean barge, engine burning during final approach"
+                className="w-full h-auto block"
+                loading="lazy"
+              />
+              <figcaption className="pt-2 text-[10px] text-red-400/50 uppercase tracking-wider">
+                Exhibit A — The final approach. Frame from footage circulated by{" "}
+                <a
+                  href="https://x.com/raz_liu?s=21"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-red-300/80 underline underline-offset-2 hover:text-red-200 transition-colors"
+                >
+                  Ace of Razgriz
+                </a>{" "}
+                on X. Their footage, their credit — we are merely the filing cabinet.
+              </figcaption>
+            </figure>
             <p>
               <span className="text-red-300 font-bold">Provenance:</span>{" "}
               Original source appears to be the X account{" "}
               <a
-                href="https://x.com/AceofRazgriz"
+                href="https://x.com/raz_liu?s=21"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-red-300/90 underline underline-offset-2 hover:text-red-200 transition-colors font-semibold inline-flex items-center gap-1"
