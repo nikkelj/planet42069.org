@@ -1,8 +1,19 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "W5pVuMzDwER4MXSQdVIBh"
 uri = "file://artifacts/space-report/src/assets/lm10b_wire_catch.png"
 type = "image"
 title = "rocket booster wire catch barge"
+
+[[generated]]
+id = "p89a_nOVP-s47tuVynXMD"
+uri = "file://attached_assets/generated_images/obc_x_logo.png"
+type = "image"
+title = "Orbital Bureaucracy Command logo"
+
+[[outputs]]
+id = "g8WeDbUwXmnCo1c-oubl5"
+uri = "file://attached_assets/generated_images/obc_x_logo.png"
+type = "image"
+title = "Orbital Bureaucracy Command — X avatar logo"
