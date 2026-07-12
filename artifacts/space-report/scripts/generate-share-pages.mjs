@@ -14,7 +14,7 @@ const esc = (s) =>
 for (const card of cards) {
   const title = `CASE #${card.caseNo} — ${card.title}`;
   const target = `/#${card.id}`;
-  const pageUrl = `${SITE}/r/${card.id}/`;
+  const pageUrl = `${SITE}/r/${card.id}.html`;
   const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -42,8 +42,8 @@ for (const card of cards) {
   </body>
 </html>
 `;
-  const dir = join(__dirname, "..", "public", "r", card.id);
+  const dir = join(__dirname, "..", "public", "r");
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "index.html"), html);
-  console.log(`wrote public/r/${card.id}/index.html`);
+  writeFileSync(join(dir, `${card.id}.html`), html);
+  console.log(`wrote public/r/${card.id}.html`);
 }
