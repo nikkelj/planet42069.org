@@ -66,6 +66,40 @@ export default function Home() {
         </div>
       </div>
 
+      {/* OFFICIAL CHANNEL — X ACCOUNT */}
+      <a
+        href="https://x.com/OrbitalBureau"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block border border-primary/40 bg-primary/5 p-5 font-mono text-xs relative transition-colors hover:bg-primary/10 hover:border-primary/60 group"
+        data-testid="link-x-account"
+      >
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary/60 via-primary/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <Signal className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <div className="space-y-2 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/20 pb-2">
+              <span className="text-primary font-bold uppercase tracking-widest text-[11px]">
+                Official Communiqué Channel
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">
+                Broadcast Frequency: X / Daily Docket Cadence
+              </span>
+            </div>
+            <p className="text-muted-foreground leading-relaxed normal-case">
+              The Orbital Bureaucracy Command disseminates case files, decrees, advisories, and
+              formal objections via its authorized transmission channel. Follow{" "}
+              <span className="text-primary font-bold">@OrbitalBureau</span> to receive each
+              briefing as it clears review. Compliance is voluntary. Monitoring is not.
+            </p>
+            <div className="flex items-center gap-1 text-primary/70 uppercase tracking-wider text-[10px] group-hover:text-primary transition-colors">
+              <span>Proceed to channel</span>
+              <ChevronRight className="w-3 h-3" />
+            </div>
+          </div>
+        </div>
+      </a>
+
       {/* BRIEFING DOCKET — CASE INDEX */}
       <DossierIndex />
 
