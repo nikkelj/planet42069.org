@@ -8,6 +8,7 @@ import bryceUpmassChart from "@assets/image_1782288004026.png";
 import alpha5Faq from "@assets/image_1782450578315.png";
 import { UpmassAudit } from "@/components/UpmassAudit";
 import { ShuttleMassComplaint } from "@/components/ShuttleMassComplaint";
+import { ShuttleVsFalconChart } from "@/components/ShuttleVsFalconChart";
 import { LongMarchCatchBulletin } from "@/components/LongMarchCatchBulletin";
 
 export default function Home() {
@@ -135,6 +136,7 @@ export default function Home() {
                 for 32 months. When flights resumed, the cadence returned at roughly half its former slope
                 and stayed there for 23 years. The exponential did not return with it.
               </p>
+              <ShuttleVsFalconChart compact />
               <p>
                 Here is what makes this a proper case study rather than a eulogy: Falcon 9{" "}
                 <em>also</em> suffered failures in its early program years — CRS-7 broke up in flight in

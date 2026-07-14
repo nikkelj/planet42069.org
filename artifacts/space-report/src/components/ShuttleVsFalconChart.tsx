@@ -12,14 +12,20 @@ import { GitCompareArrows } from "lucide-react";
 const SHUTTLE_COLOR = "hsl(35 100% 55%)";
 const FALCON_COLOR = "hsl(140 100% 50%)";
 
-export function ShuttleVsFalconChart() {
+export function ShuttleVsFalconChart({ compact = false }: { compact?: boolean }) {
   const { data, isLoading } = useGetSatcatShuttleVsFalconRate({
     query: { queryKey: getGetSatcatShuttleVsFalconRateQueryKey(), staleTime: 5 * 60 * 1000 },
   });
 
   if (isLoading || !data) {
     return (
-      <div className="flex items-center justify-center h-[420px] text-muted-foreground font-mono text-sm animate-pulse uppercase lg:col-span-2">
+      <div
+        className={
+          compact
+            ? "flex items-center justify-center h-[260px] text-muted-foreground font-mono text-xs animate-pulse uppercase"
+            : "flex items-center justify-center h-[420px] text-muted-foreground font-mono text-sm animate-pulse uppercase lg:col-span-2"
+        }
+      >
         Aligning program epochs...
       </div>
     );
@@ -81,21 +87,9 @@ export function ShuttleVsFalconChart() {
     );
   };
 
-  return (
-    <Card className="border-2 border-border bg-card lg:col-span-2 overflow-hidden relative" data-testid="chart-shuttle-vs-falcon">
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-scanline opacity-30" />
-      <CardHeader className="bg-muted/30 border-b border-border">
-        <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
-          <GitCompareArrows className="w-4 h-4" /> Case Study: Where Did the Exponential Go? — Shuttle vs Falcon 9 Cadence
-        </CardTitle>
-        <p className="text-muted-foreground text-xs font-mono uppercase tracking-wider">
-          Launch attempts per program year · Year 1 = first flight ({data.shuttleFirstYear} / {data.falconFirstYear}) · Source: GCAT launch log
-        </p>
-      </CardHeader>
-      <CardContent className="pt-6 pb-4">
-        <div className="h-[380px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={rows} margin={{ top: 15, right: 25, left: 0, bottom: 5 }}>
+  const chart = (
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={rows} margin={{ top: 15, right: 25, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="programYear"
@@ -126,6 +120,7 @@ export function ShuttleVsFalconChart() {
                 strokeWidth={2}
                 dot={{ r: 2, fill: SHUTTLE_COLOR }}
                 connectNulls={false}
+                isAnimationActive={false}
               />
               <Line
                 name={`Falcon 9 (${data.falconTotal} launches)`}
@@ -135,6 +130,7 @@ export function ShuttleVsFalconChart() {
                 strokeWidth={2}
                 dot={{ r: 2, fill: FALCON_COLOR }}
                 connectNulls={false}
+                isAnimationActive={false}
               />
               {events.map((e) => {
                 const v = valueFor(e);
@@ -151,9 +147,34 @@ export function ShuttleVsFalconChart() {
                   />
                 );
               })}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+      </LineChart>
+    </ResponsiveContainer>
+  );
+
+  if (compact) {
+    return (
+      <div className="border border-orange-400/20 bg-background/40 p-3" data-testid="chart-shuttle-vs-falcon-compact">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-orange-400/60 mb-2">
+          Exhibit A · Launch attempts per program year · Year 1 = first flight ({data.shuttleFirstYear} / {data.falconFirstYear})
+        </p>
+        <div className="h-[260px] w-full">{chart}</div>
+      </div>
+    );
+  }
+
+  return (
+    <Card className="border-2 border-border bg-card lg:col-span-2 overflow-hidden relative" data-testid="chart-shuttle-vs-falcon">
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-scanline opacity-30" />
+      <CardHeader className="bg-muted/30 border-b border-border">
+        <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
+          <GitCompareArrows className="w-4 h-4" /> Case Study: Where Did the Exponential Go? — Shuttle vs Falcon 9 Cadence
+        </CardTitle>
+        <p className="text-muted-foreground text-xs font-mono uppercase tracking-wider">
+          Launch attempts per program year · Year 1 = first flight ({data.shuttleFirstYear} / {data.falconFirstYear}) · Source: GCAT launch log
+        </p>
+      </CardHeader>
+      <CardContent className="pt-6 pb-4">
+        <div className="h-[380px] w-full">{chart}</div>
 
         {/* Event ledger */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 font-mono text-[11px]">
