@@ -253,6 +253,40 @@ export interface AnticipatedVehicle {
   totalLaunches: number;
 }
 
+export interface CadenceRow {
+  programYear: number;
+  shuttleYear: number | null;
+  shuttleCount: number | null;
+  falconYear: number | null;
+  falconCount: number | null;
+}
+
+export type CadenceEventProgram = typeof CadenceEventProgram[keyof typeof CadenceEventProgram];
+
+
+export const CadenceEventProgram = {
+  shuttle: 'shuttle',
+  falcon9: 'falcon9',
+} as const;
+
+export interface CadenceEvent {
+  program: CadenceEventProgram;
+  programYear: number;
+  calendarYear: number;
+  label: string;
+  detail: string;
+}
+
+export interface ShuttleVsFalconRate {
+  rows: CadenceRow[];
+  events: CadenceEvent[];
+  shuttleFirstYear: number;
+  falconFirstYear: number;
+  shuttleTotal: number;
+  falconTotal: number;
+  cacheAgeMs?: number;
+}
+
 export type LaunchRateData = {[key: string]: LaunchRateYear};
 
 export interface LaunchRate {

@@ -1,5 +1,11 @@
 [
   {
+    "id": "cadence-0135",
+    "caseNo": "CADENCE-0135",
+    "title": "The Missing Exponential — Shuttle vs Falcon 9",
+    "description": "Case Study: an exponential growth curve, last seen with the Shuttle program in 1985, has been located in someone else's program. Findings filed."
+  },
+  {
     "id": "lm10b-0001",
     "caseNo": "LM10B-0001",
     "title": "Long March 10B — Barge Catch on a Wire",

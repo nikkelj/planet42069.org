@@ -4,3 +4,4 @@
 - [Deorbit sim in-orbit objects](deorbit-history-in-orbit.md) — orbital-decay animation must include still-in-orbit sats (dday=-1 sentinel) or plot empties at present day.
 - [Recharts log scale workaround](recharts-log-scale.md) — native scale="log" on XAxis is unreliable; pre-transform to log10 and use linear axis with custom tick labels instead.
 - [GCAT counts Shuttle orbiter as payload](gcat-shuttle-orbiter-payload.md) — one ~90t payload row per flight (PLName OV-xxx) inflates vehicle mass charts; segment or exclude.
+- [Recharts tooltip row lookup](recharts-tooltip-label.md) — use payload[0].payload, not label matching; label can be a string and break === lookups.

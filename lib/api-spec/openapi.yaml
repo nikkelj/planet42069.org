@@ -171,6 +171,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/ShuttleAudit"
 
+  /satcat/shuttle-vs-falcon-rate:
+    get:
+      operationId: getSatcatShuttleVsFalconRate
+      tags: [satcat]
+      summary: Shuttle vs Falcon 9 launch cadence by program year
+      description: Orbital launch attempts per program year (year 1 = first flight year) for Space Shuttle and Falcon 9, with annotated major events
+      responses:
+        "200":
+          description: Program-year-aligned cadence comparison
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShuttleVsFalconRate"
+
   /satcat/launch-rate:
     get:
       operationId: getSatcatLaunchRate
@@ -704,6 +718,80 @@ components:
         - status
         - firstYear
         - totalLaunches
+
+    CadenceRow:
+      type: object
+      properties:
+        programYear:
+          type: integer
+        shuttleYear:
+          type: integer
+          nullable: true
+        shuttleCount:
+          type: integer
+          nullable: true
+        falconYear:
+          type: integer
+          nullable: true
+        falconCount:
+          type: integer
+          nullable: true
+      required:
+        - programYear
+        - shuttleYear
+        - shuttleCount
+        - falconYear
+        - falconCount
+
+    CadenceEvent:
+      type: object
+      properties:
+        program:
+          type: string
+          enum: [shuttle, falcon9]
+        programYear:
+          type: integer
+        calendarYear:
+          type: integer
+        label:
+          type: string
+        detail:
+          type: string
+      required:
+        - program
+        - programYear
+        - calendarYear
+        - label
+        - detail
+
+    ShuttleVsFalconRate:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/CadenceRow"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/CadenceEvent"
+        shuttleFirstYear:
+          type: integer
+        falconFirstYear:
+          type: integer
+        shuttleTotal:
+          type: integer
+        falconTotal:
+          type: integer
+        cacheAgeMs:
+          type: integer
+      required:
+        - rows
+        - events
+        - shuttleFirstYear
+        - falconFirstYear
+        - shuttleTotal
+        - falconTotal
 
     LaunchRate:
       type: object

@@ -31,6 +31,7 @@ import type {
   SatcatStats,
   SatcatSummary,
   ShuttleAudit,
+  ShuttleVsFalconRate,
   SpacexByEntity,
   SpacexBySite,
   SpacexBySiteMonthly,
@@ -597,6 +598,84 @@ export function useGetSatcatShuttleAudit<TData = Awaited<ReturnType<typeof getSa
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSatcatShuttleAuditQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSatcatShuttleVsFalconRateUrl = () => {
+
+
+
+
+  return `/api/satcat/shuttle-vs-falcon-rate`
+}
+
+/**
+ * Orbital launch attempts per program year (year 1 = first flight year) for Space Shuttle and Falcon 9, with annotated major events
+ * @summary Shuttle vs Falcon 9 launch cadence by program year
+ */
+export const getSatcatShuttleVsFalconRate = async ( options?: RequestInit): Promise<ShuttleVsFalconRate> => {
+
+  return customFetch<ShuttleVsFalconRate>(getGetSatcatShuttleVsFalconRateUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatShuttleVsFalconRateQueryKey = () => {
+    return [
+    `/api/satcat/shuttle-vs-falcon-rate`
+    ] as const;
+    }
+
+
+export const getGetSatcatShuttleVsFalconRateQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatShuttleVsFalconRate>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatShuttleVsFalconRate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatShuttleVsFalconRateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatShuttleVsFalconRate>>> = ({ signal }) => getSatcatShuttleVsFalconRate({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatShuttleVsFalconRate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatShuttleVsFalconRateQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatShuttleVsFalconRate>>>
+export type GetSatcatShuttleVsFalconRateQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Shuttle vs Falcon 9 launch cadence by program year
+ */
+
+export function useGetSatcatShuttleVsFalconRate<TData = Awaited<ReturnType<typeof getSatcatShuttleVsFalconRate>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatShuttleVsFalconRate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatShuttleVsFalconRateQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

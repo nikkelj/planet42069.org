@@ -103,6 +103,81 @@ export default function Home() {
       {/* BRIEFING DOCKET — CASE INDEX */}
       <DossierIndex />
 
+      {/* CASE STUDY — THE MISSING EXPONENTIAL */}
+      <div id="cadence-0135" className="scroll-mt-24 border border-orange-400/30 bg-orange-950/15 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-orange-400/60 via-orange-400/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <Activity className="w-5 h-5 text-orange-400/80 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-orange-400/20 pb-2">
+              <span className="text-orange-300/90 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Case Study
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #CADENCE-0135 · Posted: 2026-07-12 · Classification: Missing Property Report</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-orange-400/60">Re:</span> The Missing Exponential — Shuttle vs Falcon 9</span>
+              <span><span className="text-orange-400/60">Missing Since:</span> Approx. January 1986</span>
+              <span><span className="text-orange-400/60">Status:</span> Located (in someone else's program)</span>
+            </div>
+            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                The Bureau has received a missing property report concerning an{" "}
+                <span className="text-orange-300/80">exponential growth curve</span>, last seen in the
+                possession of the Space Shuttle program in 1985. The Bureau takes such reports seriously.
+                Exponentials are rare, valuable, and — as this case demonstrates — easily lost.
+              </p>
+              <p>
+                The facts are not in dispute. For its first five program years, the Shuttle's launch cadence
+                behaved exactly as an exponential should: 2, 3, 4, 6, then 10 flights per the catalog.
+                Doubling roughly every two years. Extrapolations of the era projected a flight every two weeks.
+                Then came program year 6 — 1986 — and the loss of <em>Challenger</em>. The fleet stood down
+                for 32 months. When flights resumed, the cadence returned at roughly half its former slope
+                and stayed there for 23 years. The exponential did not return with it.
+              </p>
+              <p>
+                Here is what makes this a proper case study rather than a eulogy: Falcon 9{" "}
+                <em>also</em> suffered failures in its early program years — CRS-7 broke up in flight in
+                program year 6, and AMOS-6 destroyed a pad in year 7.{" "}
+                <span className="text-orange-300/80">The same trap, sprung at the same point in program life.</span>{" "}
+                Falcon 9's standdowns lasted six months and four months respectively. Its exponential survived.
+                The Shuttle's did not.
+              </p>
+              <p>
+                The Bureau's finding: the difference was never engineering ambition. It was exposure.
+                Every Shuttle flight carried crew, so every Shuttle failure was a national tragedy demanding
+                years of investigation, and rightly so. Every Shuttle landing fed a refurbishment pipeline
+                staffed like a small city. And the Shuttle waited for customers; it could not manufacture
+                its own demand. Falcon 9 flew uncrewed by default, turned boosters around in weeks, and —
+                upon running low on customers — simply became its own biggest customer and kept launching.
+                An exponential, it turns out, is not a property of rockets. It is a property of{" "}
+                <em>turnaround time and risk tolerance</em>, and it compounds only when nothing stops the clock.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-orange-400/20 pl-3">
+                The Bureau wishes to be fair to the deceased. The Shuttle was asked to be everything —
+                crew bus, cargo truck, laboratory, diplomatic instrument — and flew 31 years carrying that
+                paperwork. Falcon 9 was asked to do one thing cheaply and often. The Bureau notes that asking
+                one vehicle to be everything is how you end up averaging 4.5 launches per year, and formally
+                recommends against it in all future filings.
+              </p>
+              <p>
+                The full evidence — both cadence curves aligned by program year, with all major events
+                annotated — has been entered into the record on the{" "}
+                <Link href="/analytics" className="text-accent underline underline-offset-2 hover:text-primary transition-colors font-semibold">
+                  Mass Analytics page
+                </Link>
+                . The curves are identical for five years. Then one of them stops compounding. The catalog
+                does not editorialize about why. The Bureau just did.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 border-t border-orange-400/20 pt-2 text-[10px] text-orange-400/40 uppercase tracking-wider">
+              <span>— Orbital Bureaucracy Command, Cadence Forensics Unit</span>
+              <span>Exponential recovered · Custody transferred · Case closed with commentary</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* FIELD BULLETIN — LONG MARCH 10B BARGE CATCH */}
       <section id="lm10b-0001" className="scroll-mt-24">
         <LongMarchCatchBulletin />
@@ -507,6 +582,18 @@ function useScrollToHashOnLoad() {
 }
 
 const DOSSIERS = [
+  {
+    id: "cadence-0135",
+    caseNo: "CADENCE-0135",
+    kind: "Case Study",
+    posted: "2026-07-12",
+    title: "The Missing Exponential — Shuttle vs Falcon 9",
+    status: "FINDINGS FILED",
+    icon: Activity,
+    tone: "text-orange-300/90",
+    toneDim: "text-orange-400/60",
+    hover: "hover:border-orange-400/50 hover:bg-orange-950/25",
+  },
   {
     id: "lm10b-0001",
     caseNo: "LM10B-0001",

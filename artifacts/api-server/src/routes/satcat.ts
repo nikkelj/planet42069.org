@@ -317,6 +317,97 @@ router.get("/satcat/shuttle-audit", async (_req, res): Promise<void> => {
   });
 });
 
+// ── Shuttle vs Falcon 9 cadence comparison ─────────────────────────────────
+// Launch ATTEMPTS per program year (year 1 = first orbital flight year),
+// computed live from the GCAT launch table. Aligning both programs on
+// "years since first flight" makes the divergence point visible: where one
+// program lost the exponential and the other kept it.
+type CadenceEvent = {
+  program: "shuttle" | "falcon9";
+  programYear: number;
+  calendarYear: number;
+  label: string;
+  detail: string;
+};
+
+const CADENCE_EVENTS: CadenceEvent[] = [
+  { program: "shuttle", programYear: 1, calendarYear: 1981, label: "STS-1", detail: "First flight. Crewed on the first try. The Bureau notes this was very brave." },
+  { program: "shuttle", programYear: 5, calendarYear: 1985, label: "PEAK: 10 FLIGHTS", detail: "The program's best year, per the catalog. This number will not be exceeded. Ever." },
+  { program: "shuttle", programYear: 6, calendarYear: 1986, label: "CHALLENGER", detail: "Loss of vehicle and crew. Fleet grounded 32 months. The exponential does not survive." },
+  { program: "shuttle", programYear: 8, calendarYear: 1988, label: "RETURN TO FLIGHT", detail: "Flights resume at roughly half the prior cadence, permanently." },
+  { program: "shuttle", programYear: 23, calendarYear: 2003, label: "COLUMBIA", detail: "Loss of vehicle and crew. Fleet grounded 29 months. Cadence never recovers." },
+  { program: "shuttle", programYear: 31, calendarYear: 2011, label: "STS-135 / RETIRED", detail: "Final flight. 31 years of service, ~4.5 launches per year on average. The catalog closes the file." },
+  { program: "falcon9", programYear: 1, calendarYear: 2010, label: "F9 FLIGHT 1", detail: "First flight. Uncrewed. The Bureau approves of this ordering." },
+  { program: "falcon9", programYear: 6, calendarYear: 2015, label: "CRS-7 FAILURE", detail: "In-flight breakup. Grounded ~6 months, not 32. No crew aboard — nothing to ground forever." },
+  { program: "falcon9", programYear: 7, calendarYear: 2016, label: "AMOS-6", detail: "Pad explosion during fueling. Grounded ~4 months. Cadence resumes climbing." },
+  { program: "falcon9", programYear: 8, calendarYear: 2017, label: "FIRST REFLIGHT", detail: "A flown booster flies again. Refurbishment measured in weeks, not standing armies." },
+  { program: "falcon9", programYear: 10, calendarYear: 2019, label: "STARLINK BEGINS", detail: "The vendor becomes its own anchor customer. Demand is now also vertically integrated." },
+  { program: "falcon9", programYear: 15, calendarYear: 2024, label: "OUT-LAUNCHES NATIONS", detail: "One vehicle family exceeds the launch cadence of every nation-state. Filed without comment." },
+];
+
+router.get("/satcat/shuttle-vs-falcon-rate", async (_req, res): Promise<void> => {
+  const launches = await getLaunchMap();
+
+  const shuttleByYear = new Map<number, number>();
+  const falconByYear = new Map<number, number>();
+
+  for (const l of launches.values()) {
+    if (!l.orbital || !l.ldate) continue;
+    const year = parseInt(l.ldate.slice(0, 4), 10);
+    if (Number.isNaN(year)) continue;
+    const fam = (l.lvFamily ?? "").toLowerCase();
+    if (fam === "space shuttle") {
+      shuttleByYear.set(year, (shuttleByYear.get(year) ?? 0) + 1);
+    } else if (fam === "falcon 9") {
+      falconByYear.set(year, (falconByYear.get(year) ?? 0) + 1);
+    }
+  }
+
+  if (shuttleByYear.size === 0 || falconByYear.size === 0) {
+    res.status(503).json({
+      error: "GCAT launch data missing expected vehicle families (Space Shuttle / Falcon 9); refusing to compute cadence comparison.",
+    });
+    return;
+  }
+
+  const shuttleFirstYear = Math.min(...shuttleByYear.keys());
+  const falconFirstYear = Math.min(...falconByYear.keys());
+  const shuttleLastYear = Math.max(...shuttleByYear.keys());
+  const falconLastYear = Math.max(...falconByYear.keys());
+
+  const shuttleSpan = shuttleLastYear - shuttleFirstYear + 1;
+  const falconSpan = falconLastYear - falconFirstYear + 1;
+  const span = Math.max(shuttleSpan, falconSpan);
+
+  const rows = Array.from({ length: span }, (_, i) => {
+    const programYear = i + 1;
+    const sYear = shuttleFirstYear + i;
+    const fYear = falconFirstYear + i;
+    const inShuttle = sYear <= shuttleLastYear;
+    const inFalcon = fYear <= falconLastYear;
+    return {
+      programYear,
+      shuttleYear: inShuttle ? sYear : null,
+      shuttleCount: inShuttle ? (shuttleByYear.get(sYear) ?? 0) : null,
+      falconYear: inFalcon ? fYear : null,
+      falconCount: inFalcon ? (falconByYear.get(fYear) ?? 0) : null,
+    };
+  });
+
+  const shuttleTotal = Array.from(shuttleByYear.values()).reduce((s, v) => s + v, 0);
+  const falconTotal = Array.from(falconByYear.values()).reduce((s, v) => s + v, 0);
+
+  res.json({
+    rows,
+    events: CADENCE_EVENTS,
+    shuttleFirstYear,
+    falconFirstYear,
+    shuttleTotal,
+    falconTotal,
+    cacheAgeMs: getCacheAge(),
+  });
+});
+
 // Orbital launch cadence by provider AND vehicle, computed live from the GCAT
 // launch table (NOT satcat payloads — rideshares would distort cadence). Counts
 // orbital-class launch ATTEMPTS (LaunchCode O*/D*); excludes suborbital, weapon,

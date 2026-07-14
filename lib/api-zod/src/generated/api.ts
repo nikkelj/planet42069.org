@@ -195,6 +195,33 @@ export const GetSatcatShuttleAuditResponse = zod.object({
 
 
 /**
+ * Orbital launch attempts per program year (year 1 = first flight year) for Space Shuttle and Falcon 9, with annotated major events
+ * @summary Shuttle vs Falcon 9 launch cadence by program year
+ */
+export const GetSatcatShuttleVsFalconRateResponse = zod.object({
+  "rows": zod.array(zod.object({
+  "programYear": zod.number(),
+  "shuttleYear": zod.number().nullable(),
+  "shuttleCount": zod.number().nullable(),
+  "falconYear": zod.number().nullable(),
+  "falconCount": zod.number().nullable()
+})),
+  "events": zod.array(zod.object({
+  "program": zod.enum(['shuttle', 'falcon9']),
+  "programYear": zod.number(),
+  "calendarYear": zod.number(),
+  "label": zod.string(),
+  "detail": zod.string()
+})),
+  "shuttleFirstYear": zod.number(),
+  "falconFirstYear": zod.number(),
+  "shuttleTotal": zod.number(),
+  "falconTotal": zod.number(),
+  "cacheAgeMs": zod.number().optional()
+})
+
+
+/**
  * Orbital-class launch attempts per year by provider and vehicle, plus anticipated heavy-lift contender watchlist
  * @summary Orbital launch cadence by provider and vehicle
  */

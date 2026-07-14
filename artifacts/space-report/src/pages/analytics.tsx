@@ -24,6 +24,7 @@ import { OrbitalMap } from "@/components/OrbitalMap";
 import { DeorbitAnimation } from "@/components/DeorbitAnimation";
 import { MassCDFChart } from "@/components/MassCDFChart";
 import { VehicleMassChart } from "@/components/VehicleMassChart";
+import { ShuttleVsFalconChart } from "@/components/ShuttleVsFalconChart";
 
 const COLORS = [
   'hsl(140 100% 50%)',
@@ -931,6 +932,9 @@ export default function Analytics() {
 
         {/* Orbital launch cadence by provider & vehicle */}
         <LaunchRateChart />
+
+        {/* Shuttle vs Falcon 9 program-year cadence comparison */}
+        <ShuttleVsFalconChart />
 
         {/* Orbital Distribution Map */}
         <OrbitalMap />

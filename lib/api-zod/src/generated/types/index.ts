@@ -8,6 +8,9 @@
 
 export * from './anticipatedVehicle';
 export * from './anticipatedVehicleStatus';
+export * from './cadenceEvent';
+export * from './cadenceEventProgram';
+export * from './cadenceRow';
 export * from './cDFPoint';
 export * from './deorbitHistory';
 export * from './deorbitObject';
@@ -42,6 +45,7 @@ export * from './shuttleAuditFalcon9';
 export * from './shuttleAuditGcat';
 export * from './shuttleAuditPerOrbiterItem';
 export * from './shuttleAuditTheorized';
+export * from './shuttleVsFalconRate';
 export * from './spacexByEntity';
 export * from './spacexByEntityRowsItem';
 export * from './spacexBySite';
