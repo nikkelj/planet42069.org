@@ -10,6 +10,7 @@ import { UpmassAudit } from "@/components/UpmassAudit";
 import { ShuttleMassComplaint } from "@/components/ShuttleMassComplaint";
 import { ShuttleVsFalconChart } from "@/components/ShuttleVsFalconChart";
 import { LongMarchCatchBulletin } from "@/components/LongMarchCatchBulletin";
+import { StarlinkMajorityExhibit } from "@/components/StarlinkMajorityExhibit";
 
 export default function Home() {
   const { data: summary, isLoading, isError } = useGetSatcatSummary();
@@ -103,6 +104,64 @@ export default function Home() {
 
       {/* BRIEFING DOCKET — CASE INDEX */}
       <DossierIndex />
+
+      {/* CASE STUDY — THE ORBITAL MAJORITY */}
+      <div id="majority-5680" className="scroll-mt-24 border border-cyan-400/30 bg-cyan-950/15 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-cyan-400/60 via-cyan-400/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <Signal className="w-5 h-5 text-cyan-400/80 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-cyan-400/20 pb-2">
+              <span className="text-cyan-300/90 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Case Study
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #MAJORITY-5680 · Posted: 2026-07-23 · Classification: Census Irregularity</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-cyan-400/60">Re:</span> The Orbital Majority — One Operator, Most of the Sky</span>
+              <span><span className="text-cyan-400/60">Precinct:</span> Low Earth Orbit, all shells</span>
+              <span><span className="text-cyan-400/60">Status:</span> Certified · Recount denied</span>
+            </div>
+            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                During a routine census of the orbital population, the Bureau discovered an irregularity
+                it is required by statute to report: the word{" "}
+                <span className="text-cyan-300/80">"satellites"</span> no longer describes a diverse
+                population of spacecraft. It describes, by simple majority, the inventory of a single
+                company. Every government, military, corporation, university, and weather service on
+                Earth — combined — now constitutes the minority party in orbit.
+              </p>
+              <StarlinkMajorityExhibit />
+              <p>
+                The Bureau wishes to stress that no rules were broken. That is, in fact, the substance
+                of the complaint. There is no form for this. The licensing regime contemplated operators
+                who launch a satellite, or several, or at worst a few hundred. It did not contemplate an
+                operator that becomes the median. When the Bureau's inspectors point their instruments at
+                a random working satellite, the most statistically responsible assumption is now{" "}
+                <span className="text-cyan-300/80">"it's a Starlink"</span> — an assumption that is
+                correct more often than a coin flip, and improving on every Falcon 9 flight.
+              </p>
+              <p>
+                For historical perspective: the crossing of the 50% line occurred without ceremony,
+                press release, or permit. The catalog simply recorded another batch of 24 payloads at
+                575 kg apiece, as it does most weeks, and at some point between two of those batches the
+                majority changed hands. The Bureau finds this quietly appropriate. Empires used to
+                announce themselves. This one just files accurate paperwork at a cadence no one else
+                can match.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-cyan-400/20 pl-3">
+                The exhibit above is computed live from the catalog on every page load. The Bureau
+                declines to hardcode the percentage, because it would be out of date before the ink
+                dried — which is, the Bureau notes, the entire problem being reported.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 border-t border-cyan-400/20 pt-2 text-[10px] text-cyan-400/40 uppercase tracking-wider">
+              <span>— Orbital Bureaucracy Command, Census Division</span>
+              <span>Majority certified · Minority notified · No further action available</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* CASE STUDY — THE MISSING EXPONENTIAL */}
       <div id="cadence-0135" className="scroll-mt-24 border border-orange-400/30 bg-orange-950/15 p-5 font-mono text-xs relative">
@@ -584,6 +643,18 @@ function useScrollToHashOnLoad() {
 }
 
 const DOSSIERS = [
+  {
+    id: "majority-5680",
+    caseNo: "MAJORITY-5680",
+    kind: "Case Study",
+    posted: "2026-07-23",
+    title: "The Orbital Majority — One Operator, Most of the Sky",
+    status: "CERTIFIED",
+    icon: Signal,
+    tone: "text-cyan-300/90",
+    toneDim: "text-cyan-400/60",
+    hover: "hover:border-cyan-400/50 hover:bg-cyan-950/25",
+  },
   {
     id: "cadence-0135",
     caseNo: "CADENCE-0135",
