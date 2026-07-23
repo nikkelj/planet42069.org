@@ -6,3 +6,4 @@
 - [GCAT counts Shuttle orbiter as payload](gcat-shuttle-orbiter-payload.md) — one ~90t payload row per flight (PLName OV-xxx) inflates vehicle mass charts; segment or exclude.
 - [X API tier limits](x-api-tier-limits.md) — replies/quotes to non-mentioning accounts 403; standalone posts, media upload, and timeline reads work.
 - [Recharts tooltip row lookup](recharts-tooltip-label.md) — use payload[0].payload, not label matching; label can be a string and break === lookups.
+- [GitHub sync](github-sync.md) — repo is nikkelj/planet42069.org; gitPush can't update main directly, push side branch + PR.
