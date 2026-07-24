@@ -76,6 +76,8 @@ export interface SatcatEntry {
      * @nullable
      */
   massKg?: number | null;
+  /** True when massKg is a Bureau estimate rather than GCAT-catalogued data */
+  massEstimated?: boolean;
   /**
      * Apogee altitude in km
      * @nullable

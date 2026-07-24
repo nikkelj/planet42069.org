@@ -54,6 +54,7 @@ export const GetSatcatResponse = zod.object({
   "opOrbit": zod.string().nullish().describe('Operational orbit type (LEO, MEO, GEO, HEO, etc.)'),
   "satState": zod.string().nullish().describe('Satellite state (Operational, Dead, Reentry, etc.)'),
   "massKg": zod.number().nullish().describe('Dry mass in kilograms'),
+  "massEstimated": zod.boolean().optional().describe('True when massKg is a Bureau estimate rather than GCAT-catalogued data'),
   "apogeeKm": zod.number().nullish().describe('Apogee altitude in km'),
   "perigeeKm": zod.number().nullish().describe('Perigee altitude in km'),
   "incDeg": zod.number().nullish().describe('Orbital inclination in degrees'),
@@ -74,31 +75,36 @@ export const GetSatcatResponse = zod.object({
 export const GetSatcatStatsResponse = zod.object({
   "byYear": zod.array(zod.object({
   "label": zod.string(),
-  "massKg": zod.number(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates for uncatalogued objects)'),
   "count": zod.number(),
   "payloadCount": zod.number()
 })),
   "byCountry": zod.array(zod.object({
   "label": zod.string(),
-  "massKg": zod.number(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates for uncatalogued objects)'),
   "count": zod.number(),
   "payloadCount": zod.number()
 })),
   "byOrbit": zod.array(zod.object({
   "label": zod.string(),
-  "massKg": zod.number(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates for uncatalogued objects)'),
   "count": zod.number(),
   "payloadCount": zod.number()
 })),
   "byObjectClass": zod.array(zod.object({
   "label": zod.string(),
-  "massKg": zod.number(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates for uncatalogued objects)'),
   "count": zod.number(),
   "payloadCount": zod.number()
 })),
   "byLaunchVehicle": zod.array(zod.object({
   "label": zod.string(),
-  "massKg": zod.number(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates for uncatalogued objects)'),
   "count": zod.number(),
   "payloadCount": zod.number()
 }))
@@ -119,7 +125,14 @@ export const GetSatcatSummaryResponse = zod.object({
   "firstLaunchYear": zod.number(),
   "lastLaunchYear": zod.number(),
   "starlinkActive": zod.number().describe('Number of active Starlink satellites in orbit'),
-  "cacheAge": zod.number().describe('How old the cached data is in seconds')
+  "cacheAge": zod.number().describe('How old the in-memory catalog cache is in seconds'),
+  "estimatedObjects": zod.number().describe('Number of objects whose mass is a Bureau estimate (not GCAT data)'),
+  "estimatedMassKg": zod.number().describe('Total estimated (theorized) payload mass in kg'),
+  "freshness": zod.object({
+  "gcatSyncedAt": zod.string().nullable(),
+  "spacetrackSyncedAt": zod.string().nullable(),
+  "mergeSyncedAt": zod.string().nullable()
+}).describe('Last successful sync per upstream source (ISO timestamps, null if never)')
 })
 
 
@@ -154,7 +167,8 @@ export const GetSatcatUpmassByProviderResponse = zod.object({
 }),
   "providers": zod.array(zod.object({
   "provider": zod.string(),
-  "massKg": zod.number(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates)'),
   "count": zod.number()
 })),
   "totalMassKg": zod.number(),

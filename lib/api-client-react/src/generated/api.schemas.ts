@@ -79,6 +79,8 @@ export interface SatcatEntry {
      * @nullable
      */
   massKg?: number | null;
+  /** True when massKg is a Bureau estimate rather than GCAT-catalogued data */
+  massEstimated?: boolean;
   /**
      * Apogee altitude in km
      * @nullable
@@ -118,9 +120,21 @@ export interface SatcatListResponse {
 
 export interface MassAggregate {
   label: string;
+  /** Confirmed (GCAT-catalogued) mass in kg */
   massKg: number;
+  /** Additional theorized mass in kg (Bureau estimates for uncatalogued objects) */
+  estMassKg: number;
   count: number;
   payloadCount: number;
+}
+
+/**
+ * Last successful sync per upstream source (ISO timestamps, null if never)
+ */
+export interface ObcFreshness {
+  gcatSyncedAt: string | null;
+  spacetrackSyncedAt: string | null;
+  mergeSyncedAt: string | null;
 }
 
 export interface SatcatStats {
@@ -142,8 +156,13 @@ export interface SatcatSummary {
   lastLaunchYear: number;
   /** Number of active Starlink satellites in orbit */
   starlinkActive: number;
-  /** How old the cached data is in seconds */
+  /** How old the in-memory catalog cache is in seconds */
   cacheAge: number;
+  /** Number of objects whose mass is a Bureau estimate (not GCAT data) */
+  estimatedObjects: number;
+  /** Total estimated (theorized) payload mass in kg */
+  estimatedMassKg: number;
+  freshness: ObcFreshness;
 }
 
 export interface YearProviderRow {
@@ -162,7 +181,10 @@ export interface SatcatByYearProvider {
 
 export interface ProviderUpmassRow {
   provider: string;
+  /** Confirmed (GCAT-catalogued) mass in kg */
   massKg: number;
+  /** Additional theorized mass in kg (Bureau estimates) */
+  estMassKg: number;
   count: number;
 }
 

@@ -31,6 +31,7 @@ export * from './massCdf';
 export * from './massCdfByNation';
 export * from './massCdfBySite';
 export * from './massCdfByType';
+export * from './obcFreshness';
 export * from './orbitalMap';
 export * from './orbitalMapPoint';
 export * from './providerUpmassRow';

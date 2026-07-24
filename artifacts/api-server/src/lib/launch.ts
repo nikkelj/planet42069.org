@@ -1,9 +1,10 @@
 import { logger } from "./logger";
-import fs from "node:fs/promises";
+import { getLaunchMapFromStore } from "./obc/store";
 
-const LAUNCH_URL = "https://planet4589.org/space/gcat/tsv/launch/launch.tsv";
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
-const DISK_CACHE_PATH = "/tmp/gcat-launch.tsv";
+/**
+ * GCAT launch.tsv parser + LaunchEntry shape. Data is served from the OBC
+ * catalogue (Postgres, synced daily) — no request-path fetches anymore.
+ */
 
 export interface LaunchEntry {
   launchTag: string;
@@ -13,14 +14,6 @@ export interface LaunchEntry {
   ldate: string | null;     // ISO date "YYYY-MM-DD" parsed from Launch_Date
   orbital: boolean;         // true for orbital / deep-space launches (LaunchCode O*/D*)
 }
-
-interface Cache {
-  data: Map<string, LaunchEntry>;
-  fetchedAt: number;
-}
-
-let cache: Cache | null = null;
-let inflight: Promise<Map<string, LaunchEntry>> | null = null;
 
 function parseStr(val: string): string | null {
   const s = val?.trim();
@@ -44,18 +37,18 @@ function parseLDate(raw: string): string | null {
 
 /**
  * Derive a human-readable launch vehicle family from the raw LV_Type string.
- * e.g. "Falcon 9 v1.2" → "Falcon 9", "Soyuz-2.1b" → "Soyuz-2", "Long March 2D" → "Long March 2D"
+ * e.g. "Falcon 9 v1.2" → "Falcon 9", "Soyuz-2.1b" → "Soyuz-2"
  */
 function deriveLvFamily(lvType: string): string {
   const stripped = lvType
-    .replace(/\s+v\d+(\.\d+)*[a-z]?$/i, "")   // strip trailing version " v1.2"
-    .replace(/\s+(Block|Blk)\s+\d+[A-Z]?/i, "") // strip "Block 5"
-    .replace(/\s+(ECA|ES|G\+|EL|EC|Plus)\s*$/i, "") // strip Ariane suffixes
+    .replace(/\s+v\d+(\.\d+)*[a-z]?$/i, "")
+    .replace(/\s+(Block|Blk)\s+\d+[A-Z]?/i, "")
+    .replace(/\s+(ECA|ES|G\+|EL|EC|Plus)\s*$/i, "")
     .trim();
   return stripped || lvType;
 }
 
-function parseLaunchTsv(raw: string): Map<string, LaunchEntry> {
+export function parseLaunchTsv(raw: string): Map<string, LaunchEntry> {
   const lines = raw.split("\n");
   const map = new Map<string, LaunchEntry>();
 
@@ -81,8 +74,6 @@ function parseLaunchTsv(raw: string): Map<string, LaunchEntry> {
     launchDate: idx("launch_date"),
     launchCode: idx("launchcode"),
   };
-
-  logger.info({ headerCount: headers.length, indices: C }, "launch: parsed header");
 
   for (let i = dataStart; i < lines.length; i++) {
     const line = lines[i];
@@ -111,65 +102,8 @@ function parseLaunchTsv(raw: string): Map<string, LaunchEntry> {
   return map;
 }
 
-async function readDiskCache(): Promise<string | null> {
-  try {
-    const stat = await fs.stat(DISK_CACHE_PATH);
-    const ageMs = Date.now() - stat.mtimeMs;
-    if (ageMs < CACHE_TTL_MS) {
-      const text = await fs.readFile(DISK_CACHE_PATH, "utf8");
-      logger.info({ ageMs: Math.round(ageMs / 1000), bytes: text.length }, "launch: disk cache hit");
-      return text;
-    }
-    logger.info({ ageMs: Math.round(ageMs / 1000) }, "launch: disk cache stale");
-  } catch {
-    logger.info("launch: no disk cache found");
-  }
-  return null;
-}
-
-async function fetchAndParse(): Promise<Map<string, LaunchEntry>> {
-  const cached = await readDiskCache();
-  if (cached !== null) {
-    return parseLaunchTsv(cached);
-  }
-
-  logger.info({ url: LAUNCH_URL }, "launch: fetching from network");
-  const res = await fetch(LAUNCH_URL, {
-    headers: { "User-Agent": "planet42069-space-report/1.0" },
-  });
-  if (!res.ok) throw new Error(`launch fetch failed: ${res.status} ${res.statusText}`);
-  const text = await res.text();
-  logger.info({ bytes: text.length }, "launch: fetched, parsing");
-  fs.writeFile(DISK_CACHE_PATH, text, "utf8").catch((err) =>
-    logger.warn({ err }, "launch: failed to write disk cache"),
-  );
-  return parseLaunchTsv(text);
-}
+// ── public API (backed by the OBC catalogue in Postgres) ──────────────────
 
 export async function getLaunchMap(): Promise<Map<string, LaunchEntry>> {
-  const now = Date.now();
-  if (cache && now - cache.fetchedAt < CACHE_TTL_MS) return cache.data;
-  if (inflight) return inflight;
-
-  inflight = fetchAndParse()
-    .then((data) => {
-      cache = { data, fetchedAt: Date.now() };
-      inflight = null;
-      return data;
-    })
-    .catch((err) => {
-      inflight = null;
-      if (cache) {
-        logger.warn({ err }, "launch: fetch failed, serving stale cache");
-        return cache.data;
-      }
-      throw err;
-    });
-
-  return inflight;
+  return getLaunchMapFromStore();
 }
-
-// Warm cache in background on startup
-setTimeout(() => {
-  getLaunchMap().catch((err) => logger.warn({ err }, "launch: warmup failed"));
-}, 2000);

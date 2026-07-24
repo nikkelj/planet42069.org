@@ -1,10 +1,11 @@
 import { logger } from "./logger";
-import { getLaunchMap } from "./launch";
-import fs from "node:fs/promises";
+import { getSatcatFromStore, getStoreCacheAge } from "./obc/store";
 
-const SATCAT_URL = "https://planet4589.org/space/gcat/tsv/cat/satcat.tsv";
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
-const DISK_CACHE_PATH = "/tmp/gcat-satcat.tsv";
+/**
+ * GCAT satcat TSV parser + the SatcatEntry shape used across all analytics.
+ * Data is served from the OBC catalogue (Postgres, merged GCAT + space-track,
+ * synced daily) — no request-path fetches to planet4589.org anymore.
+ */
 
 export interface SatcatEntry {
   jcat: string;
@@ -22,6 +23,7 @@ export interface SatcatEntry {
   opOrbit: string | null;     // Normalised orbit class
   satState: string | null;    // Status column
   massKg: number | null;
+  massEstimated: boolean;     // true when massKg is a Bureau estimate, not GCAT data
   apogeeKm: number | null;
   perigeeKm: number | null;
   incDeg: number | null;
@@ -29,13 +31,8 @@ export interface SatcatEntry {
   decayDate: string | null;
 }
 
-interface Cache {
-  data: SatcatEntry[];
-  fetchedAt: number;
-}
-
-let cache: Cache | null = null;
-let inflight: Promise<SatcatEntry[]> | null = null;
+/** Parser output — includes the GCAT Launch_Tag for launch cross-referencing. */
+export type SatcatRawEntry = SatcatEntry & { launchTag: string | null };
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -88,14 +85,11 @@ function normaliseOrbit(raw: string): string | null {
 
 /**
  * GCAT satcat.tsv header (tab-separated, prefixed with '#'):
- * 0  JCAT | 1  Satcat | 2  Launch_Tag | 3  Piece | 4  Type |
- * 5  Name | 6  PLName | 7  LDate | 8  Parent | 9  SDate |
- * 10 Primary | 11 DDate | 12 Status | 13 Dest | 14 Owner |
- * 15 State | 16 Manufacturer | 17 Bus | 18 Motor | 19 Mass |
- * 20 MassFlag | 21 DryMass | … | 33 Perigee | 34 PF |
- * 35 Apogee | 36 AF | 37 Inc | 38 IF | 39 OpOrbit | …
+ * JCAT | Satcat | Launch_Tag | Piece | Type | Name | PLName | LDate | ... |
+ * DDate | Status | ... | Owner | State | ... | Mass | ... | Perigee |
+ * Apogee | Inc | ... | OpOrbit | ...
  */
-function parseTsv(raw: string): SatcatEntry[] {
+export function parseTsv(raw: string): SatcatRawEntry[] {
   const lines = raw.split("\n");
 
   // Find the header line (starts with '#' and contains tabs)
@@ -114,34 +108,28 @@ function parseTsv(raw: string): SatcatEntry[] {
     return [];
   }
 
-  logger.info({ headerCount: headers.length, headers: headers.slice(0, 10) }, "satcat: parsed header");
-
   const idx = (name: string) => headers.indexOf(name);
 
-  // Column indices using real (lowercased) column names from the TSV
   const C = {
     jcat:       idx("jcat"),
     satcat:     idx("satcat"),
-    launch_tag: idx("launch_tag"), // used to cross-reference launch.tsv
-    type:       idx("type"),       // object class: P/R/D...
+    launch_tag: idx("launch_tag"),
+    type:       idx("type"),
     name:       idx("name"),
     plname:     idx("plname"),
     ldate:      idx("ldate"),
     ddate:      idx("ddate"),
-    status:     idx("status"),     // operational status: O/D/R...
+    status:     idx("status"),
     owner:      idx("owner"),
     state:      idx("state"),
     mass:       idx("mass"),
     perigee:    idx("perigee"),
     apogee:     idx("apogee"),
     inc:        idx("inc"),
-    // "OpOrbit".toLowerCase() === "oporbit"
     oporbit:    idx("oporbit"),
   };
 
-  logger.info({ indices: C }, "satcat: column indices");
-
-  const entries: SatcatEntry[] = [];
+  const entries: SatcatRawEntry[] = [];
 
   for (let i = dataStart; i < lines.length; i++) {
     const line = lines[i];
@@ -156,7 +144,6 @@ function parseTsv(raw: string): SatcatEntry[] {
     if (!jcat) continue;
 
     const rawType = get(C.type).trim();
-    // First character of Type encodes the object class
     const objectClass = rawType.length > 0 ? rawType[0].toUpperCase() : null;
 
     const satnoRaw = get(C.satcat).trim();
@@ -168,10 +155,10 @@ function parseTsv(raw: string): SatcatEntry[] {
       name: parseStr(get(C.name)) ?? jcat,
       plName: parseStr(get(C.plname)),
       ldate: parseLDate(get(C.ldate)),
-      _launchTag: parseStr(get(C.launch_tag)), // internal — used for LV enrichment
-      lv: null,       // populated by enrichWithLaunchData
-      lvFamily: null, // populated by enrichWithLaunchData
-      site: null,     // populated by enrichWithLaunchData
+      launchTag: parseStr(get(C.launch_tag)),
+      lv: null,       // enriched from launch map during sync
+      lvFamily: null,
+      site: null,
       owner: parseStr(get(C.owner)),
       state: parseStr(get(C.state)),
       objectClass,
@@ -179,111 +166,24 @@ function parseTsv(raw: string): SatcatEntry[] {
       opOrbit: normaliseOrbit(get(C.oporbit)),
       satState: parseStr(get(C.status)),
       massKg: parseNum(get(C.mass)),
+      massEstimated: false,
       apogeeKm: parseNum(get(C.apogee)),
       perigeeKm: parseNum(get(C.perigee)),
       incDeg: parseNum(get(C.inc)),
-      periodMin: null, // not in satcat.tsv
+      periodMin: null,
       decayDate: parseStr(get(C.ddate)),
-    } as SatcatEntry & { _launchTag: string | null });
+    });
   }
 
   return entries;
 }
 
-// ── fetch + cache ──────────────────────────────────────────────────────────
-
-async function readDiskCache(): Promise<string | null> {
-  try {
-    const stat = await fs.stat(DISK_CACHE_PATH);
-    const ageMs = Date.now() - stat.mtimeMs;
-    if (ageMs < CACHE_TTL_MS) {
-      const text = await fs.readFile(DISK_CACHE_PATH, "utf8");
-      logger.info({ ageMs: Math.round(ageMs / 1000), bytes: text.length }, "satcat: disk cache hit");
-      return text;
-    }
-    logger.info({ ageMs: Math.round(ageMs / 1000) }, "satcat: disk cache stale");
-  } catch {
-    logger.info("satcat: no disk cache found");
-  }
-  return null;
-}
-
-async function fetchAndParse(): Promise<SatcatEntry[]> {
-  // Try disk cache first, fetch from network if missing/stale
-  const [cachedText, launchMap] = await Promise.all([
-    readDiskCache(),
-    getLaunchMap().catch((err) => {
-      logger.warn({ err }, "satcat: launch cross-ref fetch failed, lv data will be null");
-      return new Map<string, import("./launch").LaunchEntry>();
-    }),
-  ]);
-
-  let text: string;
-  if (cachedText !== null) {
-    text = cachedText;
-  } else {
-    logger.info({ url: SATCAT_URL }, "satcat: fetching from network");
-    const satcatRes = await fetch(SATCAT_URL, { headers: { "User-Agent": "planet42069-space-report/1.0" } });
-    if (!satcatRes.ok) throw new Error(`satcat fetch failed: ${satcatRes.status} ${satcatRes.statusText}`);
-    text = await satcatRes.text();
-    fs.writeFile(DISK_CACHE_PATH, text, "utf8").catch((err) =>
-      logger.warn({ err }, "satcat: failed to write disk cache"),
-    );
-  }
-  logger.info({ bytes: text.length }, "satcat: parsing");
-  const rawEntries = parseTsv(text) as Array<SatcatEntry & { _launchTag: string | null }>;
-  logger.info({ count: rawEntries.length, launchMapSize: launchMap.size }, "satcat: parsed");
-
-  // Enrich with launch vehicle data from the launch map
-  for (const entry of rawEntries) {
-    const lt = entry._launchTag;
-    if (lt) {
-      const lv = launchMap.get(lt);
-      if (lv) {
-        entry.lv = lv.lv;
-        entry.lvFamily = lv.lvFamily;
-        entry.site = lv.site;
-      }
-    }
-    delete (entry as Partial<typeof entry>)._launchTag;
-  }
-
-  const entries: SatcatEntry[] = rawEntries;
-  if (entries.length > 0) {
-    logger.info({ e0: entries[0], e1: entries[1] }, "satcat: first 2 entries");
-  }
-  return entries;
-}
+// ── public API (backed by the OBC catalogue in Postgres) ──────────────────
 
 export async function getSatcat(): Promise<SatcatEntry[]> {
-  const now = Date.now();
-  if (cache && now - cache.fetchedAt < CACHE_TTL_MS) return cache.data;
-  if (inflight) return inflight;
-
-  inflight = fetchAndParse()
-    .then((data) => {
-      cache = { data, fetchedAt: Date.now() };
-      inflight = null;
-      return data;
-    })
-    .catch((err) => {
-      inflight = null;
-      if (cache) {
-        logger.warn({ err }, "satcat: fetch failed, serving stale cache");
-        return cache.data;
-      }
-      throw err;
-    });
-
-  return inflight;
+  return getSatcatFromStore();
 }
 
 export function getCacheAge(): number {
-  if (!cache) return -1;
-  return Math.floor((Date.now() - cache.fetchedAt) / 1000);
+  return getStoreCacheAge();
 }
-
-// Warm cache in background on startup
-setTimeout(() => {
-  getSatcat().catch((err) => logger.warn({ err }, "satcat: warmup failed"));
-}, 1000);

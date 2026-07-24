@@ -370,6 +370,9 @@ components:
         massKg:
           type: ["number", "null"]
           description: Dry mass in kilograms
+        massEstimated:
+          type: boolean
+          description: True when massKg is a Bureau estimate rather than GCAT-catalogued data
         apogeeKm:
           type: ["number", "null"]
           description: Apogee altitude in km
@@ -420,6 +423,10 @@ components:
           type: string
         massKg:
           type: number
+          description: Confirmed (GCAT-catalogued) mass in kg
+        estMassKg:
+          type: number
+          description: Additional theorized mass in kg (Bureau estimates for uncatalogued objects)
         count:
           type: integer
         payloadCount:
@@ -427,8 +434,27 @@ components:
       required:
         - label
         - massKg
+        - estMassKg
         - count
         - payloadCount
+
+    ObcFreshness:
+      type: object
+      description: Last successful sync per upstream source (ISO timestamps, null if never)
+      properties:
+        gcatSyncedAt:
+          type: string
+          nullable: true
+        spacetrackSyncedAt:
+          type: string
+          nullable: true
+        mergeSyncedAt:
+          type: string
+          nullable: true
+      required:
+        - gcatSyncedAt
+        - spacetrackSyncedAt
+        - mergeSyncedAt
 
     SatcatStats:
       type: object
@@ -484,7 +510,15 @@ components:
           description: Number of active Starlink satellites in orbit
         cacheAge:
           type: integer
-          description: How old the cached data is in seconds
+          description: How old the in-memory catalog cache is in seconds
+        estimatedObjects:
+          type: integer
+          description: Number of objects whose mass is a Bureau estimate (not GCAT data)
+        estimatedMassKg:
+          type: number
+          description: Total estimated (theorized) payload mass in kg
+        freshness:
+          $ref: "#/components/schemas/ObcFreshness"
       required:
         - totalObjects
         - totalPayloads
@@ -496,6 +530,9 @@ components:
         - firstLaunchYear
         - lastLaunchYear
         - cacheAge
+        - estimatedObjects
+        - estimatedMassKg
+        - freshness
 
     YearProviderRow:
       type: object
@@ -536,11 +573,16 @@ components:
           type: string
         massKg:
           type: number
+          description: Confirmed (GCAT-catalogued) mass in kg
+        estMassKg:
+          type: number
+          description: Additional theorized mass in kg (Bureau estimates)
         count:
           type: integer
       required:
         - provider
         - massKg
+        - estMassKg
         - count
 
     UpmassByProvider:

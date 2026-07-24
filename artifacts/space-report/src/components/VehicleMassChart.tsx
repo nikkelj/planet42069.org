@@ -26,7 +26,7 @@ const COLORS = [
 const ORBITER_COLOR = "hsl(0 80% 55%)";
 const ORBITER_COLOR_THEORIZED = "hsl(25 90% 55%)";
 
-type VehicleRow = { label: string; massKg: number; count: number; payloadCount: number };
+type VehicleRow = { label: string; massKg: number; estMassKg?: number; count: number; payloadCount: number };
 
 export type ShuttleAudit = {
   gcat: { totalKg: number; orbiterKg: number; cargoKg: number; flights: number; cargoObjects: number };
@@ -49,6 +49,7 @@ export function useShuttleAudit() {
 type ChartRow = {
   label: string;
   delivered: number;
+  estimated: number; // Bureau-estimated mass for objects GCAT hasn't massed yet
   orbiter: number;
   derived: boolean;
   colorIdx: number;
@@ -84,6 +85,9 @@ function SegTooltip({ active, payload }: { active?: boolean; payload?: { payload
         </>
       )}
       {row.orbiter === 0 && <div className="text-foreground/90">Mass to orbit: {fmtT(row.delivered)}</div>}
+      {row.estimated > 0 && (
+        <div className="text-orange-400/80">+ Theorized (Bureau estimate): {fmtT(row.estimated)}</div>
+      )}
     </div>
   );
 }
@@ -98,6 +102,7 @@ export function VehicleMassChart({ byLaunchVehicle }: { byLaunchVehicle: Vehicle
       rows.push({
         label: "Space Shuttle",
         delivered: audit.gcat.cargoKg,
+        estimated: 0,
         orbiter: audit.gcat.orbiterKg,
         derived: false,
         colorIdx: i,
@@ -105,12 +110,20 @@ export function VehicleMassChart({ byLaunchVehicle }: { byLaunchVehicle: Vehicle
       rows.push({
         label: "Shuttle (theorized)",
         delivered: audit.theorized.deliveredKg,
+        estimated: 0,
         orbiter: audit.theorized.orbiterDryKg,
         derived: true,
         colorIdx: i,
       });
     } else {
-      rows.push({ label: v.label, delivered: v.massKg, orbiter: 0, derived: false, colorIdx: i });
+      rows.push({
+        label: v.label,
+        delivered: v.massKg,
+        estimated: v.estMassKg ?? 0,
+        orbiter: 0,
+        derived: false,
+        colorIdx: i,
+      });
     }
   });
 
@@ -147,6 +160,15 @@ export function VehicleMassChart({ byLaunchVehicle }: { byLaunchVehicle: Vehicle
                     key={`d-${index}`}
                     fill={COLORS[r.colorIdx % COLORS.length]}
                     fillOpacity={r.derived ? 0.55 : 1}
+                  />
+                ))}
+              </Bar>
+              <Bar dataKey="estimated" stackId="mass" radius={[0, 0, 0, 0]}>
+                {rows.map((r, index) => (
+                  <Cell
+                    key={`e-${index}`}
+                    fill={COLORS[r.colorIdx % COLORS.length]}
+                    fillOpacity={0.55}
                   />
                 ))}
               </Bar>

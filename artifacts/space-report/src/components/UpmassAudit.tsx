@@ -1,7 +1,7 @@
 import { useGetSatcatUpmassByProvider } from "@workspace/api-client-react";
 import { Scale, Loader2, FileSearch } from "lucide-react";
 
-type ProviderRow = { provider: string; massKg: number; count: number };
+type ProviderRow = { provider: string; massKg: number; estMassKg: number; count: number };
 type UpmassResponse = {
   window: { start: string; end: string };
   providers: ProviderRow[];
@@ -65,13 +65,13 @@ export function UpmassAudit() {
       provider: b.provider,
       label: b.label,
       bryce: b.kg,
-      gcat: g?.massKg ?? 0,
+      gcat: (g?.massKg ?? 0) + (g?.estMassKg ?? 0),
       count: g?.count ?? 0,
     };
   });
   const extra = (data?.providers ?? [])
-    .filter((p) => !BRYCE.some((b) => b.provider === p.provider) && p.massKg > 0)
-    .map((p) => ({ provider: p.provider, label: p.provider, bryce: 0, gcat: p.massKg, count: p.count }));
+    .filter((p) => !BRYCE.some((b) => b.provider === p.provider) && p.massKg + (p.estMassKg ?? 0) > 0)
+    .map((p) => ({ provider: p.provider, label: p.provider, bryce: 0, gcat: p.massKg + (p.estMassKg ?? 0), count: p.count }));
   const allRows = [...rows, ...extra].sort((a, b) => Math.max(b.bryce, b.gcat) - Math.max(a.bryce, a.gcat));
 
   const gcatTotal = data?.totalMassKg ?? 0;

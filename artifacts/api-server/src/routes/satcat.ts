@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { getSatcat, getCacheAge, type SatcatEntry } from "../lib/satcat";
 import { getLaunchMap } from "../lib/launch";
+import { getFreshness } from "../lib/obc/store";
 
 const router: IRouter = Router();
 
@@ -11,7 +12,7 @@ function getYear(ldate: string | null): string | null {
 }
 
 router.get("/satcat/summary", async (req, res): Promise<void> => {
-  const data = await getSatcat();
+  const [data, freshness] = await Promise.all([getSatcat(), getFreshness()]);
 
   const payloads = data.filter((e) => e.objectClass === "P");
   // Status "O" = Operational, "OX" = Operational Extended
@@ -28,6 +29,9 @@ router.get("/satcat/summary", async (req, res): Promise<void> => {
     (sum, e) => sum + (e.massKg ?? 0),
     0,
   );
+
+  const estimatedRows = data.filter((e) => e.massEstimated);
+  const estimatedMassKg = estimatedRows.reduce((s, e) => s + (e.massKg ?? 0), 0);
 
   const owners = new Set(data.map((e) => e.owner).filter(Boolean));
   const lvs = new Set(data.map((e) => e.lv).filter(Boolean));
@@ -48,6 +52,9 @@ router.get("/satcat/summary", async (req, res): Promise<void> => {
     firstLaunchYear: years.length ? Math.min(...years) : 0,
     lastLaunchYear: years.length ? Math.max(...years) : 0,
     cacheAge: getCacheAge(),
+    estimatedObjects: estimatedRows.length,
+    estimatedMassKg: Math.round(estimatedMassKg),
+    freshness,
   });
 });
 
@@ -59,37 +66,42 @@ router.get("/satcat/stats", async (_req, res): Promise<void> => {
     (e) => e.objectClass === "P",
   );
 
-  type Agg = { massKg: number; count: number; payloadCount: number };
+  type Agg = { massKg: number; estMassKg: number; count: number; payloadCount: number };
+  const addTo = (existing: Agg, e: SatcatEntry) => {
+    if (e.massEstimated) existing.estMassKg += e.massKg ?? 0;
+    else existing.massKg += e.massKg ?? 0;
+    existing.count += 1;
+    existing.payloadCount += e.objectClass === "P" ? 1 : 0;
+  };
+  const finish = (label: string, v: Agg) => ({
+    label, ...v, massKg: Math.round(v.massKg), estMassKg: Math.round(v.estMassKg),
+  });
   const agg = (
     entries: SatcatEntry[],
     keyFn: (e: SatcatEntry) => string | null,
-  ): { label: string; massKg: number; count: number; payloadCount: number }[] => {
+  ): { label: string; massKg: number; estMassKg: number; count: number; payloadCount: number }[] => {
     const map = new Map<string, Agg>();
     for (const e of entries) {
       const key = keyFn(e) ?? "Unknown";
-      const existing = map.get(key) ?? { massKg: 0, count: 0, payloadCount: 0 };
-      existing.massKg += e.massKg ?? 0;
-      existing.count += 1;
-      existing.payloadCount += e.objectClass === "P" ? 1 : 0;
+      const existing = map.get(key) ?? { massKg: 0, estMassKg: 0, count: 0, payloadCount: 0 };
+      addTo(existing, e);
       map.set(key, existing);
     }
     return Array.from(map.entries())
-      .map(([label, v]) => ({ label, ...v, massKg: Math.round(v.massKg) }))
-      .sort((a, b) => b.massKg - a.massKg);
+      .map(([label, v]) => finish(label, v))
+      .sort((a, b) => (b.massKg + b.estMassKg) - (a.massKg + a.estMassKg));
   };
 
   // byYear — use all data for count, payloads for mass
   const yearMap = new Map<string, Agg>();
   for (const e of data) {
     const key = getYear(e.ldate) ?? "Unknown";
-    const existing = yearMap.get(key) ?? { massKg: 0, count: 0, payloadCount: 0 };
-    existing.massKg += e.massKg ?? 0;
-    existing.count += 1;
-    existing.payloadCount += e.objectClass === "P" ? 1 : 0;
+    const existing = yearMap.get(key) ?? { massKg: 0, estMassKg: 0, count: 0, payloadCount: 0 };
+    addTo(existing, e);
     yearMap.set(key, existing);
   }
   const byYear = Array.from(yearMap.entries())
-    .map(([label, v]) => ({ label, ...v, massKg: Math.round(v.massKg) }))
+    .map(([label, v]) => finish(label, v))
     .sort((a, b) => a.label.localeCompare(b.label))
     .filter((y) => y.label !== "Unknown");
 
@@ -207,24 +219,25 @@ router.get("/satcat/upmass-by-provider", async (req, res): Promise<void> => {
       e.ldate <= end,
   );
 
-  type Row = { provider: string; massKg: number; count: number };
+  type Row = { provider: string; massKg: number; estMassKg: number; count: number };
   const map = new Map<string, Row>();
   for (const e of payloads) {
     const provider = classifyProvider(e);
-    const row = map.get(provider) ?? { provider, massKg: 0, count: 0 };
-    row.massKg += e.massKg ?? 0;
+    const row = map.get(provider) ?? { provider, massKg: 0, estMassKg: 0, count: 0 };
+    if (e.massEstimated) row.estMassKg += e.massKg ?? 0;
+    else row.massKg += e.massKg ?? 0;
     row.count += 1;
     map.set(provider, row);
   }
 
   const providers = Array.from(map.values())
-    .map((r) => ({ ...r, massKg: Math.round(r.massKg) }))
-    .sort((a, b) => b.massKg - a.massKg);
+    .map((r) => ({ ...r, massKg: Math.round(r.massKg), estMassKg: Math.round(r.estMassKg) }))
+    .sort((a, b) => (b.massKg + b.estMassKg) - (a.massKg + a.estMassKg));
 
   res.json({
     window: { start, end },
     providers,
-    totalMassKg: providers.reduce((s, r) => s + r.massKg, 0),
+    totalMassKg: providers.reduce((s, r) => s + r.massKg + r.estMassKg, 0),
     totalCount: payloads.length,
   });
 });
