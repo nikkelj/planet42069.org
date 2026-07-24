@@ -40,6 +40,40 @@ function stNum(v: string | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * Per-field precedence rules for the upsert
+ * ─────────────────────────────────────────
+ * Rows are keyed per source: GCAT rows use the JCAT key, space-track-only
+ * rows use "ST<norad>", so a conflict is always "same source family updating
+ * its own row" — except that GCAT rows already carry space-track gap-fill
+ * values merged in at row-build time (apogee/perigee/inc/decay/intlDes).
+ *
+ * Authoritative-source rules:
+ *  - Identity/classification fields (jcat, norad, name, plName, objectClass,
+ *    objType) and mass fields: always taken from the incoming row (the
+ *    incoming row is rebuilt from scratch each sync, including estimates).
+ *  - Lifecycle/orbit/attribution fields (intlDes, ldate, lv, lvFamily, site,
+ *    owner, state, opOrbit, satState, apogee, perigee, inc, decayDate):
+ *      * If the incoming row is GCAT-sourced (excluded.in_gcat), GCAT is
+ *        authoritative for that row: the incoming value OVERWRITES the stored
+ *        one, including clearing it back to NULL when upstream corrects a
+ *        wrong value. (Space-track gap-fill already happened at merge time,
+ *        so a NULL here means neither source currently asserts a value.)
+ *      * If the incoming row is space-track-only but the STORED row is also
+ *        space-track-only (not in_gcat), space-track is authoritative for its
+ *        own rows and likewise overwrites/clears.
+ *      * Otherwise (space-track row landing on a GCAT-enriched row — cannot
+ *        happen with current keying, kept for safety): space-track only fills
+ *        gaps via coalesce and never clears GCAT-provided values.
+ */
+const AUTHORITATIVE = sql`(excluded.in_gcat or not ${obcObjects.inGcat})`;
+
+function precedence(column: string) {
+  const col = sql.raw(`excluded.${column}`);
+  const existing = sql.raw(`obc_objects.${column}`);
+  return sql`case when ${AUTHORITATIVE} then ${col} else coalesce(${col}, ${existing}) end`;
+}
+
 async function upsertObjects(rows: InsertObcObject[]): Promise<void> {
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
@@ -51,26 +85,26 @@ async function upsertObjects(rows: InsertObcObject[]): Promise<void> {
         set: {
           jcat: sql`excluded.jcat`,
           norad: sql`excluded.norad`,
-          intlDes: sql`coalesce(excluded.intl_des, ${obcObjects.intlDes})`,
+          intlDes: precedence("intl_des"),
           name: sql`excluded.name`,
           plName: sql`excluded.pl_name`,
-          ldate: sql`coalesce(excluded.ldate, ${obcObjects.ldate})`,
-          lv: sql`coalesce(excluded.lv, ${obcObjects.lv})`,
-          lvFamily: sql`coalesce(excluded.lv_family, ${obcObjects.lvFamily})`,
-          site: sql`coalesce(excluded.site, ${obcObjects.site})`,
-          owner: sql`coalesce(excluded.owner, ${obcObjects.owner})`,
-          state: sql`coalesce(excluded.state, ${obcObjects.state})`,
+          ldate: precedence("ldate"),
+          lv: precedence("lv"),
+          lvFamily: precedence("lv_family"),
+          site: precedence("site"),
+          owner: precedence("owner"),
+          state: precedence("state"),
           objectClass: sql`excluded.object_class`,
           objType: sql`excluded.obj_type`,
-          opOrbit: sql`coalesce(excluded.op_orbit, ${obcObjects.opOrbit})`,
-          satState: sql`coalesce(excluded.sat_state, ${obcObjects.satState})`,
+          opOrbit: precedence("op_orbit"),
+          satState: precedence("sat_state"),
           massKg: sql`excluded.mass_kg`,
           massEstimated: sql`excluded.mass_estimated`,
           massEstMethod: sql`excluded.mass_est_method`,
-          apogeeKm: sql`coalesce(excluded.apogee_km, ${obcObjects.apogeeKm})`,
-          perigeeKm: sql`coalesce(excluded.perigee_km, ${obcObjects.perigeeKm})`,
-          incDeg: sql`coalesce(excluded.inc_deg, ${obcObjects.incDeg})`,
-          decayDate: sql`coalesce(excluded.decay_date, ${obcObjects.decayDate})`,
+          apogeeKm: precedence("apogee_km"),
+          perigeeKm: precedence("perigee_km"),
+          incDeg: precedence("inc_deg"),
+          decayDate: precedence("decay_date"),
           inGcat: sql`${obcObjects.inGcat} or excluded.in_gcat`,
           inSpacetrack: sql`${obcObjects.inSpacetrack} or excluded.in_spacetrack`,
           updatedAt: sql`now()`,
