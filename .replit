@@ -24,6 +24,14 @@ args = "test-upsert"
 task = "workflow.run"
 args = "test-dedupe"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "typecheck-api"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "typecheck-web"
+
 [[workflows.workflow]]
 name = "test-upsert"
 author = "agent"
@@ -42,6 +50,28 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/api-server run test:dedupe"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "typecheck-api"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run typecheck"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "typecheck-web"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/space-report run typecheck"
 
 [workflows.workflow.metadata]
 isValidation = true
