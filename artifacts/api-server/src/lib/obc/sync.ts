@@ -74,7 +74,7 @@ function precedence(column: string) {
   return sql`case when ${AUTHORITATIVE} then ${col} else coalesce(${col}, ${existing}) end`;
 }
 
-async function upsertObjects(rows: InsertObcObject[]): Promise<void> {
+export async function upsertObjects(rows: InsertObcObject[]): Promise<void> {
   for (let i = 0; i < rows.length; i += CHUNK) {
     const chunk = rows.slice(i, i + CHUNK);
     await db
