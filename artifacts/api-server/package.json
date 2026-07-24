@@ -8,7 +8,8 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:upsert": "tsx ./src/tests/upsert-precedence.test.ts"
+    "test:upsert": "tsx ./src/tests/upsert-precedence.test.ts",
+    "test:dedupe": "tsx ./src/tests/dedupe-reconcile.test.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",

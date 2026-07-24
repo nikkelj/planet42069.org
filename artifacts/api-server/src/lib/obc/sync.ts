@@ -114,6 +114,23 @@ export async function upsertObjects(rows: InsertObcObject[]): Promise<void> {
 }
 
 /**
+ * Reconcile identity transitions: an object first seen via space-track
+ * (key "ST<norad>") that GCAT has since catalogued now exists twice —
+ * drop the ST-keyed (jcat-less) duplicate so analytics never double-count it.
+ */
+export async function reconcileStDuplicates(): Promise<void> {
+  await db.execute(sql`
+    DELETE FROM obc_objects a
+    WHERE a.jcat IS NULL
+      AND a.norad IS NOT NULL
+      AND EXISTS (
+        SELECT 1 FROM obc_objects b
+        WHERE b.norad = a.norad AND b.jcat IS NOT NULL
+      )
+  `);
+}
+
+/**
  * Full sync: GCAT satcat+launch, space-track satcat, merge, estimate, upsert.
  * Each source is isolated — one failing does not abort the other.
  * Concurrent callers share the same in-flight run.
@@ -287,18 +304,7 @@ async function doSync(): Promise<void> {
 
   try {
     await upsertObjects(rows);
-    // Reconcile identity transitions: an object first seen via space-track
-    // (key "ST<norad>") that GCAT has since catalogued now exists twice —
-    // drop the ST-keyed duplicate so analytics never double-count it.
-    await db.execute(sql`
-      DELETE FROM obc_objects a
-      WHERE a.jcat IS NULL
-        AND a.norad IS NOT NULL
-        AND EXISTS (
-          SELECT 1 FROM obc_objects b
-          WHERE b.norad = a.norad AND b.jcat IS NOT NULL
-        )
-    `);
+    await reconcileStDuplicates();
     await logSync("merge", "success", started, rows.length);
     logger.info({ rows: rows.length, estimated }, "obc-sync: merge complete");
   } catch (err) {
