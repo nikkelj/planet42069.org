@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useGetSatcatSummary } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert, Signal, Link2, Check, Anchor } from "lucide-react";
+import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert, Signal, Link2, Check, Anchor, Hash } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import bryceUpmassChart from "@assets/image_1782288004026.png";
@@ -104,6 +104,70 @@ export default function Home() {
 
       {/* BRIEFING DOCKET — CASE INDEX */}
       <DossierIndex />
+
+      {/* BULLETIN — THE FIVE-DIGIT ERA IS OVER */}
+      <div id="rollover-a5000" className="scroll-mt-24 border border-fuchsia-400/30 bg-fuchsia-950/15 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-fuchsia-400/60 via-fuchsia-400/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <Hash className="w-5 h-5 text-fuchsia-400/80 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-fuchsia-400/20 pb-2">
+              <span className="text-fuchsia-300/90 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Bulletin
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #ROLLOVER-A5000 · Posted: 2026-07-23 · Classification: Numbering Emergency (Scheduled)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-fuchsia-400/60">Re:</span> The Five-Digit Era Is Over</span>
+              <span><span className="text-fuchsia-400/60">Effective:</span> 2026-07-14, without ceremony</span>
+              <span><span className="text-fuchsia-400/60">Status:</span> Alpha-5 in force · Y2K veterans notified</span>
+            </div>
+            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                On July 14, 2026, the United States Space Force catalog assigned satellite number{" "}
+                <span className="text-fuchsia-300/80">100,000</span>, exhausting the five-digit
+                numbering scheme that has organized every object in orbit since Sputnik. The
+                Bureau's verification of the historic boundary, live from space-track.org:
+              </p>
+              <div className="border border-fuchsia-400/20 bg-black/30 p-3 space-y-1 text-[11px]">
+                <div className="text-fuchsia-300/70 uppercase tracking-widest text-[10px] pb-1 border-b border-fuchsia-400/10">Exhibit A — The Rollover Boundary, As Cataloged</div>
+                <div className="grid grid-cols-[80px_92px_1fr] gap-x-3 text-muted-foreground">
+                  <span className="text-fuchsia-400/50">99,999</span><span>—</span><span>The last five-digit number, retired after 68 years of service</span>
+                  <span className="text-fuchsia-400/50">100,000</span><span>2026-067CY</span><span>SARAMAGO — launched in March, cataloged four months late. The milestone went to backfiled paperwork</span>
+                  <span className="text-fuchsia-400/50">100,001</span><span>2026-160A</span><span>STARLINK-38128 — the first live object past the limit. The Bureau declines to act surprised</span>
+                </div>
+              </div>
+              <p>
+                Legacy systems will render these objects under the{" "}
+                <span className="text-fuchsia-300/80">Alpha-5</span> scheme — "A0001" and counting —
+                a format the Bureau previously reviewed in Case #JCAT-0001, where it was forced to
+                apologize to the defendant. The Bureau notes that a civilization that can catalog
+                one hundred thousand orbital objects but cannot widen a fixed-width text column is
+                a civilization that deserves study by someone.
+              </p>
+              <p>
+                <span className="text-fuchsia-300/80 font-bold uppercase">Related finding — source catalog wellness check.</span>{" "}
+                This site's source catalog (GCAT) has not updated since July 11 and has therefore
+                missed the entire rollover. Missing as of this bulletin: <span className="text-fuchsia-300/80">75 objects
+                across 6 launches</span>, including 56 Starlinks (among them satellite #100,001 itself),
+                ten objects from a sea-launched Long March, a geosynchronous servicing mission, and —
+                the Bureau checked this three times — <span className="text-fuchsia-300/80">one crewed Soyuz
+                (MS-29, two humans, July 14)</span>. The humans are fine. They are simply, as far as our
+                dataset is concerned, not yet in space.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-fuchsia-400/20 pl-3">
+                The Bureau extends its sympathies to the catalog's sole maintainer, who is presumably
+                on a well-earned holiday, and who will return to discover that the numbering system
+                itself broke in his absence. Some vacations are simply scheduled by fate.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 border-t border-fuchsia-400/20 pt-2 text-[10px] text-fuchsia-400/40 uppercase tracking-wider">
+              <span>— Orbital Bureaucracy Command, Numeric Standards Division</span>
+              <span>Rollover certified · Sixth digit begrudgingly issued · Wellness check filed</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* CASE STUDY — THE ORBITAL MAJORITY */}
       <div id="majority-5680" className="scroll-mt-24 border border-cyan-400/30 bg-cyan-950/15 p-5 font-mono text-xs relative">
@@ -643,6 +707,18 @@ function useScrollToHashOnLoad() {
 }
 
 const DOSSIERS = [
+  {
+    id: "rollover-a5000",
+    caseNo: "ROLLOVER-A5000",
+    kind: "Bulletin",
+    posted: "2026-07-23",
+    title: "The Five-Digit Era Is Over — Satellite #100,000 Has Been Assigned",
+    status: "ALPHA-5 IN FORCE",
+    icon: Hash,
+    tone: "text-fuchsia-300/90",
+    toneDim: "text-fuchsia-400/60",
+    hover: "hover:border-fuchsia-400/50 hover:bg-fuchsia-950/25",
+  },
   {
     id: "majority-5680",
     caseNo: "MAJORITY-5680",
