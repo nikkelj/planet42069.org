@@ -8,6 +8,7 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm run test:upsert && pnpm run test:dedupe",
     "test:upsert": "tsx ./src/tests/upsert-precedence.test.ts",
     "test:dedupe": "tsx ./src/tests/dedupe-reconcile.test.ts"
   },
