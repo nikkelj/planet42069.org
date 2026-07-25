@@ -21,6 +21,8 @@ const EARTH_R_KM = 6371;
 const MOON_ORBIT_R = 384400 / EARTH_R_KM; // 60.34
 const MOON_R = 1737 / EARTH_R_KM; // 0.273
 const GEO_R = 42164 / EARTH_R_KM; // 6.62
+const AU_R = 149_597_870 / EARTH_R_KM; // 23,481 Earth radii
+const SUN_R = 696_000 / EARTH_R_KM; // 109 Earth radii — yes, really
 const OBLIQUITY = (23.44 * Math.PI) / 180; // ecliptic tilt vs equator (ECI z = north)
 const MOON_INC_ECLIPTIC = (5.14 * Math.PI) / 180;
 
@@ -220,29 +222,54 @@ function Earth() {
   );
 }
 
-function HeliocentricPath({ extent }: { extent: number }) {
-  // Sun direction: +X in the ecliptic plane. Earth's velocity (its heliocentric
-  // path, locally straight at this scale) is perpendicular: ecliptic +Y.
-  const dir = new THREE.Vector3(0, Math.cos(OBLIQUITY), Math.sin(OBLIQUITY));
-  const sunDir = new THREE.Vector3(1, 0, 0);
+/**
+ * The Sun at its true position (1 AU = 23,481 Earth radii along ecliptic +X)
+ * and true size (109 Earth radii), plus Earth's full heliocentric orbit — a
+ * 1 AU circle around the Sun in the ecliptic plane, passing through the
+ * origin. Zoom all the way out and it's all genuinely to scale.
+ */
+function SolAndHeliocentricOrbit() {
+  // Ecliptic basis vectors in this z-up equatorial frame.
+  const eclX = useMemo(() => new THREE.Vector3(1, 0, 0), []);
+  const eclY = useMemo(() => new THREE.Vector3(0, Math.cos(OBLIQUITY), Math.sin(OBLIQUITY)), []);
+  const sunPos = useMemo(() => eclX.clone().multiplyScalar(AU_R), [eclX]);
+  const orbitPts = useMemo(() => {
+    // Circle of radius 1 AU centered on the Sun, through Earth (the origin).
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i <= 360; i++) {
+      const t = (i / 360) * 2 * Math.PI;
+      pts.push(
+        sunPos.clone()
+          .addScaledVector(eclX, -AU_R * Math.cos(t))
+          .addScaledVector(eclY, AU_R * Math.sin(t)),
+      );
+    }
+    return pts;
+  }, [sunPos, eclX, eclY]);
   return (
     <>
-      <Line
-        points={[dir.clone().multiplyScalar(-extent), dir.clone().multiplyScalar(extent)]}
-        color={AMBER} transparent opacity={0.4} dashed dashSize={2.2} gapSize={1.4} lineWidth={1}
-      />
-      <Html distanceFactor={140} position={dir.clone().multiplyScalar(extent * 0.75).toArray()}>
+      {/* Earth's heliocentric orbit — looks locally straight near Earth, as it should */}
+      <Line points={orbitPts} color={AMBER} transparent opacity={0.4} dashed dashSize={AU_R * 0.004} gapSize={AU_R * 0.0025} lineWidth={1} />
+      <Html distanceFactor={140} position={eclY.clone().multiplyScalar(MOON_ORBIT_R).toArray()}>
         <span className="text-[9px] font-mono uppercase tracking-widest whitespace-nowrap" style={{ color: AMBER, opacity: 0.9 }}>Heliocentric path</span>
       </Html>
-      {/* Direction-only ray: the Sun sits at 1 AU = 23,455 Earth radii,
-          ~390× beyond the Moon — far off any usable chart. No marker sphere,
-          so nothing implies the Sun's actual position is in frame. */}
-      <Line
-        points={[sunDir.clone().multiplyScalar(1.6), sunDir.clone().multiplyScalar(extent)]}
-        color={AMBER} transparent opacity={0.25} lineWidth={1}
-      />
-      <Html distanceFactor={140} position={sunDir.clone().multiplyScalar(extent * 0.9).add(new THREE.Vector3(0, extent * 0.03, 0)).toArray()}>
-        <span className="text-[9px] font-mono uppercase tracking-widest whitespace-nowrap" style={{ color: AMBER }}>→ Sol · 1 AU · 390× Moon dist · off chart</span>
+      {/* guide ray toward the Sun for close-in zoom levels */}
+      <Line points={[eclX.clone().multiplyScalar(1.6), sunPos]} color={AMBER} transparent opacity={0.2} lineWidth={1} />
+      <group position={sunPos.toArray()}>
+        <mesh>
+          <sphereGeometry args={[SUN_R, 32, 32]} />
+          <meshBasicMaterial color="#ffd257" />
+        </mesh>
+        <mesh>
+          <sphereGeometry args={[SUN_R * 3, 24, 24]} />
+          <meshBasicMaterial color={AMBER} transparent opacity={0.18} depthWrite={false} />
+        </mesh>
+        <Html distanceFactor={140} position={[0, 0, SUN_R * 5]}>
+          <span className="text-[9px] font-mono uppercase tracking-widest whitespace-nowrap" style={{ color: AMBER }}>Sol · 1 AU · to scale</span>
+        </Html>
+      </group>
+      <Html distanceFactor={140} position={eclX.clone().multiplyScalar(MOON_ORBIT_R * 1.2).add(new THREE.Vector3(0, MOON_ORBIT_R * 0.05, 0)).toArray()}>
+        <span className="text-[9px] font-mono uppercase tracking-widest whitespace-nowrap" style={{ color: AMBER, opacity: 0.8 }}>→ Sol · zoom out 390× past the Moon</span>
       </Html>
     </>
   );
@@ -254,7 +281,7 @@ function Scene({ el }: { el: Elements | null }) {
     <>
       <ambientLight intensity={0.5} />
       <directionalLight position={[100, 0, 20]} intensity={1.6} color="#fff4d6" />
-      <Stars radius={300} depth={60} count={2500} factor={3} saturation={0} fade speed={0.4} />
+      <Stars radius={AU_R * 3.2} depth={AU_R * 0.5} count={2500} factor={AU_R * 0.012} saturation={0} fade speed={0.4} />
       <Earth />
       {/* GEO belt reference */}
       <Line points={ringPoints(GEO_R, 0)} color={DIM} transparent opacity={0.6} dashed dashSize={0.5} gapSize={0.5} lineWidth={1} />
@@ -265,7 +292,7 @@ function Scene({ el }: { el: Elements | null }) {
         </>
       )}
       <Moon />
-      <HeliocentricPath extent={MOON_ORBIT_R * 1.35} />
+      <SolAndHeliocentricOrbit />
     </>
   );
 }
@@ -292,8 +319,9 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name }: {
   const camDist = el
     ? Math.min(Math.max(3.2, apoR * 2.6), MOON_ORBIT_R * 20)
     : MOON_ORBIT_R * 1.6;
-  const maxZoomOut = Math.max(MOON_ORBIT_R * 4, camDist * 1.5);
-  const farPlane = Math.max(4000, apoR * 6, maxZoomOut * 4);
+  // Allow zooming out far enough to see the Sun and Earth's full 1 AU orbit.
+  const maxZoomOut = Math.max(AU_R * 2.6, camDist * 1.5);
+  const farPlane = maxZoomOut * 4;
 
   const [webglOk, setWebglOk] = useState<boolean | null>(null);
   useEffect(() => {
@@ -328,11 +356,12 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name }: {
     <div className="relative w-full h-full min-h-[340px] bg-black/70 overflow-hidden">
       <Canvas
         camera={{ position: [camDist * 0.55, -camDist * 0.75, camDist * 0.45], up: [0, 0, 1], fov: 45, near: 0.05, far: farPlane }}
-        gl={{ antialias: true }}
+        gl={{ antialias: true, logarithmicDepthBuffer: true }}
         dpr={[1, 1.75]}
       >
         <Scene el={el} />
-        <OrbitControls enablePan={false} minDistance={1.4} maxDistance={maxZoomOut} zoomSpeed={0.8} />
+        {/* zoomSpeed cranked up: the trip from LEO to 1 AU spans 4+ orders of magnitude */}
+        <OrbitControls enablePan={false} minDistance={1.4} maxDistance={maxZoomOut} zoomSpeed={2.4} />
       </Canvas>
 
       {/* HUD */}
@@ -353,7 +382,7 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name }: {
         )}
       </div>
       <div className="pointer-events-none absolute bottom-2 left-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground/80">
-        Drag to rotate · Scroll to zoom out to the Moon · 1 unit = 1 Earth radius
+        Drag to rotate · Zoom out past the Moon to the Sun at 1 AU · all to scale
       </div>
       <div className="pointer-events-none absolute bottom-2 right-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground/60">
         RAAN / ARG-PE / lunar node not catalogued — drawn at 0°
