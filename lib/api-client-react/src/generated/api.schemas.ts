@@ -116,6 +116,10 @@ export interface SatcatListResponse {
   limit: number;
   /** Total pages */
   pages: number;
+  /** Total confirmed mass (kg) of ALL entries matching the current filters (not just this page) */
+  filteredMassKg: number;
+  /** Total Bureau-estimated mass (kg) of ALL entries matching the current filters */
+  filteredEstMassKg: number;
 }
 
 export interface MassAggregate {
@@ -453,6 +457,14 @@ orbit?: string;
  * Filter by satellite state
  */
 satState?: string;
+/**
+ * Minimum mass in kg (inclusive); entries with unknown mass are excluded
+ */
+massMin?: number;
+/**
+ * Maximum mass in kg (inclusive); entries with unknown mass are excluded
+ */
+massMax?: number;
 /**
  * Field to sort by
  */

@@ -31,6 +31,14 @@ orbit?: string;
  */
 satState?: string;
 /**
+ * Minimum mass in kg (inclusive); entries with unknown mass are excluded
+ */
+massMin?: number;
+/**
+ * Maximum mass in kg (inclusive); entries with unknown mass are excluded
+ */
+massMax?: number;
+/**
  * Field to sort by
  */
 sort?: string;

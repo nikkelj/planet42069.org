@@ -69,6 +69,16 @@ paths:
           schema:
             type: string
           description: Filter by satellite state
+        - name: massMin
+          in: query
+          schema:
+            type: number
+          description: Minimum mass in kg (inclusive); entries with unknown mass are excluded
+        - name: massMax
+          in: query
+          schema:
+            type: number
+          description: Maximum mass in kg (inclusive); entries with unknown mass are excluded
         - name: sort
           in: query
           schema:
@@ -409,12 +419,20 @@ components:
         pages:
           type: integer
           description: Total pages
+        filteredMassKg:
+          type: number
+          description: Total confirmed mass (kg) of ALL entries matching the current filters (not just this page)
+        filteredEstMassKg:
+          type: number
+          description: Total Bureau-estimated mass (kg) of ALL entries matching the current filters
       required:
         - data
         - total
         - page
         - limit
         - pages
+        - filteredMassKg
+        - filteredEstMassKg
 
     MassAggregate:
       type: object

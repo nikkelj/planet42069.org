@@ -33,6 +33,8 @@ export const GetSatcatQueryParams = zod.object({
   "objectClass": zod.coerce.string().optional().describe('Filter by object class: P (payload), R (rocket body), D (debris), U (unknown)'),
   "orbit": zod.coerce.string().optional().describe('Filter by operational orbit type (LEO, MEO, GEO, HEO, etc.)'),
   "satState": zod.coerce.string().optional().describe('Filter by satellite state'),
+  "massMin": zod.coerce.number().optional().describe('Minimum mass in kg (inclusive); entries with unknown mass are excluded'),
+  "massMax": zod.coerce.number().optional().describe('Maximum mass in kg (inclusive); entries with unknown mass are excluded'),
   "sort": zod.coerce.string().optional().describe('Field to sort by'),
   "order": zod.enum(['asc', 'desc']).default(getSatcatQueryOrderDefault)
 })
@@ -64,7 +66,9 @@ export const GetSatcatResponse = zod.object({
   "total": zod.number().describe('Total matching records'),
   "page": zod.number(),
   "limit": zod.number(),
-  "pages": zod.number().describe('Total pages')
+  "pages": zod.number().describe('Total pages'),
+  "filteredMassKg": zod.number().describe('Total confirmed mass (kg) of ALL entries matching the current filters (not just this page)'),
+  "filteredEstMassKg": zod.number().describe('Total Bureau-estimated mass (kg) of ALL entries matching the current filters')
 })
 
 

@@ -853,6 +853,10 @@ router.get("/satcat", async (req, res): Promise<void> => {
   const classFilter = String(req.query.objectClass ?? "").trim();
   const orbitFilter = String(req.query.orbit ?? "").trim();
   const stateFilter = String(req.query.satState ?? "").trim();
+  const massMinRaw = parseFloat(String(req.query.massMin ?? ""));
+  const massMaxRaw = parseFloat(String(req.query.massMax ?? ""));
+  const massMin = Number.isFinite(massMinRaw) ? massMinRaw : null;
+  const massMax = Number.isFinite(massMaxRaw) ? massMaxRaw : null;
   const sortField = String(req.query.sort ?? "ldate").trim();
   const sortOrder = String(req.query.order ?? "desc").trim();
 
@@ -878,6 +882,22 @@ router.get("/satcat", async (req, res): Promise<void> => {
   }
   if (stateFilter) {
     filtered = filtered.filter((e) => e.satState === stateFilter);
+  }
+  if (massMin != null || massMax != null) {
+    filtered = filtered.filter(
+      (e) =>
+        e.massKg != null &&
+        (massMin == null || e.massKg >= massMin) &&
+        (massMax == null || e.massKg <= massMax),
+    );
+  }
+
+  let filteredMassKg = 0;
+  let filteredEstMassKg = 0;
+  for (const e of filtered) {
+    if (e.massKg == null) continue;
+    if (e.massEstimated) filteredEstMassKg += e.massKg;
+    else filteredMassKg += e.massKg;
   }
 
   // Sort — use a typed whitelist to avoid TS2352 index-access errors
@@ -908,7 +928,7 @@ router.get("/satcat", async (req, res): Promise<void> => {
   const offset = (page - 1) * limit;
   const slice = filtered.slice(offset, offset + limit);
 
-  res.json({ data: slice, total, page, limit, pages });
+  res.json({ data: slice, total, page, limit, pages, filteredMassKg, filteredEstMassKg });
 });
 
 export default router;

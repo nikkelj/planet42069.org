@@ -143,6 +143,10 @@ export default function Catalog() {
   const [classFilter, setObjectClassFilter] = useState<string>("all");
   const [orbitFilter, setOrbitFilter] = useState<string>("all");
   const [stateFilter, setSatStateFilter] = useState<string>("all");
+  const [massMinInput, setMassMinInput] = useState<string>("");
+  const [massMaxInput, setMassMaxInput] = useState<string>("");
+  const [massMin, setMassMin] = useState<string>("");
+  const [massMax, setMassMax] = useState<string>("");
 
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
@@ -156,6 +160,8 @@ export default function Catalog() {
     objectClass: classFilter !== "all" ? classFilter : undefined,
     orbit: orbitFilter !== "all" ? orbitFilter : undefined,
     satState: stateFilter !== "all" ? stateFilter : undefined,
+    massMin: massMin !== "" && !Number.isNaN(Number(massMin)) ? Number(massMin) : undefined,
+    massMax: massMax !== "" && !Number.isNaN(Number(massMax)) ? Number(massMax) : undefined,
     sort: sorting.length > 0 ? sorting[0].id : undefined,
     order: sorting.length > 0 ? (sorting[0].desc ? "desc" as const : "asc" as const) : undefined,
   };
@@ -174,8 +180,23 @@ export default function Catalog() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setDebouncedSearch(search);
+    setMassMin(massMinInput);
+    setMassMax(massMaxInput);
     setPagination(p => ({ ...p, pageIndex: 0 }));
   };
+
+  const applyMassFilter = () => {
+    setMassMin(massMinInput);
+    setMassMax(massMaxInput);
+    setPagination(p => ({ ...p, pageIndex: 0 }));
+  };
+
+  const formatTonnes = (kg: number) =>
+    kg >= 1_000_000
+      ? `${(kg / 1000).toLocaleString(undefined, { maximumFractionDigits: 0 })} t`
+      : kg >= 10_000
+        ? `${(kg / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} t`
+        : `${Math.round(kg).toLocaleString()} kg`;
 
   const getClassBadgeColor = (cls?: string | null) => {
     switch(cls) {
@@ -259,7 +280,23 @@ export default function Catalog() {
     { 
       accessorKey: "massKg", 
       header: "MASS (KG)",
-      cell: ({ row }: any) => row.original.massKg?.toLocaleString() || '---'
+      cell: ({ row }: any) => {
+        const kg = row.original.massKg;
+        if (kg == null) return <span className="text-muted-foreground">---</span>;
+        return (
+          <span className="inline-flex items-center gap-1.5">
+            <span className={row.original.massEstimated ? "text-accent/80" : ""}>{kg.toLocaleString()}</span>
+            {row.original.massEstimated && (
+              <span
+                className="text-[9px] font-mono uppercase border border-accent/60 text-accent px-1 leading-4 cursor-help"
+                title="Mass not on file with GCAT. Value theorized by the Bureau's Office of Estimated Tonnage (median of comparable objects). Treat with appropriate suspicion."
+              >
+                EST
+              </span>
+            )}
+          </span>
+        );
+      }
     },
     { 
       accessorKey: "satState", 
@@ -358,6 +395,30 @@ export default function Catalog() {
               {filters?.satStates.filter(Boolean).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
+
+          <div className="flex items-center gap-1">
+            <Input
+              type="number"
+              min={0}
+              placeholder="MASS ≥ KG"
+              value={massMinInput}
+              onChange={(e) => setMassMinInput(e.target.value)}
+              onBlur={applyMassFilter}
+              onKeyDown={(e) => { if (e.key === "Enter") applyMassFilter(); }}
+              className="w-[110px] rounded-none border-border bg-background uppercase text-xs font-mono placeholder:text-muted-foreground/60"
+            />
+            <span className="text-muted-foreground text-xs font-mono">—</span>
+            <Input
+              type="number"
+              min={0}
+              placeholder="MASS ≤ KG"
+              value={massMaxInput}
+              onChange={(e) => setMassMaxInput(e.target.value)}
+              onBlur={applyMassFilter}
+              onKeyDown={(e) => { if (e.key === "Enter") applyMassFilter(); }}
+              className="w-[110px] rounded-none border-border bg-background uppercase text-xs font-mono placeholder:text-muted-foreground/60"
+            />
+          </div>
         </div>
       </div>
 
@@ -442,6 +503,13 @@ export default function Catalog() {
                                     <span className="text-chart-4 font-bold">{row.original.incDeg != null ? `${row.original.incDeg}°` : '---'}</span>
                                   </div>
                                   <div>
+                                    <span className="text-muted-foreground block mb-1 uppercase tracking-widest text-[10px]">Mass</span>
+                                    <span className={`font-bold ${row.original.massEstimated ? 'text-accent' : 'text-foreground'}`}>
+                                      {row.original.massKg != null ? `${row.original.massKg.toLocaleString()} kg` : '---'}
+                                      {row.original.massEstimated && <span className="ml-1 text-[9px] uppercase opacity-80">(Bureau estimate)</span>}
+                                    </span>
+                                  </div>
+                                  <div>
                                     <span className="text-muted-foreground block mb-1 uppercase tracking-widest text-[10px]">Period</span>
                                     <span className="text-primary">{row.original.periodMin != null ? `${row.original.periodMin} min` : '---'}</span>
                                   </div>
@@ -503,8 +571,19 @@ export default function Catalog() {
 
         {catData && !isLoading && (
           <div className="flex flex-col md:flex-row items-center justify-between p-4 border-t-2 border-border bg-muted/30 gap-4 relative z-10">
-            <div className="text-xs text-muted-foreground uppercase font-mono">
-              Displaying {(pagination.pageIndex * pagination.pageSize) + 1} - {Math.min((pagination.pageIndex + 1) * pagination.pageSize, catData.total)} of {catData.total.toLocaleString()} records
+            <div className="text-xs text-muted-foreground uppercase font-mono space-y-1">
+              <div>
+                Displaying {(pagination.pageIndex * pagination.pageSize) + 1} - {Math.min((pagination.pageIndex + 1) * pagination.pageSize, catData.total)} of {catData.total.toLocaleString()} records
+              </div>
+              <div>
+                <span className="text-primary">Total mass in selection: {formatTonnes(catData.filteredMassKg)}</span>
+                {catData.filteredEstMassKg > 0 && (
+                  <span
+                    className="text-accent cursor-help"
+                    title="Mass theorized by the Bureau's Office of Estimated Tonnage for objects GCAT has not weighed."
+                  > + {formatTonnes(catData.filteredEstMassKg)} theorized</span>
+                )}
+              </div>
             </div>
             
             <div className="flex items-center gap-2">
