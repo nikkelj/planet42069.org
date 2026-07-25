@@ -63,6 +63,10 @@ async function loadCatalog(): Promise<CatalogCache> {
     incDeg: o.incDeg,
     periodMin: null,
     decayDate: o.decayDate,
+    gunterType: o.gunterType,
+    gunterUrl: o.gunterUrl,
+    gunterTitle: o.gunterTitle,
+    gunterRetrievedAt: o.gunterRetrievedAt?.toISOString() ?? null,
   }));
 
   const launchMap = new Map<string, LaunchEntry>();
@@ -124,6 +128,7 @@ export interface ObcFreshness {
   gcatSyncedAt: string | null;
   spacetrackSyncedAt: string | null;
   mergeSyncedAt: string | null;
+  gunterSyncedAt: string | null;
 }
 
 /** Latest successful sync per source, ISO timestamps. */
@@ -137,8 +142,8 @@ export async function getFreshness(): Promise<ObcFreshness> {
       .limit(1);
     return rows[0]?.finishedAt?.toISOString() ?? null;
   };
-  const [gcat, spacetrack, merge] = await Promise.all([
-    latest("gcat"), latest("spacetrack"), latest("merge"),
+  const [gcat, spacetrack, merge, gunter] = await Promise.all([
+    latest("gcat"), latest("spacetrack"), latest("merge"), latest("gunter"),
   ]);
-  return { gcatSyncedAt: gcat, spacetrackSyncedAt: spacetrack, mergeSyncedAt: merge };
+  return { gcatSyncedAt: gcat, spacetrackSyncedAt: spacetrack, mergeSyncedAt: merge, gunterSyncedAt: gunter };
 }

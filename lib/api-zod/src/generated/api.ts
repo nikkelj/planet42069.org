@@ -33,6 +33,7 @@ export const GetSatcatQueryParams = zod.object({
   "objectClass": zod.coerce.string().optional().describe('Filter by object class: P (payload), R (rocket body), D (debris), U (unknown)'),
   "orbit": zod.coerce.string().optional().describe('Filter by operational orbit type (LEO, MEO, GEO, HEO, etc.)'),
   "satState": zod.coerce.string().optional().describe('Filter by satellite state'),
+  "gunterType": zod.coerce.string().optional().describe('Filter by Gunter\'s Space Page \"Type \/ Application\" classification'),
   "massMin": zod.coerce.number().optional().describe('Minimum mass in kg (inclusive); entries with unknown mass are excluded'),
   "massMax": zod.coerce.number().optional().describe('Maximum mass in kg (inclusive); entries with unknown mass are excluded'),
   "sort": zod.coerce.string().optional().describe('Field to sort by'),
@@ -61,7 +62,11 @@ export const GetSatcatResponse = zod.object({
   "perigeeKm": zod.number().nullish().describe('Perigee altitude in km'),
   "incDeg": zod.number().nullish().describe('Orbital inclination in degrees'),
   "periodMin": zod.number().nullish().describe('Orbital period in minutes'),
-  "decayDate": zod.string().nullish().describe('Decay or reentry date')
+  "decayDate": zod.string().nullish().describe('Decay or reentry date'),
+  "gunterType": zod.string().nullish().describe('Gunter\'s Space Page \"Type \/ Application\" classification'),
+  "gunterUrl": zod.string().nullish().describe('Cross-link to the full dossier on space.skyrocket.de'),
+  "gunterTitle": zod.string().nullish().describe('Dossier page title, for Krebs-format citations'),
+  "gunterRetrievedAt": zod.string().nullish().describe('ISO timestamp the dossier was retrieved')
 })),
   "total": zod.number().describe('Total matching records'),
   "page": zod.number(),
@@ -135,7 +140,8 @@ export const GetSatcatSummaryResponse = zod.object({
   "freshness": zod.object({
   "gcatSyncedAt": zod.string().nullable(),
   "spacetrackSyncedAt": zod.string().nullable(),
-  "mergeSyncedAt": zod.string().nullable()
+  "mergeSyncedAt": zod.string().nullable(),
+  "gunterSyncedAt": zod.string().nullable()
 }).describe('Last successful sync per upstream source (ISO timestamps, null if never)')
 })
 
@@ -431,7 +437,10 @@ export const GetSatcatFiltersResponse = zod.object({
   "owners": zod.array(zod.string()),
   "orbits": zod.array(zod.string()),
   "satStates": zod.array(zod.string()),
-  "objectClasses": zod.array(zod.string())
+  "objectClasses": zod.array(zod.string()),
+  "gunterTypes": zod.array(zod.string()).describe('Distinct Gunter \"Type \/ Application\" values present in the catalog'),
+  "gunterMatched": zod.number().describe('Number of catalog objects with a matched Gunter dossier'),
+  "totalObjects": zod.number().describe('Total catalog objects (denominator for Gunter coverage)')
 })
 
 

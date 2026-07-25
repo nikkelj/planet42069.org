@@ -9,3 +9,4 @@
 - [OBC catalogue merge rules](obc-catalogue.md) — GCAT+space-track merged DB: ST-key dedupe on norad, "O?" satState sentinel, estimated-mass conventions.
 - [GitHub sync](github-sync.md) — repo is nikkelj/planet42069.org; gitPush can't update main directly, push side branch + PR.
 - [WebGL in headless verification](webgl-headless.md) — screenshot/test browsers have no WebGL; ship a fallback UI and limit to one Canvas at a time.
+- [Gunter's Space Page structure & policy](gunter-page-structure.md) — iso-8859-1 pages, stable td ids, cosid join key; polite budgeted crawl + Krebs citation are conditions of use.

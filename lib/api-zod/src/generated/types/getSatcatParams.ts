@@ -31,6 +31,10 @@ orbit?: string;
  */
 satState?: string;
 /**
+ * Filter by Gunter's Space Page "Type / Application" classification
+ */
+gunterType?: string;
+/**
  * Minimum mass in kg (inclusive); entries with unknown mass are excluded
  */
 massMin?: number;

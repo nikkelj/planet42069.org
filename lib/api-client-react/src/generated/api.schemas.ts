@@ -152,6 +152,26 @@ export interface SatcatEntry {
      * @nullable
      */
   decayDate?: string | null;
+  /**
+     * Gunter's Space Page "Type / Application" classification
+     * @nullable
+     */
+  gunterType?: string | null;
+  /**
+     * Cross-link to the full dossier on space.skyrocket.de
+     * @nullable
+     */
+  gunterUrl?: string | null;
+  /**
+     * Dossier page title, for Krebs-format citations
+     * @nullable
+     */
+  gunterTitle?: string | null;
+  /**
+     * ISO timestamp the dossier was retrieved
+     * @nullable
+     */
+  gunterRetrievedAt?: string | null;
 }
 
 export interface SatcatListResponse {
@@ -185,6 +205,7 @@ export interface ObcFreshness {
   gcatSyncedAt: string | null;
   spacetrackSyncedAt: string | null;
   mergeSyncedAt: string | null;
+  gunterSyncedAt: string | null;
 }
 
 export interface SatcatStats {
@@ -478,6 +499,12 @@ export interface SatcatFilters {
   orbits: string[];
   satStates: string[];
   objectClasses: string[];
+  /** Distinct Gunter "Type / Application" values present in the catalog */
+  gunterTypes: string[];
+  /** Number of catalog objects with a matched Gunter dossier */
+  gunterMatched: number;
+  /** Total catalog objects (denominator for Gunter coverage) */
+  totalObjects: number;
 }
 
 export type GetSatcatParams = {
@@ -503,6 +530,10 @@ orbit?: string;
  * Filter by satellite state
  */
 satState?: string;
+/**
+ * Filter by Gunter's Space Page "Type / Application" classification
+ */
+gunterType?: string;
 /**
  * Minimum mass in kg (inclusive); entries with unknown mass are excluded
  */

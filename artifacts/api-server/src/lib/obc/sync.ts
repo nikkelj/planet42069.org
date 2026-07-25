@@ -7,6 +7,7 @@ import { fetchSpacetrackSatcat, type SpacetrackRow } from "./spacetrack";
 import { parseTsv, type SatcatRawEntry } from "../satcat";
 import { parseLaunchTsv, type LaunchEntry } from "../launch";
 import { buildMassModel, type EstimatableRow } from "./estimate";
+import { applyGunterAnnotations } from "./gunter";
 import { invalidateStore } from "./store";
 
 const CHUNK = 400;
@@ -305,6 +306,14 @@ async function doSync(): Promise<void> {
   try {
     await upsertObjects(rows);
     await reconcileStDuplicates();
+    // Restore Gunter annotations from the crawl store — merges rebuild rows
+    // (e.g. ST→GCAT key transitions), which can drop gunter_* values.
+    // No network traffic; purely DB-local.
+    try {
+      await applyGunterAnnotations();
+    } catch (err) {
+      logger.warn({ err }, "obc-sync: gunter annotation re-apply failed");
+    }
     await logSync("merge", "success", started, rows.length);
     logger.info({ rows: rows.length, estimated }, "obc-sync: merge complete");
   } catch (err) {

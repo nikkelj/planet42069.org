@@ -69,6 +69,11 @@ paths:
           schema:
             type: string
           description: Filter by satellite state
+        - name: gunterType
+          in: query
+          schema:
+            type: string
+          description: Filter by Gunter's Space Page "Type / Application" classification
         - name: massMin
           in: query
           schema:
@@ -509,6 +514,18 @@ components:
         decayDate:
           type: ["string", "null"]
           description: Decay or reentry date
+        gunterType:
+          type: ["string", "null"]
+          description: Gunter's Space Page "Type / Application" classification
+        gunterUrl:
+          type: ["string", "null"]
+          description: Cross-link to the full dossier on space.skyrocket.de
+        gunterTitle:
+          type: ["string", "null"]
+          description: Dossier page title, for Krebs-format citations
+        gunterRetrievedAt:
+          type: ["string", "null"]
+          description: ISO timestamp the dossier was retrieved
       required:
         - jcat
         - name
@@ -580,10 +597,14 @@ components:
         mergeSyncedAt:
           type: string
           nullable: true
+        gunterSyncedAt:
+          type: string
+          nullable: true
       required:
         - gcatSyncedAt
         - spacetrackSyncedAt
         - mergeSyncedAt
+        - gunterSyncedAt
 
     SatcatStats:
       type: object
@@ -1239,8 +1260,22 @@ components:
           type: array
           items:
             type: string
+        gunterTypes:
+          type: array
+          items:
+            type: string
+          description: Distinct Gunter "Type / Application" values present in the catalog
+        gunterMatched:
+          type: integer
+          description: Number of catalog objects with a matched Gunter dossier
+        totalObjects:
+          type: integer
+          description: Total catalog objects (denominator for Gunter coverage)
       required:
         - owners
         - orbits
         - satStates
         - objectClasses
+        - gunterTypes
+        - gunterMatched
+        - totalObjects

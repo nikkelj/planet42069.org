@@ -1,5 +1,6 @@
 import { logger } from "../logger";
 import { runObcSync } from "./sync";
+import { runGunterSync } from "./gunter";
 import { getFreshness } from "./store";
 
 const SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000; // daily
@@ -12,12 +13,28 @@ async function syncIfStale(): Promise<void> {
     const ageMs = Date.now() - last;
     if (ageMs < SYNC_INTERVAL_MS) {
       logger.info({ ageHours: Math.round(ageMs / 3600000 * 10) / 10 }, "obc-scheduler: catalog fresh, skipping sync");
-      return;
+    } else {
+      logger.info("obc-scheduler: catalog stale, running sync");
+      await runObcSync();
     }
-    logger.info("obc-scheduler: catalog stale, running sync");
-    await runObcSync();
   } catch (err) {
     logger.error({ err }, "obc-scheduler: sync attempt failed");
+  }
+
+  // Gunter's Space Page: separate daily cadence (its own rate-limited crawl
+  // budget), run strictly after the main merge so annotations land on fresh rows.
+  try {
+    const f = await getFreshness();
+    const last = f.gunterSyncedAt ? new Date(f.gunterSyncedAt).getTime() : 0;
+    const ageMs = Date.now() - last;
+    if (ageMs < SYNC_INTERVAL_MS) {
+      logger.info({ ageHours: Math.round(ageMs / 3600000 * 10) / 10 }, "obc-scheduler: gunter fresh, skipping");
+      return;
+    }
+    logger.info("obc-scheduler: gunter stale, running daily crawl batch");
+    await runGunterSync();
+  } catch (err) {
+    logger.error({ err }, "obc-scheduler: gunter sync attempt failed");
   }
 }
 

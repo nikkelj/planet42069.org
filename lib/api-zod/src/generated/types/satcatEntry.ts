@@ -103,4 +103,24 @@ export interface SatcatEntry {
      * @nullable
      */
   decayDate?: string | null;
+  /**
+     * Gunter's Space Page "Type / Application" classification
+     * @nullable
+     */
+  gunterType?: string | null;
+  /**
+     * Cross-link to the full dossier on space.skyrocket.de
+     * @nullable
+     */
+  gunterUrl?: string | null;
+  /**
+     * Dossier page title, for Krebs-format citations
+     * @nullable
+     */
+  gunterTitle?: string | null;
+  /**
+     * ISO timestamp the dossier was retrieved
+     * @nullable
+     */
+  gunterRetrievedAt?: string | null;
 }

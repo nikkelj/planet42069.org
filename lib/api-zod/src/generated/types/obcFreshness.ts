@@ -13,4 +13,5 @@ export interface ObcFreshness {
   gcatSyncedAt: string | null;
   spacetrackSyncedAt: string | null;
   mergeSyncedAt: string | null;
+  gunterSyncedAt: string | null;
 }

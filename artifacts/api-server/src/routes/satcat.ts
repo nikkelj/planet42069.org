@@ -839,8 +839,12 @@ router.get("/satcat/filters", async (_req, res): Promise<void> => {
   const objectClasses = [
     ...new Set(data.map((e) => e.objectClass).filter(Boolean) as string[]),
   ].sort();
+  const gunterTypes = [
+    ...new Set(data.map((e) => e.gunterType).filter(Boolean) as string[]),
+  ].sort();
+  const gunterMatched = data.reduce((n, e) => n + (e.gunterUrl ? 1 : 0), 0);
 
-  res.json({ owners, orbits, satStates, objectClasses });
+  res.json({ owners, orbits, satStates, objectClasses, gunterTypes, gunterMatched, totalObjects: data.length });
 });
 
 router.get("/satcat", async (req, res): Promise<void> => {
@@ -853,6 +857,7 @@ router.get("/satcat", async (req, res): Promise<void> => {
   const classFilter = String(req.query.objectClass ?? "").trim();
   const orbitFilter = String(req.query.orbit ?? "").trim();
   const stateFilter = String(req.query.satState ?? "").trim();
+  const gunterTypeFilter = String(req.query.gunterType ?? "").trim();
   const massMinRaw = parseFloat(String(req.query.massMin ?? ""));
   const massMaxRaw = parseFloat(String(req.query.massMax ?? ""));
   const massMin = Number.isFinite(massMinRaw) ? massMinRaw : null;
@@ -882,6 +887,9 @@ router.get("/satcat", async (req, res): Promise<void> => {
   }
   if (stateFilter) {
     filtered = filtered.filter((e) => e.satState === stateFilter);
+  }
+  if (gunterTypeFilter) {
+    filtered = filtered.filter((e) => e.gunterType === gunterTypeFilter);
   }
   if (massMin != null || massMax != null) {
     filtered = filtered.filter(

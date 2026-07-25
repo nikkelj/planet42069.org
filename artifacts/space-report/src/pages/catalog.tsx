@@ -35,6 +35,7 @@ export default function Catalog() {
   const [classFilter, setObjectClassFilter] = useState<string>("all");
   const [orbitFilter, setOrbitFilter] = useState<string>("all");
   const [stateFilter, setSatStateFilter] = useState<string>("all");
+  const [gunterTypeFilter, setGunterTypeFilter] = useState<string>("all");
   const [massMinInput, setMassMinInput] = useState<string>("");
   const [massMaxInput, setMassMaxInput] = useState<string>("");
   const [massMin, setMassMin] = useState<string>("");
@@ -52,6 +53,7 @@ export default function Catalog() {
     objectClass: classFilter !== "all" ? classFilter : undefined,
     orbit: orbitFilter !== "all" ? orbitFilter : undefined,
     satState: stateFilter !== "all" ? stateFilter : undefined,
+    gunterType: gunterTypeFilter !== "all" ? gunterTypeFilter : undefined,
     massMin: massMin !== "" && !Number.isNaN(Number(massMin)) ? Number(massMin) : undefined,
     massMax: massMax !== "" && !Number.isNaN(Number(massMax)) ? Number(massMax) : undefined,
     sort: sorting.length > 0 ? sorting[0].id : undefined,
@@ -290,6 +292,18 @@ export default function Catalog() {
             </SelectContent>
           </Select>
 
+          {(filters?.gunterTypes?.length ?? 0) > 0 && (
+            <Select value={gunterTypeFilter} onValueChange={(v) => {setGunterTypeFilter(v); setPagination(p=>({...p, pageIndex: 0}));}}>
+              <SelectTrigger className="w-[170px] rounded-none border-border bg-background uppercase text-xs" title="Satellite type per Gunter's Space Page (space.skyrocket.de)">
+                <SelectValue placeholder="GUNTER TYPE" />
+              </SelectTrigger>
+              <SelectContent className="rounded-none">
+                <SelectItem value="all">ALL GUNTER TYPES</SelectItem>
+                {filters?.gunterTypes.filter(Boolean).map(t => <SelectItem key={t} value={t}>{t.toUpperCase()}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+
           <div className="flex items-center gap-1">
             <Input
               type="number"
@@ -442,6 +456,35 @@ export default function Catalog() {
                                     <span className="text-muted-foreground block mb-1 uppercase tracking-widest text-[10px]">Payload Name</span>
                                     <span className="text-foreground">{row.original.plName || row.original.name || '---'}</span>
                                   </div>
+                                  {row.original.gunterUrl && (
+                                    <div className="col-span-2 md:col-span-3 border-t border-border/40 pt-3 mt-1 space-y-1">
+                                      <span className="text-muted-foreground block uppercase tracking-widest text-[10px]">
+                                        Gunter Dossier — Type / Application
+                                      </span>
+                                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                        {row.original.gunterType && (
+                                          <Badge variant="outline" className="font-mono text-[10px] uppercase rounded-none border-accent/60 text-accent">
+                                            {row.original.gunterType}
+                                          </Badge>
+                                        )}
+                                        <a
+                                          href={row.original.gunterUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="text-accent underline underline-offset-2 hover:text-primary transition-colors inline-flex items-center gap-1"
+                                        >
+                                          Full dossier — Gunter's Space Page
+                                          <ChevronRight className="w-3 h-3" />
+                                        </a>
+                                      </div>
+                                      <p className="text-muted-foreground/60 text-[10px] normal-case leading-relaxed">
+                                        Krebs, Gunter D. "{row.original.gunterTitle || 'Satellite dossier'}". Gunter's Space Page.
+                                        Retrieved {row.original.gunterRetrievedAt ? new Date(row.original.gunterRetrievedAt).toISOString().slice(0, 10) : '---'}, from{' '}
+                                        {row.original.gunterUrl}
+                                      </p>
+                                    </div>
+                                  )}
                                   {row.original.decayDate && (
                                     <div className="col-span-2 md:col-span-3 mt-1">
                                       <span className="text-destructive font-bold uppercase inline-flex items-center gap-2">
@@ -485,6 +528,16 @@ export default function Catalog() {
                   > + {formatTonnes(catData.filteredEstMassKg)} theorized</span>
                 )}
               </div>
+              {(filters?.gunterMatched ?? 0) > 0 && (
+                <div
+                  className="cursor-help"
+                  title="Objects cross-matched by COSPAR id to a satellite dossier on Gunter's Space Page (space.skyrocket.de, Gunter Dirk Krebs). Coverage grows daily as the Bureau's crawler works through the backlog at a polite pace."
+                >
+                  <span className="text-accent">Gunter dossiers on file: {filters!.gunterMatched.toLocaleString()}</span>
+                  {" "}of {filters!.totalObjects.toLocaleString()} objects
+                  {" "}({((filters!.gunterMatched / Math.max(1, filters!.totalObjects)) * 100).toFixed(1)}%)
+                </div>
+              )}
             </div>
             
             <div className="flex items-center gap-2">

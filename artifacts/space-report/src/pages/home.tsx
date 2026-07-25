@@ -67,7 +67,8 @@ export default function Home() {
                 >
                   space-track.org
                 </a>{" "}
-                (the US Space Force's official catalog), with{" "}
+                (the US Space Force's official catalog), and enriched with satellite types and
+                dossier links from{" "}
                 <a
                   href="https://space.skyrocket.de"
                   target="_blank"
@@ -76,7 +77,7 @@ export default function Home() {
                 >
                   Gunter's Space Page
                 </a>{" "}
-                joining the pipeline soon. If the numbers look scary, blame the humans — not the catalogs.
+                (Gunter Dirk Krebs). If the numbers look scary, blame the humans — not the catalogs.
               </p>
               <p className="text-muted-foreground text-xs uppercase tracking-wider">
                 ⚠ This is a fan parody. Jonathan McDowell is not responsible for any of this.
@@ -173,6 +174,17 @@ export default function Home() {
               <p className="text-muted-foreground/80 border-l-2 border-emerald-400/20 pl-3">
                 Every bureaucracy doubles in size during a crisis and calls it reform.
                 The Bureau is proud to report it is no exception. The difference is that ours worked.
+              </p>
+              <p className="text-emerald-300/70 border border-emerald-400/20 bg-emerald-950/20 p-3">
+                <span className="font-bold uppercase">Addendum (2026-07-25):</span> The notice served on{" "}
+                <span className="text-emerald-300/90">Gunter's Space Page</span> has been executed.
+                Satellite type classifications and dossier cross-links now flow into the fused catalog
+                daily, matched by COSPAR id, with citations rendered exactly to Mr. Krebs' specification.
+                The crawler proceeds at a courteous four seconds between requests, because the Bureau
+                may be relentless but it is not rude. Check any satellite in the{" "}
+                <Link href="/catalog" className="text-accent underline underline-offset-2 hover:text-primary transition-colors">Satcat Explorer</Link>{" "}
+                — matched entries link straight to his full dossier. Source count: three. Departments
+                added: one. Regrets: withheld pending review.
               </p>
             </div>
             <div className="flex flex-col gap-1 border-t border-emerald-400/20 pt-2 text-[10px] text-emerald-400/40 uppercase tracking-wider">

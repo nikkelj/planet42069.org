@@ -29,6 +29,11 @@ export interface SatcatEntry {
   incDeg: number | null;
   periodMin: number | null;
   decayDate: string | null;
+  // Gunter's Space Page annotations (fusion source #3)
+  gunterType: string | null;      // "Type / Application", e.g. "Communication"
+  gunterUrl: string | null;       // dossier cross-link on space.skyrocket.de
+  gunterTitle: string | null;     // dossier title, for Krebs-format citations
+  gunterRetrievedAt: string | null; // ISO date the dossier was retrieved
 }
 
 /** Parser output — includes the GCAT Launch_Tag for launch cross-referencing. */
@@ -172,6 +177,10 @@ export function parseTsv(raw: string): SatcatRawEntry[] {
       incDeg: parseNum(get(C.inc)),
       periodMin: null,
       decayDate: parseStr(get(C.ddate)),
+      gunterType: null,
+      gunterUrl: null,
+      gunterTitle: null,
+      gunterRetrievedAt: null,
     });
   }
 

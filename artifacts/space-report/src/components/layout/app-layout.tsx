@@ -92,7 +92,8 @@ export function AppLayout({ children }: AppLayoutProps) {
             >
               space-track.org
             </a>{" "}
-            (18th Space Defense Squadron, US Space Force). Coming soon to the fusion pipeline:{" "}
+            (18th Space Defense Squadron, US Space Force). Satellite types and dossier
+            cross-links come from{" "}
             <a
               href="https://space.skyrocket.de"
               target="_blank"
@@ -101,7 +102,8 @@ export function AppLayout({ children }: AppLayoutProps) {
             >
               Gunter's Space Page
             </a>{" "}
-            (Gunter Dirk Krebs), the encyclopedia of who actually built all this stuff.
+            (© Gunter Dirk Krebs), the encyclopedia of who actually built all this stuff —
+            each matched catalog entry links to his full dossier, where the real detail lives.
           </p>
           <p className="leading-relaxed normal-case text-muted-foreground/70">
             This site is a fan parody. It is not affiliated with Jonathan McDowell,

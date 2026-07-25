@@ -7,6 +7,7 @@ import {
   timestamp,
   serial,
   index,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -46,6 +47,15 @@ export const obcObjects = pgTable(
     decayDate: text("decay_date"),
     inGcat: boolean("in_gcat").notNull().default(false),
     inSpacetrack: boolean("in_spacetrack").notNull().default(false),
+    // ── Gunter's Space Page annotations (gap-fill only; never overrides
+    //    GCAT/space-track identity or physics fields). Matched by COSPAR id
+    //    (intl_des). Enough is stored to reproduce Gunter's own citation
+    //    format: Krebs, Gunter D. "<title>". Gunter's Space Page. Retrieved
+    //    <date>, from <url>.
+    gunterType: text("gunter_type"),          // "Type / Application", e.g. "Communication"
+    gunterUrl: text("gunter_url"),            // full dossier URL on space.skyrocket.de
+    gunterTitle: text("gunter_title"),        // dossier page title, for citations
+    gunterRetrievedAt: timestamp("gunter_retrieved_at"),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [
@@ -79,8 +89,34 @@ export const obcSyncLog = pgTable(
   (t) => [index("obc_sync_log_source_idx").on(t.source, t.finishedAt)],
 );
 
+/**
+ * Gunter's Space Page crawl state — one row per page we know about.
+ * kind "chron" rows are yearly chronology indexes (discovery only);
+ * kind "dossier" rows are doc_sdat satellite pages carrying the facts
+ * table and per-satellite COSPAR list used for fusion.
+ */
+export const obcGunterPages = pgTable(
+  "obc_gunter_pages",
+  {
+    url: text("url").primaryKey(),
+    kind: text("kind").notNull(),              // "chron" | "dossier"
+    status: text("status").notNull().default("pending"), // "pending" | "ok" | "error"
+    title: text("title"),
+    gunterType: text("gunter_type"),           // "Type / Application"
+    nation: text("nation"),
+    operator: text("operator"),
+    contractors: text("contractors"),
+    cosparIds: jsonb("cospar_ids").$type<string[]>(), // COSPAR ids listed on the page
+    error: text("error"),
+    discoveredAt: timestamp("discovered_at").notNull().defaultNow(),
+    retrievedAt: timestamp("retrieved_at"),
+  },
+  (t) => [index("obc_gunter_pages_status_idx").on(t.kind, t.status)],
+);
+
 export const insertObcObjectSchema = createInsertSchema(obcObjects);
 export type InsertObcObject = z.infer<typeof insertObcObjectSchema>;
 export type ObcObject = typeof obcObjects.$inferSelect;
 export type ObcLaunch = typeof obcLaunches.$inferSelect;
 export type ObcSyncLogRow = typeof obcSyncLog.$inferSelect;
+export type ObcGunterPage = typeof obcGunterPages.$inferSelect;
