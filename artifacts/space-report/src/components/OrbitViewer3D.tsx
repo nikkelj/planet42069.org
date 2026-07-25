@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Line, Html, Stars } from "@react-three/drei";
 import * as THREE from "three";
+import worldOutlines from "./world-outlines.json";
 
 /**
  * True-to-scale Earth-Centered Inertial orbit viewer.
@@ -36,11 +37,20 @@ interface Elements {
   periodMin: number;
 }
 
-function elementsFrom(apogeeKm: number, perigeeKm: number, incDeg: number): Elements {
-  const rA = (apogeeKm + EARTH_R_KM) / EARTH_R_KM;
-  const rP = (perigeeKm + EARTH_R_KM) / EARTH_R_KM;
+function elementsFrom(apogeeKm: number, perigeeKm: number, incDeg: number): Elements | null {
+  // GCAT data is messy: some rows have apogee/perigee swapped, negative
+  // perigees (decayed / suborbital fits), or absurd deep-space apogees.
+  // Sanitize rather than rendering NaN/hyperbolic garbage.
+  if (!Number.isFinite(apogeeKm) || !Number.isFinite(perigeeKm)) return null;
+  let apo = Math.max(apogeeKm, perigeeKm);
+  let per = Math.min(apogeeKm, perigeeKm);
+  // Keep perigee above the surface-ish so the ellipse stays elliptical.
+  per = Math.max(per, -EARTH_R_KM * 0.9);
+  const rA = (apo + EARTH_R_KM) / EARTH_R_KM;
+  const rP = (per + EARTH_R_KM) / EARTH_R_KM;
+  if (rA <= 0) return null;
   const a = (rA + rP) / 2;
-  const e = Math.max(0, (rA - rP) / (rA + rP));
+  const e = Math.min(0.995, Math.max(0, (rA - rP) / (rA + rP)));
   // Kepler's third law with mu in (Earth radii)^3/s^2
   const MU = 398600.4418 / (EARTH_R_KM ** 3); // km^3/s^2 -> R^3/s^2
   const periodMin = (2 * Math.PI * Math.sqrt(a ** 3 / MU)) / 60;
@@ -159,18 +169,48 @@ function Moon() {
   );
 }
 
+/** Coastlines + political boundaries, one merged line-segment geometry. */
+const worldGeometry = (() => {
+  const verts: number[] = [];
+  const R = 1.004;
+  const D2R = Math.PI / 180;
+  for (const ring of worldOutlines as [number, number][][]) {
+    let prev: [number, number, number] | null = null;
+    for (const [lon, lat] of ring) {
+      const cl = Math.cos(lat * D2R);
+      // Scene is z-up ECI: z = north.
+      const p: [number, number, number] = [
+        R * cl * Math.cos(lon * D2R),
+        R * cl * Math.sin(lon * D2R),
+        R * Math.sin(lat * D2R),
+      ];
+      if (prev) verts.push(...prev, ...p);
+      prev = p;
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+  return geo;
+})();
+
 function Earth() {
-  const ref = useRef<THREE.Mesh>(null);
-  useFrame((_, dt) => { if (ref.current) ref.current.rotation.y += dt * 0.05; });
+  const ref = useRef<THREE.Group>(null);
+  // Spin about the z axis — that's the spin axis in this z-up ECI scene.
+  useFrame((_, dt) => { if (ref.current) ref.current.rotation.z += dt * 0.05; });
   return (
     <group>
-      <mesh ref={ref}>
-        <sphereGeometry args={[1, 48, 48]} />
-        <meshStandardMaterial color="#06301c" roughness={0.9} />
-      </mesh>
+      <group ref={ref}>
+        <mesh>
+          <sphereGeometry args={[1, 48, 48]} />
+          <meshStandardMaterial color="#06301c" roughness={0.9} />
+        </mesh>
+        <lineSegments geometry={worldGeometry}>
+          <lineBasicMaterial color={GREEN} transparent opacity={0.55} />
+        </lineSegments>
+      </group>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <sphereGeometry args={[1.002, 36, 24]} />
-        <meshBasicMaterial color={GREEN} wireframe transparent opacity={0.16} />
+        <meshBasicMaterial color={GREEN} wireframe transparent opacity={0.1} />
       </mesh>
       {/* equator */}
       <Line points={ringPoints(1.005, 0)} color={GREEN} transparent opacity={0.5} lineWidth={1} />
@@ -194,16 +234,15 @@ function HeliocentricPath({ extent }: { extent: number }) {
       <Html distanceFactor={140} position={dir.clone().multiplyScalar(extent * 0.75).toArray()}>
         <span className="text-[9px] font-mono uppercase tracking-widest whitespace-nowrap" style={{ color: AMBER, opacity: 0.9 }}>Heliocentric path</span>
       </Html>
+      {/* Direction-only ray: the Sun sits at 1 AU = 23,455 Earth radii,
+          ~390× beyond the Moon — far off any usable chart. No marker sphere,
+          so nothing implies the Sun's actual position is in frame. */}
       <Line
         points={[sunDir.clone().multiplyScalar(1.6), sunDir.clone().multiplyScalar(extent)]}
         color={AMBER} transparent opacity={0.25} lineWidth={1}
       />
-      <mesh position={sunDir.clone().multiplyScalar(extent).toArray()}>
-        <sphereGeometry args={[extent * 0.02, 12, 12]} />
-        <meshBasicMaterial color={AMBER} />
-      </mesh>
-      <Html distanceFactor={140} position={sunDir.clone().multiplyScalar(extent * 0.92).add(new THREE.Vector3(0, extent * 0.03, 0)).toArray()}>
-        <span className="text-[9px] font-mono uppercase tracking-widest whitespace-nowrap" style={{ color: AMBER }}>Sol · 1 AU →</span>
+      <Html distanceFactor={140} position={sunDir.clone().multiplyScalar(extent * 0.9).add(new THREE.Vector3(0, extent * 0.03, 0)).toArray()}>
+        <span className="text-[9px] font-mono uppercase tracking-widest whitespace-nowrap" style={{ color: AMBER }}>→ Sol · 1 AU · 390× Moon dist · off chart</span>
       </Html>
     </>
   );
@@ -246,7 +285,15 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name }: {
   );
 
   // Frame the target orbit; if none, frame the Earth-Moon system.
-  const camDist = el ? Math.max(3.2, el.a * (1 + el.e) * 2.6) : MOON_ORBIT_R * 1.6;
+  // Deep-space objects can have apogees in the millions of km — cap the
+  // initial framing so Earth stays visible, and scale the camera limits to
+  // the orbit instead of leaving the camera outside its own clamps.
+  const apoR = el ? el.a * (1 + el.e) : 0;
+  const camDist = el
+    ? Math.min(Math.max(3.2, apoR * 2.6), MOON_ORBIT_R * 20)
+    : MOON_ORBIT_R * 1.6;
+  const maxZoomOut = Math.max(MOON_ORBIT_R * 4, camDist * 1.5);
+  const farPlane = Math.max(4000, apoR * 6, maxZoomOut * 4);
 
   const [webglOk, setWebglOk] = useState<boolean | null>(null);
   useEffect(() => {
@@ -280,12 +327,12 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name }: {
   return (
     <div className="relative w-full h-full min-h-[340px] bg-black/70 overflow-hidden">
       <Canvas
-        camera={{ position: [camDist * 0.55, -camDist * 0.75, camDist * 0.45], up: [0, 0, 1], fov: 45, near: 0.05, far: 4000 }}
+        camera={{ position: [camDist * 0.55, -camDist * 0.75, camDist * 0.45], up: [0, 0, 1], fov: 45, near: 0.05, far: farPlane }}
         gl={{ antialias: true }}
         dpr={[1, 1.75]}
       >
         <Scene el={el} />
-        <OrbitControls enablePan={false} minDistance={1.4} maxDistance={MOON_ORBIT_R * 4} zoomSpeed={0.8} />
+        <OrbitControls enablePan={false} minDistance={1.4} maxDistance={maxZoomOut} zoomSpeed={0.8} />
       </Canvas>
 
       {/* HUD */}
