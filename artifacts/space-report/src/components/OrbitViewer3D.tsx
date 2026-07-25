@@ -37,6 +37,56 @@ interface Elements {
   e: number;
   incRad: number;
   periodMin: number;
+  /** perifocal -> ECI rotation: Rz(RAAN) · Rx(inc) · Rz(argp). Identity-ish when RAAN/argp unknown. */
+  rot: THREE.Matrix4;
+  /** Real-time propagation info when built from a TLE. */
+  tle?: {
+    meanAnomalyRad: number; // at epoch
+    meanMotionRadPerMs: number;
+    epochMs: number;
+  };
+}
+
+function makeRot(incRad: number, raanRad: number, argpRad: number): THREE.Matrix4 {
+  const rz1 = new THREE.Matrix4().makeRotationZ(raanRad);
+  const rx = new THREE.Matrix4().makeRotationX(incRad);
+  const rz2 = new THREE.Matrix4().makeRotationZ(argpRad);
+  return rz1.multiply(rx).multiply(rz2);
+}
+
+export interface TleInfo {
+  incDeg: number;
+  raanDeg: number;
+  argPerigeeDeg: number;
+  meanAnomalyDeg: number;
+  eccentricity: number;
+  meanMotionRevPerDay: number;
+  epoch: string;
+}
+
+const D2R_ = Math.PI / 180;
+
+/** Build full oriented elements from a space-track GP element set. */
+function elementsFromTle(t: TleInfo): Elements | null {
+  if (!Number.isFinite(t.meanMotionRevPerDay) || t.meanMotionRevPerDay <= 0) return null;
+  const periodMin = 1440 / t.meanMotionRevPerDay;
+  const MU = 398600.4418 / (EARTH_R_KM ** 3); // R^3/s^2
+  const a = Math.cbrt(MU * ((periodMin * 60) / (2 * Math.PI)) ** 2);
+  const e = Math.min(0.995, Math.max(0, t.eccentricity));
+  const epochMs = Date.parse(t.epoch);
+  if (!Number.isFinite(epochMs)) return null;
+  return {
+    a,
+    e,
+    incRad: t.incDeg * D2R_,
+    periodMin,
+    rot: makeRot(t.incDeg * D2R_, t.raanDeg * D2R_, t.argPerigeeDeg * D2R_),
+    tle: {
+      meanAnomalyRad: t.meanAnomalyDeg * D2R_,
+      meanMotionRadPerMs: (t.meanMotionRevPerDay * 2 * Math.PI) / 86400000,
+      epochMs,
+    },
+  };
 }
 
 function elementsFrom(apogeeKm: number, perigeeKm: number, incDeg: number): Elements | null {
@@ -56,15 +106,14 @@ function elementsFrom(apogeeKm: number, perigeeKm: number, incDeg: number): Elem
   // Kepler's third law with mu in (Earth radii)^3/s^2
   const MU = 398600.4418 / (EARTH_R_KM ** 3); // km^3/s^2 -> R^3/s^2
   const periodMin = (2 * Math.PI * Math.sqrt(a ** 3 / MU)) / 60;
-  return { a, e, incRad: (incDeg * Math.PI) / 180, periodMin };
+  const incRad = (incDeg * Math.PI) / 180;
+  return { a, e, incRad, periodMin, rot: makeRot(incRad, 0, 0) };
 }
 
-/** Position on the orbit at true anomaly nu, inclined about the X axis. */
+/** Position on the orbit at true anomaly nu, rotated perifocal -> ECI. */
 function orbitPoint(el: Elements, nu: number, out: THREE.Vector3): THREE.Vector3 {
   const r = (el.a * (1 - el.e * el.e)) / (1 + el.e * Math.cos(nu));
-  const x = r * Math.cos(nu);
-  const y = r * Math.sin(nu);
-  return out.set(x, y * Math.cos(el.incRad), y * Math.sin(el.incRad));
+  return out.set(r * Math.cos(nu), r * Math.sin(nu), 0).applyMatrix4(el.rot);
 }
 
 function orbitCurve(el: Elements, segments = 256): THREE.Vector3[] {
@@ -102,12 +151,16 @@ function trueAnomaly(M: number, e: number): number {
 function Satellite({ el }: { el: Elements }) {
   const ref = useRef<THREE.Group>(null);
   const tmp = useMemo(() => new THREE.Vector3(), []);
-  // One revolution every ~14 wall-clock seconds regardless of real period,
-  // swept at physically correct (Keplerian) angular rate.
+  // With a TLE: the marker sits at the satellite's REAL current position,
+  // moving at its real angular rate (mean anomaly propagated from epoch).
+  // Without one: one revolution every ~14 wall-clock seconds, swept at
+  // physically correct (Keplerian) angular rate.
   useFrame(({ clock }) => {
     if (!ref.current) return;
-    const M = ((clock.elapsedTime % 14) / 14) * 2 * Math.PI;
-    const nu = trueAnomaly(M, el.e);
+    const M = el.tle
+      ? el.tle.meanAnomalyRad + (Date.now() - el.tle.epochMs) * el.tle.meanMotionRadPerMs
+      : ((clock.elapsedTime % 14) / 14) * 2 * Math.PI;
+    const nu = trueAnomaly(M % (2 * Math.PI), el.e);
     ref.current.position.copy(orbitPoint(el, nu, tmp));
   });
   const markerR = Math.max(0.035, el.a * 0.012);
@@ -297,19 +350,23 @@ function Scene({ el }: { el: Elements | null }) {
   );
 }
 
-export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name }: {
+export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle }: {
   apogeeKm?: number | null;
   perigeeKm?: number | null;
   incDeg?: number | null;
   name?: string;
+  tle?: TleInfo | null;
 }) {
-  const el = useMemo(
-    () =>
-      apogeeKm != null && perigeeKm != null
-        ? elementsFrom(apogeeKm, perigeeKm, incDeg ?? 0)
-        : null,
-    [apogeeKm, perigeeKm, incDeg],
-  );
+  const el = useMemo(() => {
+    if (tle) {
+      const fromTle = elementsFromTle(tle);
+      if (fromTle) return fromTle;
+    }
+    return apogeeKm != null && perigeeKm != null
+      ? elementsFrom(apogeeKm, perigeeKm, incDeg ?? 0)
+      : null;
+  }, [apogeeKm, perigeeKm, incDeg, tle]);
+  const hasTle = !!el?.tle;
 
   // Frame the target orbit; if none, frame the Earth-Moon system.
   // Deep-space objects can have apogees in the millions of km — cap the
@@ -384,8 +441,10 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name }: {
       <div className="pointer-events-none absolute bottom-2 left-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground/80">
         Drag to rotate · Zoom out past the Moon to the Sun at 1 AU · all to scale
       </div>
-      <div className="pointer-events-none absolute bottom-2 right-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground/60">
-        RAAN / ARG-PE / lunar node not catalogued — drawn at 0°
+      <div className={`pointer-events-none absolute bottom-2 right-3 font-mono text-[9px] uppercase tracking-widest ${hasTle ? "text-primary/80" : "text-muted-foreground/60"}`}>
+        {hasTle
+          ? `LIVE TLE · RAAN ${tle!.raanDeg.toFixed(1)}° · ARG-PE ${tle!.argPerigeeDeg.toFixed(1)}° · EPOCH ${tle!.epoch.slice(0, 10)}`
+          : "RAAN / ARG-PE / lunar node not catalogued — drawn at 0°"}
       </div>
       {/* scanline wash to stay in theme */}
       <div className="pointer-events-none absolute inset-0" style={{ background: "repeating-linear-gradient(0deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px, transparent 1px, transparent 3px)" }} />

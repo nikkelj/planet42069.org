@@ -174,6 +174,51 @@ export interface SatcatEntry {
   gunterRetrievedAt?: string | null;
 }
 
+export interface TleData {
+  norad: number;
+  /** @nullable */
+  name?: string | null;
+  line1: string;
+  line2: string;
+  /** Element-set epoch (ISO 8601) */
+  epoch: string;
+  incDeg: number;
+  /** Right ascension of the ascending node, degrees */
+  raanDeg: number;
+  /** Argument of perigee, degrees */
+  argPerigeeDeg: number;
+  meanAnomalyDeg: number;
+  eccentricity: number;
+  meanMotionRevPerDay: number;
+  /** When this element set was fetched from space-track (ISO 8601) */
+  fetchedAt: string;
+}
+
+export interface SatPass {
+  /** Pass start (rises above 0° elevation), ISO 8601 */
+  startTime: string;
+  /** Time of maximum elevation, ISO 8601 */
+  maxTime: string;
+  /** Pass end (drops below 0° elevation), ISO 8601 */
+  endTime: string;
+  maxElevationDeg: number;
+  startAzDeg: number;
+  maxAzDeg: number;
+  endAzDeg: number;
+  /** True when the satellite is sunlit while the observer sky is dark during the pass */
+  visible: boolean;
+}
+
+export interface PassesResponse {
+  norad: number;
+  lat: number;
+  lon: number;
+  days: number;
+  /** Element-set epoch used for propagation (ISO 8601) */
+  epoch: string;
+  passes: SatPass[];
+}
+
 export interface SatcatListResponse {
   data: SatcatEntry[];
   /** Total matching records */
@@ -556,6 +601,22 @@ export const GetSatcatOrder = {
   asc: 'asc',
   desc: 'desc',
 } as const;
+
+export type GetSatcatPassesParams = {
+norad: number;
+/**
+ * Observer latitude in degrees (-90..90)
+ */
+lat: number;
+/**
+ * Observer longitude in degrees (-180..180)
+ */
+lon: number;
+/**
+ * Days ahead to search (1-7)
+ */
+days?: number;
+};
 
 export type GetSatcatUpmassByProviderParams = {
 /**

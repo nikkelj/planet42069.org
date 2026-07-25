@@ -1,10 +1,13 @@
 import React, { useState, Suspense, lazy } from "react";
 
 const OrbitViewer3D = lazy(() => import("@/components/OrbitViewer3D"));
+const PassFinder = lazy(() => import("@/components/PassFinder"));
 import { 
   useGetSatcat, 
   useGetSatcatFilters, 
-  getGetSatcatQueryKey 
+  getGetSatcatQueryKey,
+  useGetSatcatTle,
+  getGetSatcatTleQueryKey,
 } from "@workspace/api-client-react";
 import {
   flexRender,
@@ -21,6 +24,39 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Database, Loader2, Search, ChevronDown, ChevronUp, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+
+/**
+ * Orbit viewer wrapper that pulls the live TLE for objects with a NORAD id,
+ * so the 3D view can show the REAL RAAN / arg-perigee / current position
+ * instead of drawing them at 0°. Falls back to GCAT-only geometry when no
+ * element set exists (decayed objects, deep-space probes, fetch failures).
+ */
+function TleOrbitViewer({ satno, apogeeKm, perigeeKm, incDeg, name }: {
+  satno?: number | null;
+  apogeeKm?: number | null;
+  perigeeKm?: number | null;
+  incDeg?: number | null;
+  name?: string;
+}) {
+  const enabled = satno != null && satno > 0;
+  const { data: tle } = useGetSatcatTle(satno ?? 0, {
+    query: {
+      enabled,
+      queryKey: getGetSatcatTleQueryKey(satno ?? 0),
+      staleTime: 30 * 60_000,
+      retry: false,
+    },
+  });
+  return (
+    <OrbitViewer3D
+      apogeeKm={apogeeKm}
+      perigeeKm={perigeeKm}
+      incDeg={incDeg}
+      name={name}
+      tle={tle ?? null}
+    />
+  );
+}
 
 export default function Catalog() {
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
@@ -396,7 +432,8 @@ export default function Catalog() {
                                       <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Initializing ECI tracking display…
                                     </div>
                                   }>
-                                    <OrbitViewer3D
+                                    <TleOrbitViewer
+                                      satno={row.original.satno}
                                       apogeeKm={row.original.apogeeKm}
                                       perigeeKm={row.original.perigeeKm}
                                       incDeg={row.original.incDeg}
@@ -404,6 +441,14 @@ export default function Catalog() {
                                     />
                                   </Suspense>
                                 </div>
+                                {row.original.satno != null && row.original.satno > 0 && (
+                                  <Suspense fallback={null}>
+                                    <PassFinder
+                                      norad={row.original.satno}
+                                      name={row.original.plName || row.original.name}
+                                    />
+                                  </Suspense>
+                                )}
                                 <div className="flex-1 p-4 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-xs font-mono">
                                   <div>
                                     <span className="text-muted-foreground block mb-1 uppercase tracking-widest text-[10px]">Apogee</span>

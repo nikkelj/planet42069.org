@@ -20,12 +20,14 @@ import type {
   DeorbitHistory,
   FalconVsStarship,
   GetSatcatParams,
+  GetSatcatPassesParams,
   GetSatcatSpacexBySiteMonthlyParams,
   GetSatcatUpmassByProviderParams,
   HealthStatus,
   LaunchRate,
   MassCdf,
   OrbitalMap,
+  PassesResponse,
   SatcatByYearProvider,
   SatcatFilters,
   SatcatListResponse,
@@ -36,6 +38,7 @@ import type {
   SpacexByEntity,
   SpacexBySite,
   SpacexBySiteMonthly,
+  TleData,
   UpmassByProvider
 } from './api.schemas';
 
@@ -202,6 +205,169 @@ export function useGetSatcat<TData = Awaited<ReturnType<typeof getSatcat>>, TErr
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSatcatQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSatcatTleUrl = (norad: number,) => {
+
+
+
+
+  return `/api/satcat/tle/${norad}`
+}
+
+/**
+ * Latest general-perturbations element set from space-track.org, cached server-side
+ * @summary Current TLE and orbital elements for a NORAD id
+ */
+export const getSatcatTle = async (norad: number, options?: RequestInit): Promise<TleData> => {
+
+  return customFetch<TleData>(getGetSatcatTleUrl(norad),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatTleQueryKey = (norad: number,) => {
+    return [
+    `/api/satcat/tle/${norad}`
+    ] as const;
+    }
+
+
+export const getGetSatcatTleQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatTle>>, TError = ErrorType<void>>(norad: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatTle>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatTleQueryKey(norad);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatTle>>> = ({ signal }) => getSatcatTle(norad, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(norad), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatTle>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatTleQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatTle>>>
+export type GetSatcatTleQueryError = ErrorType<void>
+
+
+/**
+ * @summary Current TLE and orbital elements for a NORAD id
+ */
+
+export function useGetSatcatTle<TData = Awaited<ReturnType<typeof getSatcatTle>>, TError = ErrorType<void>>(
+ norad: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatTle>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatTleQueryOptions(norad,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSatcatPassesUrl = (params: GetSatcatPassesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/satcat/passes?${stringifiedParams}` : `/api/satcat/passes`
+}
+
+/**
+ * Predicted passes (SGP4-propagated) for the next N days over the given lat/lon
+ * @summary Upcoming passes over an observer location
+ */
+export const getSatcatPasses = async (params: GetSatcatPassesParams, options?: RequestInit): Promise<PassesResponse> => {
+
+  return customFetch<PassesResponse>(getGetSatcatPassesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatPassesQueryKey = (params?: GetSatcatPassesParams,) => {
+    return [
+    `/api/satcat/passes`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSatcatPassesQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatPasses>>, TError = ErrorType<void>>(params: GetSatcatPassesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatPasses>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatPassesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatPasses>>> = ({ signal }) => getSatcatPasses(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatPasses>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatPassesQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatPasses>>>
+export type GetSatcatPassesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Upcoming passes over an observer location
+ */
+
+export function useGetSatcatPasses<TData = Awaited<ReturnType<typeof getSatcatPasses>>, TError = ErrorType<void>>(
+ params: GetSatcatPassesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatPasses>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatPassesQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

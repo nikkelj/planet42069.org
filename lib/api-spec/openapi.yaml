@@ -103,6 +103,74 @@ paths:
               schema:
                 $ref: "#/components/schemas/SatcatListResponse"
 
+  /satcat/tle/{norad}:
+    get:
+      operationId: getSatcatTle
+      tags: [satcat]
+      summary: Current TLE and orbital elements for a NORAD id
+      description: Latest general-perturbations element set from space-track.org, cached server-side
+      parameters:
+        - name: norad
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Latest element set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TleData"
+        "404":
+          description: No element set on file for this object
+        "502":
+          description: space-track.org unavailable
+
+  /satcat/passes:
+    get:
+      operationId: getSatcatPasses
+      tags: [satcat]
+      summary: Upcoming passes over an observer location
+      description: Predicted passes (SGP4-propagated) for the next N days over the given lat/lon
+      parameters:
+        - name: norad
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+          description: Observer latitude in degrees (-90..90)
+        - name: lon
+          in: query
+          required: true
+          schema:
+            type: number
+          description: Observer longitude in degrees (-180..180)
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 3
+          description: Days ahead to search (1-7)
+      responses:
+        "200":
+          description: Predicted passes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PassesResponse"
+        "400":
+          description: Invalid coordinates
+        "404":
+          description: No element set on file for this object
+        "502":
+          description: space-track.org unavailable
+
   /satcat/stats:
     get:
       operationId: getSatcatStats
@@ -529,6 +597,109 @@ components:
       required:
         - jcat
         - name
+
+    TleData:
+      type: object
+      properties:
+        norad:
+          type: integer
+        name:
+          type: ["string", "null"]
+        line1:
+          type: string
+        line2:
+          type: string
+        epoch:
+          type: string
+          description: Element-set epoch (ISO 8601)
+        incDeg:
+          type: number
+        raanDeg:
+          type: number
+          description: Right ascension of the ascending node, degrees
+        argPerigeeDeg:
+          type: number
+          description: Argument of perigee, degrees
+        meanAnomalyDeg:
+          type: number
+        eccentricity:
+          type: number
+        meanMotionRevPerDay:
+          type: number
+        fetchedAt:
+          type: string
+          description: When this element set was fetched from space-track (ISO 8601)
+      required:
+        - norad
+        - line1
+        - line2
+        - epoch
+        - incDeg
+        - raanDeg
+        - argPerigeeDeg
+        - meanAnomalyDeg
+        - eccentricity
+        - meanMotionRevPerDay
+        - fetchedAt
+
+    SatPass:
+      type: object
+      properties:
+        startTime:
+          type: string
+          description: Pass start (rises above 0° elevation), ISO 8601
+        maxTime:
+          type: string
+          description: Time of maximum elevation, ISO 8601
+        endTime:
+          type: string
+          description: Pass end (drops below 0° elevation), ISO 8601
+        maxElevationDeg:
+          type: number
+        startAzDeg:
+          type: number
+        maxAzDeg:
+          type: number
+        endAzDeg:
+          type: number
+        visible:
+          type: boolean
+          description: True when the satellite is sunlit while the observer sky is dark during the pass
+      required:
+        - startTime
+        - maxTime
+        - endTime
+        - maxElevationDeg
+        - startAzDeg
+        - maxAzDeg
+        - endAzDeg
+        - visible
+
+    PassesResponse:
+      type: object
+      properties:
+        norad:
+          type: integer
+        lat:
+          type: number
+        lon:
+          type: number
+        days:
+          type: integer
+        epoch:
+          type: string
+          description: Element-set epoch used for propagation (ISO 8601)
+        passes:
+          type: array
+          items:
+            $ref: "#/components/schemas/SatPass"
+      required:
+        - norad
+        - lat
+        - lon
+        - days
+        - epoch
+        - passes
 
     SatcatListResponse:
       type: object

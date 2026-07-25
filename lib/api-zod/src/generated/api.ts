@@ -78,6 +78,62 @@ export const GetSatcatResponse = zod.object({
 
 
 /**
+ * Latest general-perturbations element set from space-track.org, cached server-side
+ * @summary Current TLE and orbital elements for a NORAD id
+ */
+export const GetSatcatTleParams = zod.object({
+  "norad": zod.coerce.number()
+})
+
+export const GetSatcatTleResponse = zod.object({
+  "norad": zod.number(),
+  "name": zod.string().nullish(),
+  "line1": zod.string(),
+  "line2": zod.string(),
+  "epoch": zod.string().describe('Element-set epoch (ISO 8601)'),
+  "incDeg": zod.number(),
+  "raanDeg": zod.number().describe('Right ascension of the ascending node, degrees'),
+  "argPerigeeDeg": zod.number().describe('Argument of perigee, degrees'),
+  "meanAnomalyDeg": zod.number(),
+  "eccentricity": zod.number(),
+  "meanMotionRevPerDay": zod.number(),
+  "fetchedAt": zod.string().describe('When this element set was fetched from space-track (ISO 8601)')
+})
+
+
+/**
+ * Predicted passes (SGP4-propagated) for the next N days over the given lat/lon
+ * @summary Upcoming passes over an observer location
+ */
+export const getSatcatPassesQueryDaysDefault = 3;
+
+export const GetSatcatPassesQueryParams = zod.object({
+  "norad": zod.coerce.number(),
+  "lat": zod.coerce.number().describe('Observer latitude in degrees (-90..90)'),
+  "lon": zod.coerce.number().describe('Observer longitude in degrees (-180..180)'),
+  "days": zod.coerce.number().default(getSatcatPassesQueryDaysDefault).describe('Days ahead to search (1-7)')
+})
+
+export const GetSatcatPassesResponse = zod.object({
+  "norad": zod.number(),
+  "lat": zod.number(),
+  "lon": zod.number(),
+  "days": zod.number(),
+  "epoch": zod.string().describe('Element-set epoch used for propagation (ISO 8601)'),
+  "passes": zod.array(zod.object({
+  "startTime": zod.string().describe('Pass start (rises above 0° elevation), ISO 8601'),
+  "maxTime": zod.string().describe('Time of maximum elevation, ISO 8601'),
+  "endTime": zod.string().describe('Pass end (drops below 0° elevation), ISO 8601'),
+  "maxElevationDeg": zod.number(),
+  "startAzDeg": zod.number(),
+  "maxAzDeg": zod.number(),
+  "endAzDeg": zod.number(),
+  "visible": zod.boolean().describe('True when the satellite is sunlit while the observer sky is dark during the pass')
+}))
+})
+
+
+/**
  * Pre-aggregated mass-to-orbit analytics by year, country, orbit type, and launch vehicle
  * @summary Mass-to-orbit statistics
  */
