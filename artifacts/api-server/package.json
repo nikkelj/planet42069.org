@@ -8,9 +8,10 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "pnpm run test:upsert && pnpm run test:dedupe",
+    "test": "pnpm run test:upsert && pnpm run test:dedupe && pnpm run test:gunter",
     "test:upsert": "tsx ./src/tests/upsert-precedence.test.ts",
-    "test:dedupe": "tsx ./src/tests/dedupe-reconcile.test.ts"
+    "test:dedupe": "tsx ./src/tests/dedupe-reconcile.test.ts",
+    "test:gunter": "tsx ./src/tests/gunter-parser.test.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",

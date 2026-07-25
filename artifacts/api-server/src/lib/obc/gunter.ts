@@ -145,6 +145,34 @@ export function parseDossier(html: string): GunterDossier {
   };
 }
 
+// ── layout-change detection ────────────────────────────────────────────────
+
+/**
+ * How many CONSECUTIVE dossiers may parse "empty" before we conclude the
+ * site layout changed and record an error-status sync row (which surfaces
+ * through the freshness/sync-status view).
+ */
+export const EMPTY_PARSE_ALERT_THRESHOLD = 5;
+
+/**
+ * A dossier parse that found neither a Type/Application fact nor any COSPAR
+ * id is suspicious: virtually every real dossier has a `sdtyp` cell, and
+ * only not-yet-launched projects lack COSPAR ids (those still carry facts).
+ * Both missing at once usually means the markup no longer matches our regexes.
+ */
+export function isEmptyParse(page: GunterDossier): boolean {
+  return page.gunterType === null && page.cosparIds.length === 0;
+}
+
+/** Record a layout-change alert as an error row in obc_sync_log. */
+export async function logGunterLayoutAlert(streak: number, startedAt: Date): Promise<void> {
+  const msg =
+    `gunter layout alert: ${streak} consecutive dossiers parsed with no ` +
+    `Type/Application and no COSPAR ids — space.skyrocket.de markup may have changed`;
+  logger.error({ streak }, msg);
+  await logSync("error", startedAt, null, msg);
+}
+
 // ── fusion ─────────────────────────────────────────────────────────────────
 
 /**
@@ -344,6 +372,8 @@ async function doGunterSync(): Promise<void> {
   let discovered = 0;
   let annotated = 0;
   let firstError: string | null = null;
+  let emptyStreak = 0;
+  let layoutAlerted = false;
 
   try {
     // ── 1. chronology indexing (discovery) ──────────────────────────────
@@ -374,6 +404,18 @@ async function doGunterSync(): Promise<void> {
       try {
         const html = await fetchPage(url);
         const page = parseDossier(html);
+        // Layout-change health signal: fetch succeeded but the parse came up
+        // empty. Fetch errors do NOT touch the streak (site being down is a
+        // different failure mode); a non-empty parse resets it.
+        if (isEmptyParse(page)) {
+          emptyStreak += 1;
+          if (emptyStreak >= EMPTY_PARSE_ALERT_THRESHOLD && !layoutAlerted) {
+            layoutAlerted = true;
+            await logGunterLayoutAlert(emptyStreak, started);
+          }
+        } else {
+          emptyStreak = 0;
+        }
         if (!page.title && page.cosparIds.length === 0) {
           throw new Error("dossier parse produced no title and no COSPAR ids — page layout changed?");
         }
