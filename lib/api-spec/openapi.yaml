@@ -585,6 +585,15 @@ components:
         gunterType:
           type: ["string", "null"]
           description: Gunter's Space Page "Type / Application" classification
+        gunterNation:
+          type: ["string", "null"]
+          description: Gunter's Space Page "Nation" fact
+        gunterOperator:
+          type: ["string", "null"]
+          description: Gunter's Space Page "Operator" fact
+        gunterContractors:
+          type: ["string", "null"]
+          description: Gunter's Space Page "Contractors" fact
         gunterUrl:
           type: ["string", "null"]
           description: Cross-link to the full dossier on space.skyrocket.de

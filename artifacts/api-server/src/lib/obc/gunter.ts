@@ -190,6 +190,9 @@ async function annotateObjects(url: string, page: GunterDossier, retrievedAt: Da
       .update(obcObjects)
       .set({
         gunterType: page.gunterType,
+        gunterNation: page.nation,
+        gunterOperator: page.operator,
+        gunterContractors: page.contractors,
         gunterUrl: url,
         gunterTitle: page.title,
         gunterRetrievedAt: retrievedAt,

@@ -64,6 +64,9 @@ export const GetSatcatResponse = zod.object({
   "periodMin": zod.number().nullish().describe('Orbital period in minutes'),
   "decayDate": zod.string().nullish().describe('Decay or reentry date'),
   "gunterType": zod.string().nullish().describe('Gunter\'s Space Page \"Type \/ Application\" classification'),
+  "gunterNation": zod.string().nullish().describe('Gunter\'s Space Page \"Nation\" fact'),
+  "gunterOperator": zod.string().nullish().describe('Gunter\'s Space Page \"Operator\" fact'),
+  "gunterContractors": zod.string().nullish().describe('Gunter\'s Space Page \"Contractors\" fact'),
   "gunterUrl": zod.string().nullish().describe('Cross-link to the full dossier on space.skyrocket.de'),
   "gunterTitle": zod.string().nullish().describe('Dossier page title, for Krebs-format citations'),
   "gunterRetrievedAt": zod.string().nullish().describe('ISO timestamp the dossier was retrieved')

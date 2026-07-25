@@ -506,6 +506,28 @@ export default function Catalog() {
                                       <span className="text-muted-foreground block uppercase tracking-widest text-[10px]">
                                         Gunter Dossier — Type / Application
                                       </span>
+                                      {(row.original.gunterNation || row.original.gunterOperator || row.original.gunterContractors) && (
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 pb-1">
+                                          {row.original.gunterNation && (
+                                            <div>
+                                              <span className="text-muted-foreground block mb-0.5 uppercase tracking-widest text-[10px]">Nation</span>
+                                              <span className="text-foreground">{row.original.gunterNation}</span>
+                                            </div>
+                                          )}
+                                          {row.original.gunterOperator && (
+                                            <div>
+                                              <span className="text-muted-foreground block mb-0.5 uppercase tracking-widest text-[10px]">Operator</span>
+                                              <span className="text-foreground">{row.original.gunterOperator}</span>
+                                            </div>
+                                          )}
+                                          {row.original.gunterContractors && (
+                                            <div className={row.original.gunterContractors.length > 60 ? "col-span-2 md:col-span-3" : ""}>
+                                              <span className="text-muted-foreground block mb-0.5 uppercase tracking-widest text-[10px]">Contractors</span>
+                                              <span className="text-foreground whitespace-normal">{row.original.gunterContractors}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                                         {row.original.gunterType && (
                                           <Badge variant="outline" className="font-mono text-[10px] uppercase rounded-none border-accent/60 text-accent">

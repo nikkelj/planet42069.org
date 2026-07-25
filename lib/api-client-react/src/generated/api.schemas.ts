@@ -158,6 +158,21 @@ export interface SatcatEntry {
      */
   gunterType?: string | null;
   /**
+     * Gunter's Space Page "Nation" fact
+     * @nullable
+     */
+  gunterNation?: string | null;
+  /**
+     * Gunter's Space Page "Operator" fact
+     * @nullable
+     */
+  gunterOperator?: string | null;
+  /**
+     * Gunter's Space Page "Contractors" fact
+     * @nullable
+     */
+  gunterContractors?: string | null;
+  /**
      * Cross-link to the full dossier on space.skyrocket.de
      * @nullable
      */

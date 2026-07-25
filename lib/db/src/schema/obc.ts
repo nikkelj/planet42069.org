@@ -53,6 +53,9 @@ export const obcObjects = pgTable(
     //    format: Krebs, Gunter D. "<title>". Gunter's Space Page. Retrieved
     //    <date>, from <url>.
     gunterType: text("gunter_type"),          // "Type / Application", e.g. "Communication"
+    gunterNation: text("gunter_nation"),      // "Nation" fact, e.g. "USA"
+    gunterOperator: text("gunter_operator"),  // "Operator" fact, e.g. "SpaceX"
+    gunterContractors: text("gunter_contractors"), // "Contractors" fact (comma-joined)
     gunterUrl: text("gunter_url"),            // full dossier URL on space.skyrocket.de
     gunterTitle: text("gunter_title"),        // dossier page title, for citations
     gunterRetrievedAt: timestamp("gunter_retrieved_at"),

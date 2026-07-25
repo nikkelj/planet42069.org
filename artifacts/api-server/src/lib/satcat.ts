@@ -31,6 +31,9 @@ export interface SatcatEntry {
   decayDate: string | null;
   // Gunter's Space Page annotations (fusion source #3)
   gunterType: string | null;      // "Type / Application", e.g. "Communication"
+  gunterNation: string | null;    // "Nation" fact
+  gunterOperator: string | null;  // "Operator" fact
+  gunterContractors: string | null; // "Contractors" fact
   gunterUrl: string | null;       // dossier cross-link on space.skyrocket.de
   gunterTitle: string | null;     // dossier title, for Krebs-format citations
   gunterRetrievedAt: string | null; // ISO date the dossier was retrieved
@@ -178,6 +181,9 @@ export function parseTsv(raw: string): SatcatRawEntry[] {
       periodMin: null,
       decayDate: parseStr(get(C.ddate)),
       gunterType: null,
+      gunterNation: null,
+      gunterOperator: null,
+      gunterContractors: null,
       gunterUrl: null,
       gunterTitle: null,
       gunterRetrievedAt: null,
