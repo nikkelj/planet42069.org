@@ -8,3 +8,4 @@
 - [Recharts tooltip row lookup](recharts-tooltip-label.md) — use payload[0].payload, not label matching; label can be a string and break === lookups.
 - [OBC catalogue merge rules](obc-catalogue.md) — GCAT+space-track merged DB: ST-key dedupe on norad, "O?" satState sentinel, estimated-mass conventions.
 - [GitHub sync](github-sync.md) — repo is nikkelj/planet42069.org; gitPush can't update main directly, push side branch + PR.
+- [WebGL in headless verification](webgl-headless.md) — screenshot/test browsers have no WebGL; ship a fallback UI and limit to one Canvas at a time.

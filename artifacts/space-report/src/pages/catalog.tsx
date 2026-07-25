@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, Suspense, lazy } from "react";
+
+const OrbitViewer3D = lazy(() => import("@/components/OrbitViewer3D"));
 import { 
   useGetSatcat, 
   useGetSatcatFilters, 
@@ -19,116 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Database, Loader2, Search, ChevronDown, ChevronUp, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-function OrbitDiagram({ apogeeKm, perigeeKm, incDeg }: {
-  apogeeKm?: number | null;
-  perigeeKm?: number | null;
-  incDeg?: number | null;
-}) {
-  const EARTH_R = 6371;
-  const W = 260, H = 160;
-  const pad = 22;
-
-  const apDist = (apogeeKm ?? 500) + EARTH_R;
-  const peDist = (perigeeKm ?? 300) + EARTH_R;
-
-  const a = (apDist + peDist) / 2;
-  const c = (apDist - peDist) / 2;
-  const b = Math.sqrt(Math.max(1, a * a - c * c));
-
-  const scale = (W - 2 * pad) / (apDist + peDist);
-  const rx = a * scale;
-  const ry = Math.max(4, b * scale);
-
-  const earthX = pad + apDist * scale;
-  const earthY = H / 2;
-  const ecx = earthX - c * scale;
-  const ecy = earthY;
-
-  const earthSvgR = Math.max(5, Math.min(10, EARTH_R * scale));
-
-  const apX = ecx - rx;
-  const peX = ecx + rx;
-
-  const inc = incDeg ?? 0;
-  const isHighInc = inc >= 70;
-  const isLowInc = inc < 20;
-
-  return (
-    <svg
-      width={W}
-      height={H}
-      viewBox={`0 0 ${W} ${H}`}
-      className="block"
-      aria-label={`Orbit diagram: apogee ${apogeeKm ?? "?"}km, perigee ${perigeeKm ?? "?"}km, inclination ${inc}°`}
-    >
-      <defs>
-        <radialGradient id="earthGrad" cx="40%" cy="35%" r="60%">
-          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.6" />
-          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.15" />
-        </radialGradient>
-        <filter id="orbitGlow">
-          <feGaussianBlur stdDeviation="1.5" result="blur" />
-          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-        </filter>
-      </defs>
-
-      <line x1={pad} y1={ecy} x2={W - pad} y2={ecy}
-        stroke="hsl(var(--muted-foreground))" strokeWidth="0.5" strokeDasharray="2 4" opacity="0.3" />
-
-      <ellipse
-        cx={ecx} cy={ecy}
-        rx={rx} ry={ry}
-        fill="none"
-        stroke="hsl(var(--accent))"
-        strokeWidth="1.5"
-        strokeDasharray="6 3"
-        filter="url(#orbitGlow)"
-        opacity="0.85"
-      />
-
-      <circle cx={earthX} cy={earthY} r={earthSvgR}
-        fill="url(#earthGrad)"
-        stroke="hsl(var(--primary))"
-        strokeWidth="1.5"
-      />
-      <text x={earthX} y={earthY + earthSvgR + 9}
-        textAnchor="middle" fontSize="7"
-        fill="hsl(var(--primary))" fontFamily="monospace" fontWeight="bold"
-      >EARTH</text>
-
-      <circle cx={apX} cy={ecy} r="3.5" fill="hsl(var(--accent))" />
-      <text
-        x={apX + (apX < pad + 20 ? 6 : 0)}
-        y={ecy - 8}
-        textAnchor={apX < pad + 20 ? "start" : "middle"}
-        fontSize="7" fill="hsl(var(--accent))" fontFamily="monospace"
-      >APO</text>
-      {apogeeKm != null && (
-        <text
-          x={apX + (apX < pad + 20 ? 6 : 0)}
-          y={ecy - 1}
-          textAnchor={apX < pad + 20 ? "start" : "middle"}
-          fontSize="6" fill="hsl(var(--accent))" fontFamily="monospace" opacity="0.7"
-        >{apogeeKm.toLocaleString()}km</text>
-      )}
-
-      <circle cx={peX} cy={ecy} r="3.5" fill="hsl(var(--secondary))" />
-      <text x={peX} y={ecy + 14} textAnchor="middle" fontSize="7" fill="hsl(var(--secondary))" fontFamily="monospace">PER</text>
-      {perigeeKm != null && (
-        <text x={peX} y={ecy + 21} textAnchor="middle" fontSize="6" fill="hsl(var(--secondary))" fontFamily="monospace" opacity="0.7"
-        >{perigeeKm.toLocaleString()}km</text>
-      )}
-
-      <text x={W / 2} y={H - 4} textAnchor="middle" fontSize="8"
-        fill={isHighInc ? "hsl(var(--chart-4))" : isLowInc ? "hsl(var(--muted-foreground))" : "hsl(var(--muted-foreground))"}
-        fontFamily="monospace"
-      >
-        INC {inc}° {isHighInc ? "· POLAR" : isLowInc ? "· EQUATORIAL" : ""}
-      </text>
-    </svg>
-  );
-}
 
 export default function Catalog() {
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
@@ -174,7 +66,9 @@ export default function Catalog() {
   });
 
   const toggleRow = (id: string) => {
-    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+    // Only one row expanded at a time — each viewer owns a WebGL context,
+    // and browsers hard-limit concurrent contexts.
+    setExpandedRows(prev => (prev[id] ? {} : { [id]: true }));
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -481,13 +375,20 @@ export default function Catalog() {
                         <TableRow className="bg-muted/20 border-b-border/50 hover:bg-muted/20">
                           <TableCell colSpan={columns.length} className="p-0">
                             <div className="border-l-4 border-primary ml-2 my-2 bg-background/60">
-                              <div className="flex flex-col md:flex-row gap-0 divide-y md:divide-y-0 md:divide-x divide-border/40">
-                                <div className="flex-shrink-0 flex items-center justify-center p-4 bg-muted/10">
-                                  <OrbitDiagram
-                                    apogeeKm={row.original.apogeeKm}
-                                    perigeeKm={row.original.perigeeKm}
-                                    incDeg={row.original.incDeg}
-                                  />
+                              <div className="flex flex-col gap-0 divide-y divide-border/40">
+                                <div className="w-full h-[380px]">
+                                  <Suspense fallback={
+                                    <div className="w-full h-full flex items-center justify-center bg-black/70 font-mono text-[10px] uppercase tracking-widest text-primary/70">
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Initializing ECI tracking display…
+                                    </div>
+                                  }>
+                                    <OrbitViewer3D
+                                      apogeeKm={row.original.apogeeKm}
+                                      perigeeKm={row.original.perigeeKm}
+                                      incDeg={row.original.incDeg}
+                                      name={row.original.plName || row.original.name}
+                                    />
+                                  </Suspense>
                                 </div>
                                 <div className="flex-1 p-4 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-xs font-mono">
                                   <div>
