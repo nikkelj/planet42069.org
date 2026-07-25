@@ -39,7 +39,7 @@ export default function Home() {
                 Welcome to <span className="text-primary font-bold">PLANET 42069.ORG</span>. The Space Police have mandated total transparency regarding orbital litter. We track every satellite, every rocket body, and every piece of debris currently cluttering up the neighborhood.
               </p>
               <p>
-                All data is sourced directly from the{" "}
+                Data is fused from the{" "}
                 <a
                   href="https://planet4589.org/space/gcat/"
                   target="_blank"
@@ -57,8 +57,26 @@ export default function Home() {
                 >
                   Jonathan McDowell
                 </a>
-                , who has been painstakingly counting humanity's orbital mess since before half of it existed.
-                If the numbers look scary, blame the humans — not the catalog.
+                , who has been painstakingly counting humanity's orbital mess since before half of it existed,
+                cross-checked live against{" "}
+                <a
+                  href="https://www.space-track.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent underline underline-offset-2 hover:text-primary transition-colors font-semibold"
+                >
+                  space-track.org
+                </a>{" "}
+                (the US Space Force's official catalog), with{" "}
+                <a
+                  href="https://space.skyrocket.de"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent underline underline-offset-2 hover:text-primary transition-colors font-semibold"
+                >
+                  Gunter's Space Page
+                </a>{" "}
+                joining the pipeline soon. If the numbers look scary, blame the humans — not the catalogs.
               </p>
               <p className="text-muted-foreground text-xs uppercase tracking-wider">
                 ⚠ This is a fan parody. Jonathan McDowell is not responsible for any of this.
@@ -104,6 +122,66 @@ export default function Home() {
 
       {/* BRIEFING DOCKET — CASE INDEX */}
       <DossierIndex />
+
+      {/* BULLETIN — MULTI-SOURCE DATA FUSION */}
+      <div id="fusion-0003" className="scroll-mt-24 border border-emerald-400/30 bg-emerald-950/15 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-emerald-400/60 via-emerald-400/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <Database className="w-5 h-5 text-emerald-400/80 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-400/20 pb-2">
+              <span className="text-emerald-300/90 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Bulletin
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #FUSION-0003 · Posted: 2026-07-25 · Classification: Organizational Growth (Involuntary)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-emerald-400/60">Re:</span> The Bureau Is Now a Multi-Source Data Fusion Bureaucracy</span>
+              <span><span className="text-emerald-400/60">Cause:</span> Our sole source went on holiday</span>
+              <span><span className="text-emerald-400/60">Status:</span> Fused · Redundant · Insufferable about it</span>
+            </div>
+            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                The Bureau wishes to announce, with the enthusiasm of any agency announcing something
+                it was forced into, that it has become a{" "}
+                <span className="text-emerald-300/80 font-bold">multi-source data fusion bureaucracy</span>.
+                This was not a strategic initiative. There was no offsite. Our single upstream catalog
+                simply stopped updating for two weeks (see Case #ROLLOVER-A5000, in which two astronauts
+                were briefly not in space, as far as we knew), and the Bureau responded the way all great
+                bureaucracies are built: <span className="text-emerald-300/80">by adding departments in a panic
+                and then pretending it was the plan all along</span>.
+              </p>
+              <p>
+                The fusion pipeline now cross-examines the{" "}
+                <span className="text-emerald-300/80">GCAT</span> (Jonathan McDowell's life's work,
+                still the backbone, still the only catalog that knows what everything <em>is</em>) against{" "}
+                <span className="text-emerald-300/80">space-track.org</span> (the US Space Force's official
+                ledger, which learns about new objects within hours but describes them all as "OBJECT A"
+                with the descriptive flair of a customs form). Where they disagree, the Bureau adjudicates.
+                Where they agree, the Bureau takes credit.{" "}
+                <span className="text-emerald-300/80">Gunter's Space Page</span> — the encyclopedia that
+                knows who actually built all of this — has been served notice that it is next.
+              </p>
+              <p>
+                And here is the part the Bureau resents most: <span className="text-emerald-300/80 font-bold">it's
+                better now</span>. New launches appear in the catalog within hours instead of weeks. Every object
+                carries a paper trail of which source vouched for it. When one catalog goes dark, the others keep
+                the lights on. The fused view can answer questions no single source could. The Bureau was dragged
+                kicking and screaming into resilience, discovered it enjoys the view, and would like the record to
+                show it objected the entire time.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-emerald-400/20 pl-3">
+                Every bureaucracy doubles in size during a crisis and calls it reform.
+                The Bureau is proud to report it is no exception. The difference is that ours worked.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 border-t border-emerald-400/20 pt-2 text-[10px] text-emerald-400/40 uppercase tracking-wider">
+              <span>— Orbital Bureaucracy Command, Department of Redundant Redundancy (est. last Tuesday)</span>
+              <span>Sources fused · Outage survived · Vindication filed under protest</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* BULLETIN — THE FIVE-DIGIT ERA IS OVER */}
       <div id="rollover-a5000" className="scroll-mt-24 border border-fuchsia-400/30 bg-fuchsia-950/15 p-5 font-mono text-xs relative">
@@ -707,6 +785,18 @@ function useScrollToHashOnLoad() {
 }
 
 const DOSSIERS = [
+  {
+    id: "fusion-0003",
+    caseNo: "FUSION-0003",
+    kind: "Bulletin",
+    posted: "2026-07-25",
+    title: "The Bureau Becomes a Multi-Source Data Fusion Bureaucracy (Under Protest)",
+    status: "FUSED",
+    icon: Database,
+    tone: "text-emerald-300/90",
+    toneDim: "text-emerald-400/60",
+    hover: "hover:border-emerald-400/50 hover:bg-emerald-950/25",
+  },
   {
     id: "rollover-a5000",
     caseNo: "ROLLOVER-A5000",
