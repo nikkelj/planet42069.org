@@ -22,6 +22,20 @@ export function invalidateStore(): void {
 
 async function loadCatalog(): Promise<CatalogCache> {
   const t0 = Date.now();
+
+  // Never serve a partial catalog: rows appear incrementally during the
+  // initial sync (chunked upserts), so gate on a completed merge instead of
+  // merely non-empty tables. After the first successful merge this check
+  // always passes, because syncs upsert and never delete.
+  const merged = await db
+    .select({ id: obcSyncLog.id })
+    .from(obcSyncLog)
+    .where(and(eq(obcSyncLog.source, "merge"), eq(obcSyncLog.status, "success")))
+    .limit(1);
+  if (merged.length === 0) {
+    throw new Error("OBC catalogue not ready — initial sync has not completed yet");
+  }
+
   const [objects, launches] = await Promise.all([
     db.select().from(obcObjects),
     db.select().from(obcLaunches),
@@ -75,7 +89,7 @@ async function getCache(): Promise<CatalogCache> {
       // Keep serving the old cache if the DB is (still) empty
       if (c.entries.length === 0 && cache && cache.entries.length > 0) return cache;
       if (c.entries.length === 0) {
-        // Bootstrap outage: never serve an empty catalog as valid analytics.
+        // Defensive: merge logged success but tables are empty.
         throw new Error("OBC catalogue is empty — initial sync has not completed yet");
       }
       cache = c;
