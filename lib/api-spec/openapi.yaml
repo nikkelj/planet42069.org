@@ -800,12 +800,33 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MassAggregate"
+        byGunterType:
+          type: array
+          items:
+            $ref: "#/components/schemas/MassAggregate"
+          description: Payload counts/mass grouped by Gunter's Space Page Type/Application; unmatched objects fall back to GCAT object-class buckets
+        gunterCoverage:
+          $ref: "#/components/schemas/GunterCoverage"
       required:
         - byYear
         - byCountry
         - byOrbit
         - byObjectClass
         - byLaunchVehicle
+        - byGunterType
+        - gunterCoverage
+
+    GunterCoverage:
+      type: object
+      description: How many payloads have a Gunter's Space Page type match (crawl is budgeted; coverage grows over time)
+      properties:
+        matchedPayloads:
+          type: integer
+        totalPayloads:
+          type: integer
+      required:
+        - matchedPayloads
+        - totalPayloads
 
     SatcatSummary:
       type: object

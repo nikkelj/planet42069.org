@@ -120,7 +120,18 @@ router.get("/satcat/stats", async (_req, res): Promise<void> => {
   // LV family for readability, fall back to LV
   const byLaunchVehicle = agg(payloads, (e) => e.lvFamily ?? e.lv).slice(0, 25);
 
-  res.json({ byYear, byCountry, byOrbit, byObjectClass, byLaunchVehicle });
+  // Gunter's Space Page Type/Application breakdown (payloads only).
+  // Payloads without a Gunter match fall back to the existing GCAT
+  // object-class bucket ("Payload (unclassified)") so nothing is dropped.
+  const byGunterType = agg(payloads, (e) =>
+    e.gunterType ?? "Payload (unclassified)",
+  ).slice(0, 15);
+  const gunterCoverage = {
+    matchedPayloads: payloads.filter((e) => e.gunterType != null).length,
+    totalPayloads: payloads.length,
+  };
+
+  res.json({ byYear, byCountry, byOrbit, byObjectClass, byLaunchVehicle, byGunterType, gunterCoverage });
 });
 
 router.get("/satcat/by-year-provider", async (_req, res): Promise<void> => {

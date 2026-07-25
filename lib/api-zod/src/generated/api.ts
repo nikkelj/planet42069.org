@@ -172,7 +172,18 @@ export const GetSatcatStatsResponse = zod.object({
   "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates for uncatalogued objects)'),
   "count": zod.number(),
   "payloadCount": zod.number()
-}))
+})),
+  "byGunterType": zod.array(zod.object({
+  "label": zod.string(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates for uncatalogued objects)'),
+  "count": zod.number(),
+  "payloadCount": zod.number()
+})).describe('Payload counts\/mass grouped by Gunter\'s Space Page Type\/Application; unmatched objects fall back to GCAT object-class buckets'),
+  "gunterCoverage": zod.object({
+  "matchedPayloads": zod.number(),
+  "totalPayloads": zod.number()
+}).describe('How many payloads have a Gunter\'s Space Page type match (crawl is budgeted; coverage grows over time)')
 })
 
 

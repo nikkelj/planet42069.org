@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { GunterCoverage } from './gunterCoverage';
 import type { MassAggregate } from './massAggregate';
 
 export interface SatcatStats {
@@ -13,4 +14,7 @@ export interface SatcatStats {
   byOrbit: MassAggregate[];
   byObjectClass: MassAggregate[];
   byLaunchVehicle: MassAggregate[];
+  /** Payload counts/mass grouped by Gunter's Space Page Type/Application; unmatched objects fall back to GCAT object-class buckets */
+  byGunterType: MassAggregate[];
+  gunterCoverage: GunterCoverage;
 }

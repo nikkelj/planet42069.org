@@ -27,6 +27,7 @@ export * from './getSatcatParams';
 export * from './getSatcatPassesParams';
 export * from './getSatcatSpacexBySiteMonthlyParams';
 export * from './getSatcatUpmassByProviderParams';
+export * from './gunterCoverage';
 export * from './healthStatus';
 export * from './launchRate';
 export * from './launchRateData';

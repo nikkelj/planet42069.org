@@ -77,6 +77,61 @@ function OrbitPieChart({ byOrbit }: { byOrbit: Array<{ label: string; massKg: nu
   );
 }
 
+function GunterTypeChart({
+  byGunterType,
+  coverage,
+}: {
+  byGunterType: Array<{ label: string; massKg: number; count: number; payloadCount: number }>;
+  coverage: { matchedPayloads: number; totalPayloads: number };
+}) {
+  // The unclassified fallback bucket dwarfs everything else while crawl
+  // coverage is still building — keep it out of the bars, report it below.
+  const rows = byGunterType
+    .filter((r) => r.label !== 'Payload (unclassified)')
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+  const coveragePct = coverage.totalPayloads > 0
+    ? ((coverage.matchedPayloads / coverage.totalPayloads) * 100).toFixed(1)
+    : '0';
+  return (
+    <Card className="border-2 border-border bg-card relative overflow-hidden">
+      <CardHeader className="bg-muted/30 border-b border-border">
+        <CardTitle className="text-primary uppercase flex items-center gap-2 text-sm">
+          <Activity className="w-4 h-4" /> Payloads by Type / Application (Gunter)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-6 pb-2 pl-0">
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={rows} layout="vertical" margin={{ top: 5, right: 50, left: 90, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+              <XAxis type="number" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} tickFormatter={(val: number) => val.toLocaleString()} />
+              <YAxis type="category" dataKey="label" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(180 100% 50%)', fontSize: 10 }} width={130} />
+              <RechartsTooltip
+                formatter={(val: number) => [val.toLocaleString(), 'Payloads']}
+                contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', fontFamily: 'monospace' }}
+                labelStyle={{ color: 'hsl(var(--primary))' }}
+              />
+              <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                {rows.map((entry, index) => (
+                  <Cell key={`cell-${entry.label}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="px-6 pt-3 pb-1">
+          <p className="text-xs font-mono text-muted-foreground/60">
+            <span className="text-amber-400/70">// </span>
+            Types from Gunter's Space Page dossiers — {coverage.matchedPayloads.toLocaleString()} of {coverage.totalPayloads.toLocaleString()} payloads matched so far ({coveragePct}%).
+            The crawl is budgeted to stay polite, so coverage grows daily; unmatched payloads keep their existing GCAT categorization and are not shown here.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 const FALCON_COLOR   = 'hsl(140 100% 50%)';
 const STARSHIP_COLOR = 'hsl(35 100% 55%)';
 
@@ -1195,6 +1250,9 @@ export default function Analytics() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Gunter's Type / Application breakdown */}
+        <GunterTypeChart byGunterType={stats.byGunterType} coverage={stats.gunterCoverage} />
 
         {/* Orbit Types */}
         <OrbitPieChart byOrbit={stats.byOrbit} />

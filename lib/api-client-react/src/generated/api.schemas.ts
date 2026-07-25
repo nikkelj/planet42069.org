@@ -253,12 +253,23 @@ export interface ObcFreshness {
   gunterSyncedAt: string | null;
 }
 
+/**
+ * How many payloads have a Gunter's Space Page type match (crawl is budgeted; coverage grows over time)
+ */
+export interface GunterCoverage {
+  matchedPayloads: number;
+  totalPayloads: number;
+}
+
 export interface SatcatStats {
   byYear: MassAggregate[];
   byCountry: MassAggregate[];
   byOrbit: MassAggregate[];
   byObjectClass: MassAggregate[];
   byLaunchVehicle: MassAggregate[];
+  /** Payload counts/mass grouped by Gunter's Space Page Type/Application; unmatched objects fall back to GCAT object-class buckets */
+  byGunterType: MassAggregate[];
+  gunterCoverage: GunterCoverage;
 }
 
 export interface SatcatSummary {
