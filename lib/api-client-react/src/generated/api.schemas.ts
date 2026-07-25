@@ -5,6 +5,52 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface ConstellationSeries {
+  name: string;
+  /** Active satellites at the end of each quarter (aligned with ConstellationAnalytics.quarters) */
+  active: number[];
+}
+
+export interface ConstellationSegmentSeries {
+  /** Shell (e.g. "~550 km · 53°") or variant (e.g. "≈800 kg class") label */
+  label: string;
+  active: number[];
+}
+
+export interface ConstellationTotals {
+  launched: number;
+  active: number;
+  decayed: number;
+  /** Total launched mass in tonnes (confirmed + estimated) */
+  massTonnes: number;
+}
+
+export interface ConstellationBreakout {
+  name: string;
+  totals: ConstellationTotals;
+  /** Active satellites per orbital shell over time */
+  shells: ConstellationSegmentSeries[];
+  /** Active satellites per hardware variant (mass class) over time */
+  variants: ConstellationSegmentSeries[];
+}
+
+export interface ConstellationCadenceSeries {
+  name: string;
+  /** Satellites launched per year (aligned with ConstellationAnalytics.launchYears) */
+  counts: number[];
+}
+
+export interface ConstellationAnalytics {
+  /** Shared quarterly time axis, e.g. "2019-Q1"; the final entry is "NOW" (current in-progress quarter, counted as of request time) */
+  quarters: string[];
+  /** Active satellites per constellation per quarter, largest first */
+  overall: ConstellationSeries[];
+  launchYears: number[];
+  launchedPerYear: ConstellationCadenceSeries[];
+  /** Shell/variant breakouts for the biggest constellations */
+  breakouts: ConstellationBreakout[];
+}
+
 export interface HealthStatus {
   status: string;
 }

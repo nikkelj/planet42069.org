@@ -331,6 +331,41 @@ export const GetSatcatSpacexByEntityResponse = zod.object({
 
 
 /**
+ * Quarterly active-satellite time series for major constellations, per-constellation shell and variant breakouts, and annual deployment cadence
+ * @summary Constellation analytics
+ */
+export const GetConstellationAnalyticsResponse = zod.object({
+  "quarters": zod.array(zod.string()).describe('Shared quarterly time axis, e.g. \"2019-Q1\"; the final entry is \"NOW\" (current in-progress quarter, counted as of request time)'),
+  "overall": zod.array(zod.object({
+  "name": zod.string(),
+  "active": zod.array(zod.number()).describe('Active satellites at the end of each quarter (aligned with ConstellationAnalytics.quarters)')
+})).describe('Active satellites per constellation per quarter, largest first'),
+  "launchYears": zod.array(zod.number()),
+  "launchedPerYear": zod.array(zod.object({
+  "name": zod.string(),
+  "counts": zod.array(zod.number()).describe('Satellites launched per year (aligned with ConstellationAnalytics.launchYears)')
+})),
+  "breakouts": zod.array(zod.object({
+  "name": zod.string(),
+  "totals": zod.object({
+  "launched": zod.number(),
+  "active": zod.number(),
+  "decayed": zod.number(),
+  "massTonnes": zod.number().describe('Total launched mass in tonnes (confirmed + estimated)')
+}),
+  "shells": zod.array(zod.object({
+  "label": zod.string().describe('Shell (e.g. \"~550 km · 53°\") or variant (e.g. \"≈800 kg class\") label'),
+  "active": zod.array(zod.number())
+})).describe('Active satellites per orbital shell over time'),
+  "variants": zod.array(zod.object({
+  "label": zod.string().describe('Shell (e.g. \"~550 km · 53°\") or variant (e.g. \"≈800 kg class\") label'),
+  "active": zod.array(zod.number())
+})).describe('Active satellites per hardware variant (mass class) over time')
+})).describe('Shell\/variant breakouts for the biggest constellations')
+})
+
+
+/**
  * Per-object launch/decay day numbers since 1957-01-01 for deorbit animation; dday of -1 means still in orbit
  * @summary Launch and decay day-numbers for orbital objects
  */

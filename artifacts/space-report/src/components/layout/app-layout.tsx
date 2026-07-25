@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { ReactNode } from "react";
-import { Radar, Satellite, Database, TerminalSquare } from "lucide-react";
+import { Radar, Satellite, Database, TerminalSquare, Orbit } from "lucide-react";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -11,6 +11,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const navItems = [
     { href: "/analytics", label: "MASS ANALYTICS", icon: Radar },
+    { href: "/constellations", label: "CONSTELLATION WATCH", icon: Orbit },
     { href: "/catalog", label: "SATCAT EXPLORER", icon: Database },
     { href: "/briefing", label: "BRIEFING", icon: TerminalSquare },
   ];

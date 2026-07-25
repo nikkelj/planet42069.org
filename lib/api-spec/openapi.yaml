@@ -268,6 +268,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/SpacexByEntity"
 
+  /satcat/constellations:
+    get:
+      operationId: getConstellationAnalytics
+      tags: [satcat]
+      summary: Constellation analytics
+      description: Quarterly active-satellite time series for major constellations, per-constellation shell and variant breakouts, and annual deployment cadence
+      responses:
+        "200":
+          description: Constellation analytics dataset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConstellationAnalytics"
+
   /satcat/deorbit-history:
     get:
       operationId: getSatcatDeorbitHistory
@@ -324,6 +338,103 @@ paths:
 
 components:
   schemas:
+    ConstellationSeries:
+      type: object
+      properties:
+        name:
+          type: string
+        active:
+          type: array
+          items:
+            type: integer
+          description: Active satellites at the end of each quarter (aligned with ConstellationAnalytics.quarters)
+      required: [name, active]
+
+    ConstellationSegmentSeries:
+      type: object
+      properties:
+        label:
+          type: string
+          description: Shell (e.g. "~550 km · 53°") or variant (e.g. "≈800 kg class") label
+        active:
+          type: array
+          items:
+            type: integer
+      required: [label, active]
+
+    ConstellationTotals:
+      type: object
+      properties:
+        launched:
+          type: integer
+        active:
+          type: integer
+        decayed:
+          type: integer
+        massTonnes:
+          type: number
+          description: Total launched mass in tonnes (confirmed + estimated)
+      required: [launched, active, decayed, massTonnes]
+
+    ConstellationBreakout:
+      type: object
+      properties:
+        name:
+          type: string
+        totals:
+          $ref: "#/components/schemas/ConstellationTotals"
+        shells:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConstellationSegmentSeries"
+          description: Active satellites per orbital shell over time
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConstellationSegmentSeries"
+          description: Active satellites per hardware variant (mass class) over time
+      required: [name, totals, shells, variants]
+
+    ConstellationCadenceSeries:
+      type: object
+      properties:
+        name:
+          type: string
+        counts:
+          type: array
+          items:
+            type: integer
+          description: Satellites launched per year (aligned with ConstellationAnalytics.launchYears)
+      required: [name, counts]
+
+    ConstellationAnalytics:
+      type: object
+      properties:
+        quarters:
+          type: array
+          items:
+            type: string
+          description: Shared quarterly time axis, e.g. "2019-Q1"; the final entry is "NOW" (current in-progress quarter, counted as of request time)
+        overall:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConstellationSeries"
+          description: Active satellites per constellation per quarter, largest first
+        launchYears:
+          type: array
+          items:
+            type: integer
+        launchedPerYear:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConstellationCadenceSeries"
+        breakouts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConstellationBreakout"
+          description: Shell/variant breakouts for the biggest constellations
+      required: [quarters, overall, launchYears, launchedPerYear, breakouts]
+
     HealthStatus:
       type: object
       properties:

@@ -16,6 +16,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ConstellationAnalytics,
   DeorbitHistory,
   FalconVsStarship,
   GetSatcatParams,
@@ -1069,6 +1070,84 @@ export function useGetSatcatSpacexByEntity<TData = Awaited<ReturnType<typeof get
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSatcatSpacexByEntityQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetConstellationAnalyticsUrl = () => {
+
+
+
+
+  return `/api/satcat/constellations`
+}
+
+/**
+ * Quarterly active-satellite time series for major constellations, per-constellation shell and variant breakouts, and annual deployment cadence
+ * @summary Constellation analytics
+ */
+export const getConstellationAnalytics = async ( options?: RequestInit): Promise<ConstellationAnalytics> => {
+
+  return customFetch<ConstellationAnalytics>(getGetConstellationAnalyticsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetConstellationAnalyticsQueryKey = () => {
+    return [
+    `/api/satcat/constellations`
+    ] as const;
+    }
+
+
+export const getGetConstellationAnalyticsQueryOptions = <TData = Awaited<ReturnType<typeof getConstellationAnalytics>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConstellationAnalytics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetConstellationAnalyticsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getConstellationAnalytics>>> = ({ signal }) => getConstellationAnalytics({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getConstellationAnalytics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetConstellationAnalyticsQueryResult = NonNullable<Awaited<ReturnType<typeof getConstellationAnalytics>>>
+export type GetConstellationAnalyticsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Constellation analytics
+ */
+
+export function useGetConstellationAnalytics<TData = Awaited<ReturnType<typeof getConstellationAnalytics>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getConstellationAnalytics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetConstellationAnalyticsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
