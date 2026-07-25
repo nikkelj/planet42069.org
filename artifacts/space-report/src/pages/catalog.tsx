@@ -1,4 +1,5 @@
-import React, { useState, Suspense, lazy } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
+import { loadStoredObserver, storeObserver, type ObserverCoords, type PassRow } from "@/components/PassFinder";
 
 const OrbitViewer3D = lazy(() => import("@/components/OrbitViewer3D"));
 const PassFinder = lazy(() => import("@/components/PassFinder"));
@@ -22,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Database, Loader2, Search, ChevronDown, ChevronUp, ChevronRight } from "lucide-react";
+import { Database, Loader2, Search, ChevronDown, ChevronUp, ChevronRight, Link2, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 /**
@@ -31,7 +32,7 @@ import { Badge } from "@/components/ui/badge";
  * instead of drawing them at 0°. Falls back to GCAT-only geometry when no
  * element set exists (decayed objects, deep-space probes, fetch failures).
  */
-function TleOrbitViewer({ satno, apogeeKm, perigeeKm, incDeg, name }: {
+function TrackingPanel({ satno, apogeeKm, perigeeKm, incDeg, name }: {
   satno?: number | null;
   apogeeKm?: number | null;
   perigeeKm?: number | null;
@@ -47,23 +48,116 @@ function TleOrbitViewer({ satno, apogeeKm, perigeeKm, incDeg, name }: {
       retry: false,
     },
   });
+
+  // Observer + prediction inputs, shared between the pass finder and the 3D
+  // view (visibility cone / slant vector). Seeded from a share link when its
+  // sat matches this row, else from the browser-cached station location.
+  const [observer, setObserver] = useState<ObserverCoords | null>(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get("sat") === String(satno)) {
+      const lat = parseFloat(p.get("lat") ?? "");
+      const lon = parseFloat(p.get("lon") ?? "");
+      if (Number.isFinite(lat) && Math.abs(lat) <= 90 && Number.isFinite(lon) && Math.abs(lon) <= 180) {
+        const coords = { lat, lon };
+        storeObserver(coords);
+        return coords;
+      }
+    }
+    return loadStoredObserver();
+  });
+  const [days, setDays] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    const d = p.get("sat") === String(satno) ? p.get("days") : null;
+    return d && ["1", "2", "3", "5", "7"].includes(d) ? d : "3";
+  });
+  const [selectedPass, setSelectedPass] = useState<PassRow | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const onObserverChange = (coords: ObserverCoords) => {
+    storeObserver(coords);
+    setObserver(coords);
+    setSelectedPass(null);
+  };
+
+  const shareLink = () => {
+    const url = new URL(window.location.origin + window.location.pathname);
+    url.searchParams.set("sat", String(satno ?? ""));
+    if (observer) {
+      url.searchParams.set("lat", String(observer.lat));
+      url.searchParams.set("lon", String(observer.lon));
+      url.searchParams.set("days", days);
+    }
+    navigator.clipboard?.writeText(url.toString()).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => { /* clipboard unavailable — button just won't confirm */ });
+  };
+
+  const passWindow = (() => {
+    if (!selectedPass) return null;
+    const startMs = Date.parse(selectedPass.startTime);
+    const endMs = Date.parse(selectedPass.endTime);
+    // Guard malformed timestamps — NaN bounds would break the time slider.
+    return Number.isFinite(startMs) && Number.isFinite(endMs) && endMs > startMs
+      ? { startMs, endMs }
+      : null;
+  })();
+
   return (
-    <OrbitViewer3D
-      apogeeKm={apogeeKm}
-      perigeeKm={perigeeKm}
-      incDeg={incDeg}
-      name={name}
-      tle={tle ?? null}
-    />
+    <>
+      <div className="w-full h-[420px]">
+        <OrbitViewer3D
+          apogeeKm={apogeeKm}
+          perigeeKm={perigeeKm}
+          incDeg={incDeg}
+          name={name}
+          tle={tle ?? null}
+          observer={selectedPass ? observer : null}
+          passWindow={passWindow}
+          onExitPassMode={() => setSelectedPass(null)}
+        />
+      </div>
+      {enabled && (
+        <div className="flex items-center justify-between gap-2 px-4 py-1.5 border-t border-border/40">
+          <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground/70">
+            Tracking file #{satno}
+          </span>
+          <Button
+            type="button" variant="outline" size="sm" onClick={shareLink}
+            className="h-6 rounded-none border-border text-muted-foreground hover:text-primary uppercase text-[10px] font-mono"
+            title="Copy a link to this satellite with your station location and prediction window"
+          >
+            {copied ? <Check className="w-3 h-3 mr-1 text-primary" /> : <Link2 className="w-3 h-3 mr-1" />}
+            {copied ? "Link copied" : "Share link"}
+          </Button>
+        </div>
+      )}
+      {enabled && (
+        <Suspense fallback={null}>
+          <PassFinder
+            norad={satno!}
+            name={name}
+            observer={observer}
+            onObserverChange={onObserverChange}
+            days={days}
+            onDaysChange={(d) => { setDays(d); setSelectedPass(null); }}
+            selectedPass={selectedPass}
+            onSelectPass={setSelectedPass}
+          />
+        </Suspense>
+      )}
+    </>
   );
 }
 
 export default function Catalog() {
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [initialSearch] = useState(
-    () => new URLSearchParams(window.location.search).get("search") ?? "",
-  );
+  const [initialSearch] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    // Share links carry ?sat=<norad>; searching by it surfaces the row.
+    return p.get("search") ?? p.get("sat") ?? "";
+  });
   const [search, setSearch] = useState(initialSearch);
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
   
@@ -102,6 +196,17 @@ export default function Catalog() {
       queryKey: getGetSatcatQueryKey(queryParams)
     }
   });
+
+  // Share-link deep link: once results arrive, auto-expand the shared satellite.
+  const [pendingShareSat, setPendingShareSat] = useState<string | null>(
+    () => new URLSearchParams(window.location.search).get("sat"),
+  );
+  useEffect(() => {
+    if (!pendingShareSat || !catData) return;
+    const match = catData.data.find((e) => String(e.satno) === pendingShareSat);
+    if (match) setExpandedRows({ [match.jcat]: true });
+    setPendingShareSat(null);
+  }, [pendingShareSat, catData]);
 
   const toggleRow = (id: string) => {
     // Only one row expanded at a time — each viewer owns a WebGL context,
@@ -426,29 +531,19 @@ export default function Catalog() {
                           <TableCell colSpan={columns.length} className="p-0">
                             <div className="border-l-4 border-primary ml-2 my-2 bg-background/60">
                               <div className="flex flex-col gap-0 divide-y divide-border/40">
-                                <div className="w-full h-[380px]">
-                                  <Suspense fallback={
-                                    <div className="w-full h-full flex items-center justify-center bg-black/70 font-mono text-[10px] uppercase tracking-widest text-primary/70">
-                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Initializing ECI tracking display…
-                                    </div>
-                                  }>
-                                    <TleOrbitViewer
-                                      satno={row.original.satno}
-                                      apogeeKm={row.original.apogeeKm}
-                                      perigeeKm={row.original.perigeeKm}
-                                      incDeg={row.original.incDeg}
-                                      name={row.original.plName || row.original.name}
-                                    />
-                                  </Suspense>
-                                </div>
-                                {row.original.satno != null && row.original.satno > 0 && (
-                                  <Suspense fallback={null}>
-                                    <PassFinder
-                                      norad={row.original.satno}
-                                      name={row.original.plName || row.original.name}
-                                    />
-                                  </Suspense>
-                                )}
+                                <Suspense fallback={
+                                  <div className="w-full h-[420px] flex items-center justify-center bg-black/70 font-mono text-[10px] uppercase tracking-widest text-primary/70">
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Initializing ECI tracking display…
+                                  </div>
+                                }>
+                                  <TrackingPanel
+                                    satno={row.original.satno}
+                                    apogeeKm={row.original.apogeeKm}
+                                    perigeeKm={row.original.perigeeKm}
+                                    incDeg={row.original.incDeg}
+                                    name={row.original.plName || row.original.name}
+                                  />
+                                </Suspense>
                                 <div className="flex-1 p-4 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-xs font-mono">
                                   <div>
                                     <span className="text-muted-foreground block mb-1 uppercase tracking-widest text-[10px]">Apogee</span>

@@ -1,7 +1,10 @@
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Line, Html, Stars } from "@react-three/drei";
 import * as THREE from "three";
+import { Pause, Play, RadioTower } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import worldOutlines from "./world-outlines.json";
 
 /**
@@ -12,9 +15,14 @@ import worldOutlines from "./world-outlines.json";
  * the Moon (size + 60.3 R orbital distance), and the GEO belt.
  * RAAN / argument of perigee are not catalogued, so both are drawn as 0 —
  * the orbit's shape, size and inclination ARE to scale.
- * Earth's heliocentric path is drawn as the locally-straight velocity line
- * through the origin in the ecliptic plane (at 1 AU, curvature is invisible
- * at this zoom — that IS the to-scale rendering).
+ *
+ * Everything moves on ONE simulation clock: Earth spin (true GMST, so the
+ * ground under the satellite is where it really is), the Moon, and the
+ * satellite (mean-anomaly propagation from its element epoch). The clock
+ * runs time-accelerated by default so motion is visible, can be frozen,
+ * and can be dragged back and forth on a slider. Selecting a pass in the
+ * Pass Finder slews the clock to the pass window and paints the observer's
+ * visibility cone and the live slant-range vector.
  */
 
 const EARTH_R_KM = 6371;
@@ -25,12 +33,42 @@ const AU_R = 149_597_870 / EARTH_R_KM; // 23,481 Earth radii
 const SUN_R = 696_000 / EARTH_R_KM; // 109 Earth radii — yes, really
 const OBLIQUITY = (23.44 * Math.PI) / 180; // ecliptic tilt vs equator (ECI z = north)
 const MOON_INC_ECLIPTIC = (5.14 * Math.PI) / 180;
+const SIDEREAL_MONTH_MS = 27.321661 * 86400_000;
 
 const GREEN = "#22ff88";
 const CYAN = "#22ddff";
 const AMBER = "#ffb020";
 const RED = "#ff4455";
 const DIM = "#1a5c3a";
+
+/** Default sim speed: 60x — a LEO rev in ~90s, an Earth day in 24 min. */
+const DEFAULT_RATE = 60;
+/** Sim speed while replaying a pass window (passes last minutes). */
+const PASS_RATE = 10;
+
+/** Greenwich Mean Sidereal Time, radians, from a Unix-ms timestamp. */
+function gmstRad(ms: number): number {
+  const d = (ms - 946_728_000_000) / 86_400_000; // days since J2000.0
+  const deg = (280.46061837 + 360.98564736629 * d) % 360;
+  return ((deg + 360) % 360) * (Math.PI / 180);
+}
+
+/** Geocentric ECI position of a ground observer (lat/lon degrees) at time ms. */
+function observerEci(latDeg: number, lonDeg: number, ms: number, out: THREE.Vector3): THREE.Vector3 {
+  const lat = latDeg * (Math.PI / 180);
+  const lst = lonDeg * (Math.PI / 180) + gmstRad(ms);
+  const cl = Math.cos(lat);
+  return out.set(cl * Math.cos(lst), cl * Math.sin(lst), Math.sin(lat));
+}
+
+interface SimClock {
+  ms: number;
+  playing: boolean;
+  rate: number;
+  /** Optional clamp (pass-window replay stops at the window edge). */
+  minMs?: number;
+  maxMs?: number;
+}
 
 interface Elements {
   a: number; // semi-major axis, Earth radii
@@ -62,6 +100,11 @@ export interface TleInfo {
   eccentricity: number;
   meanMotionRevPerDay: number;
   epoch: string;
+}
+
+export interface PassWindow {
+  startMs: number;
+  endMs: number;
 }
 
 const D2R_ = Math.PI / 180;
@@ -148,20 +191,35 @@ function trueAnomaly(M: number, e: number): number {
   );
 }
 
-function Satellite({ el }: { el: Elements }) {
+/** Satellite ECI position (Earth radii) at sim time ms. */
+function satPosAt(el: Elements, ms: number, out: THREE.Vector3): THREE.Vector3 {
+  const M = el.tle
+    ? el.tle.meanAnomalyRad + (ms - el.tle.epochMs) * el.tle.meanMotionRadPerMs
+    : (ms / (el.periodMin * 60_000)) * 2 * Math.PI;
+  const nu = trueAnomaly(((M % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI), el.e);
+  return orbitPoint(el, nu, out);
+}
+
+/** Advances the shared sim clock once per rendered frame. */
+function SimDriver({ clock }: { clock: SimClock }) {
+  useFrame((_, dt) => {
+    if (!clock.playing) return;
+    clock.ms += dt * 1000 * clock.rate;
+    if (clock.maxMs != null && clock.ms >= clock.maxMs) {
+      clock.ms = clock.maxMs;
+      clock.playing = false;
+    }
+    if (clock.minMs != null && clock.ms < clock.minMs) clock.ms = clock.minMs;
+  });
+  return null;
+}
+
+function Satellite({ el, clock, satPosRef }: { el: Elements; clock: SimClock; satPosRef: React.MutableRefObject<THREE.Vector3> }) {
   const ref = useRef<THREE.Group>(null);
-  const tmp = useMemo(() => new THREE.Vector3(), []);
-  // With a TLE: the marker sits at the satellite's REAL current position,
-  // moving at its real angular rate (mean anomaly propagated from epoch).
-  // Without one: one revolution every ~14 wall-clock seconds, swept at
-  // physically correct (Keplerian) angular rate.
-  useFrame(({ clock }) => {
+  useFrame(() => {
     if (!ref.current) return;
-    const M = el.tle
-      ? el.tle.meanAnomalyRad + (Date.now() - el.tle.epochMs) * el.tle.meanMotionRadPerMs
-      : ((clock.elapsedTime % 14) / 14) * 2 * Math.PI;
-    const nu = trueAnomaly(M % (2 * Math.PI), el.e);
-    ref.current.position.copy(orbitPoint(el, nu, tmp));
+    satPosAt(el, clock.ms, satPosRef.current);
+    ref.current.position.copy(satPosRef.current);
   });
   const markerR = Math.max(0.035, el.a * 0.012);
   return (
@@ -195,7 +253,7 @@ function moonPos(angle: number, out: THREE.Vector3): THREE.Vector3 {
     .applyQuaternion(MOON_PLANE_Q);
 }
 
-function Moon() {
+function Moon({ clock }: { clock: SimClock }) {
   const ref = useRef<THREE.Group>(null);
   const tmp = useMemo(() => new THREE.Vector3(), []);
   const ringPts = useMemo(() => {
@@ -203,10 +261,10 @@ function Moon() {
     for (let i = 0; i <= 128; i++) pts.push(moonPos((i / 128) * 2 * Math.PI, new THREE.Vector3()));
     return pts;
   }, []);
-  // Sidereal month ~27.3 d; sweep slowly so it visibly creeps.
-  useFrame(({ clock }) => {
+  // Phase from the same sim clock (sidereal month), so freezing time freezes the Moon.
+  useFrame(() => {
     if (!ref.current) return;
-    ref.current.position.copy(moonPos((clock.elapsedTime / 240) * 2 * Math.PI, tmp));
+    ref.current.position.copy(moonPos((clock.ms / SIDEREAL_MONTH_MS) * 2 * Math.PI, tmp));
   });
   return (
     <>
@@ -248,10 +306,11 @@ const worldGeometry = (() => {
   return geo;
 })();
 
-function Earth() {
+function Earth({ clock }: { clock: SimClock }) {
   const ref = useRef<THREE.Group>(null);
-  // Spin about the z axis — that's the spin axis in this z-up ECI scene.
-  useFrame((_, dt) => { if (ref.current) ref.current.rotation.z += dt * 0.05; });
+  // Spin about the z axis (the spin axis in this z-up ECI scene), phased by
+  // TRUE sidereal time — the meridian under the satellite is the real one.
+  useFrame(() => { if (ref.current) ref.current.rotation.z = gmstRad(clock.ms); });
   return (
     <group>
       <group ref={ref}>
@@ -272,6 +331,101 @@ function Earth() {
       {/* spin axis */}
       <Line points={[new THREE.Vector3(0, 0, -1.5), new THREE.Vector3(0, 0, 1.5)]} color={DIM} lineWidth={1} />
     </group>
+  );
+}
+
+export interface Telemetry {
+  valid: boolean;
+  azDeg: number;
+  elDeg: number;
+  rangeKm: number;
+}
+
+/**
+ * Ground observer: station marker, visibility cone (zenith-aligned, 10°
+ * elevation mask), and the live slant-range vector to the satellite. All of
+ * it tracks the sim clock — drag time and the vector sweeps with it.
+ * Az/el/range are written into telemetryRef for the HUD (throttled outside).
+ */
+function ObserverRig({ observer, clock, el, satPosRef, telemetryRef }: {
+  observer: { lat: number; lon: number };
+  clock: SimClock;
+  el: Elements;
+  satPosRef: React.MutableRefObject<THREE.Vector3>;
+  telemetryRef: React.MutableRefObject<Telemetry>;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  const obs = useMemo(() => new THREE.Vector3(), []);
+  const up = useMemo(() => new THREE.Vector3(0, 1, 0), []);
+  const q = useMemo(() => new THREE.Quaternion(), []);
+  const d = useMemo(() => new THREE.Vector3(), []);
+
+  // Cone: apex at the observer, opening along local zenith, half-angle 80°
+  // (i.e. everything above the 10° elevation mask). Height scaled to the
+  // orbit so it visibly reaches toward the pass altitude.
+  const coneH = Math.min(Math.max(0.35, (el.a * (1 - el.e) - 1) * 1.2), 3.5);
+  const coneGeom = useMemo(() => {
+    const g = new THREE.ConeGeometry(coneH * Math.tan(80 * D2R_), coneH, 48, 1, true);
+    g.rotateX(Math.PI);           // apex down (to local origin)
+    g.translate(0, coneH / 2, 0); // apex at origin, opening toward +Y
+    return g;
+  }, [coneH]);
+
+  const slantGeom = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(new Float32Array(6), 3));
+    return g;
+  }, []);
+  const slantLine = useMemo(
+    () => new THREE.Line(slantGeom, new THREE.LineBasicMaterial({ color: AMBER, transparent: true, opacity: 0.95 })),
+    [slantGeom],
+  );
+
+  useFrame(() => {
+    if (!groupRef.current) return;
+    observerEci(observer.lat, observer.lon, clock.ms, obs);
+    groupRef.current.position.copy(obs);
+    q.setFromUnitVectors(up, d.copy(obs).normalize());
+    groupRef.current.quaternion.copy(q);
+
+    // Slant vector observer -> satellite
+    const sat = satPosRef.current;
+    const pos = slantGeom.getAttribute("position") as THREE.BufferAttribute;
+    pos.setXYZ(0, obs.x, obs.y, obs.z);
+    pos.setXYZ(1, sat.x, sat.y, sat.z);
+    pos.needsUpdate = true;
+
+    // Topocentric az/el/range (ENU)
+    d.copy(sat).sub(obs);
+    const rangeKm = d.length() * EARTH_R_KM;
+    const lat = observer.lat * D2R_;
+    const lst = observer.lon * D2R_ + gmstRad(clock.ms);
+    const sinLat = Math.sin(lat), cosLat = Math.cos(lat);
+    const sinLst = Math.sin(lst), cosLst = Math.cos(lst);
+    const east = -sinLst * d.x + cosLst * d.y;
+    const north = -sinLat * cosLst * d.x - sinLat * sinLst * d.y + cosLat * d.z;
+    const zen = cosLat * cosLst * d.x + cosLat * sinLst * d.y + sinLat * d.z;
+    const azDeg = ((Math.atan2(east, north) / D2R_) + 360) % 360;
+    const elDeg = Math.asin(zen / Math.max(1e-9, d.length())) / D2R_;
+    telemetryRef.current = { valid: true, azDeg, elDeg, rangeKm };
+  });
+
+  return (
+    <>
+      <group ref={groupRef}>
+        <mesh>
+          <sphereGeometry args={[0.02, 12, 12]} />
+          <meshBasicMaterial color={AMBER} />
+        </mesh>
+        <mesh geometry={coneGeom}>
+          <meshBasicMaterial color={AMBER} transparent opacity={0.08} side={THREE.DoubleSide} depthWrite={false} />
+        </mesh>
+        <Html distanceFactor={12} position={[0, 0.1, 0]}>
+          <span className="text-[9px] font-mono uppercase tracking-widest whitespace-nowrap" style={{ color: AMBER }}>Observer</span>
+        </Html>
+      </group>
+      <primitive object={slantLine} />
+    </>
   );
 }
 
@@ -328,34 +482,62 @@ function SolAndHeliocentricOrbit() {
   );
 }
 
-function Scene({ el }: { el: Elements | null }) {
+function Scene({ el, clock, observer, satPosRef, telemetryRef }: {
+  el: Elements | null;
+  clock: SimClock;
+  observer: { lat: number; lon: number } | null;
+  satPosRef: React.MutableRefObject<THREE.Vector3>;
+  telemetryRef: React.MutableRefObject<Telemetry>;
+}) {
   const orbitPts = useMemo(() => (el ? orbitCurve(el) : null), [el]);
   return (
     <>
+      <SimDriver clock={clock} />
       <ambientLight intensity={0.5} />
       <directionalLight position={[100, 0, 20]} intensity={1.6} color="#fff4d6" />
       <Stars radius={AU_R * 3.2} depth={AU_R * 0.5} count={2500} factor={AU_R * 0.012} saturation={0} fade speed={0.4} />
-      <Earth />
+      <Earth clock={clock} />
       {/* GEO belt reference */}
       <Line points={ringPoints(GEO_R, 0)} color={DIM} transparent opacity={0.6} dashed dashSize={0.5} gapSize={0.5} lineWidth={1} />
       {orbitPts && el && (
         <>
           <Line points={orbitPts} color={GREEN} lineWidth={1.5} />
-          <Satellite el={el} />
+          <Satellite el={el} clock={clock} satPosRef={satPosRef} />
+          {observer && (
+            <ObserverRig observer={observer} clock={clock} el={el} satPosRef={satPosRef} telemetryRef={telemetryRef} />
+          )}
         </>
       )}
-      <Moon />
+      <Moon clock={clock} />
       <SolAndHeliocentricOrbit />
     </>
   );
 }
 
-export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle }: {
+const RANGE_OPTIONS = [
+  { value: String(30 * 60_000), label: "± 30 min" },
+  { value: String(2 * 3600_000), label: "± 2 h" },
+  { value: String(12 * 3600_000), label: "± 12 h" },
+  { value: String(24 * 3600_000), label: "± 24 h" },
+  { value: String(7 * 86400_000), label: "± 7 d" },
+] as const;
+
+function fmtSimTime(ms: number): string {
+  const d = new Date(ms);
+  return Number.isFinite(d.getTime()) ? d.toISOString().slice(0, 19).replace("T", " ") + "Z" : "---";
+}
+
+export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle, observer, passWindow, onExitPassMode }: {
   apogeeKm?: number | null;
   perigeeKm?: number | null;
   incDeg?: number | null;
   name?: string;
   tle?: TleInfo | null;
+  /** Ground station for the visibility cone + slant vector (lat/lon deg). */
+  observer?: { lat: number; lon: number } | null;
+  /** When set (a pass row was clicked), slew+freeze time and clamp the slider to the window. */
+  passWindow?: PassWindow | null;
+  onExitPassMode?: () => void;
 }) {
   const el = useMemo(() => {
     if (tle) {
@@ -367,6 +549,72 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle }
       : null;
   }, [apogeeKm, perigeeKm, incDeg, tle]);
   const hasTle = !!el?.tle;
+
+  // ── shared sim clock ──────────────────────────────────────────────────
+  const clockRef = useRef<SimClock>({ ms: Date.now(), playing: true, rate: DEFAULT_RATE });
+  const anchorRef = useRef(Date.now()); // slider center in free-run mode
+  const satPosRef = useRef(new THREE.Vector3());
+  const telemetryRef = useRef<Telemetry>({ valid: false, azDeg: 0, elDeg: 0, rangeKm: 0 });
+
+  const [playing, setPlaying] = useState(true);
+  const [rangeMs, setRangeMs] = useState(String(2 * 3600_000));
+  const [dispMs, setDispMs] = useState(() => clockRef.current.ms);
+  const [telemetry, setTelemetry] = useState<Telemetry>(telemetryRef.current);
+
+  const inPassMode = !!passWindow;
+
+  // Slew + freeze when a pass is selected; return to live free-run when cleared.
+  useEffect(() => {
+    const c = clockRef.current;
+    if (passWindow) {
+      c.ms = passWindow.startMs;
+      c.minMs = passWindow.startMs;
+      c.maxMs = passWindow.endMs;
+      c.rate = PASS_RATE;
+      c.playing = false;
+      setPlaying(false);
+    } else {
+      c.minMs = undefined;
+      c.maxMs = undefined;
+      c.rate = DEFAULT_RATE;
+      c.ms = Date.now();
+      anchorRef.current = Date.now();
+      c.playing = true;
+      setPlaying(true);
+    }
+    setDispMs(c.ms);
+  }, [passWindow?.startMs, passWindow?.endMs]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Low-frequency UI sync from the render-loop clock/telemetry refs.
+  useEffect(() => {
+    const id = setInterval(() => {
+      setDispMs(clockRef.current.ms);
+      if (clockRef.current.playing !== undefined) setPlaying(clockRef.current.playing);
+      const t = telemetryRef.current;
+      setTelemetry((prev) =>
+        prev.valid !== t.valid || Math.abs(prev.rangeKm - t.rangeKm) > 0.5 ||
+        Math.abs(prev.azDeg - t.azDeg) > 0.05 || Math.abs(prev.elDeg - t.elDeg) > 0.05
+          ? { ...t } : prev);
+    }, 200);
+    return () => clearInterval(id);
+  }, []);
+
+  const togglePlay = useCallback(() => {
+    const c = clockRef.current;
+    // Un-pausing at the end of a pass window replays from the start.
+    if (!c.playing && c.maxMs != null && c.ms >= c.maxMs) c.ms = c.minMs ?? c.ms;
+    c.playing = !c.playing;
+    setPlaying(c.playing);
+  }, []);
+
+  const onSlider = useCallback((v: number) => {
+    clockRef.current.ms = v;
+    setDispMs(v);
+  }, []);
+
+  const sliderMin = inPassMode ? passWindow!.startMs : anchorRef.current - Number(rangeMs);
+  const sliderMax = inPassMode ? passWindow!.endMs : anchorRef.current + Number(rangeMs);
+  const sliderVal = Math.min(sliderMax, Math.max(sliderMin, dispMs));
 
   // Frame the target orbit; if none, frame the Earth-Moon system.
   // Deep-space objects can have apogees in the millions of km — cap the
@@ -416,7 +664,7 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle }
         gl={{ antialias: true, logarithmicDepthBuffer: true }}
         dpr={[1, 1.75]}
       >
-        <Scene el={el} />
+        <Scene el={el} clock={clockRef.current} observer={observer ?? null} satPosRef={satPosRef} telemetryRef={telemetryRef} />
         {/* zoomSpeed cranked up: the trip from LEO to 1 AU spans 4+ orders of magnitude */}
         <OrbitControls enablePan={false} minDistance={1.4} maxDistance={maxZoomOut} zoomSpeed={2.4} />
       </Canvas>
@@ -425,6 +673,12 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle }
       <div className="pointer-events-none absolute top-2 left-3 font-mono text-[10px] uppercase tracking-widest text-primary/90">
         <div className="text-primary font-bold">ECI FRAME · EARTH-ORBIT GEOMETRY TO SCALE</div>
         {name && <div className="text-muted-foreground normal-case">{name}</div>}
+        {observer && telemetry.valid && el && (
+          <div className="mt-1 text-chart-4">
+            SLANT {telemetry.rangeKm >= 10_000 ? telemetry.rangeKm.toLocaleString(undefined, { maximumFractionDigits: 0 }) : telemetry.rangeKm.toFixed(0)} km
+            {" · "}AZ {telemetry.azDeg.toFixed(1)}° · EL {telemetry.elDeg.toFixed(1)}°
+          </div>
+        )}
       </div>
       <div className="pointer-events-none absolute top-2 right-3 text-right font-mono text-[10px] uppercase tracking-widest">
         {el ? (
@@ -438,14 +692,62 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle }
           <div className="text-destructive">NO ORBITAL ELEMENTS ON FILE</div>
         )}
       </div>
-      <div className="pointer-events-none absolute bottom-2 left-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground/80">
-        Drag to rotate · Zoom out past the Moon to the Sun at 1 AU · all to scale
-      </div>
-      <div className={`pointer-events-none absolute bottom-2 right-3 font-mono text-[9px] uppercase tracking-widest ${hasTle ? "text-primary/80" : "text-muted-foreground/60"}`}>
+      <div className={`pointer-events-none absolute bottom-12 right-3 font-mono text-[9px] uppercase tracking-widest ${hasTle ? "text-primary/80" : "text-muted-foreground/60"}`}>
         {hasTle
-          ? `LIVE TLE · RAAN ${tle!.raanDeg.toFixed(1)}° · ARG-PE ${tle!.argPerigeeDeg.toFixed(1)}° · EPOCH ${tle!.epoch.slice(0, 10)}`
+          ? `LIVE TLE · RAAN ${tle!.raanDeg.toFixed(1)}° · ARG-PE ${tle!.argPerigeeDeg.toFixed(1)}° · EPOCH ${tle!.epoch.replace("T", " ").replace(/\.\d+Z?$/, "").replace(/Z$/, "")}Z`
           : "RAAN / ARG-PE / lunar node not catalogued — drawn at 0°"}
       </div>
+      <div className="pointer-events-none absolute bottom-12 left-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground/80">
+        Drag to rotate · Zoom out past the Moon to the Sun at 1 AU · all to scale
+      </div>
+
+      {/* Time controls */}
+      <div className="absolute bottom-0 inset-x-0 flex items-center gap-2 px-3 py-1.5 bg-black/60 border-t border-border/40 font-mono text-[9px] uppercase tracking-widest">
+        <Button
+          type="button" variant="outline" size="sm" onClick={togglePlay}
+          className="h-6 px-2 rounded-none border-primary/60 text-primary hover:bg-primary hover:text-primary-foreground"
+          title={playing ? "Freeze simulation time" : "Resume simulation"}
+        >
+          {playing ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+        </Button>
+        <input
+          type="range"
+          min={sliderMin}
+          max={sliderMax}
+          step={1000}
+          value={sliderVal}
+          onChange={(e) => onSlider(Number(e.target.value))}
+          className="flex-1 h-1 accent-[#22ff88] cursor-pointer"
+          aria-label="Simulation time"
+        />
+        {inPassMode ? (
+          <>
+            <span className="text-chart-4 whitespace-nowrap">Pass window</span>
+            <Button
+              type="button" variant="outline" size="sm"
+              onClick={() => onExitPassMode?.()}
+              className="h-6 px-2 rounded-none border-border text-muted-foreground hover:text-primary"
+              title="Leave pass replay and return to live time"
+            >
+              <RadioTower className="w-3 h-3 mr-1" /> Live
+            </Button>
+          </>
+        ) : (
+          <Select value={rangeMs} onValueChange={(v) => { setRangeMs(v); anchorRef.current = Date.now(); }}>
+            <SelectTrigger className="h-6 w-[96px] rounded-none border-border bg-background/80 uppercase text-[9px] font-mono">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              {RANGE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value} className="text-xs font-mono uppercase">{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        <span className="text-primary/90 whitespace-nowrap tabular-nums">{fmtSimTime(dispMs)}</span>
+        <span className="text-muted-foreground/70 whitespace-nowrap">{playing ? `${clockRef.current.rate}×` : "FROZEN"}</span>
+      </div>
+
       {/* scanline wash to stay in theme */}
       <div className="pointer-events-none absolute inset-0" style={{ background: "repeating-linear-gradient(0deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px, transparent 1px, transparent 3px)" }} />
     </div>
