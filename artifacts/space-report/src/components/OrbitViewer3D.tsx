@@ -670,6 +670,17 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle, 
     setPlaying(c.playing);
   }, []);
 
+  /** Snap the sim clock back to the current real time and resume playback. */
+  const goToNow = useCallback(() => {
+    const now = Date.now();
+    const c = clockRef.current;
+    c.ms = now;
+    anchorRef.current = now;
+    c.playing = true;
+    setPlaying(true);
+    setDispMs(now);
+  }, []);
+
   const onSlider = useCallback((v: number) => {
     clockRef.current.ms = v;
     setDispMs(v);
@@ -767,6 +778,15 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle, 
         >
           {playing ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
         </Button>
+        {!inPassMode && (
+          <Button
+            type="button" variant="outline" size="sm" onClick={goToNow}
+            className="h-6 px-2 rounded-none border-primary/40 text-primary/80 hover:bg-primary hover:text-primary-foreground font-mono text-[9px] uppercase tracking-widest"
+            title="Snap simulation clock back to real time now"
+          >
+            Now
+          </Button>
+        )}
         <input
           type="range"
           min={sliderMin}
