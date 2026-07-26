@@ -1,8 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from "react";
-import { loadStoredObserver, storeObserver, type ObserverCoords, type PassRow } from "@/components/PassFinder";
+import PassFinder, { loadStoredObserver, storeObserver, type ObserverCoords, type PassRow } from "@/components/PassFinder";
 
 const OrbitViewer3D = lazy(() => import("@/components/OrbitViewer3D"));
-const PassFinder = lazy(() => import("@/components/PassFinder"));
 import { 
   useGetSatcat, 
   useGetSatcatFilters, 
