@@ -370,6 +370,9 @@ function ObserverRig({ observer, clock, el, satPosRef, telemetryRef }: {
     g.translate(0, coneH / 2, 0); // apex at origin, opening toward +Y
     return g;
   }, [coneH]);
+  // Imperative geometry: R3F only auto-disposes JSX-declared objects, so
+  // release GPU buffers ourselves when the cone is rebuilt or unmounts.
+  useEffect(() => () => coneGeom.dispose(), [coneGeom]);
 
   const slantGeom = useMemo(() => {
     const g = new THREE.BufferGeometry();
@@ -380,6 +383,12 @@ function ObserverRig({ observer, clock, el, satPosRef, telemetryRef }: {
     () => new THREE.Line(slantGeom, new THREE.LineBasicMaterial({ color: AMBER, transparent: true, opacity: 0.95 })),
     [slantGeom],
   );
+  // Dispose the slant line's geometry + material on rebuild/unmount —
+  // <primitive> objects are never auto-disposed by R3F.
+  useEffect(() => () => {
+    slantGeom.dispose();
+    (slantLine.material as THREE.Material).dispose();
+  }, [slantGeom, slantLine]);
 
   useFrame(() => {
     if (!groupRef.current) return;
