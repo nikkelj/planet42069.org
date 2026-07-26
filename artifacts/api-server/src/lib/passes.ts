@@ -99,6 +99,59 @@ export function predictPasses(
     return { t, elev, az: ((look.azimuth / DEG) % 360 + 360) % 360, visible };
   };
 
+  /**
+   * Bisect the horizon crossing between a below-horizon time and an
+   * above-horizon time down to ≤1 s, returning the sample at the crossing.
+   * `belowT` and `aboveT` may be in either chronological order (rise vs set).
+   */
+  const refineCrossing = (belowT: number, aboveT: number): Sample | null => {
+    let lo = belowT; // elev <= 0
+    let hi = aboveT; // elev > 0
+    let best: Sample | null = null;
+    while (Math.abs(hi - lo) > 1000) {
+      const mid = (lo + hi) / 2;
+      const s = sample(mid, false);
+      if (!s) return best;
+      if (s.elev > 0) {
+        hi = mid;
+        best = s;
+      } else {
+        lo = mid;
+      }
+    }
+    // report the instant at the crossing itself (rounded to the second)
+    const t = Math.round(((lo + hi) / 2) / 1000) * 1000;
+    return sample(t, false) ?? best;
+  };
+
+  /**
+   * Refine the peak around the best coarse sample: parabolic fit on
+   * (t, elev) using neighbors ±STEP_MS, then a 1 s fine scan around the
+   * fitted vertex to pin the true maximum.
+   */
+  const refinePeak = (coarseMax: Sample): Sample => {
+    const left = sample(coarseMax.t - STEP_MS, false);
+    const right = sample(coarseMax.t + STEP_MS, false);
+    let vertexT = coarseMax.t;
+    if (left && right) {
+      const denom = left.elev - 2 * coarseMax.elev + right.elev;
+      if (denom < 0) {
+        const offset = (0.5 * (left.elev - right.elev)) / denom;
+        if (Math.abs(offset) <= 1) vertexT = coarseMax.t - offset * STEP_MS;
+      }
+    }
+    // fine scan ±STEP_MS/2 around the vertex at 1 s resolution
+    let best = coarseMax;
+    const half = STEP_MS / 2;
+    const from = Math.round((vertexT - half) / 1000) * 1000;
+    const to = vertexT + half;
+    for (let t = from; t <= to; t += 1000) {
+      const s = sample(t, false);
+      if (s && s.elev > best.elev) best = s;
+    }
+    return best;
+  };
+
   let inPass = false;
   let startSample: Sample | null = null;
   let maxSample: Sample | null = null;
@@ -113,9 +166,11 @@ export function predictPasses(
     }
     if (!inPass && s.elev > 0) {
       inPass = true;
-      startSample = prevSample && prevSample.elev <= 0 ? prevSample : s;
-      // refine start with the first above-horizon sample
-      startSample = s;
+      // refine the rise time by bisection when we saw a below-horizon sample
+      startSample =
+        prevSample && prevSample.elev <= 0
+          ? refineCrossing(prevSample.t, s.t) ?? s
+          : s;
       maxSample = s;
       anyVisible = s.visible;
     } else if (inPass) {
@@ -123,14 +178,19 @@ export function predictPasses(
       if (s.visible) anyVisible = true;
       if (s.elev <= 0) {
         if (startSample && maxSample && maxSample.elev > 0) {
+          const endSample =
+            prevSample && prevSample.elev > 0
+              ? refineCrossing(s.t, prevSample.t) ?? s
+              : s;
+          const peak = refinePeak(maxSample);
           passes.push({
             startTime: new Date(startSample.t).toISOString(),
-            maxTime: new Date(maxSample.t).toISOString(),
-            endTime: new Date(s.t).toISOString(),
-            maxElevationDeg: Math.round(maxSample.elev * 10) / 10,
+            maxTime: new Date(peak.t).toISOString(),
+            endTime: new Date(endSample.t).toISOString(),
+            maxElevationDeg: Math.round(peak.elev * 10) / 10,
             startAzDeg: Math.round(startSample.az),
-            maxAzDeg: Math.round(maxSample.az),
-            endAzDeg: Math.round(s.az),
+            maxAzDeg: Math.round(peak.az),
+            endAzDeg: Math.round(endSample.az),
             visible: anyVisible,
           });
         }
