@@ -8,7 +8,8 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "pnpm run test:upsert && pnpm run test:dedupe && pnpm run test:gunter",
+    "test": "pnpm run test:upsert && pnpm run test:dedupe && pnpm run test:gunter && pnpm run test:passes",
+    "test:passes": "tsx ./src/tests/pass-accuracy.test.ts",
     "test:upsert": "tsx ./src/tests/upsert-precedence.test.ts",
     "test:dedupe": "tsx ./src/tests/dedupe-reconcile.test.ts",
     "test:gunter": "tsx ./src/tests/gunter-parser.test.ts"

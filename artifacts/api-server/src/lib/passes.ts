@@ -125,26 +125,18 @@ export function predictPasses(
   };
 
   /**
-   * Refine the peak around the best coarse sample: parabolic fit on
-   * (t, elev) using neighbors ±STEP_MS, then a 1 s fine scan around the
-   * fitted vertex to pin the true maximum.
+   * Refine the peak around the best coarse sample with a 1 s fine scan over
+   * the full ±STEP_MS bracket. The continuous maximum of a unimodal pass is
+   * guaranteed to lie within one coarse step of the best coarse sample, so
+   * scanning the whole bracket pins the true peak to 1 s. (A narrower scan
+   * seeded by a parabolic fit was tried, but the elevation curve is skewed
+   * on near-overhead passes and the fitted vertex could miss the peak by
+   * ~10 s / ~1° of elevation.)
    */
   const refinePeak = (coarseMax: Sample): Sample => {
-    const left = sample(coarseMax.t - STEP_MS, false);
-    const right = sample(coarseMax.t + STEP_MS, false);
-    let vertexT = coarseMax.t;
-    if (left && right) {
-      const denom = left.elev - 2 * coarseMax.elev + right.elev;
-      if (denom < 0) {
-        const offset = (0.5 * (left.elev - right.elev)) / denom;
-        if (Math.abs(offset) <= 1) vertexT = coarseMax.t - offset * STEP_MS;
-      }
-    }
-    // fine scan ±STEP_MS/2 around the vertex at 1 s resolution
     let best = coarseMax;
-    const half = STEP_MS / 2;
-    const from = Math.round((vertexT - half) / 1000) * 1000;
-    const to = vertexT + half;
+    const from = Math.round((coarseMax.t - STEP_MS) / 1000) * 1000;
+    const to = coarseMax.t + STEP_MS;
     for (let t = from; t <= to; t += 1000) {
       const s = sample(t, false);
       if (s && s.elev > best.elev) best = s;

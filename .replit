@@ -36,6 +36,10 @@ args = "typecheck-web"
 task = "workflow.run"
 args = "test-gunter"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-passes"
+
 [[workflows.workflow]]
 name = "test-upsert"
 author = "agent"
@@ -87,6 +91,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/api-server run test:gunter"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "test-passes"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:passes"
 
 [workflows.workflow.metadata]
 outputType = "console"
