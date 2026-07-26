@@ -274,8 +274,8 @@ function Moon({ clock }: { clock: SimClock }) {
           <sphereGeometry args={[MOON_R, 24, 24]} />
           <meshStandardMaterial color="#9aa4ad" roughness={1} />
         </mesh>
-        <Html distanceFactor={70} position={[0, MOON_R * 3, 0]}>
-          <span className="text-[9px] font-mono uppercase tracking-widest whitespace-nowrap" style={{ color: CYAN }}>Moon · 384,400 km</span>
+        <Html distanceFactor={110} position={[0, MOON_R * 2.5, 0]} occlude>
+          <span style={{ color: CYAN, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", textShadow: "0 0 4px #000" }}>Moon · 384,400 km</span>
         </Html>
       </group>
     </>
@@ -355,6 +355,8 @@ function ObserverRig({ observer, clock, el, satPosRef, telemetryRef }: {
   telemetryRef: React.MutableRefObject<Telemetry>;
 }) {
   const groupRef = useRef<THREE.Group>(null);
+  const slantMidGroupRef = useRef<THREE.Group>(null);
+  const slantLabelRef = useRef<HTMLDivElement>(null);
   const obs = useMemo(() => new THREE.Vector3(), []);
   const up = useMemo(() => new THREE.Vector3(0, 1, 0), []);
   const q = useMemo(() => new THREE.Quaternion(), []);
@@ -417,6 +419,22 @@ function ObserverRig({ observer, clock, el, satPosRef, telemetryRef }: {
     const azDeg = ((Math.atan2(east, north) / D2R_) + 360) % 360;
     const elDeg = Math.asin(zen / Math.max(1e-9, d.length())) / D2R_;
     telemetryRef.current = { valid: true, azDeg, elDeg, rangeKm };
+
+    // Position the slant-line midpoint label and update its text imperatively
+    // (avoids a React re-render every frame).
+    if (slantMidGroupRef.current) {
+      slantMidGroupRef.current.position.set(
+        (obs.x + sat.x) / 2,
+        (obs.y + sat.y) / 2,
+        (obs.z + sat.z) / 2,
+      );
+    }
+    if (slantLabelRef.current) {
+      const rStr = rangeKm >= 10_000
+        ? `${(rangeKm / 1000).toFixed(1)} Mm`
+        : `${rangeKm.toFixed(0)} km`;
+      slantLabelRef.current.textContent = `AZ ${azDeg.toFixed(1)}° · EL ${elDeg.toFixed(1)}° · ${rStr}`;
+    }
   });
 
   return (
@@ -429,11 +447,30 @@ function ObserverRig({ observer, clock, el, satPosRef, telemetryRef }: {
         <mesh geometry={coneGeom}>
           <meshBasicMaterial color={AMBER} transparent opacity={0.08} side={THREE.DoubleSide} depthWrite={false} />
         </mesh>
-        <Html distanceFactor={12} position={[0, 0.1, 0]}>
-          <span className="text-[9px] font-mono uppercase tracking-widest whitespace-nowrap" style={{ color: AMBER }}>Observer</span>
+        <Html distanceFactor={30} position={[0, 0.08, 0]} occlude>
+          <span style={{ color: AMBER, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", textShadow: "0 0 4px #000" }}>Obs</span>
         </Html>
       </group>
       <primitive object={slantLine} />
+      {/* Slant-range annotation: midpoint label updated imperatively each frame */}
+      <group ref={slantMidGroupRef}>
+        <Html center distanceFactor={9} occlude>
+          <div
+            ref={slantLabelRef}
+            style={{
+              color: AMBER,
+              fontSize: "8px",
+              fontFamily: "monospace",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              whiteSpace: "nowrap",
+              textShadow: "0 0 6px #000, 0 0 12px #000",
+              background: "rgba(0,0,0,0.55)",
+              padding: "1px 4px",
+            }}
+          />
+        </Html>
+      </group>
     </>
   );
 }
@@ -466,8 +503,8 @@ function SolAndHeliocentricOrbit() {
     <>
       {/* Earth's heliocentric orbit — looks locally straight near Earth, as it should */}
       <Line points={orbitPts} color={AMBER} transparent opacity={0.4} dashed dashSize={AU_R * 0.004} gapSize={AU_R * 0.0025} lineWidth={1} />
-      <Html distanceFactor={140} position={eclY.clone().multiplyScalar(MOON_ORBIT_R).toArray()}>
-        <span className="text-[9px] font-mono uppercase tracking-widest whitespace-nowrap" style={{ color: AMBER, opacity: 0.9 }}>Heliocentric path</span>
+      <Html distanceFactor={210} position={eclY.clone().multiplyScalar(MOON_ORBIT_R).toArray()}>
+        <span style={{ color: AMBER, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", opacity: 0.9, textShadow: "0 0 4px #000" }}>Heliocentric path</span>
       </Html>
       {/* guide ray toward the Sun for close-in zoom levels */}
       <Line points={[eclX.clone().multiplyScalar(1.6), sunPos]} color={AMBER} transparent opacity={0.2} lineWidth={1} />
@@ -480,12 +517,12 @@ function SolAndHeliocentricOrbit() {
           <sphereGeometry args={[SUN_R * 3, 24, 24]} />
           <meshBasicMaterial color={AMBER} transparent opacity={0.18} depthWrite={false} />
         </mesh>
-        <Html distanceFactor={140} position={[0, 0, SUN_R * 5]}>
-          <span className="text-[9px] font-mono uppercase tracking-widest whitespace-nowrap" style={{ color: AMBER }}>Sol · 1 AU · to scale</span>
+        <Html distanceFactor={210} position={[0, 0, SUN_R * 4]} occlude>
+          <span style={{ color: AMBER, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", textShadow: "0 0 4px #000" }}>Sol · 1 AU · to scale</span>
         </Html>
       </group>
-      <Html distanceFactor={140} position={eclX.clone().multiplyScalar(MOON_ORBIT_R * 1.2).add(new THREE.Vector3(0, MOON_ORBIT_R * 0.05, 0)).toArray()}>
-        <span className="text-[9px] font-mono uppercase tracking-widest whitespace-nowrap" style={{ color: AMBER, opacity: 0.8 }}>→ Sol · zoom out 390× past the Moon</span>
+      <Html distanceFactor={210} position={eclX.clone().multiplyScalar(MOON_ORBIT_R * 1.2).add(new THREE.Vector3(0, MOON_ORBIT_R * 0.05, 0)).toArray()}>
+        <span style={{ color: AMBER, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", opacity: 0.8, textShadow: "0 0 4px #000" }}>→ Sol · zoom out 390× past the Moon</span>
       </Html>
     </>
   );
@@ -684,7 +721,7 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle, 
   }
 
   return (
-    <div className="relative w-full h-full min-h-[340px] bg-black/70 overflow-hidden">
+    <div className="relative w-full h-full min-h-[260px] sm:min-h-[340px] bg-black/70 overflow-hidden">
       <Canvas
         camera={{ position: [camDist * 0.55, -camDist * 0.75, camDist * 0.45], up: [0, 0, 1], fov: 45, near: 0.05, far: farPlane }}
         gl={{ antialias: true, logarithmicDepthBuffer: true }}
@@ -696,17 +733,11 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle, 
       </Canvas>
 
       {/* HUD */}
-      <div className="pointer-events-none absolute top-2 left-3 font-mono text-[10px] uppercase tracking-widest text-primary/90">
+      <div className="pointer-events-none absolute top-2 left-3 font-mono text-[9px] sm:text-[10px] uppercase tracking-widest text-primary/90">
         <div className="text-primary font-bold">ECI FRAME · EARTH-ORBIT GEOMETRY TO SCALE</div>
         {name && <div className="text-muted-foreground normal-case">{name}</div>}
-        {observer && telemetry.valid && el && (
-          <div className="mt-1 text-chart-4">
-            SLANT {telemetry.rangeKm >= 10_000 ? telemetry.rangeKm.toLocaleString(undefined, { maximumFractionDigits: 0 }) : telemetry.rangeKm.toFixed(0)} km
-            {" · "}AZ {telemetry.azDeg.toFixed(1)}° · EL {telemetry.elDeg.toFixed(1)}°
-          </div>
-        )}
       </div>
-      <div className="pointer-events-none absolute top-2 right-3 text-right font-mono text-[10px] uppercase tracking-widest">
+      <div className="pointer-events-none absolute top-2 right-3 text-right font-mono text-[9px] sm:text-[10px] uppercase tracking-widest">
         {el ? (
           <>
             <div className="text-accent">APO {apogeeKm!.toLocaleString()} km</div>
@@ -718,20 +749,20 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle, 
           <div className="text-destructive">NO ORBITAL ELEMENTS ON FILE</div>
         )}
       </div>
-      <div className={`pointer-events-none absolute bottom-12 right-3 font-mono text-[9px] uppercase tracking-widest ${hasTle ? "text-primary/80" : "text-muted-foreground/60"}`}>
+      <div className={`pointer-events-none absolute bottom-12 right-3 font-mono text-[8px] sm:text-[9px] uppercase tracking-widest ${hasTle ? "text-primary/80" : "text-muted-foreground/60"} max-w-[55vw] sm:max-w-none truncate sm:truncate-none text-right`}>
         {hasTle
           ? `LIVE TLE · RAAN ${tle!.raanDeg.toFixed(1)}° · ARG-PE ${tle!.argPerigeeDeg.toFixed(1)}° · EPOCH ${tle!.epoch.replace("T", " ").replace(/\.\d+Z?$/, "").replace(/Z$/, "")}Z`
-          : "RAAN / ARG-PE / lunar node not catalogued — drawn at 0°"}
+          : "RAAN / ARG-PE not catalogued — drawn at 0°"}
       </div>
-      <div className="pointer-events-none absolute bottom-12 left-3 font-mono text-[9px] uppercase tracking-widest text-muted-foreground/80">
+      <div className="pointer-events-none absolute bottom-12 left-3 font-mono text-[8px] sm:text-[9px] uppercase tracking-widest text-muted-foreground/80 hidden sm:block">
         Drag to rotate · Zoom out past the Moon to the Sun at 1 AU · all to scale
       </div>
 
       {/* Time controls */}
-      <div className="absolute bottom-0 inset-x-0 flex items-center gap-2 px-3 py-1.5 bg-black/60 border-t border-border/40 font-mono text-[9px] uppercase tracking-widest">
+      <div className="absolute bottom-0 inset-x-0 flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-black/60 border-t border-border/40 font-mono text-[9px] uppercase tracking-widest">
         <Button
           type="button" variant="outline" size="sm" onClick={togglePlay}
-          className="h-6 px-2 rounded-none border-primary/60 text-primary hover:bg-primary hover:text-primary-foreground"
+          className="h-6 px-2 rounded-none border-primary/60 text-primary hover:bg-primary hover:text-primary-foreground flex-shrink-0"
           title={playing ? "Freeze simulation time" : "Resume simulation"}
         >
           {playing ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
@@ -743,24 +774,24 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle, 
           step={1000}
           value={sliderVal}
           onChange={(e) => onSlider(Number(e.target.value))}
-          className="flex-1 h-1 accent-[#22ff88] cursor-pointer"
+          className="flex-1 min-w-0 h-1 accent-[#22ff88] cursor-pointer"
           aria-label="Simulation time"
         />
         {inPassMode ? (
           <>
-            <span className="text-chart-4 whitespace-nowrap">Pass window</span>
+            <span className="text-chart-4 whitespace-nowrap hidden sm:inline">Pass window</span>
             <Button
               type="button" variant="outline" size="sm"
               onClick={() => onExitPassMode?.()}
-              className="h-6 px-2 rounded-none border-border text-muted-foreground hover:text-primary"
+              className="h-6 px-2 rounded-none border-border text-muted-foreground hover:text-primary flex-shrink-0"
               title="Leave pass replay and return to live time"
             >
-              <RadioTower className="w-3 h-3 mr-1" /> Live
+              <RadioTower className="w-3 h-3 sm:mr-1" /><span className="hidden sm:inline">Live</span>
             </Button>
           </>
         ) : (
           <Select value={rangeMs} onValueChange={(v) => { setRangeMs(v); anchorRef.current = Date.now(); }}>
-            <SelectTrigger className="h-6 w-[96px] rounded-none border-border bg-background/80 uppercase text-[9px] font-mono">
+            <SelectTrigger className="h-6 w-[72px] sm:w-[96px] rounded-none border-border bg-background/80 uppercase text-[9px] font-mono flex-shrink-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-none">
@@ -770,8 +801,9 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle, 
             </SelectContent>
           </Select>
         )}
-        <span className="text-primary/90 whitespace-nowrap tabular-nums">{fmtSimTime(dispMs)}</span>
-        <span className="text-muted-foreground/70 whitespace-nowrap">{playing ? `${clockRef.current.rate}×` : "FROZEN"}</span>
+        <span className="text-primary/90 whitespace-nowrap tabular-nums hidden sm:inline">{fmtSimTime(dispMs)}</span>
+        <span className="text-primary/90 whitespace-nowrap tabular-nums sm:hidden text-[8px]">{fmtSimTime(dispMs).slice(11, 19)}Z</span>
+        <span className="text-muted-foreground/70 whitespace-nowrap flex-shrink-0">{playing ? `${clockRef.current.rate}×` : "❙❙"}</span>
       </div>
 
       {/* scanline wash to stay in theme */}

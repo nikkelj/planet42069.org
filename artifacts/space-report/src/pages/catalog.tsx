@@ -105,7 +105,7 @@ function TrackingPanel({ satno, apogeeKm, perigeeKm, incDeg, name }: {
 
   return (
     <>
-      <div className="w-full h-[420px]">
+      <div className="w-full h-[280px] sm:h-[420px]">
         <OrbitViewer3D
           apogeeKm={apogeeKm}
           perigeeKm={perigeeKm}
@@ -532,7 +532,7 @@ export default function Catalog() {
                             <div className="border-l-4 border-primary ml-2 my-2 bg-background/60">
                               <div className="flex flex-col gap-0 divide-y divide-border/40">
                                 <Suspense fallback={
-                                  <div className="w-full h-[420px] flex items-center justify-center bg-black/70 font-mono text-[10px] uppercase tracking-widest text-primary/70">
+                                  <div className="w-full h-[280px] sm:h-[420px] flex items-center justify-center bg-black/70 font-mono text-[10px] uppercase tracking-widest text-primary/70">
                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Initializing ECI tracking display…
                                   </div>
                                 }>
