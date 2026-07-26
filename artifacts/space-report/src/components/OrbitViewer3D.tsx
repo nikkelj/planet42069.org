@@ -567,6 +567,9 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle, 
 
   const [playing, setPlaying] = useState(true);
   const [rangeMs, setRangeMs] = useState(String(2 * 3600_000));
+  // Mirror for the interval-based re-center check (avoids re-subscribing the interval).
+  const rangeMsRef = useRef(rangeMs);
+  useEffect(() => { rangeMsRef.current = rangeMs; }, [rangeMs]);
   const [dispMs, setDispMs] = useState(() => clockRef.current.ms);
   const [telemetry, setTelemetry] = useState<Telemetry>(telemetryRef.current);
 
@@ -597,6 +600,20 @@ export default function OrbitViewer3D({ apogeeKm, perigeeKm, incDeg, name, tle, 
   // Low-frequency UI sync from the render-loop clock/telemetry refs.
   useEffect(() => {
     const id = setInterval(() => {
+      // Free-run mode: as sim time approaches the edge of the slider window,
+      // re-center the window on the current sim time so the thumb never
+      // stays pinned at an edge during long accelerated sessions. (Pass mode
+      // keeps its clamped window and is skipped here.)
+      const c = clockRef.current;
+      if (c.minMs == null && c.maxMs == null) {
+        const half = Number(rangeMsRef.current);
+        if (Number.isFinite(half) && half > 0) {
+          const edge = half * 0.05; // within 5% of the window edge
+          if (Math.abs(c.ms - anchorRef.current) >= half - edge) {
+            anchorRef.current = c.ms;
+          }
+        }
+      }
       setDispMs(clockRef.current.ms);
       if (clockRef.current.playing !== undefined) setPlaying(clockRef.current.playing);
       const t = telemetryRef.current;
