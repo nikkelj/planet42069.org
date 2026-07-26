@@ -119,7 +119,7 @@ export default function PassFinder({ norad, name, observer, onObserverChange, da
   const fmt = (iso: string) =>
     new Date(iso).toLocaleString(undefined, {
       weekday: "short", month: "short", day: "numeric",
-      hour: "2-digit", minute: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
     });
   const duration = (a: string, b: string) => {
     const s = Math.round((Date.parse(b) - Date.parse(a)) / 1000);
