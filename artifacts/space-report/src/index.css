@@ -1,5 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&family=Chakra+Petch:wght@400;700&display=swap');
 @import "tailwindcss";
+
+/* Prevent the whitespace-nowrap catalog table from widening the viewport on
+   mobile — the table scrolls horizontally within its overflow-x-auto
+   container; the page itself should never be wider than the device. */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 

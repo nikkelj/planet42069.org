@@ -274,8 +274,8 @@ function Moon({ clock }: { clock: SimClock }) {
           <sphereGeometry args={[MOON_R, 24, 24]} />
           <meshStandardMaterial color="#9aa4ad" roughness={1} />
         </mesh>
-        <Html distanceFactor={110} position={[0, MOON_R * 2.5, 0]} occlude>
-          <span style={{ color: CYAN, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", textShadow: "0 0 4px #000" }}>Moon · 384,400 km</span>
+        <Html center distanceFactor={55} position={[0, MOON_R * 2.2, 0]}>
+          <span style={{ color: CYAN, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", textShadow: "0 0 5px #000, 0 0 10px #000" }}>Moon · 384,400 km</span>
         </Html>
       </group>
     </>
@@ -447,14 +447,14 @@ function ObserverRig({ observer, clock, el, satPosRef, telemetryRef }: {
         <mesh geometry={coneGeom}>
           <meshBasicMaterial color={AMBER} transparent opacity={0.08} side={THREE.DoubleSide} depthWrite={false} />
         </mesh>
-        <Html distanceFactor={30} position={[0, 0.08, 0]} occlude>
-          <span style={{ color: AMBER, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", textShadow: "0 0 4px #000" }}>Obs</span>
+        <Html center distanceFactor={3} position={[0, 0.055, 0]}>
+          <span style={{ color: AMBER, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", textShadow: "0 0 5px #000, 0 0 10px #000" }}>Obs</span>
         </Html>
       </group>
       <primitive object={slantLine} />
       {/* Slant-range annotation: midpoint label updated imperatively each frame */}
       <group ref={slantMidGroupRef}>
-        <Html center distanceFactor={9} occlude>
+        <Html center distanceFactor={5}>
           <div
             ref={slantLabelRef}
             style={{
@@ -465,7 +465,7 @@ function ObserverRig({ observer, clock, el, satPosRef, telemetryRef }: {
               letterSpacing: "0.05em",
               whiteSpace: "nowrap",
               textShadow: "0 0 6px #000, 0 0 12px #000",
-              background: "rgba(0,0,0,0.55)",
+              background: "rgba(0,0,0,0.6)",
               padding: "1px 4px",
             }}
           />
@@ -503,8 +503,8 @@ function SolAndHeliocentricOrbit() {
     <>
       {/* Earth's heliocentric orbit — looks locally straight near Earth, as it should */}
       <Line points={orbitPts} color={AMBER} transparent opacity={0.4} dashed dashSize={AU_R * 0.004} gapSize={AU_R * 0.0025} lineWidth={1} />
-      <Html distanceFactor={210} position={eclY.clone().multiplyScalar(MOON_ORBIT_R).toArray()}>
-        <span style={{ color: AMBER, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", opacity: 0.9, textShadow: "0 0 4px #000" }}>Heliocentric path</span>
+      <Html center distanceFactor={18000} position={eclY.clone().multiplyScalar(MOON_ORBIT_R).toArray()}>
+        <span style={{ color: AMBER, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", opacity: 0.9, textShadow: "0 0 5px #000, 0 0 10px #000" }}>Heliocentric path</span>
       </Html>
       {/* guide ray toward the Sun for close-in zoom levels */}
       <Line points={[eclX.clone().multiplyScalar(1.6), sunPos]} color={AMBER} transparent opacity={0.2} lineWidth={1} />
@@ -517,12 +517,12 @@ function SolAndHeliocentricOrbit() {
           <sphereGeometry args={[SUN_R * 3, 24, 24]} />
           <meshBasicMaterial color={AMBER} transparent opacity={0.18} depthWrite={false} />
         </mesh>
-        <Html distanceFactor={210} position={[0, 0, SUN_R * 4]} occlude>
-          <span style={{ color: AMBER, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", textShadow: "0 0 4px #000" }}>Sol · 1 AU · to scale</span>
+        <Html center distanceFactor={18000} position={[0, 0, SUN_R * 3.5]}>
+          <span style={{ color: AMBER, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", textShadow: "0 0 5px #000, 0 0 10px #000" }}>Sol · 1 AU · to scale</span>
         </Html>
       </group>
-      <Html distanceFactor={210} position={eclX.clone().multiplyScalar(MOON_ORBIT_R * 1.2).add(new THREE.Vector3(0, MOON_ORBIT_R * 0.05, 0)).toArray()}>
-        <span style={{ color: AMBER, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap", opacity: 0.8, textShadow: "0 0 4px #000" }}>→ Sol · zoom out 390× past the Moon</span>
+      <Html center distanceFactor={18000} position={eclX.clone().multiplyScalar(MOON_ORBIT_R * 1.2).add(new THREE.Vector3(0, MOON_ORBIT_R * 0.05, 0)).toArray()}>
+        <span style={{ color: AMBER, fontSize: "7px", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", opacity: 0.8, textShadow: "0 0 5px #000, 0 0 10px #000" }}>→ Sol · zoom out 390× past the Moon</span>
       </Html>
     </>
   );
