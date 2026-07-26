@@ -132,6 +132,18 @@ export default function PassFinder({ norad, name, observer, onObserverChange, da
 
   const apiStatus = (error as { status?: number } | null)?.status;
 
+  /** Human-readable TLE age, e.g. "14 h", "2.3 d". */
+  const epochAgeMs = data ? Date.now() - Date.parse(data.epoch) : null;
+  const ageLabel =
+    epochAgeMs === null || !Number.isFinite(epochAgeMs)
+      ? null
+      : epochAgeMs < 3600_000
+        ? `${Math.max(0, Math.round(epochAgeMs / 60_000))} min`
+        : epochAgeMs < 48 * 3600_000
+          ? `${Math.round(epochAgeMs / 3600_000)} h`
+          : `${(epochAgeMs / 86_400_000).toFixed(1)} d`;
+  const staleTle = epochAgeMs !== null && epochAgeMs > 24 * 3600_000;
+
   return (
     <div className="p-4 space-y-3">
       <div className="font-mono text-[10px] uppercase tracking-widest text-primary font-bold flex items-center gap-2">
@@ -190,6 +202,16 @@ export default function PassFinder({ norad, name, observer, onObserverChange, da
           {apiStatus === 404
             ? "No current element set on file with space command — cannot predict passes."
             : "Uplink to space-track failed — try again shortly."}
+        </div>
+      )}
+      {observer && data && ageLabel && (
+        <div
+          className={`font-mono text-[10px] uppercase tracking-widest ${
+            staleTle ? "text-destructive" : "text-muted-foreground"
+          }`}
+        >
+          Orbit data {ageLabel} old
+          {staleTle && " — element set is stale; pass times may drift by minutes. Treat predictions with suspicion."}
         </div>
       )}
       {observer && data && data.passes.length === 0 && (
