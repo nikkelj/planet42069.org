@@ -5,6 +5,9 @@ import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Databa
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import bryceUpmassChart from "@assets/image_1782288004026.png";
+import yaoganSkyMap from "@assets/image_1785335135041.png";
+import yaoganCams from "@assets/image_1785335156202.png";
+import yaoganPassVideo from "@assets/yaogan11-pass.mp4";
 import alpha5Faq from "@assets/image_1782450578315.png";
 import { UpmassAudit } from "@/components/UpmassAudit";
 import { ShuttleMassComplaint } from "@/components/ShuttleMassComplaint";
@@ -123,6 +126,103 @@ export default function Home() {
 
       {/* BRIEFING DOCKET — CASE INDEX */}
       <DossierIndex />
+
+      {/* FIELD VERIFICATION — YAOGAN-11 OPTICAL AUDIT */}
+      <div id="verify-37165" className="scroll-mt-24 border border-rose-400/30 bg-rose-950/15 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-rose-400/60 via-rose-400/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <Radar className="w-5 h-5 text-rose-400/80 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rose-400/20 pb-2">
+              <span className="text-rose-300/90 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Field Verification
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #VERIFY-37165 · Posted: 2026-07-29 · Status: SATELLITE LOCATED (SUSPICIOUSLY COOPERATIVE)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-rose-400/60">Subject:</span> YAOGAN-11 · NORAD 37165 · Int'l Desig 2010-047A</span>
+              <span><span className="text-rose-400/60">Method:</span> Two cameras, one tripod, zero excuses</span>
+              <span><span className="text-rose-400/60">Verdict:</span> Present where filed</span>
+            </div>
+            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                The Bureau has begun conducting <span className="text-rose-300/80 font-bold">physical spot-checks</span> of
+                the catalog. Not spreadsheet spot-checks. Optical ones. Cameras were pointed at the sky at the time and
+                place where the two-line element set for <span className="text-rose-300/80 font-bold">Yaogan-11</span> — a
+                Chinese Earth-imaging satellite whose declared purpose is "scientific experiments and land surveys" and
+                whose actual purpose the Bureau will describe, diplomatically, as{" "}
+                <em>enthusiastic photography of other people's countries</em> — said it would appear.
+              </p>
+              <p>
+                At <span className="text-rose-300/80 font-bold">2026-07-29 04:54:49 UTC</span>, azimuth 115°, elevation 55°,
+                slant range 726 km, a dot arrived. On schedule. On the predicted track. On <em>both</em> cameras. The Bureau
+                confirms that the People's Republic of China is operating its possibly-military reconnaissance satellite{" "}
+                <span className="text-rose-300/80 font-bold">exactly where the paperwork says it is</span>, which is
+                frankly more than can be said for most of the objects the Bureau audits, and the Bureau does not know how
+                to feel about being able to trust the surveillance satellite.
+              </p>
+              <figure className="my-1 border border-rose-400/20 bg-background/40 p-2">
+                <video
+                  src={yaoganPassVideo}
+                  aria-label="Stabilized telescope footage of YAOGAN-11 crossing the camera frame on its predicted track, 2026-07-29 04:54 UTC"
+                  className="w-full h-auto"
+                  controls
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  data-testid="video-yaogan-pass"
+                />
+                <figcaption className="text-[10px] text-muted-foreground/70 uppercase tracking-wider pt-2 text-center">
+                  Exhibit A · Stabilized Camera 1 footage, 2026-07-29 04:54 UTC · One (1) satellite, as advertised
+                </figcaption>
+              </figure>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <figure className="border border-rose-400/20 bg-background/40 p-2">
+                  <img
+                    src={yaoganSkyMap}
+                    alt="All-sky chart showing the predicted position of YAOGAN-11 (NORAD 37165) with camera 1 and camera 2 fields of view, TLE epoch 2026-07-28."
+                    className="w-full h-auto"
+                    loading="lazy"
+                  />
+                  <figcaption className="text-[10px] text-muted-foreground/70 uppercase tracking-wider pt-2 text-center">
+                    Exhibit B · The prediction. TLE epoch 2026-07-28, barely a day old.
+                  </figcaption>
+                </figure>
+                <figure className="border border-rose-400/20 bg-background/40 p-2">
+                  <img
+                    src={yaoganCams}
+                    alt="Side-by-side frames from camera 1 and camera 2 at 04:54:49 UTC showing YAOGAN-11 at azimuth 115 degrees, elevation 55 degrees, range 726 km, centered on the predicted cross-track marker."
+                    className="w-full h-auto"
+                    loading="lazy"
+                  />
+                  <figcaption className="text-[10px] text-muted-foreground/70 uppercase tracking-wider pt-2 text-center">
+                    Exhibit C · The reality. Both cameras. Same dot. Same spot.
+                  </figcaption>
+                </figure>
+              </div>
+              <p>
+                <span className="text-rose-300 font-bold">By way of contrast:</span> the Bureau ran the same audit against
+                a sample of <span className="text-rose-300/80 font-bold">Starlink</span> element sets and found{" "}
+                <span className="text-destructive font-bold">not one satellite where its TLE said it would be</span>.
+                This is not negligence — it is worse, it is <em>diligence</em>. Starlink satellites autonomously maneuver
+                so often that their published elements are stale before the ink dries. The constellation is effectively
+                self-driving, and the public catalog is a photograph of where the cars were parked yesterday.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-rose-400/20 pl-3">
+                <span className="text-rose-300/80 font-bold uppercase">Safety advisory:</span> if a TLE cannot reliably put
+                a dot in a camera frame, it certainly cannot be trusted to keep two spacecraft from occupying the same
+                cubic meter. Do not use public TLEs for collision avoidance. Use operator ephemerides, conjunction data
+                messages, or — the Bureau's preference — fewer satellites.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 border-t border-rose-400/20 pt-2 text-[10px] text-rose-400/40 uppercase tracking-wider">
+              <span>— Orbital Bureaucracy Command, Department of Pointing Cameras at the Sky and Waiting</span>
+              <span>One satellite verified · Several hundred pending · The backlog is aware of itself</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* BULLETIN — MULTI-SOURCE DATA FUSION */}
       <div id="fusion-0003" className="scroll-mt-24 border border-emerald-400/30 bg-emerald-950/15 p-5 font-mono text-xs relative">
@@ -797,6 +897,18 @@ function useScrollToHashOnLoad() {
 }
 
 const DOSSIERS = [
+  {
+    id: "verify-37165",
+    caseNo: "VERIFY-37165",
+    kind: "Field Verification",
+    posted: "2026-07-29",
+    title: "Yaogan-11 Located On Camera, Exactly Where Filed — Starlink, Not So Much",
+    status: "VERIFIED",
+    icon: Radar,
+    tone: "text-rose-300/90",
+    toneDim: "text-rose-400/60",
+    hover: "hover:border-rose-400/50 hover:bg-rose-950/25",
+  },
   {
     id: "fusion-0003",
     caseNo: "FUSION-0003",
