@@ -589,12 +589,14 @@ router.get("/satcat/spacex-by-site-monthly", async (req, res): Promise<void> => 
   const data = await getSatcat();
   const year = String(req.query.year ?? new Date().getFullYear()).trim();
 
-  const payloads = data.filter(
-    (e) =>
+  const payloads = data.filter((e) => {
+    const fam = (e.lvFamily ?? "").toLowerCase();
+    return (
       e.objectClass === "P" &&
-      (e.lvFamily ?? "").toLowerCase().includes("falcon") &&
-      getYear(e.ldate) === year,
-  );
+      (fam.includes("falcon") || fam.includes("starship")) &&
+      getYear(e.ldate) === year
+    );
+  });
 
   const MONTH_NAMES = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 
@@ -629,12 +631,13 @@ router.get("/satcat/spacex-by-site-monthly", async (req, res): Promise<void> => 
   res.json({ year, rows: result });
 });
 
-// SpaceX (Falcon family) mass by launch site, 2010+
+// SpaceX (Falcon + Starship families) mass by launch site, 2010+
 router.get("/satcat/spacex-by-site", async (_req, res): Promise<void> => {
   const data = await getSatcat();
-  const payloads = data.filter(
-    (e) => e.objectClass === "P" && (e.lvFamily ?? "").toLowerCase().includes("falcon"),
-  );
+  const payloads = data.filter((e) => {
+    const fam = (e.lvFamily ?? "").toLowerCase();
+    return e.objectClass === "P" && (fam.includes("falcon") || fam.includes("starship"));
+  });
 
   type SiteRow = { year: string; capeCanaveral: number; vandenberg: number; other: number };
   const map = new Map<string, SiteRow>();

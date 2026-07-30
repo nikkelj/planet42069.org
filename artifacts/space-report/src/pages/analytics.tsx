@@ -405,7 +405,9 @@ function SpaceXBySiteChart() {
               <div className="px-6 pt-2 pb-1">
                 <p className="text-xs font-mono text-muted-foreground/60">
                   <span className="text-primary/50">// </span>
-                  Each bar = all Falcon 9 / Heavy payloads catalogued in GCAT for that month.
+                  Each bar = all Falcon 9 / Heavy / Starship payloads catalogued in GCAT for that month.
+                 Starship flights to date have zero catalogued payloads — "Other" (Starbase) stays 0t
+                 until a catalog says otherwise.
                   Empty bars ahead are open launch windows — waiting to be filled.
                 </p>
               </div>

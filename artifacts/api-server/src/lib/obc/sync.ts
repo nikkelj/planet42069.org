@@ -244,11 +244,28 @@ async function doSync(): Promise<void> {
     for (const r of existing) if (r.norad != null) gcatNorads.add(r.norad);
   }
 
-  // space-track-only objects (GCAT hasn't cataloged them yet)
+  // space-track-only objects (GCAT hasn't cataloged them yet).
+  // GCAT lags individual object cataloguing by days-to-weeks, but its launch
+  // list updates fast — so enrich lv/lvFamily/site from the launch mirror by
+  // deriving the launch tag from the international designator. Without this,
+  // fresh launches vanish from vehicle/site analytics until GCAT catches up.
+  let launchLookup: Map<string, Pick<LaunchEntry, "lv" | "lvFamily" | "site">> | null = launchMap;
+  if (!launchLookup && stRows) {
+    const dbLaunches = await db.select().from(obcLaunches);
+    launchLookup = new Map(dbLaunches.map((l) => [l.launchTag, { lv: l.lv, lvFamily: l.lvFamily, site: l.site }]));
+  }
   if (stRows) {
     for (const [norad, st] of stByNorad) {
       if (gcatNorads.has(norad)) continue;
       const cls = stClassToGcat(st.OBJECT_TYPE);
+      // COSPAR intl designators are "YYYY-NNNP"; GCAT launch tags are the
+      // "YYYY-NNN" part. Allow an alphanumeric first char after the dash to
+      // also cover GCAT's non-standard tags (e.g. "2026-U04"), even though
+      // space-track OBJECT_IDs are normally purely numeric. If OBJECT_ID is
+      // missing/malformed, enrichment is skipped for that row (fields stay
+      // as space-track provided them).
+      const tag = st.OBJECT_ID?.match(/^(\d{4}-[A-Z0-9]\d{2})/i)?.[1]?.toUpperCase() ?? null;
+      const launch = tag ? launchLookup?.get(tag) : undefined;
       rows.push({
         key: `ST${norad}`,
         jcat: null,
@@ -257,7 +274,11 @@ async function doSync(): Promise<void> {
         name: st.OBJECT_NAME ?? `OBJECT ${norad}`,
         plName: null,
         ldate: st.LAUNCH || null,
-        lv: null, lvFamily: null, site: st.SITE || null,
+        lv: launch?.lv ?? null,
+        lvFamily: launch?.lvFamily ?? null,
+        // Prefer GCAT launch-site codes (VSFBS, CC, KSC...) — analytics
+        // classify on those; space-track's AFWTR/AFETR codes don't match.
+        site: launch?.site ?? (st.SITE || null),
         owner: null, state: st.COUNTRY || null,
         objectClass: cls, objType: cls,
         opOrbit: null,
