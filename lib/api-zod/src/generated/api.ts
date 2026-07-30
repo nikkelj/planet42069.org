@@ -375,7 +375,10 @@ export const GetSatcatSpacexBySiteMonthlyResponse = zod.object({
   "monthNum": zod.number(),
   "capeCanaveral": zod.number(),
   "vandenberg": zod.number(),
-  "other": zod.number()
+  "other": zod.number(),
+  "pendingCapeCanaveral": zod.number().describe('Provisional estimate for launches not yet catalogued'),
+  "pendingVandenberg": zod.number().describe('Provisional estimate for launches not yet catalogued'),
+  "pendingOther": zod.number().describe('Provisional estimate for launches not yet catalogued')
 }))
 })
 
@@ -388,7 +391,10 @@ export const GetSatcatSpacexBySiteResponse = zod.object({
   "year": zod.string(),
   "capeCanaveral": zod.number(),
   "vandenberg": zod.number(),
-  "other": zod.number()
+  "other": zod.number(),
+  "pendingCapeCanaveral": zod.number().describe('Provisional estimate for launches not yet catalogued'),
+  "pendingVandenberg": zod.number().describe('Provisional estimate for launches not yet catalogued'),
+  "pendingOther": zod.number().describe('Provisional estimate for launches not yet catalogued')
 }))
 })
 

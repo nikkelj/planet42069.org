@@ -281,10 +281,15 @@ function SpaceXBySiteChart() {
 
   const SiteTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
-    const cape  = payload.find((p: any) => p.dataKey === 'capeCanaveral')?.value ?? 0;
-    const vand  = payload.find((p: any) => p.dataKey === 'vandenberg')?.value ?? 0;
-    const other = payload.find((p: any) => p.dataKey === 'other')?.value ?? 0;
+    const row = payload[0].payload ?? {};
+    const cape  = row.capeCanaveral ?? 0;
+    const vand  = row.vandenberg ?? 0;
+    const other = row.other ?? 0;
+    const pendCape  = row.pendingCapeCanaveral ?? 0;
+    const pendVand  = row.pendingVandenberg ?? 0;
+    const pendOther = row.pendingOther ?? 0;
     const total = cape + vand + other;
+    const pendTotal = pendCape + pendVand + pendOther;
     return (
       <div className="bg-card border-2 border-primary p-3 shadow-xl font-mono text-sm z-50">
         <p className="text-primary font-bold mb-2 pb-1 border-b border-primary/30 uppercase">{label}</p>
@@ -292,8 +297,15 @@ function SpaceXBySiteChart() {
           <p><span style={{ color: CAPE_COLOR }}>■</span> <span className="text-muted-foreground">Cape Canaveral / KSC:</span> {(cape / 1000).toFixed(1)}t</p>
           <p><span style={{ color: VAND_COLOR }}>■</span> <span className="text-muted-foreground">Vandenberg SFB:</span> {(vand / 1000).toFixed(1)}t</p>
           {other > 0 && <p><span style={{ color: OTHER_SITE_COLOR }}>■</span> <span className="text-muted-foreground">Other:</span> {(other / 1000).toFixed(1)}t</p>}
-          {total > 0 && <p className="border-t border-border/50 mt-1 pt-1 text-muted-foreground">Total: {(total / 1000).toFixed(1)}t</p>}
-          {total === 0 && <p className="text-muted-foreground/50 italic">No launches catalogued yet</p>}
+          {pendCape > 0 && <p><span style={{ color: CAPE_COLOR, opacity: 0.5 }}>▨</span> <span className="text-muted-foreground">Cape pending cataloguing:</span> ~{(pendCape / 1000).toFixed(1)}t est.</p>}
+          {pendVand > 0 && <p><span style={{ color: VAND_COLOR, opacity: 0.5 }}>▨</span> <span className="text-muted-foreground">Vandenberg pending cataloguing:</span> ~{(pendVand / 1000).toFixed(1)}t est.</p>}
+          {pendOther > 0 && <p><span style={{ color: OTHER_SITE_COLOR, opacity: 0.5 }}>▨</span> <span className="text-muted-foreground">Other pending cataloguing:</span> ~{(pendOther / 1000).toFixed(1)}t est.</p>}
+          {(total > 0 || pendTotal > 0) && (
+            <p className="border-t border-border/50 mt-1 pt-1 text-muted-foreground">
+              Total: {(total / 1000).toFixed(1)}t{pendTotal > 0 && <span className="text-muted-foreground/70"> (+~{(pendTotal / 1000).toFixed(1)}t pending)</span>}
+            </p>
+          )}
+          {total === 0 && pendTotal === 0 && <p className="text-muted-foreground/50 italic">No launches catalogued yet</p>}
         </div>
       </div>
     );
@@ -358,6 +370,13 @@ function SpaceXBySiteChart() {
                   <span className="text-muted-foreground">{label}</span>
                 </span>
               ))}
+              <span className="flex items-center gap-1.5">
+                <span
+                  className="inline-block w-3 h-3 rounded-sm border border-muted-foreground/50"
+                  style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(var(--muted-foreground) / 0.6) 2px, hsl(var(--muted-foreground) / 0.6) 3px)' }}
+                />
+                <span className="text-muted-foreground">Pending cataloguing (est.)</span>
+              </span>
               {view === 'monthly' && (
                 <span className="ml-auto text-primary/60 text-[10px] uppercase tracking-wide font-mono">
                   YTD · {new Date().toLocaleString('en', { month: 'long' })} {currentYear}
@@ -394,9 +413,24 @@ function SpaceXBySiteChart() {
                       <Label value="◀ NOW" position="insideTopRight" fill="hsl(var(--primary))" fontSize={9} fontFamily="monospace" fontWeight="bold" />
                     </ReferenceLine>
                   )}
+                  <defs>
+                    {([
+                      ['hatchCape', CAPE_COLOR],
+                      ['hatchVand', VAND_COLOR],
+                      ['hatchOther', OTHER_SITE_COLOR],
+                    ] as const).map(([id, color]) => (
+                      <pattern key={id} id={id} patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                        <rect width="6" height="6" fill={color} fillOpacity="0.15" />
+                        <line x1="0" y1="0" x2="0" y2="6" stroke={color} strokeWidth="2" strokeOpacity="0.7" />
+                      </pattern>
+                    ))}
+                  </defs>
                   <Bar dataKey="capeCanaveral" stackId="a" fill={CAPE_COLOR} />
                   <Bar dataKey="vandenberg"    stackId="a" fill={VAND_COLOR} />
-                  <Bar dataKey="other"         stackId="a" fill={OTHER_SITE_COLOR} radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="other"         stackId="a" fill={OTHER_SITE_COLOR} />
+                  <Bar dataKey="pendingCapeCanaveral" stackId="a" fill="url(#hatchCape)" />
+                  <Bar dataKey="pendingVandenberg"    stackId="a" fill="url(#hatchVand)" />
+                  <Bar dataKey="pendingOther"         stackId="a" fill="url(#hatchOther)" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -408,6 +442,9 @@ function SpaceXBySiteChart() {
                   Each bar = all Falcon 9 / Heavy / Starship payloads catalogued in GCAT for that month.
                  Starship flights to date have zero catalogued payloads — "Other" (Starbase) stays 0t
                  until a catalog says otherwise.
+                 Hatched segments are provisional estimates for recent launches the catalogs haven't
+                 processed yet (space-track lags days, GCAT weeks) — they're replaced by real catalog
+                 data as it lands.
                   Empty bars ahead are open launch windows — waiting to be filled.
                 </p>
               </div>

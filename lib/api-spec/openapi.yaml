@@ -1253,12 +1253,24 @@ components:
                 type: number
               other:
                 type: number
+              pendingCapeCanaveral:
+                type: number
+                description: Provisional estimate for launches not yet catalogued
+              pendingVandenberg:
+                type: number
+                description: Provisional estimate for launches not yet catalogued
+              pendingOther:
+                type: number
+                description: Provisional estimate for launches not yet catalogued
             required:
               - month
               - monthNum
               - capeCanaveral
               - vandenberg
               - other
+              - pendingCapeCanaveral
+              - pendingVandenberg
+              - pendingOther
       required:
         - year
         - rows
@@ -1279,11 +1291,23 @@ components:
                 type: number
               other:
                 type: number
+              pendingCapeCanaveral:
+                type: number
+                description: Provisional estimate for launches not yet catalogued
+              pendingVandenberg:
+                type: number
+                description: Provisional estimate for launches not yet catalogued
+              pendingOther:
+                type: number
+                description: Provisional estimate for launches not yet catalogued
             required:
               - year
               - capeCanaveral
               - vandenberg
               - other
+              - pendingCapeCanaveral
+              - pendingVandenberg
+              - pendingOther
       required:
         - rows
 

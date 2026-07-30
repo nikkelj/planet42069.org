@@ -11,6 +11,102 @@ function getYear(ldate: string | null): string | null {
   return m ? m[1] : null;
 }
 
+// ── Provisional (pending-cataloguing) tonnage ──────────────────────────────
+// Space-track takes days (and GCAT weeks) to catalog fresh launches, so the
+// trailing edge of the site charts undercounts. For known Falcon/Starship
+// orbital launches inside the lag window that have ZERO catalogued payload
+// mass, we add a clearly-marked provisional estimate (median catalogued
+// per-launch mass at the same site classification).
+
+const PENDING_WINDOW_DAYS = 45;
+
+type SiteClass = "capeCanaveral" | "vandenberg" | "other";
+
+function classifySite(site: string | null): SiteClass {
+  const s = (site ?? "").toUpperCase();
+  if (s === "CC" || s.startsWith("KSC")) return "capeCanaveral";
+  if (s.startsWith("VSFB") || s.startsWith("VAFB")) return "vandenberg";
+  return "other";
+}
+
+function isSpacexFamily(fam: string | null | undefined): boolean {
+  const f = (fam ?? "").toLowerCase();
+  return f.includes("falcon") || f.includes("starship");
+}
+
+interface PendingLaunch {
+  ldate: string;          // ISO date
+  siteClass: SiteClass;
+  estMassKg: number;
+}
+
+/**
+ * Find recent SpaceX orbital launches with zero catalogued payload mass and
+ * estimate their tonnage. Launch<->object matching is by (ldate, siteClass) —
+ * good enough for a provisional figure, replaced by real catalog data as
+ * space-track/GCAT catch up.
+ */
+async function getPendingSpacexLaunches(data: SatcatEntry[]): Promise<PendingLaunch[]> {
+  const launchMap = await getLaunchMap();
+  const now = Date.now();
+  const windowStart = now - PENDING_WINDOW_DAYS * 24 * 3600 * 1000;
+
+  // Catalogued Falcon payload mass per launch, keyed by launch tag (with an
+  // ldate|siteClass fallback for entries missing a tag). Falcon-only so a
+  // catalogued Starship payload can never suppress a Falcon pending estimate.
+  const tagMass = new Map<string, number>();
+  const dateSiteMass = new Map<string, number>();
+  for (const e of data) {
+    if (e.objectClass !== "P" || !e.ldate) continue;
+    if (!(e.lvFamily ?? "").toLowerCase().includes("falcon")) continue;
+    const mass = e.massKg ?? 0;
+    if (e.launchTag) {
+      tagMass.set(e.launchTag, (tagMass.get(e.launchTag) ?? 0) + mass);
+    } else {
+      const key = `${e.ldate}|${classifySite(e.site)}`;
+      dateSiteMass.set(key, (dateSiteMass.get(key) ?? 0) + mass);
+    }
+  }
+
+  // Median per-launch catalogued mass by site class (for the estimate),
+  // from launches in the last year (representative of a current batch).
+  const perClass: Record<SiteClass, number[]> = { capeCanaveral: [], vandenberg: [], other: [] };
+  const all: number[] = [];
+  for (const [tag, mass] of tagMass) {
+    if (mass <= 0) continue;
+    const l = launchMap.get(tag);
+    if (!l?.ldate) continue;
+    const t = Date.parse(l.ldate);
+    if (Number.isFinite(t) && now - t <= 365 * 24 * 3600 * 1000) {
+      const cls = classifySite(l.site);
+      perClass[cls].push(mass);
+      all.push(mass);
+    }
+  }
+  const median = (xs: number[]): number | null => {
+    if (xs.length === 0) return null;
+    const s = [...xs].sort((a, b) => a - b);
+    return s[Math.floor(s.length / 2)];
+  };
+  const FALLBACK_KG = 14000; // typical current Starlink batch
+  const estFor = (cls: SiteClass): number =>
+    median(perClass[cls]) ?? median(all) ?? FALLBACK_KG;
+
+  const pending: PendingLaunch[] = [];
+  for (const l of launchMap.values()) {
+    // Falcon only: a Falcon-median estimate for Starship cargo would be pure
+    // invention — Starbase stays honest-zero until a catalog says otherwise.
+    if (!l.orbital || !l.ldate || !(l.lvFamily ?? "").toLowerCase().includes("falcon")) continue;
+    const t = Date.parse(l.ldate);
+    if (!Number.isFinite(t) || t < windowStart || t > now) continue;
+    const cls = classifySite(l.site);
+    if ((tagMass.get(l.launchTag) ?? 0) > 0) continue;
+    if ((dateSiteMass.get(`${l.ldate}|${cls}`) ?? 0) > 0) continue;
+    pending.push({ ldate: l.ldate, siteClass: cls, estMassKg: estFor(cls) });
+  }
+  return pending;
+}
+
 router.get("/satcat/summary", async (req, res): Promise<void> => {
   const [data, freshness] = await Promise.all([getSatcat(), getFreshness()]);
 
@@ -600,9 +696,14 @@ router.get("/satcat/spacex-by-site-monthly", async (req, res): Promise<void> => 
 
   const MONTH_NAMES = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 
-  type MonthRow = { month: string; monthNum: number; capeCanaveral: number; vandenberg: number; other: number };
+  type MonthRow = {
+    month: string; monthNum: number;
+    capeCanaveral: number; vandenberg: number; other: number;
+    pendingCapeCanaveral: number; pendingVandenberg: number; pendingOther: number;
+  };
   const rows: MonthRow[] = MONTH_NAMES.map((month, i) => ({
     month, monthNum: i + 1, capeCanaveral: 0, vandenberg: 0, other: 0,
+    pendingCapeCanaveral: 0, pendingVandenberg: 0, pendingOther: 0,
   }));
 
   for (const e of payloads) {
@@ -610,15 +711,20 @@ router.get("/satcat/spacex-by-site-monthly", async (req, res): Promise<void> => 
     const monthNum = parseInt(e.ldate.split("-")[1] ?? "0", 10);
     if (monthNum < 1 || monthNum > 12) continue;
     const mass = e.massKg ?? 0;
-    const site = (e.site ?? "").toUpperCase();
     const row = rows[monthNum - 1];
-    if (site === "CC" || site.startsWith("KSC")) {
-      row.capeCanaveral += mass;
-    } else if (site.startsWith("VSFB") || site.startsWith("VAFB")) {
-      row.vandenberg += mass;
-    } else {
-      row.other += mass;
-    }
+    row[classifySite(e.site)] += mass;
+  }
+
+  const PENDING_KEY: Record<SiteClass, "pendingCapeCanaveral" | "pendingVandenberg" | "pendingOther"> = {
+    capeCanaveral: "pendingCapeCanaveral",
+    vandenberg: "pendingVandenberg",
+    other: "pendingOther",
+  };
+  for (const p of await getPendingSpacexLaunches(data)) {
+    if (getYear(p.ldate) !== year) continue;
+    const monthNum = parseInt(p.ldate.split("-")[1] ?? "0", 10);
+    if (monthNum < 1 || monthNum > 12) continue;
+    rows[monthNum - 1][PENDING_KEY[p.siteClass]] += p.estMassKg;
   }
 
   const result = rows.map((r) => ({
@@ -626,6 +732,9 @@ router.get("/satcat/spacex-by-site-monthly", async (req, res): Promise<void> => 
     capeCanaveral: Math.round(r.capeCanaveral),
     vandenberg: Math.round(r.vandenberg),
     other: Math.round(r.other),
+    pendingCapeCanaveral: Math.round(r.pendingCapeCanaveral),
+    pendingVandenberg: Math.round(r.pendingVandenberg),
+    pendingOther: Math.round(r.pendingOther),
   }));
 
   res.json({ year, rows: result });
@@ -639,22 +748,36 @@ router.get("/satcat/spacex-by-site", async (_req, res): Promise<void> => {
     return e.objectClass === "P" && (fam.includes("falcon") || fam.includes("starship"));
   });
 
-  type SiteRow = { year: string; capeCanaveral: number; vandenberg: number; other: number };
+  type SiteRow = {
+    year: string;
+    capeCanaveral: number; vandenberg: number; other: number;
+    pendingCapeCanaveral: number; pendingVandenberg: number; pendingOther: number;
+  };
   const map = new Map<string, SiteRow>();
+  const emptyRow = (year: string): SiteRow => ({
+    year, capeCanaveral: 0, vandenberg: 0, other: 0,
+    pendingCapeCanaveral: 0, pendingVandenberg: 0, pendingOther: 0,
+  });
 
   for (const e of payloads) {
     const year = getYear(e.ldate);
     if (!year || parseInt(year) < 2010) continue;
     const mass = e.massKg ?? 0;
-    const site = (e.site ?? "").toUpperCase();
-    const row = map.get(year) ?? { year, capeCanaveral: 0, vandenberg: 0, other: 0 };
-    if (site === "CC" || site.startsWith("KSC")) {
-      row.capeCanaveral += mass;
-    } else if (site.startsWith("VSFB") || site.startsWith("VAFB")) {
-      row.vandenberg += mass;
-    } else {
-      row.other += mass;
-    }
+    const row = map.get(year) ?? emptyRow(year);
+    row[classifySite(e.site)] += mass;
+    map.set(year, row);
+  }
+
+  const PENDING_KEY: Record<SiteClass, "pendingCapeCanaveral" | "pendingVandenberg" | "pendingOther"> = {
+    capeCanaveral: "pendingCapeCanaveral",
+    vandenberg: "pendingVandenberg",
+    other: "pendingOther",
+  };
+  for (const p of await getPendingSpacexLaunches(data)) {
+    const year = getYear(p.ldate);
+    if (!year) continue;
+    const row = map.get(year) ?? emptyRow(year);
+    row[PENDING_KEY[p.siteClass]] += p.estMassKg;
     map.set(year, row);
   }
 
@@ -664,6 +787,9 @@ router.get("/satcat/spacex-by-site", async (_req, res): Promise<void> => {
       capeCanaveral: Math.round(r.capeCanaveral),
       vandenberg: Math.round(r.vandenberg),
       other: Math.round(r.other),
+      pendingCapeCanaveral: Math.round(r.pendingCapeCanaveral),
+      pendingVandenberg: Math.round(r.pendingVandenberg),
+      pendingOther: Math.round(r.pendingOther),
     }))
     .sort((a, b) => a.year.localeCompare(b.year));
 

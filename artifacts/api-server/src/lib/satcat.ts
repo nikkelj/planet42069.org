@@ -37,10 +37,11 @@ export interface SatcatEntry {
   gunterUrl: string | null;       // dossier cross-link on space.skyrocket.de
   gunterTitle: string | null;     // dossier title, for Krebs-format citations
   gunterRetrievedAt: string | null; // ISO date the dossier was retrieved
+  launchTag: string | null;         // GCAT Launch_Tag (or derived from intl des)
 }
 
-/** Parser output — includes the GCAT Launch_Tag for launch cross-referencing. */
-export type SatcatRawEntry = SatcatEntry & { launchTag: string | null };
+/** Parser output — historical alias, launchTag is now on SatcatEntry itself. */
+export type SatcatRawEntry = SatcatEntry;
 
 // ── helpers ────────────────────────────────────────────────────────────────
 

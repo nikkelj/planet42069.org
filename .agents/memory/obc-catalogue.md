@@ -12,3 +12,6 @@ description: Merged GCAT + space-track Postgres catalog — key scheme, sentinel
 
 ## Fresh-launch analytics gap (fixed 2026-07-30)
 GCAT catalogs individual objects days-to-weeks after launch, but its launch list updates within a day. Space-track-only rows (ST keys) must be enriched with lv/lvFamily/site from the GCAT launch mirror (tag derived from OBJECT_ID "YYYY-NNN"), or vehicle/site analytics (e.g. `lv_family ILIKE '%falcon%'` filters) silently drop the most recent weeks. Also prefer GCAT site codes (CC/KSC/VSFBS) — space-track's AFETR/AFWTR never match the site classifiers.
+
+## Provisional "pending cataloguing" tonnage
+SpaceX-by-site endpoints add hatched provisional segments for Falcon orbital launches <45 days old with zero catalogued Falcon payload mass (matched per launch tag; SatcatEntry now carries launchTag derived from intl_des). Estimate = median same-site per-launch catalogued mass over the last year. **Starship deliberately excluded** — Starbase stays honest-zero until a catalog has objects. Space-track catalogs fresh Starlink batches days late (anonymous "OBJECT A…" rows, type UNKNOWN, no mass); GCAT takes weeks — so trailing-edge undercount is upstream lag, not sync staleness.

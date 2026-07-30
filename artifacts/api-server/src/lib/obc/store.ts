@@ -70,6 +70,7 @@ async function loadCatalog(): Promise<CatalogCache> {
     gunterUrl: o.gunterUrl,
     gunterTitle: o.gunterTitle,
     gunterRetrievedAt: o.gunterRetrievedAt?.toISOString() ?? null,
+    launchTag: o.intlDes?.match(/^(\d{4}-[A-Z0-9]\d{2})/i)?.[1]?.toUpperCase() ?? null,
   }));
 
   const launchMap = new Map<string, LaunchEntry>();
