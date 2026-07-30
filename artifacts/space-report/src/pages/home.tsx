@@ -127,6 +127,63 @@ export default function Home() {
       {/* BRIEFING DOCKET — CASE INDEX */}
       <DossierIndex />
 
+      {/* INTERNAL AFFAIRS — THE BUREAU AUDITS ITSELF */}
+      <div id="ia-0001" className="scroll-mt-24 border border-amber-400/30 bg-amber-950/15 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-amber-400/60 via-amber-400/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <FileWarning className="w-5 h-5 text-amber-400/80 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-400/20 pb-2">
+              <span className="text-amber-300/90 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Internal Affairs
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #IA-0001 · Posted: 2026-07-30 · Status: SELF-CITED, SELF-CORRECTED</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-amber-400/60">Subject:</span> The Bureau's own mass-to-orbit charts</span>
+              <span><span className="text-amber-400/60">Violation:</span> Staleness (the exact crime we were founded to police)</span>
+              <span><span className="text-amber-400/60">Verdict:</span> Guilty, with corrective action</span>
+            </div>
+            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                This agency exists because official mass-to-orbit metrics went stale. That is the founding grievance.
+                It is carved above the door. So it is with the particular discomfort unique to bureaucracies that the
+                Bureau must report the following finding: <span className="text-amber-300/80 font-bold">our own July
+                tonnage figures went stale</span>. The auditors have been audited. By themselves. It went about as well
+                as you'd expect.
+              </p>
+              <p>
+                The mechanism of the offense: the Bureau's primary catalog records new satellites weeks after launch,
+                and its secondary catalog takes days — filing fresh Starlink batches as anonymous rows named
+                "OBJECT A" with no mass, no type, and no shame. Meanwhile our merge pipeline quietly dropped
+                launch-vehicle attribution on the freshest rows, so half of July's Falcon tonnage was sitting in the
+                database wearing a trench coat labeled <em>provider unknown</em>. The chart said ~63 tonnes. Reality
+                had shipped nearly twice that.
+              </p>
+              <p>
+                <span className="text-amber-300 font-bold">Corrective actions, filed in triplicate:</span> the pipeline
+                now cross-references every fresh row against the launch registry, so new objects arrive with their
+                rocket, launch site, and paperwork attached. And for launches the catalogs haven't processed at all —
+                there are Falcon flights from last week with <em>zero</em> catalogued objects anywhere on Earth — the
+                charts now show a hatched <span className="text-amber-300/80 font-bold">"pending cataloguing"</span>{" "}
+                segment: a clearly-marked provisional estimate that is automatically replaced by real catalog data the
+                moment the catalogs catch up. Estimated tonnage is labeled as estimated. Radical concept. Still legal.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-amber-400/20 pl-3">
+                <span className="text-amber-300/80 font-bold uppercase">Finding:</span> a bureaucracy that polices
+                staleness must expect to one day cite itself. The Bureau regards this as the system working. The fine
+                has been paid from the left pocket into the right pocket, and the charts on the{" "}
+                <span className="text-amber-300/80 font-bold">Mass Analytics</span> desk are current to within hours.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 border-t border-amber-400/20 pt-2 text-[10px] text-amber-400/40 uppercase tracking-wider">
+              <span>— Orbital Bureaucracy Command, Office of Internal Affairs (staffed by the accused)</span>
+              <span>One self-citation issued · Zero appeals filed · The mirror has been reprimanded</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* FIELD VERIFICATION — YAOGAN-11 OPTICAL AUDIT */}
       <div id="verify-37165" className="scroll-mt-24 border border-rose-400/30 bg-rose-950/15 p-5 font-mono text-xs relative">
         <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-rose-400/60 via-rose-400/20 to-transparent" />
@@ -897,6 +954,18 @@ function useScrollToHashOnLoad() {
 }
 
 const DOSSIERS = [
+  {
+    id: "ia-0001",
+    caseNo: "IA-0001",
+    kind: "Internal Affairs",
+    posted: "2026-07-30",
+    title: "The Bureau Cites Itself for Stale Mass Metrics — Guilty, Corrected, Smug About It",
+    status: "SELF-CORRECTED",
+    icon: FileWarning,
+    tone: "text-amber-300/90",
+    toneDim: "text-amber-400/60",
+    hover: "hover:border-amber-400/50 hover:bg-amber-950/25",
+  },
   {
     id: "verify-37165",
     caseNo: "VERIFY-37165",
