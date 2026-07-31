@@ -19,6 +19,7 @@ import type {
   ConstellationAnalytics,
   DeorbitHistory,
   FalconVsStarship,
+  GetRpodEventsParams,
   GetSatcatParams,
   GetSatcatPassesParams,
   GetSatcatSpacexBySiteMonthlyParams,
@@ -28,6 +29,9 @@ import type {
   MassCdf,
   OrbitalMap,
   PassesResponse,
+  RpodEventDetail,
+  RpodEventList,
+  RpodStatus,
   SatcatByYearProvider,
   SatcatFilters,
   SatcatListResponse,
@@ -1624,6 +1628,247 @@ export function useGetSatcatFilters<TData = Awaited<ReturnType<typeof getSatcatF
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSatcatFiltersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRpodEventsUrl = (params?: GetRpodEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/rpod/events?${stringifiedParams}` : `/api/rpod/events`
+}
+
+/**
+ * Flagged rendezvous/proximity events, paginated and sortable; each event carries all involved spacecraft
+ * @summary List RPOD events
+ */
+export const getRpodEvents = async (params?: GetRpodEventsParams, options?: RequestInit): Promise<RpodEventList> => {
+
+  return customFetch<RpodEventList>(getGetRpodEventsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRpodEventsQueryKey = (params?: GetRpodEventsParams,) => {
+    return [
+    `/api/rpod/events`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRpodEventsQueryOptions = <TData = Awaited<ReturnType<typeof getRpodEvents>>, TError = ErrorType<unknown>>(params?: GetRpodEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRpodEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRpodEventsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRpodEvents>>> = ({ signal }) => getRpodEvents(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRpodEvents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRpodEventsQueryResult = NonNullable<Awaited<ReturnType<typeof getRpodEvents>>>
+export type GetRpodEventsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List RPOD events
+ */
+
+export function useGetRpodEvents<TData = Awaited<ReturnType<typeof getRpodEvents>>, TError = ErrorType<unknown>>(
+ params?: GetRpodEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRpodEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRpodEventsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRpodEventUrl = (id: number,) => {
+
+
+
+
+  return `/api/rpod/events/${id}`
+}
+
+/**
+ * Event with per-member catalog info and latest element sets for 3D plotting
+ * @summary RPOD event detail
+ */
+export const getRpodEvent = async (id: number, options?: RequestInit): Promise<RpodEventDetail> => {
+
+  return customFetch<RpodEventDetail>(getGetRpodEventUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRpodEventQueryKey = (id: number,) => {
+    return [
+    `/api/rpod/events/${id}`
+    ] as const;
+    }
+
+
+export const getGetRpodEventQueryOptions = <TData = Awaited<ReturnType<typeof getRpodEvent>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRpodEvent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRpodEventQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRpodEvent>>> = ({ signal }) => getRpodEvent(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRpodEvent>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRpodEventQueryResult = NonNullable<Awaited<ReturnType<typeof getRpodEvent>>>
+export type GetRpodEventQueryError = ErrorType<void>
+
+
+/**
+ * @summary RPOD event detail
+ */
+
+export function useGetRpodEvent<TData = Awaited<ReturnType<typeof getRpodEvent>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRpodEvent>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRpodEventQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRpodStatusUrl = () => {
+
+
+
+
+  return `/api/rpod/status`
+}
+
+/**
+ * Archive row counts, backfill cursor position, recent-feed watermark, and last scan result
+ * @summary TLE archive and scan status
+ */
+export const getRpodStatus = async ( options?: RequestInit): Promise<RpodStatus> => {
+
+  return customFetch<RpodStatus>(getGetRpodStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRpodStatusQueryKey = () => {
+    return [
+    `/api/rpod/status`
+    ] as const;
+    }
+
+
+export const getGetRpodStatusQueryOptions = <TData = Awaited<ReturnType<typeof getRpodStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRpodStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRpodStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRpodStatus>>> = ({ signal }) => getRpodStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRpodStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRpodStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getRpodStatus>>>
+export type GetRpodStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary TLE archive and scan status
+ */
+
+export function useGetRpodStatus<TData = Awaited<ReturnType<typeof getRpodStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRpodStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRpodStatusQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

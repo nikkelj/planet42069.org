@@ -40,6 +40,10 @@ args = "test-gunter"
 task = "workflow.run"
 args = "test-passes"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-rpod"
+
 [[workflows.workflow]]
 name = "test-upsert"
 author = "agent"
@@ -102,6 +106,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/api-server run test:passes"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "test-rpod"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:rpod"
 
 [workflows.workflow.metadata]
 outputType = "console"

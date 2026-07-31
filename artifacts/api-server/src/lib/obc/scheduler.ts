@@ -2,9 +2,14 @@ import { logger } from "../logger";
 import { runObcSync } from "./sync";
 import { runGunterSync } from "./gunter";
 import { getFreshness } from "./store";
+import { runRecentElsetWatch, runTleBackfill } from "./tleArchive";
+import { runRpodScan } from "../rpod/scan";
 
 const SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000; // daily
 const CHECK_INTERVAL_MS = 60 * 60 * 1000;     // hourly staleness check
+const TLE_RECENT_INTERVAL_MS = 20 * 60 * 1000;   // recent-elsets watch cadence
+const TLE_BACKFILL_INTERVAL_MS = 30 * 60 * 1000; // backfill step cadence
+const RPOD_SCAN_INTERVAL_MS = 60 * 60 * 1000;    // full RPOD screen cadence
 
 async function syncIfStale(): Promise<void> {
   try {
@@ -43,4 +48,17 @@ async function syncIfStale(): Promise<void> {
 export function startObcScheduler(): void {
   setTimeout(() => { void syncIfStale(); }, 2000);
   setInterval(() => { void syncIfStale(); }, CHECK_INTERVAL_MS).unref();
+
+  // TLE archive workers. The recent watcher runs first and often (it is the
+  // tip-off feed); the backfill is deliberately offset so the two never
+  // contend for the shared request queue at the same instant. The RPOD scan
+  // is purely local (DB + CPU) and runs hourly after fresh elsets land.
+  setTimeout(() => { void runRecentElsetWatch(); }, 10_000);
+  setInterval(() => { void runRecentElsetWatch(); }, TLE_RECENT_INTERVAL_MS).unref();
+
+  setTimeout(() => { void runTleBackfill(); }, 3 * 60_000);
+  setInterval(() => { void runTleBackfill(); }, TLE_BACKFILL_INTERVAL_MS).unref();
+
+  setTimeout(() => { void runRpodScan(); }, 5 * 60_000);
+  setInterval(() => { void runRpodScan(); }, RPOD_SCAN_INTERVAL_MS).unref();
 }

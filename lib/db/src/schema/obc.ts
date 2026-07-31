@@ -6,6 +6,7 @@ import {
   boolean,
   timestamp,
   serial,
+  uniqueIndex,
   index,
   jsonb,
 } from "drizzle-orm/pg-core";
@@ -116,6 +117,90 @@ export const obcGunterPages = pgTable(
   },
   (t) => [index("obc_gunter_pages_status_idx").on(t.kind, t.status)],
 );
+
+/**
+ * TLE history archive — sampled element sets from space-track (gp for the
+ * recent feed, gp_history for the backward-walking backfill). Sampling keeps
+ * a bounded number of elsets per object per day, so epoch-range queries stay
+ * fast over years of history. Both raw TLE lines and parsed mean elements
+ * are stored so screening never needs to re-parse.
+ */
+export const obcTleHistory = pgTable(
+  "obc_tle_history",
+  {
+    id: serial("id").primaryKey(),
+    norad: integer("norad").notNull(),
+    epoch: timestamp("epoch").notNull(),
+    line1: text("line1").notNull(),
+    line2: text("line2").notNull(),
+    incDeg: real("inc_deg").notNull(),
+    raanDeg: real("raan_deg").notNull(),
+    eccentricity: real("eccentricity").notNull(),
+    argPerigeeDeg: real("arg_perigee_deg").notNull(),
+    meanAnomalyDeg: real("mean_anomaly_deg").notNull(),
+    meanMotionRevPerDay: real("mean_motion_rev_per_day").notNull(),
+    bstar: real("bstar"),
+    source: text("source").notNull(), // "recent" | "backfill"
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("obc_tle_history_norad_epoch_uq").on(t.norad, t.epoch),
+    index("obc_tle_history_epoch_idx").on(t.epoch),
+    index("obc_tle_history_norad_idx").on(t.norad, t.epoch),
+  ],
+);
+
+/** Small key/value state store for background workers (cursors, watermarks). */
+export const obcWorkerState = pgTable("obc_worker_state", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").$type<Record<string, unknown>>().notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+/**
+ * RPOD (rendezvous & proximity operations) events flagged by the screener.
+ * An event is a CLUSTER of close-approach pairs, so it can involve more than
+ * two spacecraft (members live in rpod_event_members).
+ */
+export const rpodEvents = pgTable(
+  "rpod_events",
+  {
+    id: serial("id").primaryKey(),
+    status: text("status").notNull().default("active"), // "active" | "stale"
+    windowStart: timestamp("window_start").notNull(),
+    windowEnd: timestamp("window_end").notNull(),
+    tca: timestamp("tca").notNull(), // time of (predicted) closest approach
+    minRangeKm: real("min_range_km").notNull(),
+    relVelKmS: real("rel_vel_km_s").notNull(),
+    memberCount: integer("member_count").notNull().default(2),
+    widenedScan: boolean("widened_scan").notNull().default(false),
+    screeningMeta: jsonb("screening_meta").$type<Record<string, unknown>>(),
+    firstDetectedAt: timestamp("first_detected_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("rpod_events_tca_idx").on(t.tca), index("rpod_events_status_idx").on(t.status, t.tca)],
+);
+
+export const rpodEventMembers = pgTable(
+  "rpod_event_members",
+  {
+    id: serial("id").primaryKey(),
+    eventId: integer("event_id").notNull().references(() => rpodEvents.id, { onDelete: "cascade" }),
+    norad: integer("norad").notNull(),
+    /** Min pairwise range (km) this member reached vs any other member. */
+    minRangeKm: real("min_range_km"),
+    relVelKmS: real("rel_vel_km_s"),
+  },
+  (t) => [
+    uniqueIndex("rpod_event_members_uq").on(t.eventId, t.norad),
+    index("rpod_event_members_norad_idx").on(t.norad),
+  ],
+);
+
+export type ObcTleHistoryRow = typeof obcTleHistory.$inferSelect;
+export type InsertObcTleHistory = typeof obcTleHistory.$inferInsert;
+export type RpodEventRow = typeof rpodEvents.$inferSelect;
+export type RpodEventMemberRow = typeof rpodEventMembers.$inferSelect;
 
 export const insertObcObjectSchema = createInsertSchema(obcObjects);
 export type InsertObcObject = z.infer<typeof insertObcObjectSchema>;

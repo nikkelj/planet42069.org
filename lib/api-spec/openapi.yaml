@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: satcat
     description: Satellite catalog operations
+  - name: rpod
+    description: RPOD (rendezvous & proximity operations) watch
 paths:
   /healthz:
     get:
@@ -409,8 +411,274 @@ paths:
               schema:
                 $ref: "#/components/schemas/SatcatFilters"
 
+  /rpod/events:
+    get:
+      operationId: getRpodEvents
+      tags: [rpod]
+      summary: List RPOD events
+      description: Flagged rendezvous/proximity events, paginated and sortable; each event carries all involved spacecraft
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, stale]
+          description: Filter by event status
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [tca, minRangeKm, relVelKmS, memberCount]
+          description: Sort field (default tca)
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        "200":
+          description: Paginated RPOD event list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RpodEventList"
+
+  /rpod/events/{id}:
+    get:
+      operationId: getRpodEvent
+      tags: [rpod]
+      summary: RPOD event detail
+      description: Event with per-member catalog info and latest element sets for 3D plotting
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Event detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RpodEventDetail"
+        "404":
+          description: Event not found
+
+  /rpod/status:
+    get:
+      operationId: getRpodStatus
+      tags: [rpod]
+      summary: TLE archive and scan status
+      description: Archive row counts, backfill cursor position, recent-feed watermark, and last scan result
+      responses:
+        "200":
+          description: Archive/scan status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RpodStatus"
+
 components:
   schemas:
+    RpodMember:
+      type: object
+      properties:
+        norad:
+          type: integer
+        name:
+          type: string
+          nullable: true
+        owner:
+          type: string
+          nullable: true
+        state:
+          type: string
+          nullable: true
+        objectClass:
+          type: string
+          nullable: true
+        opOrbit:
+          type: string
+          nullable: true
+        ldate:
+          type: string
+          nullable: true
+        minRangeKm:
+          type: number
+          nullable: true
+          description: Tightest pairwise range this member reached vs any other member (km)
+        relVelKmS:
+          type: number
+          nullable: true
+      required: [norad]
+
+    RpodTle:
+      type: object
+      properties:
+        line1:
+          type: string
+        line2:
+          type: string
+        epoch:
+          type: string
+        incDeg:
+          type: number
+        raanDeg:
+          type: number
+        eccentricity:
+          type: number
+        argPerigeeDeg:
+          type: number
+        meanAnomalyDeg:
+          type: number
+        meanMotionRevPerDay:
+          type: number
+      required: [line1, line2, epoch, incDeg, raanDeg, eccentricity, argPerigeeDeg, meanAnomalyDeg, meanMotionRevPerDay]
+
+    RpodMemberDetail:
+      allOf:
+        - $ref: "#/components/schemas/RpodMember"
+        - type: object
+          properties:
+            tle:
+              $ref: "#/components/schemas/RpodTle"
+              nullable: true
+
+    RpodEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        windowStart:
+          type: string
+        windowEnd:
+          type: string
+        tca:
+          type: string
+          description: Predicted time of closest approach (ISO)
+        minRangeKm:
+          type: number
+        relVelKmS:
+          type: number
+        memberCount:
+          type: integer
+        widenedScan:
+          type: boolean
+          description: True when the cluster hit the member cap and a widened neighborhood scan ran
+        firstDetectedAt:
+          type: string
+        updatedAt:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/RpodMember"
+      required: [id, status, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, updatedAt, members]
+
+    RpodEventList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RpodEvent"
+        total:
+          type: integer
+        page:
+          type: integer
+        pages:
+          type: integer
+      required: [data, total, page, pages]
+
+    RpodEventDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        windowStart:
+          type: string
+        windowEnd:
+          type: string
+        tca:
+          type: string
+        minRangeKm:
+          type: number
+        relVelKmS:
+          type: number
+        memberCount:
+          type: integer
+        widenedScan:
+          type: boolean
+        firstDetectedAt:
+          type: string
+        updatedAt:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/RpodMemberDetail"
+      required: [id, status, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, updatedAt, members]
+
+    RpodArchiveStatus:
+      type: object
+      properties:
+        totalRows:
+          type: integer
+        objects:
+          type: integer
+        newestEpoch:
+          type: string
+          nullable: true
+        oldestEpoch:
+          type: string
+          nullable: true
+        backfillCursor:
+          type: string
+          nullable: true
+          description: Oldest instant the backward-walking backfill has covered
+        recentWatermark:
+          type: string
+          nullable: true
+        backoffUntil:
+          type: string
+          nullable: true
+          description: Set when space-track errors have the workers standing down
+      required: [totalRows, objects]
+
+    RpodStatus:
+      type: object
+      properties:
+        archive:
+          $ref: "#/components/schemas/RpodArchiveStatus"
+        activeEvents:
+          type: integer
+        lastScanAt:
+          type: string
+          nullable: true
+        lastScanStatus:
+          type: string
+          nullable: true
+        lastScanEvents:
+          type: integer
+          nullable: true
+      required: [archive, activeEvents]
+
     ConstellationSeries:
       type: object
       properties:

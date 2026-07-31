@@ -525,3 +525,117 @@ export const GetSatcatFiltersResponse = zod.object({
 })
 
 
+/**
+ * Flagged rendezvous/proximity events, paginated and sortable; each event carries all involved spacecraft
+ * @summary List RPOD events
+ */
+export const getRpodEventsQueryPageDefault = 1;
+export const getRpodEventsQueryLimitDefault = 50;
+export const getRpodEventsQueryOrderDefault = `desc`;
+
+export const GetRpodEventsQueryParams = zod.object({
+  "page": zod.coerce.number().default(getRpodEventsQueryPageDefault),
+  "limit": zod.coerce.number().default(getRpodEventsQueryLimitDefault),
+  "status": zod.enum(['active', 'stale']).optional().describe('Filter by event status'),
+  "sort": zod.enum(['tca', 'minRangeKm', 'relVelKmS', 'memberCount']).optional().describe('Sort field (default tca)'),
+  "order": zod.enum(['asc', 'desc']).default(getRpodEventsQueryOrderDefault)
+})
+
+export const GetRpodEventsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.number(),
+  "status": zod.string(),
+  "windowStart": zod.string(),
+  "windowEnd": zod.string(),
+  "tca": zod.string().describe('Predicted time of closest approach (ISO)'),
+  "minRangeKm": zod.number(),
+  "relVelKmS": zod.number(),
+  "memberCount": zod.number(),
+  "widenedScan": zod.boolean().describe('True when the cluster hit the member cap and a widened neighborhood scan ran'),
+  "firstDetectedAt": zod.string(),
+  "updatedAt": zod.string(),
+  "members": zod.array(zod.object({
+  "norad": zod.number(),
+  "name": zod.string().nullish(),
+  "owner": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "objectClass": zod.string().nullish(),
+  "opOrbit": zod.string().nullish(),
+  "ldate": zod.string().nullish(),
+  "minRangeKm": zod.number().nullish().describe('Tightest pairwise range this member reached vs any other member (km)'),
+  "relVelKmS": zod.number().nullish()
+}))
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pages": zod.number()
+})
+
+
+/**
+ * Event with per-member catalog info and latest element sets for 3D plotting
+ * @summary RPOD event detail
+ */
+export const GetRpodEventParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetRpodEventResponse = zod.object({
+  "id": zod.number(),
+  "status": zod.string(),
+  "windowStart": zod.string(),
+  "windowEnd": zod.string(),
+  "tca": zod.string(),
+  "minRangeKm": zod.number(),
+  "relVelKmS": zod.number(),
+  "memberCount": zod.number(),
+  "widenedScan": zod.boolean(),
+  "firstDetectedAt": zod.string(),
+  "updatedAt": zod.string(),
+  "members": zod.array(zod.object({
+  "norad": zod.number(),
+  "name": zod.string().nullish(),
+  "owner": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "objectClass": zod.string().nullish(),
+  "opOrbit": zod.string().nullish(),
+  "ldate": zod.string().nullish(),
+  "minRangeKm": zod.number().nullish().describe('Tightest pairwise range this member reached vs any other member (km)'),
+  "relVelKmS": zod.number().nullish()
+}).and(zod.object({
+  "tle": zod.object({
+  "line1": zod.string(),
+  "line2": zod.string(),
+  "epoch": zod.string(),
+  "incDeg": zod.number(),
+  "raanDeg": zod.number(),
+  "eccentricity": zod.number(),
+  "argPerigeeDeg": zod.number(),
+  "meanAnomalyDeg": zod.number(),
+  "meanMotionRevPerDay": zod.number()
+}).nullish()
+})))
+})
+
+
+/**
+ * Archive row counts, backfill cursor position, recent-feed watermark, and last scan result
+ * @summary TLE archive and scan status
+ */
+export const GetRpodStatusResponse = zod.object({
+  "archive": zod.object({
+  "totalRows": zod.number(),
+  "objects": zod.number(),
+  "newestEpoch": zod.string().nullish(),
+  "oldestEpoch": zod.string().nullish(),
+  "backfillCursor": zod.string().nullish().describe('Oldest instant the backward-walking backfill has covered'),
+  "recentWatermark": zod.string().nullish(),
+  "backoffUntil": zod.string().nullish().describe('Set when space-track errors have the workers standing down')
+}),
+  "activeEvents": zod.number(),
+  "lastScanAt": zod.string().nullish(),
+  "lastScanStatus": zod.string().nullish(),
+  "lastScanEvents": zod.number().nullish()
+})
+
+

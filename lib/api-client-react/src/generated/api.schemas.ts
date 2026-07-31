@@ -5,6 +5,94 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface RpodMember {
+  norad: number;
+  name?: string | null;
+  owner?: string | null;
+  state?: string | null;
+  objectClass?: string | null;
+  opOrbit?: string | null;
+  ldate?: string | null;
+  /** Tightest pairwise range this member reached vs any other member (km) */
+  minRangeKm?: number | null;
+  relVelKmS?: number | null;
+}
+
+export interface RpodTle {
+  line1: string;
+  line2: string;
+  epoch: string;
+  incDeg: number;
+  raanDeg: number;
+  eccentricity: number;
+  argPerigeeDeg: number;
+  meanAnomalyDeg: number;
+  meanMotionRevPerDay: number;
+}
+
+export type RpodMemberDetail = RpodMember & ({
+  tle?: RpodTle | null;
+});
+
+export interface RpodEvent {
+  id: number;
+  status: string;
+  windowStart: string;
+  windowEnd: string;
+  /** Predicted time of closest approach (ISO) */
+  tca: string;
+  minRangeKm: number;
+  relVelKmS: number;
+  memberCount: number;
+  /** True when the cluster hit the member cap and a widened neighborhood scan ran */
+  widenedScan: boolean;
+  firstDetectedAt: string;
+  updatedAt: string;
+  members: RpodMember[];
+}
+
+export interface RpodEventList {
+  data: RpodEvent[];
+  total: number;
+  page: number;
+  pages: number;
+}
+
+export interface RpodEventDetail {
+  id: number;
+  status: string;
+  windowStart: string;
+  windowEnd: string;
+  tca: string;
+  minRangeKm: number;
+  relVelKmS: number;
+  memberCount: number;
+  widenedScan: boolean;
+  firstDetectedAt: string;
+  updatedAt: string;
+  members: RpodMemberDetail[];
+}
+
+export interface RpodArchiveStatus {
+  totalRows: number;
+  objects: number;
+  newestEpoch?: string | null;
+  oldestEpoch?: string | null;
+  /** Oldest instant the backward-walking backfill has covered */
+  backfillCursor?: string | null;
+  recentWatermark?: string | null;
+  /** Set when space-track errors have the workers standing down */
+  backoffUntil?: string | null;
+}
+
+export interface RpodStatus {
+  archive: RpodArchiveStatus;
+  activeEvents: number;
+  lastScanAt?: string | null;
+  lastScanStatus?: string | null;
+  lastScanEvents?: number | null;
+}
+
 export interface ConstellationSeries {
   name: string;
   /** Active satellites at the end of each quarter (aligned with ConstellationAnalytics.quarters) */
@@ -683,4 +771,44 @@ export type GetSatcatSpacexBySiteMonthlyParams = {
  */
 year?: string;
 };
+
+export type GetRpodEventsParams = {
+page?: number;
+limit?: number;
+/**
+ * Filter by event status
+ */
+status?: GetRpodEventsStatus;
+/**
+ * Sort field (default tca)
+ */
+sort?: GetRpodEventsSort;
+order?: GetRpodEventsOrder;
+};
+
+export type GetRpodEventsStatus = typeof GetRpodEventsStatus[keyof typeof GetRpodEventsStatus];
+
+
+export const GetRpodEventsStatus = {
+  active: 'active',
+  stale: 'stale',
+} as const;
+
+export type GetRpodEventsSort = typeof GetRpodEventsSort[keyof typeof GetRpodEventsSort];
+
+
+export const GetRpodEventsSort = {
+  tca: 'tca',
+  minRangeKm: 'minRangeKm',
+  relVelKmS: 'relVelKmS',
+  memberCount: 'memberCount',
+} as const;
+
+export type GetRpodEventsOrder = typeof GetRpodEventsOrder[keyof typeof GetRpodEventsOrder];
+
+
+export const GetRpodEventsOrder = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
 

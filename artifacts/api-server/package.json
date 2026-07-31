@@ -12,7 +12,8 @@
     "test:passes": "tsx ./src/tests/pass-accuracy.test.ts",
     "test:upsert": "tsx ./src/tests/upsert-precedence.test.ts",
     "test:dedupe": "tsx ./src/tests/dedupe-reconcile.test.ts",
-    "test:gunter": "tsx ./src/tests/gunter-parser.test.ts"
+    "test:gunter": "tsx ./src/tests/gunter-parser.test.ts",
+    "test:rpod": "tsx ./src/tests/rpod-screen.test.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",
