@@ -43,6 +43,7 @@ router.get("/rpod/events", async (req, res): Promise<void> => {
   const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10) || 1);
   const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit ?? "50"), 10) || 50));
   const status = req.query.status ? String(req.query.status) : undefined;
+  const kind = req.query.kind ? String(req.query.kind) : undefined;
   const sortField = String(req.query.sort ?? "tca");
   const order = String(req.query.order ?? "desc") === "asc" ? asc : desc;
 
@@ -52,9 +53,10 @@ router.get("/rpod/events", async (req, res): Promise<void> => {
     sortField === "memberCount" ? rpodEvents.memberCount :
     rpodEvents.tca;
 
-  const where: SQL | undefined = status && (status === "active" || status === "stale")
-    ? eq(rpodEvents.status, status)
-    : undefined;
+  const conditions: SQL[] = [];
+  if (status === "active" || status === "stale") conditions.push(eq(rpodEvents.status, status));
+  if (kind === "conjunction" || kind === "coplanar") conditions.push(eq(rpodEvents.kind, kind));
+  const where: SQL | undefined = conditions.length ? and(...conditions) : undefined;
 
   const [rows, [{ total }]] = await Promise.all([
     db.select().from(rpodEvents).where(where).orderBy(order(sortCol), desc(rpodEvents.id))
@@ -89,6 +91,7 @@ router.get("/rpod/events", async (req, res): Promise<void> => {
     data: rows.map((r) => ({
       id: r.id,
       status: r.status,
+      kind: r.kind,
       windowStart: r.windowStart.toISOString(),
       windowEnd: r.windowEnd.toISOString(),
       tca: r.tca.toISOString(),
@@ -164,6 +167,7 @@ router.get("/rpod/events/:id", async (req, res): Promise<void> => {
   res.json({
     id: row.id,
     status: row.status,
+    kind: row.kind,
     windowStart: row.windowStart.toISOString(),
     windowEnd: row.windowEnd.toISOString(),
     tca: row.tca.toISOString(),

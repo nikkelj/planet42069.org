@@ -167,6 +167,12 @@ export const rpodEvents = pgTable(
   {
     id: serial("id").primaryKey(),
     status: text("status").notNull().default("active"), // "active" | "stale"
+    /**
+     * "conjunction": a discrete predicted close approach (bubble closes).
+     * "coplanar": long-duration co-aligned shadowing — same plane and shell,
+     * slowly drifting in phase; these encounters last weeks or months.
+     */
+    kind: text("kind").notNull().default("conjunction"),
     windowStart: timestamp("window_start").notNull(),
     windowEnd: timestamp("window_end").notNull(),
     tca: timestamp("tca").notNull(), // time of (predicted) closest approach

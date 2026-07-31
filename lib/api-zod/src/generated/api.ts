@@ -537,6 +537,7 @@ export const GetRpodEventsQueryParams = zod.object({
   "page": zod.coerce.number().default(getRpodEventsQueryPageDefault),
   "limit": zod.coerce.number().default(getRpodEventsQueryLimitDefault),
   "status": zod.enum(['active', 'stale']).optional().describe('Filter by event status'),
+  "kind": zod.enum(['conjunction', 'coplanar']).optional().describe('Filter by event kind (discrete conjunction vs long-duration coplanar shadowing)'),
   "sort": zod.enum(['tca', 'minRangeKm', 'relVelKmS', 'memberCount']).optional().describe('Sort field (default tca)'),
   "order": zod.enum(['asc', 'desc']).default(getRpodEventsQueryOrderDefault)
 })
@@ -545,6 +546,7 @@ export const GetRpodEventsResponse = zod.object({
   "data": zod.array(zod.object({
   "id": zod.number(),
   "status": zod.string(),
+  "kind": zod.string().describe('conjunction (discrete close approach) or coplanar (long-duration co-aligned shadowing)'),
   "windowStart": zod.string(),
   "windowEnd": zod.string(),
   "tca": zod.string().describe('Predicted time of closest approach (ISO)'),
@@ -583,6 +585,7 @@ export const GetRpodEventParams = zod.object({
 export const GetRpodEventResponse = zod.object({
   "id": zod.number(),
   "status": zod.string(),
+  "kind": zod.string(),
   "windowStart": zod.string(),
   "windowEnd": zod.string(),
   "tca": zod.string(),

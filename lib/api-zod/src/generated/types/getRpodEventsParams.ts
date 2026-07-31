@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { GetRpodEventsKind } from './getRpodEventsKind';
 import type { GetRpodEventsOrder } from './getRpodEventsOrder';
 import type { GetRpodEventsSort } from './getRpodEventsSort';
 import type { GetRpodEventsStatus } from './getRpodEventsStatus';
@@ -16,6 +17,10 @@ limit?: number;
  * Filter by event status
  */
 status?: GetRpodEventsStatus;
+/**
+ * Filter by event kind (discrete conjunction vs long-duration coplanar shadowing)
+ */
+kind?: GetRpodEventsKind;
 /**
  * Sort field (default tca)
  */

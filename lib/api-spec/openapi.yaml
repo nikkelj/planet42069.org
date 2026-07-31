@@ -434,6 +434,12 @@ paths:
             type: string
             enum: [active, stale]
           description: Filter by event status
+        - name: kind
+          in: query
+          schema:
+            type: string
+            enum: [conjunction, coplanar]
+          description: Filter by event kind (discrete conjunction vs long-duration coplanar shadowing)
         - name: sort
           in: query
           schema:
@@ -563,6 +569,9 @@ components:
           type: integer
         status:
           type: string
+        kind:
+          type: string
+          description: conjunction (discrete close approach) or coplanar (long-duration co-aligned shadowing)
         windowStart:
           type: string
         windowEnd:
@@ -587,7 +596,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RpodMember"
-      required: [id, status, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, updatedAt, members]
+      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, updatedAt, members]
 
     RpodEventList:
       type: object
@@ -611,6 +620,8 @@ components:
           type: integer
         status:
           type: string
+        kind:
+          type: string
         windowStart:
           type: string
         windowEnd:
@@ -633,7 +644,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RpodMemberDetail"
-      required: [id, status, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, updatedAt, members]
+      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, updatedAt, members]
 
     RpodArchiveStatus:
       type: object

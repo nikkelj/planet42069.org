@@ -10,8 +10,8 @@
  * Run with: pnpm --filter @workspace/api-server run test:rpod
  */
 import {
-  screenCandidatePairs, minRaanDiffDeg, raanRateDegPerDay, closeApproach, clusterPairs,
-  DEFAULT_SCREEN, type ScreenElset, type FlaggedPair,
+  screenCandidatePairs, screenCoAlignedPairs, minRaanDiffDeg, minPhaseDiffDeg, raanRateDegPerDay, closeApproach, clusterPairs,
+  DEFAULT_SCREEN, DEFAULT_COALIGNED, type ScreenElset, type FlaggedPair,
 } from "../lib/rpod/screen";
 
 let failures = 0;
@@ -137,6 +137,60 @@ console.log("Stage 3: clustering");
   // ...but transitive chains within the window still merge.
   const chain = clusterPairs([mk(20, 21, t0), mk(21, 22, t0 + 2 * 3600_000), mk(22, 23, t0 + 4 * 3600_000)]);
   check("in-window transitive chain merges", chain.length === 1 && chain[0].members.length === 4, `got ${chain.length}`);
+}
+
+console.log("Co-aligned (coplanar shadowing) screen");
+{
+  // Calibration case: real elsets of a known long-running shadowing demo
+  // (Jackal-0004 #69012 vs VICTUS HAZE Puma #69646, 2026-07-31):
+  // Δinc 0.073°, ΔRAAN 0.061°, Δa 5.4 km, in-track ~175 km — never inside
+  // the 30 km conjunction bubble, but must surface as co-aligned.
+  const jackal: ScreenElset = {
+    norad: 69012, epochMs: Date.parse("2026-07-31T11:51:02Z"),
+    line1: "1 69012U 26100AJ  26212.49377417  .00003444  00000-0  15828-3 0  9994",
+    line2: "2 69012  97.4587 109.7619 0012642  35.5985 324.6091 15.20980141 13542",
+    incDeg: 97.4587, raanDeg: 109.7619, eccentricity: 0.0012642, meanMotionRevPerDay: 15.20980141,
+  };
+  const puma: ScreenElset = {
+    norad: 69646, epochMs: Date.parse("2026-07-31T11:50:50Z"),
+    line1: "1 69646U 26142A   26212.49363583 -.00000012  00000-0  24455-5 0  9999",
+    line2: "2 69646  97.3853 109.7007 0004605 189.3400 170.7752 15.22771897  6400",
+    incDeg: 97.3853, raanDeg: 109.7007, eccentricity: 0.0004605, meanMotionRevPerDay: 15.22771897,
+  };
+  // A same-band sun-sync object in a different plane (RAAN 5° away).
+  const other = makeElset({ norad: 900, incDeg: 97.42, raanDeg: 114.8, mm: 15.21 });
+  // Same plane but a shell far below (Δa ~ 90 km via mean motion).
+  const lowShell = makeElset({ norad: 901, incDeg: 97.44, raanDeg: 109.75, mm: 15.5 });
+  // Same plane & shell as Jackal, but on the far side of the orbit
+  // (phase 180° off, same mean motion → never catches up).
+  const farPhase: ScreenElset = {
+    ...jackal, norad: 902,
+    line2: "2 00902  97.4587 109.7619 0012642  35.5985 144.6091 15.20980141    13",
+  };
+
+  const now = Date.parse("2026-07-31T12:00:00Z");
+  const co = screenCoAlignedPairs([jackal, puma, other, lowShell, farPhase], DEFAULT_COALIGNED, now);
+  const keys = co.map((p) => [p.a.norad, p.b.norad].sort().join(":"));
+  const norads = new Set(co.flatMap((p) => [p.a.norad, p.b.norad]));
+  check("known shadowing pair surfaces", keys.includes("69012:69646"), keys.join(",") || "none");
+  check("different plane excluded", !norads.has(900));
+  check("different shell excluded", !norads.has(901));
+  check("far-side phase excluded", !norads.has(902));
+
+  // Regression: large cumulative phase drift (>360° over the window) must not
+  // be mistaken for a zero-crossing — a fast-lapping object sweeps past, it
+  // does not shadow.
+  const lapping: ScreenElset = { ...jackal, norad: 903, meanMotionRevPerDay: jackal.meanMotionRevPerDay + 1.2 };
+  const dLap = minPhaseDiffDeg(farPhase, lapping, now, DEFAULT_COALIGNED.windowMs);
+  check("fast-lapping pair keeps its phase separation", dLap > DEFAULT_COALIGNED.maxPhaseDiffDeg, `got ${dLap.toFixed(2)}`);
+
+  // And SGP4 differencing over 48h stays under the loose coplanar caps.
+  const ca = closeApproach(jackal, puma, Date.parse("2026-07-31T12:00:00Z"), DEFAULT_SCREEN.windowMs);
+  check("shadowing pair propagates", ca != null);
+  if (ca) {
+    check("in-track range under coplanar cap", ca.minRangeKm < 250, `got ${ca.minRangeKm.toFixed(1)} km`);
+    check("slow drift under coplanar rel-vel cap", ca.relVelKmS < 0.6, `got ${ca.relVelKmS.toFixed(3)} km/s`);
+  }
 }
 
 if (failures > 0) {

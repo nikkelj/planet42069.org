@@ -47,6 +47,43 @@ export const DEFAULT_SCREEN: ScreenOptions = {
 export const RPOD_MAX_RANGE_KM = 30;
 export const RPOD_MAX_RELVEL_KM_S = 1.5;
 
+/**
+ * Co-aligned (coplanar shadowing) screen: objects sharing a plane AND a
+ * radial shell, drifting slowly in phase. These encounters last weeks or
+ * months and the 30 km bubble may close only rarely — so they are flagged
+ * on geometry, with a loose range/velocity sanity cap applied by the caller.
+ *
+ * Calibrated on a known long-running shadowing demo (Δinc 0.073°,
+ * ΔRAAN 0.061°, Δa 5.4 km, in-track ~175 km) and then widened a little.
+ */
+export interface CoAlignedOptions {
+  maxIncDiffDeg: number;
+  maxRaanDiffDeg: number;
+  /** Extra margin (km) added to each object's radial shell [perigee, apogee]. */
+  radialMarginKm: number;
+  /**
+   * Max along-track phase separation (deg of mean argument of latitude) at
+   * the closest point inside the window. This is THE discriminator: a
+   * shadower rides a few hundred km ahead/behind, while random co-planar
+   * catalog objects are spread around the whole orbit. 6° ≈ 720 km in LEO.
+   */
+  maxPhaseDiffDeg: number;
+  /** Window (ms) over which the phase gate looks for the minimum. */
+  windowMs: number;
+}
+
+export const DEFAULT_COALIGNED: CoAlignedOptions = {
+  maxIncDiffDeg: 0.15,
+  maxRaanDiffDeg: 0.15,
+  radialMarginKm: 3,
+  maxPhaseDiffDeg: 6,
+  windowMs: 48 * 3600_000,
+};
+
+/** Loose caps for co-aligned pairs (applied after SGP4 differencing). */
+export const COALIGNED_MAX_RANGE_KM = 250;
+export const COALIGNED_MAX_RELVEL_KM_S = 0.6;
+
 const EARTH_R_KM = 6378.137;
 const J2 = 1.08262668e-3;
 const MU = 398600.4418; // km^3/s^2
@@ -118,6 +155,86 @@ export function screenCandidatePairs(elsets: ScreenElset[], opts: ScreenOptions 
         if (Math.abs(a.incDeg - b.incDeg) > opts.maxIncDiffDeg) continue;
         if (Math.abs(a.meanMotionRevPerDay - b.meanMotionRevPerDay) > opts.maxMeanMotionDiff) continue;
         if (minRaanDiffDeg(a, b, opts.windowMs) > opts.maxRaanDiffDeg) continue;
+        seen.add(key);
+        pairs.push({ a, b });
+      }
+    }
+  }
+  return pairs;
+}
+
+/** Semi-major axis (km) from mean motion (rev/day). */
+export function semiMajorAxisKm(meanMotionRevPerDay: number): number {
+  const n = (meanMotionRevPerDay * 2 * Math.PI) / 86400; // rad/s
+  return Math.cbrt(MU / (n * n));
+}
+
+/** Mean argument of latitude (argp + mean anomaly, deg) parsed from TLE line 2. */
+function meanArgLatDeg(e: ScreenElset): number | null {
+  const argp = parseFloat(e.line2.slice(34, 42));
+  const ma = parseFloat(e.line2.slice(43, 51));
+  if (!Number.isFinite(argp) || !Number.isFinite(ma)) return null;
+  return (argp + ma) % 360;
+}
+
+/**
+ * Minimum along-track phase separation (deg) between two objects at any
+ * point in [now, now+windowMs], propagating each mean argument of latitude
+ * at its own mean motion (linear drift model, J2 argp precession cancels
+ * for near-identical planes).
+ */
+export function minPhaseDiffDeg(a: ScreenElset, b: ScreenElset, nowMs: number, windowMs: number): number {
+  const ua0 = meanArgLatDeg(a);
+  const ub0 = meanArgLatDeg(b);
+  if (ua0 == null || ub0 == null) return Infinity;
+  const degPerMs = (mm: number) => (mm * 360) / 86400_000;
+  const ua = ua0 + degPerMs(a.meanMotionRevPerDay) * (nowMs - a.epochMs);
+  const ub = ub0 + degPerMs(b.meanMotionRevPerDay) * (nowMs - b.epochMs);
+  const rate = degPerMs(a.meanMotionRevPerDay) - degPerMs(b.meanMotionRevPerDay); // deg/ms
+  const d0 = ((ua - ub) % 360 + 540) % 360 - 180; // signed, [-180, 180)
+  // Signed drift over the window; if it crosses zero, the min is ~0.
+  const d1 = d0 + rate * windowMs;
+  if (Math.sign(d0) !== Math.sign(d1) && Math.abs(rate * windowMs) < 360) return 0;
+  return Math.min(Math.abs(d0), Math.abs(((d1 % 360) + 540) % 360 - 180));
+}
+
+/**
+ * Cheap co-aligned screen: Δinc and current ΔRAAN within tight plane bounds,
+ * radial shells [a(1-e), a(1+e)] ± margin overlapping, AND along-track phase
+ * within a few degrees at some point in the window. No convergence
+ * logic — shadowers are already co-planar, not drifting in.
+ */
+export function screenCoAlignedPairs(elsets: ScreenElset[], opts: CoAlignedOptions = DEFAULT_COALIGNED, nowMs: number = Date.now()): CandidatePair[] {
+  const bandSize = Math.max(opts.maxIncDiffDeg, 0.1);
+  const bands = new Map<number, ScreenElset[]>();
+  for (const e of elsets) {
+    if (!Number.isFinite(e.meanMotionRevPerDay) || e.meanMotionRevPerDay < 0.5 || e.meanMotionRevPerDay > 20) continue;
+    const band = Math.floor(e.incDeg / bandSize);
+    for (const bIdx of [band, band + 1]) {
+      const arr = bands.get(bIdx) ?? [];
+      arr.push(e);
+      bands.set(bIdx, arr);
+    }
+  }
+  const pairs: CandidatePair[] = [];
+  const seen = new Set<string>();
+  for (const arr of bands.values()) {
+    for (let i = 0; i < arr.length; i++) {
+      for (let j = i + 1; j < arr.length; j++) {
+        const a = arr[i], b = arr[j];
+        if (a.norad === b.norad) continue;
+        const key = a.norad < b.norad ? `${a.norad}:${b.norad}` : `${b.norad}:${a.norad}`;
+        if (seen.has(key)) continue;
+        if (Math.abs(a.incDeg - b.incDeg) > opts.maxIncDiffDeg) continue;
+        if (angDiffDeg(a.raanDeg, b.raanDeg) > opts.maxRaanDiffDeg) continue;
+        const aa = semiMajorAxisKm(a.meanMotionRevPerDay);
+        const ab = semiMajorAxisKm(b.meanMotionRevPerDay);
+        const loA = aa * (1 - a.eccentricity) - opts.radialMarginKm;
+        const hiA = aa * (1 + a.eccentricity) + opts.radialMarginKm;
+        const loB = ab * (1 - b.eccentricity) - opts.radialMarginKm;
+        const hiB = ab * (1 + b.eccentricity) + opts.radialMarginKm;
+        if (loA > hiB || loB > hiA) continue;
+        if (minPhaseDiffDeg(a, b, nowMs, opts.windowMs) > opts.maxPhaseDiffDeg) continue;
         seen.add(key);
         pairs.push({ a, b });
       }

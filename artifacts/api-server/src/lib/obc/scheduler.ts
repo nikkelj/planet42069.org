@@ -1,7 +1,7 @@
 import { logger } from "../logger";
 import { runObcSync } from "./sync";
 import { runGunterSync } from "./gunter";
-import { getFreshness } from "./store";
+import { getFreshness, getSatcatFromStore } from "./store";
 import { runRecentElsetWatch, runTleBackfill } from "./tleArchive";
 import { runRpodScan } from "../rpod/scan";
 
@@ -46,6 +46,10 @@ async function syncIfStale(): Promise<void> {
 /** Boot-time staleness check + hourly re-check. Safe for autoscale: also
  *  fires on cold boot, so long-idle instances catch up immediately. */
 export function startObcScheduler(): void {
+  // Warm the in-memory catalog store immediately so the first API hits
+  // (e.g. the RPOD page's events list) don't pay the ~1s cold-load cost.
+  setTimeout(() => { void getSatcatFromStore().catch(() => undefined); }, 500);
+
   setTimeout(() => { void syncIfStale(); }, 2000);
   setInterval(() => { void syncIfStale(); }, CHECK_INTERVAL_MS).unref();
 

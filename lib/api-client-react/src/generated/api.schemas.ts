@@ -37,6 +37,8 @@ export type RpodMemberDetail = RpodMember & ({
 export interface RpodEvent {
   id: number;
   status: string;
+  /** conjunction (discrete close approach) or coplanar (long-duration co-aligned shadowing) */
+  kind: string;
   windowStart: string;
   windowEnd: string;
   /** Predicted time of closest approach (ISO) */
@@ -61,6 +63,7 @@ export interface RpodEventList {
 export interface RpodEventDetail {
   id: number;
   status: string;
+  kind: string;
   windowStart: string;
   windowEnd: string;
   tca: string;
@@ -780,6 +783,10 @@ limit?: number;
  */
 status?: GetRpodEventsStatus;
 /**
+ * Filter by event kind (discrete conjunction vs long-duration coplanar shadowing)
+ */
+kind?: GetRpodEventsKind;
+/**
  * Sort field (default tca)
  */
 sort?: GetRpodEventsSort;
@@ -792,6 +799,14 @@ export type GetRpodEventsStatus = typeof GetRpodEventsStatus[keyof typeof GetRpo
 export const GetRpodEventsStatus = {
   active: 'active',
   stale: 'stale',
+} as const;
+
+export type GetRpodEventsKind = typeof GetRpodEventsKind[keyof typeof GetRpodEventsKind];
+
+
+export const GetRpodEventsKind = {
+  conjunction: 'conjunction',
+  coplanar: 'coplanar',
 } as const;
 
 export type GetRpodEventsSort = typeof GetRpodEventsSort[keyof typeof GetRpodEventsSort];

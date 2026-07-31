@@ -5,8 +5,9 @@ import { logger } from "../logger";
 import { getLatestElsets, withAdvisoryLock, LOCK_RPOD_SCAN, type LatestElset } from "../obc/tleArchive";
 import { getSatcatFromStore } from "../obc/store";
 import {
-  screenCandidatePairs, closeApproach, clusterPairs,
-  DEFAULT_SCREEN, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S,
+  screenCandidatePairs, screenCoAlignedPairs, closeApproach, clusterPairs,
+  DEFAULT_SCREEN, DEFAULT_COALIGNED, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S,
+  COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, semiMajorAxisKm, minPhaseDiffDeg,
   type ScreenElset, type FlaggedPair, type ScreenOptions,
 } from "./screen";
 
@@ -25,6 +26,10 @@ import {
 const ELSET_MAX_AGE_MS = 3 * 86400_000;
 const DEPLOY_QUIET_DAYS = 60;
 const MAX_SGP4_PAIRS = 1200;
+/** Separate SGP4 budget for the co-aligned (coplanar shadowing) screen. */
+const MAX_COALIGNED_SGP4_PAIRS = 1200;
+/** Coplanar events merge on a wider window — they evolve over days, not hours. */
+const COALIGNED_MERGE_WINDOW_MS = 24 * 3600_000;
 const MEMBER_CAP = 5;
 /** Events whose window ended this long ago get marked stale. */
 const STALE_AFTER_MS = 3 * 86400_000;
@@ -40,6 +45,53 @@ export function runRpodScan(): Promise<void> {
 interface CatalogMeta {
   launchTag: string | null;
   ldate: string | null;
+  name: string | null;
+  objectClass: string | null;
+}
+
+/**
+ * Mega-constellation families whose sibling pairs are routine station-keeping
+ * neighbors, not proximity operations. Deliberately NOT a generic name-prefix
+ * rule: catch-all names like "Kosmos-NNNN" cover genuinely interesting
+ * inspector pairs and must never be filtered.
+ */
+const CONSTELLATION_PATTERNS: [string, RegExp][] = [
+  ["starlink", /^starlink\b/],
+  ["oneweb", /^oneweb\b/],
+  ["iridium", /^iridium\b/],
+  ["globalstar", /^globalstar\b/],
+  ["orbcomm", /^orbcomm\b/],
+  ["flock", /^flock\b/],
+  ["lemur", /^lemur\b/],
+  ["spacebee", /^spacebee\b/],
+  ["kuiper", /^kuiper\b/],
+  ["qianfan", /^(qianfan|g60)\b/],
+  ["guowang", /^(guowang|gw[- ])/],
+];
+
+function constellationTag(name: string | null | undefined): string | null {
+  if (!name) return null;
+  const n = name.trim().toLowerCase();
+  for (const [tag, re] of CONSTELLATION_PATTERNS) if (re.test(n)) return tag;
+  return null;
+}
+
+/** Both objects belong to the same mega-constellation family. */
+function isSameConstellation(a: number, b: number, meta: Map<number, CatalogMeta>): boolean {
+  const ta = constellationTag(meta.get(a)?.name);
+  return ta != null && ta === constellationTag(meta.get(b)?.name);
+}
+
+/** Both objects are active payloads (shadowing needs two spacecraft, not debris/stages). */
+function isPayloadPair(a: number, b: number, meta: Map<number, CatalogMeta>): boolean {
+  return meta.get(a)?.objectClass === "P" && meta.get(b)?.objectClass === "P";
+}
+
+/** Same launch, any age — co-launched formations are routine, not RPOD. */
+function isSameLaunch(a: number, b: number, meta: Map<number, CatalogMeta>): boolean {
+  const la = meta.get(a)?.launchTag;
+  const lb = meta.get(b)?.launchTag;
+  return la != null && lb != null && la === lb;
 }
 
 async function loadCatalogMeta(): Promise<Map<number, CatalogMeta>> {
@@ -47,7 +99,7 @@ async function loadCatalogMeta(): Promise<Map<number, CatalogMeta>> {
   try {
     const entries = await getSatcatFromStore();
     for (const e of entries) {
-      if (e.satno != null) map.set(e.satno, { launchTag: e.launchTag ?? null, ldate: e.ldate });
+      if (e.satno != null) map.set(e.satno, { launchTag: e.launchTag ?? null, ldate: e.ldate, name: e.name ?? e.plName ?? null, objectClass: e.objectClass ?? null });
     }
   } catch (err) {
     logger.warn({ err }, "rpod-scan: catalog meta unavailable, proceeding without launch filtering");
@@ -66,6 +118,10 @@ function toScreenElset(e: LatestElset): ScreenElset {
     eccentricity: e.eccentricity,
     meanMotionRevPerDay: e.meanMotionRevPerDay,
   };
+}
+
+function pairKey(a: number, b: number): string {
+  return a < b ? `${a}:${b}` : `${b}:${a}`;
 }
 
 function isSameFreshLaunch(a: number, b: number, meta: Map<number, CatalogMeta>, nowMs: number): boolean {
@@ -113,6 +169,39 @@ async function doScan(): Promise<void> {
       }
     }
 
+    // Co-aligned (coplanar shadowing) screen: same plane + same radial shell,
+    // slowly drifting in phase. The 30 km bubble rarely closes for these, so
+    // they're flagged on geometry with loose range/velocity caps instead.
+    const flaggedKeys = new Set(flagged.map((f) => pairKey(f.a, f.b)));
+    let coCandidates = screenCoAlignedPairs(elsets, DEFAULT_COALIGNED, nowMs)
+      .filter((p) => isPayloadPair(p.a.norad, p.b.norad, meta))
+      .filter((p) => !isSameLaunch(p.a.norad, p.b.norad, meta))
+      .filter((p) => !isSameConstellation(p.a.norad, p.b.norad, meta))
+      .filter((p) => !flaggedKeys.has(pairKey(p.a.norad, p.b.norad)));
+    if (coCandidates.length > MAX_COALIGNED_SGP4_PAIRS) {
+      // Tightest co-alignment first: plane deltas + shell separation + in-track phase.
+      coCandidates = coCandidates
+        .map((p) => ({
+          p,
+          score:
+            Math.abs(p.a.incDeg - p.b.incDeg) +
+            Math.abs(((p.a.raanDeg - p.b.raanDeg + 540) % 360) - 180) +
+            Math.abs(semiMajorAxisKm(p.a.meanMotionRevPerDay) - semiMajorAxisKm(p.b.meanMotionRevPerDay)) / 10 +
+            minPhaseDiffDeg(p.a, p.b, nowMs, DEFAULT_COALIGNED.windowMs) / DEFAULT_COALIGNED.maxPhaseDiffDeg,
+        }))
+        .sort((x, y) => x.score - y.score)
+        .slice(0, MAX_COALIGNED_SGP4_PAIRS)
+        .map((x) => x.p);
+    }
+    const coFlagged: FlaggedPair[] = [];
+    for (const { a, b } of coCandidates) {
+      const ca = closeApproach(a, b, nowMs, DEFAULT_SCREEN.windowMs);
+      if (!ca) continue;
+      if (ca.minRangeKm <= COALIGNED_MAX_RANGE_KM && ca.relVelKmS <= COALIGNED_MAX_RELVEL_KM_S) {
+        coFlagged.push({ a: a.norad, b: b.norad, minRangeKm: ca.minRangeKm, relVelKmS: ca.relVelKmS, tcaMs: ca.tcaMs });
+      }
+    }
+
     // Stage 3 + widened scan for capped clusters
     let events = clusterPairs(flagged, MEMBER_CAP);
     for (const ev of events) {
@@ -146,11 +235,21 @@ async function doScan(): Promise<void> {
       break;
     }
 
-    await persistEvents(events);
+    const coEvents = clusterPairs(coFlagged, MEMBER_CAP, COALIGNED_MERGE_WINDOW_MS);
+
+    await persistEvents(events, "conjunction");
+    await persistEvents(coEvents, "coplanar");
     await markStaleEvents();
-    await logScanRow("success", started, events.length);
+    await logScanRow("success", started, events.length + coEvents.length);
     logger.info(
-      { elsets: elsets.length, candidates: candidates.length, flaggedPairs: flagged.length, events: events.length },
+      {
+        elsets: elsets.length,
+        candidates: candidates.length,
+        flaggedPairs: flagged.length,
+        events: events.length,
+        coCandidates: coCandidates.length,
+        coplanarEvents: coEvents.length,
+      },
       "rpod-scan: complete",
     );
   } catch (err) {
@@ -168,13 +267,14 @@ async function logScanRow(status: "success" | "error", startedAt: Date, rowCount
 }
 
 /**
- * Upsert: an incoming event matches an existing ACTIVE event when they share
- * ≥2 members and their TCAs are within 24h — then update in place (ranges
- * and membership evolve as fresher elsets arrive). Otherwise insert.
+ * Upsert: an incoming event matches an existing ACTIVE event of the same
+ * kind when they share ≥2 members — for conjunctions, additionally the TCAs
+ * must be within 24h (discrete approaches); coplanar shadowing events match
+ * on membership alone since they persist for weeks with a moving "TCA".
  */
-async function persistEvents(events: ReturnType<typeof clusterPairs>): Promise<void> {
+async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "conjunction" | "coplanar"): Promise<void> {
   if (events.length === 0) return;
-  const active = await db.select().from(rpodEvents).where(eq(rpodEvents.status, "active"));
+  const active = await db.select().from(rpodEvents).where(and(eq(rpodEvents.status, "active"), eq(rpodEvents.kind, kind)));
   const activeMembers = active.length
     ? await db.select().from(rpodEventMembers).where(inArray(rpodEventMembers.eventId, active.map((e) => e.id)))
     : [];
@@ -192,10 +292,12 @@ async function persistEvents(events: ReturnType<typeof clusterPairs>): Promise<v
       if (!exSet) return false;
       let shared = 0;
       for (const n of evSet) if (exSet.has(n)) shared++;
-      return shared >= 2 && Math.abs(new Date(ex.tca).getTime() - ev.tcaMs) < 24 * 3600_000;
+      if (shared < 2) return false;
+      return kind === "coplanar" || Math.abs(new Date(ex.tca).getTime() - ev.tcaMs) < 24 * 3600_000;
     });
 
     const base = {
+      kind,
       windowStart: new Date(ev.windowStartMs),
       windowEnd: new Date(ev.windowEndMs),
       tca: new Date(ev.tcaMs),

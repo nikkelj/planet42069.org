@@ -92,12 +92,14 @@ function EventDetail({ eventId }: { eventId: number }) {
 export default function Rpod() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [kindFilter, setKindFilter] = useState("all");
   const [expanded, setExpanded] = useState<number | null>(null);
 
   const queryParams = {
     page,
     limit: 50,
     status: statusFilter !== "all" ? (statusFilter as "active" | "stale") : undefined,
+    kind: kindFilter !== "all" ? (kindFilter as "conjunction" | "coplanar") : undefined,
   };
   const { data, isLoading, isError } = useGetRpodEvents(queryParams, {
     query: { queryKey: getGetRpodEventsQueryKey(queryParams), refetchInterval: 5 * 60_000 },
@@ -146,20 +148,34 @@ export default function Rpod() {
 
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="font-mono text-[11px] text-muted-foreground uppercase tracking-widest max-w-3xl leading-relaxed normal-case">
-          Pairs of spacecraft on matching orbital planes, SGP4-differenced down to predicted approaches
-          within 30 km at under 1.5 km/s relative velocity. Formation flying, inspections, dockings —
-          all of it unlicensed, none of it with a permit on file.
+          Two kinds of cases: CONJUNCTIONS — discrete predicted approaches within 30 km at under
+          1.5 km/s — and SHADOWING — payload pairs from different launches co-aligned in plane
+          (ΔRAAN &amp; inclination ≤ 0.15°), radial shell, and along-track phase, trailing each other
+          for weeks or months. Formation flying, inspections, dockings — all of it unlicensed,
+          none of it with a permit on file.
         </p>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); setExpanded(null); }}>
-          <SelectTrigger className="w-[150px] rounded-none border-border bg-background uppercase text-xs">
-            <SelectValue placeholder="STATUS" />
-          </SelectTrigger>
-          <SelectContent className="rounded-none">
-            <SelectItem value="all">ALL CASES</SelectItem>
-            <SelectItem value="active">ACTIVE</SelectItem>
-            <SelectItem value="stale">ARCHIVED</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={kindFilter} onValueChange={(v) => { setKindFilter(v); setPage(1); setExpanded(null); }}>
+            <SelectTrigger className="w-[160px] rounded-none border-border bg-background uppercase text-xs">
+              <SelectValue placeholder="KIND" />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="all">ALL KINDS</SelectItem>
+              <SelectItem value="conjunction">CONJUNCTION</SelectItem>
+              <SelectItem value="coplanar">SHADOWING</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); setExpanded(null); }}>
+            <SelectTrigger className="w-[150px] rounded-none border-border bg-background uppercase text-xs">
+              <SelectValue placeholder="STATUS" />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="all">ALL CASES</SelectItem>
+              <SelectItem value="active">ACTIVE</SelectItem>
+              <SelectItem value="stale">ARCHIVED</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="border-2 border-border bg-card overflow-hidden relative">
@@ -189,6 +205,7 @@ export default function Rpod() {
                   <TableHead />
                   <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">Case</TableHead>
                   <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">Status</TableHead>
+                  <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">Kind</TableHead>
                   <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">TCA (UTC)</TableHead>
                   <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">Min Range</TableHead>
                   <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">Rel Vel</TableHead>
@@ -212,6 +229,17 @@ export default function Rpod() {
                           {ev.status === "active" ? "ACTIVE" : "ARCHIVED"}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={`font-mono text-[10px] uppercase rounded-none ${ev.kind === "coplanar" ? "border-secondary text-secondary" : "border-accent/70 text-accent"}`}
+                          title={ev.kind === "coplanar"
+                            ? "Long-duration co-aligned shadowing: same plane, same shell, slow phase drift — these encounters last weeks or months"
+                            : "Discrete predicted close approach"}
+                        >
+                          {ev.kind === "coplanar" ? "SHADOWING" : "CONJUNCTION"}
+                        </Badge>
+                      </TableCell>
                       <TableCell>{fmtUtc(ev.tca)}</TableCell>
                       <TableCell className="text-accent font-bold">{fmtRange(ev.minRangeKm)}</TableCell>
                       <TableCell className="text-secondary">{ev.relVelKmS.toFixed(3)} km/s</TableCell>
@@ -231,7 +259,7 @@ export default function Rpod() {
                     </TableRow>
                     {expanded === ev.id && (
                       <TableRow className="bg-muted/20 border-b-border/50 hover:bg-muted/20">
-                        <TableCell colSpan={8} className="p-0">
+                        <TableCell colSpan={9} className="p-0">
                           <EventDetail eventId={ev.id} />
                         </TableCell>
                       </TableRow>

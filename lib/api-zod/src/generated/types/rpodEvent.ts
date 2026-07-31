@@ -10,6 +10,8 @@ import type { RpodMember } from './rpodMember';
 export interface RpodEvent {
   id: number;
   status: string;
+  /** conjunction (discrete close approach) or coplanar (long-duration co-aligned shadowing) */
+  kind: string;
   windowStart: string;
   windowEnd: string;
   /** Predicted time of closest approach (ISO) */

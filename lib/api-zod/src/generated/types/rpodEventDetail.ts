@@ -10,6 +10,7 @@ import type { RpodMemberDetail } from './rpodMemberDetail';
 export interface RpodEventDetail {
   id: number;
   status: string;
+  kind: string;
   windowStart: string;
   windowEnd: string;
   tca: string;
