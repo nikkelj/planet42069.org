@@ -225,6 +225,7 @@ export const GetSatcatByYearProviderResponse = zod.object({
   "year": zod.string(),
   "spacex": zod.number().describe('SpaceX (Falcon family) payload mass in kg'),
   "others": zod.number().describe('Rest-of-world payload mass in kg'),
+  "pendingSpacex": zod.number().describe('Provisional SpaceX estimate for launches not yet catalogued'),
   "spacexCount": zod.number(),
   "othersCount": zod.number()
 }))
@@ -249,9 +250,11 @@ export const GetSatcatUpmassByProviderResponse = zod.object({
   "provider": zod.string(),
   "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
   "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates)'),
+  "pendingMassKg": zod.number().describe('Provisional estimate for launches not yet catalogued'),
   "count": zod.number()
 })),
   "totalMassKg": zod.number(),
+  "totalPendingMassKg": zod.number().describe('Total provisional (pending cataloguing) estimate in kg'),
   "totalCount": zod.number()
 })
 
@@ -355,7 +358,8 @@ export const GetSatcatFalconVsStarshipResponse = zod.object({
   "rows": zod.array(zod.object({
   "year": zod.string(),
   "falcon": zod.number(),
-  "starship": zod.number()
+  "starship": zod.number(),
+  "pendingFalcon": zod.number().describe('Provisional estimate for Falcon launches not yet catalogued')
 })),
   "starshipTotal": zod.number()
 })
@@ -407,7 +411,8 @@ export const GetSatcatSpacexByEntityResponse = zod.object({
   "year": zod.string(),
   "starlink": zod.number(),
   "usGov": zod.number(),
-  "commercial": zod.number()
+  "commercial": zod.number(),
+  "pending": zod.number().describe('Provisional estimate for launches not yet catalogued (segment unknown)')
 }))
 })
 

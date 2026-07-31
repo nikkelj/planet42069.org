@@ -153,13 +153,16 @@ function FalconVsStarshipChart() {
 
   const FvsTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
-    const falcon   = payload.find((p: any) => p.dataKey === 'falcon')?.value ?? 0;
-    const starship = payload.find((p: any) => p.dataKey === 'starship')?.value ?? 0;
+    const row = payload[0].payload ?? {};
+    const falcon   = row.falcon ?? 0;
+    const starship = row.starship ?? 0;
+    const pending  = row.pendingFalcon ?? 0;
     return (
       <div className="bg-card border-2 border-primary p-3 shadow-xl font-mono text-sm z-50">
         <p className="text-primary font-bold mb-2 pb-1 border-b border-primary/30 uppercase">{label}</p>
         <div className="space-y-1 text-card-foreground">
           <p><span style={{ color: FALCON_COLOR }}>■</span> <span className="text-muted-foreground">Falcon 9 / Heavy:</span> {(falcon / 1000).toFixed(1)}t</p>
+          {pending > 0 && <p><span style={{ color: FALCON_COLOR, opacity: 0.5 }}>▨</span> <span className="text-muted-foreground">Falcon pending cataloguing:</span> ~{(pending / 1000).toFixed(1)}t est.</p>}
           <p><span style={{ color: STARSHIP_COLOR }}>■</span> <span className="text-muted-foreground">Starship:</span> {starship > 0 ? `${(starship / 1000).toFixed(1)}t` : '—'}</p>
         </div>
       </div>
@@ -207,6 +210,13 @@ function FalconVsStarshipChart() {
             <span className="inline-block w-3 h-3 rounded-sm" style={{ background: STARSHIP_COLOR }} />
             <span className="text-muted-foreground">Starship</span>
           </span>
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-block w-3 h-3 rounded-sm border border-muted-foreground/50"
+              style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(var(--muted-foreground) / 0.6) 2px, hsl(var(--muted-foreground) / 0.6) 3px)' }}
+            />
+            <span className="text-muted-foreground">Pending cataloguing (est.)</span>
+          </span>
           {noStarship && (
             <span className="ml-auto text-amber-400/70 border border-amber-400/30 px-2 py-0.5 rounded text-[10px] uppercase tracking-wide">
               ⚠ Starship: test flights catalogued — orbital payload deployments pending GCAT entry
@@ -221,7 +231,14 @@ function FalconVsStarshipChart() {
               <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
               <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}t`} width={55} />
               <RechartsTooltip content={<FvsTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
-              <Bar dataKey="falcon" name="Falcon" fill={FALCON_COLOR} radius={[3, 3, 0, 0]} />
+              <defs>
+                <pattern id="hatchFalconPend" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                  <rect width="6" height="6" fill={FALCON_COLOR} fillOpacity="0.15" />
+                  <line x1="0" y1="0" x2="0" y2="6" stroke={FALCON_COLOR} strokeWidth="2" strokeOpacity="0.7" />
+                </pattern>
+              </defs>
+              <Bar dataKey="falcon" name="Falcon" stackId="f" fill={FALCON_COLOR} />
+              <Bar dataKey="pendingFalcon" name="Falcon pending (est.)" stackId="f" fill="url(#hatchFalconPend)" radius={[3, 3, 0, 0]} />
               <Bar dataKey="starship" name="Starship" fill={STARSHIP_COLOR} radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -480,9 +497,11 @@ function SpaceXByEntityChart() {
 
   const EntityTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
-    const sl   = payload.find((p: any) => p.dataKey === 'starlink')?.value ?? 0;
-    const gov  = payload.find((p: any) => p.dataKey === 'usGov')?.value ?? 0;
-    const comm = payload.find((p: any) => p.dataKey === 'commercial')?.value ?? 0;
+    const row = payload[0].payload ?? {};
+    const sl   = row.starlink ?? 0;
+    const gov  = row.usGov ?? 0;
+    const comm = row.commercial ?? 0;
+    const pend = row.pending ?? 0;
     const total = sl + gov + comm;
     return (
       <div className="bg-card border-2 border-primary p-3 shadow-xl font-mono text-sm z-50">
@@ -491,7 +510,10 @@ function SpaceXByEntityChart() {
           <p><span style={{ color: STARLINK_COLOR }}>■</span> <span className="text-muted-foreground">Starlink:</span> {(sl / 1000).toFixed(1)}t</p>
           <p><span style={{ color: USGOV_COLOR }}>■</span> <span className="text-muted-foreground">US Government:</span> {(gov / 1000).toFixed(1)}t</p>
           <p><span style={{ color: COMMERCIAL_COLOR }}>■</span> <span className="text-muted-foreground">Commercial / Intl:</span> {(comm / 1000).toFixed(1)}t</p>
-          <p className="border-t border-border/50 mt-1 pt-1 text-muted-foreground">Total: {(total / 1000).toFixed(1)}t</p>
+          {pend > 0 && <p><span className="text-muted-foreground/70">▨</span> <span className="text-muted-foreground">Pending cataloguing:</span> ~{(pend / 1000).toFixed(1)}t est.</p>}
+          <p className="border-t border-border/50 mt-1 pt-1 text-muted-foreground">
+            Total: {(total / 1000).toFixed(1)}t{pend > 0 && <span className="text-muted-foreground/70"> (+~{(pend / 1000).toFixed(1)}t pending)</span>}
+          </p>
         </div>
       </div>
     );
@@ -530,6 +552,13 @@ function SpaceXByEntityChart() {
               <span className="text-muted-foreground">{label}</span>
             </span>
           ))}
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-block w-3 h-3 rounded-sm border border-muted-foreground/50"
+              style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(var(--muted-foreground) / 0.6) 2px, hsl(var(--muted-foreground) / 0.6) 3px)' }}
+            />
+            <span className="text-muted-foreground">Pending cataloguing (est., segment unknown)</span>
+          </span>
         </div>
         <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -538,9 +567,16 @@ function SpaceXByEntityChart() {
               <XAxis dataKey="year" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} />
               <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}t`} width={45} />
               <RechartsTooltip content={<EntityTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+              <defs>
+                <pattern id="hatchEntityPend" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                  <rect width="6" height="6" fill="hsl(var(--muted-foreground))" fillOpacity="0.12" />
+                  <line x1="0" y1="0" x2="0" y2="6" stroke="hsl(var(--muted-foreground))" strokeWidth="2" strokeOpacity="0.6" />
+                </pattern>
+              </defs>
               <Bar dataKey="starlink" stackId="a" fill={STARLINK_COLOR} />
               <Bar dataKey="usGov" stackId="a" fill={USGOV_COLOR} />
-              <Bar dataKey="commercial" stackId="a" fill={COMMERCIAL_COLOR} radius={[3, 3, 0, 0]} />
+              <Bar dataKey="commercial" stackId="a" fill={COMMERCIAL_COLOR} />
+              <Bar dataKey="pending" stackId="a" fill="url(#hatchEntityPend)" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -582,6 +618,7 @@ function SpaceXComparisonChart() {
     if (!active || !payload?.length) return null;
     const spacexVal = payload.find((p: any) => p.dataKey === 'spacex')?.value ?? 0;
     const othersVal = payload.find((p: any) => p.dataKey === 'others')?.value ?? 0;
+    const pendVal = payload[0]?.payload?.pendingSpacex ?? 0;
     const total = spacexVal + othersVal;
     const pct = total > 0 ? ((spacexVal / total) * 100).toFixed(0) : '0';
     return (
@@ -589,6 +626,7 @@ function SpaceXComparisonChart() {
         <p className="text-primary font-bold mb-2 pb-1 border-b border-primary/30 uppercase">{label}</p>
         <div className="space-y-1 text-card-foreground">
           <p><span style={{ color: SPACEX_COLOR }}>■</span> <span className="text-muted-foreground">SpaceX (Falcon):</span> {(spacexVal / 1000).toFixed(1)}t</p>
+          {pendVal > 0 && <p><span style={{ color: SPACEX_COLOR, opacity: 0.5 }}>▨</span> <span className="text-muted-foreground">SpaceX pending cataloguing:</span> ~{(pendVal / 1000).toFixed(1)}t est.</p>}
           <p><span style={{ color: OTHERS_COLOR }}>■</span> <span className="text-muted-foreground">Rest of World:</span> {(othersVal / 1000).toFixed(1)}t</p>
           <p className="border-t border-border/50 mt-1 pt-1"><span className="text-muted-foreground">SpaceX share:</span> <span style={{ color: SPACEX_COLOR }}>{pct}%</span></p>
         </div>
@@ -657,6 +695,13 @@ function SpaceXComparisonChart() {
             <span className="inline-block w-3 h-3 rounded-sm" style={{ background: OTHERS_COLOR }} />
             <span className="text-muted-foreground">All Other Providers</span>
           </span>
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-block w-3 h-3 rounded-sm border border-muted-foreground/50"
+              style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(var(--muted-foreground) / 0.6) 2px, hsl(var(--muted-foreground) / 0.6) 3px)' }}
+            />
+            <span className="text-muted-foreground">Pending cataloguing (est.)</span>
+          </span>
         </div>
 
         <div className="h-[380px] w-full">
@@ -680,8 +725,15 @@ function SpaceXComparisonChart() {
                 width={55}
               />
               <RechartsTooltip content={<ProviderTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.3)' }} />
+              <defs>
+                <pattern id="hatchSpacexPend" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                  <rect width="6" height="6" fill={SPACEX_COLOR} fillOpacity="0.15" />
+                  <line x1="0" y1="0" x2="0" y2="6" stroke={SPACEX_COLOR} strokeWidth="2" strokeOpacity="0.7" />
+                </pattern>
+              </defs>
               <Bar dataKey="others" name="Rest of World" stackId="a" fill={OTHERS_COLOR} radius={[0, 0, 0, 0]} />
-              <Bar dataKey="spacex" name="SpaceX" stackId="a" fill={SPACEX_COLOR} radius={[3, 3, 0, 0]} />
+              <Bar dataKey="spacex" name="SpaceX" stackId="a" fill={SPACEX_COLOR} />
+              <Bar dataKey="pendingSpacex" name="SpaceX pending (est.)" stackId="a" fill="url(#hatchSpacexPend)" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

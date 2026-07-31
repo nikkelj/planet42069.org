@@ -313,6 +313,8 @@ export interface YearProviderRow {
   spacex: number;
   /** Rest-of-world payload mass in kg */
   others: number;
+  /** Provisional SpaceX estimate for launches not yet catalogued */
+  pendingSpacex: number;
   spacexCount: number;
   othersCount: number;
 }
@@ -327,6 +329,8 @@ export interface ProviderUpmassRow {
   massKg: number;
   /** Additional theorized mass in kg (Bureau estimates) */
   estMassKg: number;
+  /** Provisional estimate for launches not yet catalogued */
+  pendingMassKg: number;
   count: number;
 }
 
@@ -339,6 +343,8 @@ export interface UpmassByProvider {
   window: UpmassByProviderWindow;
   providers: ProviderUpmassRow[];
   totalMassKg: number;
+  /** Total provisional (pending cataloguing) estimate in kg */
+  totalPendingMassKg: number;
   totalCount: number;
 }
 
@@ -464,6 +470,8 @@ export type FalconVsStarshipRowsItem = {
   year: string;
   falcon: number;
   starship: number;
+  /** Provisional estimate for Falcon launches not yet catalogued */
+  pendingFalcon: number;
 };
 
 export interface FalconVsStarship {
@@ -512,6 +520,8 @@ export type SpacexByEntityRowsItem = {
   starlink: number;
   usGov: number;
   commercial: number;
+  /** Provisional estimate for launches not yet catalogued (segment unknown) */
+  pending: number;
 };
 
 export interface SpacexByEntity {

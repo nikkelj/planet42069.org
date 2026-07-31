@@ -896,6 +896,9 @@ components:
         others:
           type: number
           description: Rest-of-world payload mass in kg
+        pendingSpacex:
+          type: number
+          description: Provisional SpaceX estimate for launches not yet catalogued
         spacexCount:
           type: integer
         othersCount:
@@ -904,6 +907,7 @@ components:
         - year
         - spacex
         - others
+        - pendingSpacex
         - spacexCount
         - othersCount
 
@@ -928,12 +932,16 @@ components:
         estMassKg:
           type: number
           description: Additional theorized mass in kg (Bureau estimates)
+        pendingMassKg:
+          type: number
+          description: Provisional estimate for launches not yet catalogued
         count:
           type: integer
       required:
         - provider
         - massKg
         - estMassKg
+        - pendingMassKg
         - count
 
     UpmassByProvider:
@@ -955,12 +963,16 @@ components:
             $ref: "#/components/schemas/ProviderUpmassRow"
         totalMassKg:
           type: number
+        totalPendingMassKg:
+          type: number
+          description: Total provisional (pending cataloguing) estimate in kg
         totalCount:
           type: integer
       required:
         - window
         - providers
         - totalMassKg
+        - totalPendingMassKg
         - totalCount
 
     ShuttleAudit:
@@ -1223,10 +1235,14 @@ components:
                 type: number
               starship:
                 type: number
+              pendingFalcon:
+                type: number
+                description: Provisional estimate for Falcon launches not yet catalogued
             required:
               - year
               - falcon
               - starship
+              - pendingFalcon
         starshipTotal:
           type: number
       required:
@@ -1327,11 +1343,15 @@ components:
                 type: number
               commercial:
                 type: number
+              pending:
+                type: number
+                description: Provisional estimate for launches not yet catalogued (segment unknown)
             required:
               - year
               - starlink
               - usGov
               - commercial
+              - pending
       required:
         - rows
 

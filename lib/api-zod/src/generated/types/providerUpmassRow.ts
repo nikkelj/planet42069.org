@@ -12,5 +12,7 @@ export interface ProviderUpmassRow {
   massKg: number;
   /** Additional theorized mass in kg (Bureau estimates) */
   estMassKg: number;
+  /** Provisional estimate for launches not yet catalogued */
+  pendingMassKg: number;
   count: number;
 }
