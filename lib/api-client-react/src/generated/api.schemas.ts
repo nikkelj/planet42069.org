@@ -799,6 +799,10 @@ status?: GetRpodEventsStatus;
  */
 kind?: GetRpodEventsKind;
 /**
+ * When true, only return repeat-offender cases that have been reopened at least once (reopenCount > 0)
+ */
+reopened?: boolean;
+/**
  * Search by participant satellite name (substring, case-insensitive) or NORAD number
  */
 q?: string;

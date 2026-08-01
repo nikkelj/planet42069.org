@@ -184,6 +184,7 @@ function readUrlState() {
     q: sp.get("q") ?? "",
     kind: kind === "conjunction" || kind === "coplanar" ? kind : "all",
     status: status === "active" || status === "stale" || status === "ended" ? status : "all",
+    reopened: sp.get("reopened") === "true",
     page: Number.isFinite(pageRaw) && pageRaw > 1 ? pageRaw : 1,
   };
 }
@@ -192,6 +193,7 @@ export default function Rpod() {
   const [page, setPage] = useState(initial.page);
   const [statusFilter, setStatusFilter] = useState(initial.status);
   const [kindFilter, setKindFilter] = useState(initial.kind);
+  const [reopenedOnly, setReopenedOnly] = useState(initial.reopened);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [search, setSearch] = useState(initial.q);
   const [debouncedSearch, setDebouncedSearch] = useState(initial.q.trim());
@@ -241,19 +243,21 @@ export default function Rpod() {
     setOrDelete("q", debouncedSearch || null);
     setOrDelete("kind", kindFilter !== "all" ? kindFilter : null);
     setOrDelete("status", statusFilter !== "all" ? statusFilter : null);
+    setOrDelete("reopened", reopenedOnly ? "true" : null);
     setOrDelete("page", page > 1 ? String(page) : null);
     const qs = sp.toString();
     const next = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`;
     if (next !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
       window.history.replaceState(window.history.state, "", next);
     }
-  }, [debouncedSearch, kindFilter, statusFilter, page]);
+  }, [debouncedSearch, kindFilter, statusFilter, reopenedOnly, page]);
 
   const queryParams = {
     page,
     limit: 50,
     status: statusFilter !== "all" ? (statusFilter as "active" | "stale" | "ended") : undefined,
     kind: kindFilter !== "all" ? (kindFilter as "conjunction" | "coplanar") : undefined,
+    reopened: reopenedOnly ? true : undefined,
     q: debouncedSearch || undefined,
     sort: sorts[0]?.field,
     order: sorts[0]?.order,
@@ -344,6 +348,19 @@ export default function Rpod() {
               <SelectItem value="ended">ENDED</SelectItem>
             </SelectContent>
           </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { setReopenedOnly((v) => !v); setPage(1); setExpanded(null); }}
+            title="Repeat offenders: cases that ended, then the same pair closed ranks again"
+            className={`rounded-none h-9 uppercase text-xs font-mono tracking-wider ${
+              reopenedOnly
+                ? "border-accent text-accent bg-accent/10 hover:bg-accent/20 hover:text-accent"
+                : "border-border text-muted-foreground"
+            }`}
+          >
+            Reopened only
+          </Button>
         </div>
       </div>
 

@@ -440,6 +440,11 @@ paths:
             type: string
             enum: [conjunction, coplanar]
           description: Filter by event kind (discrete conjunction vs long-duration coplanar shadowing)
+        - name: reopened
+          in: query
+          schema:
+            type: boolean
+          description: When true, only return repeat-offender cases that have been reopened at least once (reopenCount > 0)
         - name: q
           in: query
           schema:
