@@ -68,6 +68,18 @@ export interface RpodEventList {
   pages: number;
 }
 
+/**
+ * One distinct shadowing spell — an interval during which the pair was continuously on file
+ */
+export interface RpodSpell {
+  /** When this spell began (first detection, or the reopen that started it) */
+  start: string;
+  /** Last scan that observed the pair together during this spell; null when unknown (legacy reopens) */
+  lastSeenAt: string | null;
+  /** When this spell ended (pair drifted apart); null for the ongoing spell */
+  endedAt: string | null;
+}
+
 export interface RpodEventDetail {
   id: number;
   status: string;
@@ -85,6 +97,8 @@ export interface RpodEventDetail {
   reopenCount: number;
   lastReopenedAt: string | null;
   updatedAt: string;
+  /** Distinct shadowing spells, oldest first; the final entry is the current/most recent spell. Reopened cases have multiple entries. */
+  spells: RpodSpell[];
   members: RpodMemberDetail[];
 }
 

@@ -10,6 +10,7 @@ import {
   index,
   jsonb,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -190,6 +191,16 @@ export const rpodEvents = pgTable(
     reopenCount: integer("reopen_count").notNull().default(0),
     /** Most recent reopen (null if the case has never been reopened). */
     lastReopenedAt: timestamp("last_reopened_at"),
+    /**
+     * Completed shadowing spells, recorded at reopen time: each entry is the
+     * interval the pair was on file before drifting apart and closing ranks
+     * again. The CURRENT spell is implicit (lastReopenedAt ?? firstDetectedAt
+     * → lastSeenAt/endedAt). ISO-8601 strings.
+     */
+    closedSpells: jsonb("closed_spells")
+      .$type<{ start: string; lastSeenAt: string; endedAt: string }[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [index("rpod_events_tca_idx").on(t.tca), index("rpod_events_status_idx").on(t.status, t.tca)],

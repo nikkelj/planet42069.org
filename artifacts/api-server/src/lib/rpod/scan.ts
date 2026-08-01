@@ -311,10 +311,18 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
   }
 
   // Recently-ended coplanar cases stay eligible for reopening.
-  let endedWithMembers: { id: number; endedAt: Date | null; members: number[] }[] = [];
+  let endedWithMembers: {
+    id: number; endedAt: Date | null; members: number[];
+    firstDetectedAt: Date; lastSeenAt: Date; lastReopenedAt: Date | null;
+    closedSpells: { start: string; lastSeenAt: string; endedAt: string }[];
+  }[] = [];
   if (kind === "coplanar") {
     const ended = await db
-      .select({ id: rpodEvents.id, endedAt: rpodEvents.endedAt, reopenCount: rpodEvents.reopenCount })
+      .select({
+        id: rpodEvents.id, endedAt: rpodEvents.endedAt, reopenCount: rpodEvents.reopenCount,
+        firstDetectedAt: rpodEvents.firstDetectedAt, lastSeenAt: rpodEvents.lastSeenAt,
+        lastReopenedAt: rpodEvents.lastReopenedAt, closedSpells: rpodEvents.closedSpells,
+      })
       .from(rpodEvents)
       .where(and(
         eq(rpodEvents.status, "ended"),
@@ -330,7 +338,11 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
       arr.push(m.norad);
       byId.set(m.eventId, arr);
     }
-    endedWithMembers = ended.map((e) => ({ id: e.id, endedAt: e.endedAt, members: byId.get(e.id) ?? [] }));
+    endedWithMembers = ended.map((e) => ({
+      id: e.id, endedAt: e.endedAt, members: byId.get(e.id) ?? [],
+      firstDetectedAt: e.firstDetectedAt, lastSeenAt: e.lastSeenAt,
+      lastReopenedAt: e.lastReopenedAt, closedSpells: e.closedSpells ?? [],
+    }));
   }
 
   for (const ev of events) {
@@ -366,7 +378,19 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
     } else {
       const reopenId = kind === "coplanar" ? selectReopenCandidate(endedWithMembers, ev.members, Date.now()) : null;
       if (reopenId != null) {
-        // Same pair closed ranks again — reactivate the old case file.
+        // Same pair closed ranks again — reactivate the old case file,
+        // archiving the spell that just closed so each shadowing interval
+        // stays reconstructible.
+        const prior = endedWithMembers.find((e) => e.id === reopenId)!;
+        const spellStart = prior.lastReopenedAt ?? prior.firstDetectedAt;
+        const closedSpells = [
+          ...prior.closedSpells,
+          {
+            start: spellStart.toISOString(),
+            lastSeenAt: prior.lastSeenAt.toISOString(),
+            endedAt: (prior.endedAt ?? prior.lastSeenAt).toISOString(),
+          },
+        ];
         await db
           .update(rpodEvents)
           .set({
@@ -374,6 +398,7 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
             endedAt: null,
             reopenCount: sql`${rpodEvents.reopenCount} + 1`,
             lastReopenedAt: sql`now()`,
+            closedSpells,
             updatedAt: sql`now()`,
           })
           .where(eq(rpodEvents.id, reopenId));

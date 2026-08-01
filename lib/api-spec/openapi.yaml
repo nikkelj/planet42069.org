@@ -649,6 +649,23 @@ components:
           type: integer
       required: [data, total, page, pages]
 
+    RpodSpell:
+      type: object
+      description: One distinct shadowing spell — an interval during which the pair was continuously on file
+      properties:
+        start:
+          type: string
+          description: When this spell began (first detection, or the reopen that started it)
+        lastSeenAt:
+          type: string
+          nullable: true
+          description: Last scan that observed the pair together during this spell; null when unknown (legacy reopens)
+        endedAt:
+          type: string
+          nullable: true
+          description: When this spell ended (pair drifted apart); null for the ongoing spell
+      required: [start, lastSeenAt, endedAt]
+
     RpodEventDetail:
       type: object
       properties:
@@ -686,11 +703,16 @@ components:
           nullable: true
         updatedAt:
           type: string
+        spells:
+          type: array
+          description: Distinct shadowing spells, oldest first; the final entry is the current/most recent spell. Reopened cases have multiple entries.
+          items:
+            $ref: "#/components/schemas/RpodSpell"
         members:
           type: array
           items:
             $ref: "#/components/schemas/RpodMemberDetail"
-      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, lastSeenAt, endedAt, reopenCount, lastReopenedAt, updatedAt, members]
+      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, lastSeenAt, endedAt, reopenCount, lastReopenedAt, updatedAt, spells, members]
 
     RpodArchiveStatus:
       type: object

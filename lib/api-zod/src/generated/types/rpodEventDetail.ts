@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { RpodMemberDetail } from './rpodMemberDetail';
+import type { RpodSpell } from './rpodSpell';
 
 export interface RpodEventDetail {
   id: number;
@@ -24,5 +25,7 @@ export interface RpodEventDetail {
   reopenCount: number;
   lastReopenedAt: string | null;
   updatedAt: string;
+  /** Distinct shadowing spells, oldest first; the final entry is the current/most recent spell. Reopened cases have multiple entries. */
+  spells: RpodSpell[];
   members: RpodMemberDetail[];
 }

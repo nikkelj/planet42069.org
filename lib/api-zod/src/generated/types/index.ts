@@ -57,6 +57,7 @@ export * from './rpodEventDetail';
 export * from './rpodEventList';
 export * from './rpodMember';
 export * from './rpodMemberDetail';
+export * from './rpodSpell';
 export * from './rpodStatus';
 export * from './rpodTle';
 export * from './satcatByYearProvider';

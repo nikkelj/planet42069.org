@@ -217,6 +217,30 @@ router.get("/rpod/events/:id", async (req, res): Promise<void> => {
     };
   }));
 
+  // Per-spell shadowing intervals: stored closed spells + the current spell.
+  // Legacy reopened rows (reopened before spell recording existed) get a
+  // synthesized first spell bounded by the most recent reopen timestamp.
+  type Spell = { start: string; lastSeenAt: string | null; endedAt: string | null };
+  const closed: Spell[] = (row.closedSpells ?? []).map((s) => ({
+    start: s.start, lastSeenAt: s.lastSeenAt ?? null, endedAt: s.endedAt ?? null,
+  }));
+  if (row.reopenCount > closed.length && row.lastReopenedAt) {
+    closed.unshift({
+      start: row.firstDetectedAt.toISOString(),
+      lastSeenAt: null,
+      endedAt: row.lastReopenedAt.toISOString(),
+    });
+  }
+  const currentStart = closed.length > 0 && row.lastReopenedAt ? row.lastReopenedAt : row.firstDetectedAt;
+  const spells: Spell[] = [
+    ...closed,
+    {
+      start: currentStart.toISOString(),
+      lastSeenAt: row.lastSeenAt.toISOString(),
+      endedAt: row.endedAt ? row.endedAt.toISOString() : null,
+    },
+  ];
+
   res.json({
     id: row.id,
     status: row.status,
@@ -234,6 +258,7 @@ router.get("/rpod/events/:id", async (req, res): Promise<void> => {
     reopenCount: row.reopenCount,
     lastReopenedAt: row.lastReopenedAt ? row.lastReopenedAt.toISOString() : null,
     updatedAt: row.updatedAt.toISOString(),
+    spells,
     members: members.sort((a, b) => a.norad - b.norad),
   });
 });

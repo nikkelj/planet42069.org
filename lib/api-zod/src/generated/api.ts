@@ -608,6 +608,11 @@ export const GetRpodEventResponse = zod.object({
   "reopenCount": zod.number(),
   "lastReopenedAt": zod.string().nullable(),
   "updatedAt": zod.string(),
+  "spells": zod.array(zod.object({
+  "start": zod.string().describe('When this spell began (first detection, or the reopen that started it)'),
+  "lastSeenAt": zod.string().nullable().describe('Last scan that observed the pair together during this spell; null when unknown (legacy reopens)'),
+  "endedAt": zod.string().nullable().describe('When this spell ended (pair drifted apart); null for the ongoing spell')
+}).describe('One distinct shadowing spell — an interval during which the pair was continuously on file')).describe('Distinct shadowing spells, oldest first; the final entry is the current\/most recent spell. Reopened cases have multiple entries.'),
   "members": zod.array(zod.object({
   "norad": zod.number(),
   "name": zod.string().nullish(),
