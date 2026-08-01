@@ -280,7 +280,7 @@ async function logScanRow(status: "success" | "error", startedAt: Date, rowCount
  * incremented) instead of opening a fresh case, keeping repeat offenders on
  * a single continuous file.
  */
-async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "conjunction" | "coplanar"): Promise<void> {
+export async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "conjunction" | "coplanar"): Promise<void> {
   if (events.length === 0) return;
   const active = await db.select().from(rpodEvents).where(and(eq(rpodEvents.status, "active"), eq(rpodEvents.kind, kind)));
   const activeMembers = active.length
