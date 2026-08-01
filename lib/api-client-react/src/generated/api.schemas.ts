@@ -37,7 +37,7 @@ export type RpodMemberDetail = RpodMember & ({
 export interface RpodEvent {
   id: number;
   status: string;
-  /** conjunction (discrete close approach) or coplanar (long-duration co-aligned shadowing) */
+  /** conjunction (discrete close approach), coplanar (long-duration co-aligned shadowing), or docked (near-zero range and relative velocity — a physically joined stack, not a proximity operation) */
   kind: string;
   windowStart: string;
   windowEnd: string;
@@ -795,7 +795,7 @@ limit?: number;
  */
 status?: GetRpodEventsStatus;
 /**
- * Filter by event kind (discrete conjunction vs long-duration coplanar shadowing)
+ * Filter by event kind (discrete conjunction, long-duration coplanar shadowing, or docked stack)
  */
 kind?: GetRpodEventsKind;
 /**
@@ -833,6 +833,7 @@ export type GetRpodEventsKind = typeof GetRpodEventsKind[keyof typeof GetRpodEve
 export const GetRpodEventsKind = {
   conjunction: 'conjunction',
   coplanar: 'coplanar',
+  docked: 'docked',
 } as const;
 
 export type GetRpodEventsSort = typeof GetRpodEventsSort[keyof typeof GetRpodEventsSort];

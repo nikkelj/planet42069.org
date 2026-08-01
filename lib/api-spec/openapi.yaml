@@ -438,8 +438,8 @@ paths:
           in: query
           schema:
             type: string
-            enum: [conjunction, coplanar]
-          description: Filter by event kind (discrete conjunction vs long-duration coplanar shadowing)
+            enum: [conjunction, coplanar, docked]
+          description: Filter by event kind (discrete conjunction, long-duration coplanar shadowing, or docked stack)
         - name: reopened
           in: query
           schema:
@@ -593,7 +593,7 @@ components:
           type: string
         kind:
           type: string
-          description: conjunction (discrete close approach) or coplanar (long-duration co-aligned shadowing)
+          description: conjunction (discrete close approach), coplanar (long-duration co-aligned shadowing), or docked (near-zero range and relative velocity — a physically joined stack, not a proximity operation)
         windowStart:
           type: string
         windowEnd:

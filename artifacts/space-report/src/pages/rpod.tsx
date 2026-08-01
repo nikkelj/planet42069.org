@@ -182,7 +182,7 @@ function readUrlState() {
   const pageRaw = parseInt(sp.get("page") ?? "", 10);
   return {
     q: sp.get("q") ?? "",
-    kind: kind === "conjunction" || kind === "coplanar" ? kind : "all",
+    kind: kind === "conjunction" || kind === "coplanar" || kind === "docked" ? kind : "all",
     status: status === "active" || status === "stale" || status === "ended" ? status : "all",
     reopened: sp.get("reopened") === "true",
     page: Number.isFinite(pageRaw) && pageRaw > 1 ? pageRaw : 1,
@@ -256,7 +256,7 @@ export default function Rpod() {
     page,
     limit: 50,
     status: statusFilter !== "all" ? (statusFilter as "active" | "stale" | "ended") : undefined,
-    kind: kindFilter !== "all" ? (kindFilter as "conjunction" | "coplanar") : undefined,
+    kind: kindFilter !== "all" ? (kindFilter as "conjunction" | "coplanar" | "docked") : undefined,
     reopened: reopenedOnly ? true : undefined,
     q: debouncedSearch || undefined,
     sort: sorts[0]?.field,
@@ -314,7 +314,9 @@ export default function Rpod() {
           Two kinds of cases: CONJUNCTIONS — discrete predicted approaches within 30 km at under
           1.5 km/s — and SHADOWING — payload pairs from different launches co-aligned in plane
           (ΔRAAN &amp; inclination ≤ 0.15°), radial shell, and along-track phase, trailing each other
-          for weeks or months. Formation flying, inspections, dockings — all of it unlicensed,
+          for weeks or months. Pairs sitting at effectively zero range and zero relative velocity
+          are labeled DOCKED — physically joined stacks (station modules, visiting vehicles), not
+          operations in progress. Formation flying, inspections, dockings — all of it unlicensed,
           none of it with a permit on file.
         </p>
         <div className="flex items-center gap-2 flex-wrap">
@@ -335,6 +337,7 @@ export default function Rpod() {
               <SelectItem value="all">ALL KINDS</SelectItem>
               <SelectItem value="conjunction">CONJUNCTION</SelectItem>
               <SelectItem value="coplanar">SHADOWING</SelectItem>
+              <SelectItem value="docked">DOCKED</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); setExpanded(null); }}>
@@ -463,12 +466,17 @@ export default function Rpod() {
                       <TableCell>
                         <Badge
                           variant="outline"
-                          className={`font-mono text-[10px] uppercase rounded-none ${ev.kind === "coplanar" ? "border-secondary text-secondary" : "border-accent/70 text-accent"}`}
+                          className={`font-mono text-[10px] uppercase rounded-none ${
+                            ev.kind === "coplanar" ? "border-secondary text-secondary"
+                            : ev.kind === "docked" ? "border-muted-foreground/60 text-muted-foreground"
+                            : "border-accent/70 text-accent"}`}
                           title={ev.kind === "coplanar"
                             ? "Long-duration co-aligned shadowing: same plane, same shell, slow phase drift — these encounters last weeks or months"
+                            : ev.kind === "docked"
+                            ? "Near-zero range at near-zero relative velocity: a physically joined stack (station modules, docked visiting vehicles), not a proximity operation"
                             : "Discrete predicted close approach"}
                         >
-                          {ev.kind === "coplanar" ? "SHADOWING" : "CONJUNCTION"}
+                          {ev.kind === "coplanar" ? "SHADOWING" : ev.kind === "docked" ? "DOCKED" : "CONJUNCTION"}
                         </Badge>
                       </TableCell>
                       <TableCell>{fmtUtc(ev.tca)}</TableCell>

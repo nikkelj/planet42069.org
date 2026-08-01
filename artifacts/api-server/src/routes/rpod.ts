@@ -63,7 +63,7 @@ router.get("/rpod/events", async (req, res): Promise<void> => {
 
   const conditions: SQL[] = [];
   if (status === "active" || status === "stale" || status === "ended") conditions.push(eq(rpodEvents.status, status));
-  if (kind === "conjunction" || kind === "coplanar") conditions.push(eq(rpodEvents.kind, kind));
+  if (kind === "conjunction" || kind === "coplanar" || kind === "docked") conditions.push(eq(rpodEvents.kind, kind));
   if (String(req.query.reopened ?? "") === "true") conditions.push(sql`${rpodEvents.reopenCount} > 0`);
 
   if (q) {

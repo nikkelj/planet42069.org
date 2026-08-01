@@ -40,7 +40,7 @@ interface EventRow {
   [k: string]: unknown;
 }
 
-async function seed(): Promise<{ conjunctionId: number; coplanarId: number }> {
+async function seed(): Promise<{ conjunctionId: number; coplanarId: number; dockedId: number }> {
   const now = new Date("2026-08-01T00:00:00Z");
   const later = new Date("2026-08-01T06:00:00Z");
   const [conj] = await db.insert(rpodEvents).values({
@@ -53,13 +53,20 @@ async function seed(): Promise<{ conjunctionId: number; coplanarId: number }> {
     windowStart: now, windowEnd: later, tca: now,
     minRangeKm: 175, relVelKmS: 0.02, memberCount: 2,
   }).returning({ id: rpodEvents.id });
+  const [dock] = await db.insert(rpodEvents).values({
+    status: "active", kind: "docked",
+    windowStart: now, windowEnd: later, tca: now,
+    minRangeKm: 0.05, relVelKmS: 0.001, memberCount: 2,
+  }).returning({ id: rpodEvents.id });
   await db.insert(rpodEventMembers).values([
     { eventId: conj.id, norad: TEST_NORADS[0], minRangeKm: 4.2, relVelKmS: 0.05 },
     { eventId: conj.id, norad: TEST_NORADS[1], minRangeKm: 4.2, relVelKmS: 0.05 },
     { eventId: cop.id, norad: TEST_NORADS[2], minRangeKm: 175, relVelKmS: 0.02 },
     { eventId: cop.id, norad: TEST_NORADS[3], minRangeKm: 175, relVelKmS: 0.02 },
+    { eventId: dock.id, norad: TEST_NORADS[0], minRangeKm: 0.05, relVelKmS: 0.001 },
+    { eventId: dock.id, norad: TEST_NORADS[1], minRangeKm: 0.05, relVelKmS: 0.001 },
   ]);
-  return { conjunctionId: conj.id, coplanarId: cop.id };
+  return { conjunctionId: conj.id, coplanarId: cop.id, dockedId: dock.id };
 }
 
 async function cleanup(ids: number[]): Promise<void> {
@@ -67,8 +74,8 @@ async function cleanup(ids: number[]): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const { conjunctionId, coplanarId } = await seed();
-  const seededIds = [conjunctionId, coplanarId];
+  const { conjunctionId, coplanarId, dockedId } = await seed();
+  const seededIds = [conjunctionId, coplanarId, dockedId];
 
   const server: Server = await new Promise((resolve) => {
     const s = app.listen(0, () => resolve(s));
@@ -89,7 +96,7 @@ async function main(): Promise<void> {
       // Unfiltered list (large limit so seeded rows appear regardless of others).
       const all = await fetchEvents("?limit=200");
       check("every listed event carries a kind field",
-        all.data.every((e) => e.kind === "conjunction" || e.kind === "coplanar"),
+        all.data.every((e) => e.kind === "conjunction" || e.kind === "coplanar" || e.kind === "docked"),
         JSON.stringify([...new Set(all.data.map((e) => e.kind))]));
       const ids = new Set(all.data.map((e) => e.id));
       check("seeded conjunction visible without filter", ids.has(conjunctionId));
@@ -109,9 +116,17 @@ async function main(): Promise<void> {
       check("kind=coplanar includes seeded shadowing case", copIds.has(coplanarId));
       check("kind=coplanar excludes seeded conjunction", !copIds.has(conjunctionId));
 
+      const dockOnly = await fetchEvents("?limit=200&kind=docked");
+      check("kind=docked returns only docked stacks",
+        dockOnly.data.length > 0 && dockOnly.data.every((e) => e.kind === "docked"));
+      const dockIds = new Set(dockOnly.data.map((e) => e.id));
+      check("kind=docked includes seeded docked stack", dockIds.has(dockedId));
+      check("kind=docked excludes seeded conjunction", !dockIds.has(conjunctionId));
+      check("kind=conjunction excludes seeded docked stack", !conjIds.has(dockedId));
+
       check("filtered totals partition the unfiltered total",
-        conjOnly.total + copOnly.total === all.total,
-        `${conjOnly.total} + ${copOnly.total} != ${all.total}`);
+        conjOnly.total + copOnly.total + dockOnly.total === all.total,
+        `${conjOnly.total} + ${copOnly.total} + ${dockOnly.total} != ${all.total}`);
 
       // Unknown kind values must be ignored, not silently match nothing.
       const bogus = await fetchEvents("?limit=200&kind=nonsense");
@@ -121,7 +136,7 @@ async function main(): Promise<void> {
 
     console.log("Detail endpoint: kind field");
     {
-      for (const [id, expected] of [[conjunctionId, "conjunction"], [coplanarId, "coplanar"]] as const) {
+      for (const [id, expected] of [[conjunctionId, "conjunction"], [coplanarId, "coplanar"], [dockedId, "docked"]] as const) {
         const res = await fetch(`${base}/rpod/events/${id}`);
         check(`detail ${expected} responds 200`, res.ok, `got ${res.status}`);
         const body = (await res.json()) as EventRow;

@@ -538,7 +538,7 @@ export const GetRpodEventsQueryParams = zod.object({
   "page": zod.coerce.number().default(getRpodEventsQueryPageDefault),
   "limit": zod.coerce.number().default(getRpodEventsQueryLimitDefault),
   "status": zod.enum(['active', 'stale', 'ended']).optional().describe('Filter by event status (ended = coplanar pair drifted apart and stopped passing the screen)'),
-  "kind": zod.enum(['conjunction', 'coplanar']).optional().describe('Filter by event kind (discrete conjunction vs long-duration coplanar shadowing)'),
+  "kind": zod.enum(['conjunction', 'coplanar', 'docked']).optional().describe('Filter by event kind (discrete conjunction, long-duration coplanar shadowing, or docked stack)'),
   "reopened": zod.coerce.boolean().optional().describe('When true, only return repeat-offender cases that have been reopened at least once (reopenCount > 0)'),
   "q": zod.coerce.string().optional().describe('Search by participant satellite name (substring, case-insensitive) or NORAD number'),
   "sort": zod.enum(['id', 'status', 'kind', 'tca', 'minRangeKm', 'relVelKmS', 'memberCount']).optional().describe('Primary sort field (default tca)'),
@@ -551,7 +551,7 @@ export const GetRpodEventsResponse = zod.object({
   "data": zod.array(zod.object({
   "id": zod.number(),
   "status": zod.string(),
-  "kind": zod.string().describe('conjunction (discrete close approach) or coplanar (long-duration co-aligned shadowing)'),
+  "kind": zod.string().describe('conjunction (discrete close approach), coplanar (long-duration co-aligned shadowing), or docked (near-zero range and relative velocity — a physically joined stack, not a proximity operation)'),
   "windowStart": zod.string(),
   "windowEnd": zod.string(),
   "tca": zod.string().describe('Predicted time of closest approach (ISO)'),

@@ -10,7 +10,7 @@ import type { RpodMember } from './rpodMember';
 export interface RpodEvent {
   id: number;
   status: string;
-  /** conjunction (discrete close approach) or coplanar (long-duration co-aligned shadowing) */
+  /** conjunction (discrete close approach), coplanar (long-duration co-aligned shadowing), or docked (near-zero range and relative velocity — a physically joined stack, not a proximity operation) */
   kind: string;
   windowStart: string;
   windowEnd: string;

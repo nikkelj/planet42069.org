@@ -12,4 +12,5 @@ export type GetRpodEventsKind = typeof GetRpodEventsKind[keyof typeof GetRpodEve
 export const GetRpodEventsKind = {
   conjunction: 'conjunction',
   coplanar: 'coplanar',
+  docked: 'docked',
 } as const;

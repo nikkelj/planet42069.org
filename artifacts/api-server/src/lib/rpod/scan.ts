@@ -35,6 +35,19 @@ const MEMBER_CAP = 5;
 /** Events whose window ended this long ago get marked stale. */
 const STALE_AFTER_MS = 3 * 86400_000;
 
+/**
+ * Docked-stack classification: pairs at essentially zero range AND zero
+ * relative velocity are physically joined (station modules, docked visiting
+ * vehicles), not proximity operations in progress. Labeled "docked" so the
+ * desk doesn't cry conjunction over the ISS stack.
+ */
+export const DOCKED_MAX_RANGE_KM = 0.5;
+export const DOCKED_MAX_RELVEL_KM_S = 0.01;
+
+export function isDockedGeometry(minRangeKm: number, relVelKmS: number): boolean {
+  return minRangeKm <= DOCKED_MAX_RANGE_KM && relVelKmS <= DOCKED_MAX_RELVEL_KM_S;
+}
+
 let scanInFlight: Promise<void> | null = null;
 
 export function runRpodScan(): Promise<void> {
@@ -240,6 +253,7 @@ async function doScan(): Promise<void> {
 
     await persistEvents(events, "conjunction");
     await persistEvents(coEvents, "coplanar");
+    await reclassifyDockedEvents();
     await markStaleEvents();
     await retireDriftedCoplanarEvents();
     await logScanRow("success", started, events.length + coEvents.length);
@@ -282,7 +296,10 @@ async function logScanRow(status: "success" | "error", startedAt: Date, rowCount
  */
 export async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "conjunction" | "coplanar"): Promise<void> {
   if (events.length === 0) return;
-  const active = await db.select().from(rpodEvents).where(and(eq(rpodEvents.status, "active"), eq(rpodEvents.kind, kind)));
+  // Conjunction-track events may be stored as "conjunction" OR "docked" —
+  // match across both so a stack flipping labels never spawns a duplicate case.
+  const kinds = kind === "conjunction" ? ["conjunction", "docked"] : [kind];
+  const active = await db.select().from(rpodEvents).where(and(eq(rpodEvents.status, "active"), inArray(rpodEvents.kind, kinds)));
   const activeMembers = active.length
     ? await db.select().from(rpodEventMembers).where(inArray(rpodEventMembers.eventId, active.map((e) => e.id)))
     : [];
@@ -328,7 +345,7 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
     });
 
     const base = {
-      kind,
+      kind: kind === "conjunction" && isDockedGeometry(ev.minRangeKm, ev.relVelKmS) ? "docked" : kind,
       windowStart: new Date(ev.windowStartMs),
       windowEnd: new Date(ev.windowEndMs),
       tca: new Date(ev.tcaMs),
@@ -382,6 +399,35 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
       };
     });
     await db.insert(rpodEventMembers).values(memberRows).onConflictDoNothing();
+  }
+}
+
+/**
+ * Sweep existing conjunction-track rows so historical cases (including ones
+ * created before docked labeling existed, or no longer re-detected) carry the
+ * right label: near-zero range + near-zero relative velocity ⇒ "docked",
+ * and back to "conjunction" if the stats no longer qualify.
+ */
+async function reclassifyDockedEvents(): Promise<void> {
+  const toDocked = await db
+    .update(rpodEvents)
+    .set({ kind: "docked", updatedAt: sql`now()` })
+    .where(and(
+      eq(rpodEvents.kind, "conjunction"),
+      sql`${rpodEvents.minRangeKm} <= ${DOCKED_MAX_RANGE_KM}`,
+      sql`${rpodEvents.relVelKmS} <= ${DOCKED_MAX_RELVEL_KM_S}`,
+    ))
+    .returning({ id: rpodEvents.id });
+  const toConjunction = await db
+    .update(rpodEvents)
+    .set({ kind: "conjunction", updatedAt: sql`now()` })
+    .where(and(
+      eq(rpodEvents.kind, "docked"),
+      sql`(${rpodEvents.minRangeKm} > ${DOCKED_MAX_RANGE_KM} or ${rpodEvents.relVelKmS} > ${DOCKED_MAX_RELVEL_KM_S})`,
+    ))
+    .returning({ id: rpodEvents.id });
+  if (toDocked.length || toConjunction.length) {
+    logger.info({ toDocked: toDocked.length, toConjunction: toConjunction.length }, "rpod-scan: reclassified docked stacks");
   }
 }
 
