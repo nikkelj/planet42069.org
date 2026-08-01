@@ -13,7 +13,7 @@ import {
   screenCandidatePairs, screenCoAlignedPairs, minRaanDiffDeg, minPhaseDiffDeg, raanRateDegPerDay, closeApproach, clusterPairs,
   DEFAULT_SCREEN, DEFAULT_COALIGNED, type ScreenElset, type FlaggedPair,
 } from "../lib/rpod/screen";
-import { selectEndedCoplanarIds, COPLANAR_END_AFTER_MS } from "../lib/rpod/retire";
+import { selectEndedCoplanarIds, COPLANAR_END_AFTER_MS, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS } from "../lib/rpod/retire";
 
 let failures = 0;
 function check(name: string, cond: boolean, detail?: string): void {
@@ -214,6 +214,38 @@ console.log("Co-aligned (coplanar shadowing) screen");
   check("long-drifted event is ended", ended.includes(5));
   check("only the drifted events end", ended.length === 2, `got ${JSON.stringify(ended)}`);
   check("no events → nothing to end", selectEndedCoplanarIds([], now).length === 0);
+}
+
+// ── coplanar reopen rule ────────────────────────────────────────────────────
+{
+  console.log("\nCoplanar reopen (same pair closes ranks again → reactivate old case):");
+  const now = Date.parse("2026-08-01T00:00:00Z");
+  const d = 86400_000;
+  const ended = [
+    { id: 10, endedAt: new Date(now - 5 * d), members: [111, 222] },                     // recent, exact pair
+    { id: 11, endedAt: new Date(now - 30 * d), members: [111, 222, 333] },               // older, superset
+    { id: 12, endedAt: new Date(now - COPLANAR_REOPEN_WINDOW_MS - d), members: [444, 555] }, // too old
+    { id: 13, endedAt: null, members: [666, 777] },                                      // no end date
+    { id: 14, endedAt: new Date(now - 2 * d), members: [111, 888] },                     // only 1 shared member
+  ];
+
+  check("same pair within window reopens the old case",
+    selectReopenCandidate(ended, [111, 222], now) === 10);
+  check("most recently ended candidate wins over older superset",
+    selectReopenCandidate([ended[1], ended[0]], [111, 222], now) === 10);
+  check("≥2 shared members suffices (cluster grew a member)",
+    selectReopenCandidate([ended[1]], [222, 333, 999], now) === 11);
+  check("single shared member → new case",
+    selectReopenCandidate([ended[4]], [111, 999], now) === null);
+  check("case ended beyond the reopen window → new case",
+    selectReopenCandidate([ended[2]], [444, 555], now) === null);
+  check("case exactly at the window edge still reopens",
+    selectReopenCandidate([{ id: 20, endedAt: new Date(now - COPLANAR_REOPEN_WINDOW_MS), members: [1, 2] }], [1, 2], now) === 20);
+  check("missing endedAt never matches",
+    selectReopenCandidate([ended[3]], [666, 777], now) === null);
+  check("disjoint membership → new case",
+    selectReopenCandidate(ended, [900, 901], now) === null);
+  check("no ended cases → new case", selectReopenCandidate([], [111, 222], now) === null);
 }
 
 if (failures > 0) {

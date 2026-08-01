@@ -21,6 +21,8 @@ export interface RpodEventDetail {
   firstDetectedAt: string;
   lastSeenAt: string;
   endedAt: string | null;
+  reopenCount: number;
+  lastReopenedAt: string | null;
   updatedAt: string;
   members: RpodMemberDetail[];
 }

@@ -558,6 +558,8 @@ export const GetRpodEventsResponse = zod.object({
   "firstDetectedAt": zod.string(),
   "lastSeenAt": zod.string().describe('Last scan that re-detected this event'),
   "endedAt": zod.string().nullable().describe('When the event was retired (pair drifted apart); null while active\/stale'),
+  "reopenCount": zod.number().describe('Times this case was reopened after ending (same pair closed ranks again)'),
+  "lastReopenedAt": zod.string().nullable().describe('Most recent reopen; null if never reopened'),
   "updatedAt": zod.string(),
   "members": zod.array(zod.object({
   "norad": zod.number(),
@@ -599,6 +601,8 @@ export const GetRpodEventResponse = zod.object({
   "firstDetectedAt": zod.string(),
   "lastSeenAt": zod.string(),
   "endedAt": zod.string().nullable(),
+  "reopenCount": zod.number(),
+  "lastReopenedAt": zod.string().nullable(),
   "updatedAt": zod.string(),
   "members": zod.array(zod.object({
   "norad": zod.number(),

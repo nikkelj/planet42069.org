@@ -143,6 +143,8 @@ router.get("/rpod/events", async (req, res): Promise<void> => {
       firstDetectedAt: r.firstDetectedAt.toISOString(),
       lastSeenAt: r.lastSeenAt.toISOString(),
       endedAt: r.endedAt ? r.endedAt.toISOString() : null,
+      reopenCount: r.reopenCount,
+      lastReopenedAt: r.lastReopenedAt ? r.lastReopenedAt.toISOString() : null,
       updatedAt: r.updatedAt.toISOString(),
       members: (byEvent.get(r.id) ?? []).sort((a, b) => a.norad - b.norad),
     })),
@@ -221,6 +223,8 @@ router.get("/rpod/events/:id", async (req, res): Promise<void> => {
     firstDetectedAt: row.firstDetectedAt.toISOString(),
     lastSeenAt: row.lastSeenAt.toISOString(),
     endedAt: row.endedAt ? row.endedAt.toISOString() : null,
+    reopenCount: row.reopenCount,
+    lastReopenedAt: row.lastReopenedAt ? row.lastReopenedAt.toISOString() : null,
     updatedAt: row.updatedAt.toISOString(),
     members: members.sort((a, b) => a.norad - b.norad),
   });

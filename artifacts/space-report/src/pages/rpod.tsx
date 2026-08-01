@@ -261,6 +261,15 @@ export default function Rpod() {
                         >
                           {ev.status === "active" ? "ACTIVE" : ev.status === "ended" ? "ENDED" : "ARCHIVED"}
                         </Badge>
+                        {ev.reopenCount > 0 && (
+                          <Badge
+                            variant="outline"
+                            className="ml-1 font-mono text-[10px] uppercase rounded-none border-accent text-accent"
+                            title={`Case previously ended, then the same pair closed ranks again — reopened ${ev.reopenCount}×${ev.lastReopenedAt ? `, most recently ${fmtUtc(ev.lastReopenedAt)}` : ""}. Repeat offenders keep one file.`}
+                          >
+                            REOPENED{ev.reopenCount > 1 ? ` ×${ev.reopenCount}` : ""}
+                          </Badge>
+                        )}
                         {ev.status === "ended" && (
                           <span className="block mt-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground whitespace-nowrap">
                             last seen {fmtUtc(ev.lastSeenAt)}

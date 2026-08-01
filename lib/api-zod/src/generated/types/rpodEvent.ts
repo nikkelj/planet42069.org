@@ -26,6 +26,10 @@ export interface RpodEvent {
   lastSeenAt: string;
   /** When the event was retired (pair drifted apart); null while active/stale */
   endedAt: string | null;
+  /** Times this case was reopened after ending (same pair closed ranks again) */
+  reopenCount: number;
+  /** Most recent reopen; null if never reopened */
+  lastReopenedAt: string | null;
   updatedAt: string;
   members: RpodMember[];
 }

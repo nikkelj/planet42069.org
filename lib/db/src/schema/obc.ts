@@ -186,6 +186,10 @@ export const rpodEvents = pgTable(
     lastSeenAt: timestamp("last_seen_at").notNull().defaultNow(),
     /** When the event transitioned to "ended" (pair drifted apart). */
     endedAt: timestamp("ended_at"),
+    /** Times this case was reopened after ending (same pair closed ranks again). */
+    reopenCount: integer("reopen_count").notNull().default(0),
+    /** Most recent reopen (null if the case has never been reopened). */
+    lastReopenedAt: timestamp("last_reopened_at"),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [index("rpod_events_tca_idx").on(t.tca), index("rpod_events_status_idx").on(t.status, t.tca)],

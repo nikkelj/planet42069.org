@@ -602,13 +602,20 @@ components:
           type: string
           nullable: true
           description: When the event was retired (pair drifted apart); null while active/stale
+        reopenCount:
+          type: integer
+          description: Times this case was reopened after ending (same pair closed ranks again)
+        lastReopenedAt:
+          type: string
+          nullable: true
+          description: Most recent reopen; null if never reopened
         updatedAt:
           type: string
         members:
           type: array
           items:
             $ref: "#/components/schemas/RpodMember"
-      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, lastSeenAt, endedAt, updatedAt, members]
+      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, lastSeenAt, endedAt, reopenCount, lastReopenedAt, updatedAt, members]
 
     RpodEventList:
       type: object
@@ -655,13 +662,18 @@ components:
         endedAt:
           type: string
           nullable: true
+        reopenCount:
+          type: integer
+        lastReopenedAt:
+          type: string
+          nullable: true
         updatedAt:
           type: string
         members:
           type: array
           items:
             $ref: "#/components/schemas/RpodMemberDetail"
-      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, lastSeenAt, endedAt, updatedAt, members]
+      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, lastSeenAt, endedAt, reopenCount, lastReopenedAt, updatedAt, members]
 
     RpodArchiveStatus:
       type: object

@@ -20,3 +20,41 @@ export function selectEndedCoplanarIds(
 ): number[] {
   return events.filter((e) => nowMs - e.lastSeenAt.getTime() > COPLANAR_END_AFTER_MS).map((e) => e.id);
 }
+
+/**
+ * How long an ended shadowing case remains eligible for reopening. Pairs
+ * that resume station-keeping within this window get their original case
+ * reactivated (same RPOD number) instead of a fresh case, so repeat
+ * offenders keep a single continuous file.
+ */
+export const COPLANAR_REOPEN_WINDOW_MS = 90 * 86400_000;
+
+/**
+ * Pure reopen decision: given recently-ENDED coplanar events (with their
+ * memberships) and the member set of a newly detected coplanar cluster,
+ * return the id of the ended case to reactivate, or null when a brand-new
+ * case should be opened.
+ *
+ * Rules mirror the active-event upsert: ≥2 shared members counts as the
+ * same pair. Only cases ended within COPLANAR_REOPEN_WINDOW_MS qualify.
+ * When several qualify, the most recently ended one wins (its history is
+ * the freshest continuation of the pair).
+ */
+export function selectReopenCandidate(
+  endedEvents: { id: number; endedAt: Date | null; members: number[] }[],
+  incomingMembers: number[],
+  nowMs: number,
+): number | null {
+  const incoming = new Set(incomingMembers);
+  let best: { id: number; endedAtMs: number } | null = null;
+  for (const ev of endedEvents) {
+    if (!ev.endedAt) continue;
+    const endedAtMs = ev.endedAt.getTime();
+    if (nowMs - endedAtMs > COPLANAR_REOPEN_WINDOW_MS) continue;
+    let shared = 0;
+    for (const n of ev.members) if (incoming.has(n)) shared++;
+    if (shared < 2) continue;
+    if (!best || endedAtMs > best.endedAtMs) best = { id: ev.id, endedAtMs };
+  }
+  return best?.id ?? null;
+}

@@ -10,7 +10,7 @@ import {
   COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, semiMajorAxisKm, minPhaseDiffDeg,
   type ScreenElset, type FlaggedPair, type ScreenOptions,
 } from "./screen";
-import { selectEndedCoplanarIds } from "./retire";
+import { selectEndedCoplanarIds, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS } from "./retire";
 
 /**
  * RPOD scan orchestrator: pulls the latest archived elsets, runs the
@@ -273,6 +273,12 @@ async function logScanRow(status: "success" | "error", startedAt: Date, rowCount
  * kind when they share ≥2 members — for conjunctions, additionally the TCAs
  * must be within 24h (discrete approaches); coplanar shadowing events match
  * on membership alone since they persist for weeks with a moving "TCA".
+ *
+ * Coplanar events additionally check recently-ENDED cases: if the same pair
+ * (≥2 shared members) closed ranks again within COPLANAR_REOPEN_WINDOW_MS
+ * of ending, the old case is REACTIVATED (same RPOD number, reopenCount
+ * incremented) instead of opening a fresh case, keeping repeat offenders on
+ * a single continuous file.
  */
 async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "conjunction" | "coplanar"): Promise<void> {
   if (events.length === 0) return;
@@ -285,6 +291,29 @@ async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "con
     const s = membersByEvent.get(m.eventId) ?? new Set<number>();
     s.add(m.norad);
     membersByEvent.set(m.eventId, s);
+  }
+
+  // Recently-ended coplanar cases stay eligible for reopening.
+  let endedWithMembers: { id: number; endedAt: Date | null; members: number[] }[] = [];
+  if (kind === "coplanar") {
+    const ended = await db
+      .select({ id: rpodEvents.id, endedAt: rpodEvents.endedAt, reopenCount: rpodEvents.reopenCount })
+      .from(rpodEvents)
+      .where(and(
+        eq(rpodEvents.status, "ended"),
+        eq(rpodEvents.kind, "coplanar"),
+        sql`${rpodEvents.endedAt} > now() - make_interval(secs => ${COPLANAR_REOPEN_WINDOW_MS / 1000})`,
+      ));
+    const endedMembers = ended.length
+      ? await db.select().from(rpodEventMembers).where(inArray(rpodEventMembers.eventId, ended.map((e) => e.id)))
+      : [];
+    const byId = new Map<number, number[]>();
+    for (const m of endedMembers) {
+      const arr = byId.get(m.eventId) ?? [];
+      arr.push(m.norad);
+      byId.set(m.eventId, arr);
+    }
+    endedWithMembers = ended.map((e) => ({ id: e.id, endedAt: e.endedAt, members: byId.get(e.id) ?? [] }));
   }
 
   for (const ev of events) {
@@ -318,8 +347,27 @@ async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "con
       eventId = match.id;
       await db.delete(rpodEventMembers).where(eq(rpodEventMembers.eventId, eventId));
     } else {
-      const [row] = await db.insert(rpodEvents).values(base).returning({ id: rpodEvents.id });
-      eventId = row.id;
+      const reopenId = kind === "coplanar" ? selectReopenCandidate(endedWithMembers, ev.members, Date.now()) : null;
+      if (reopenId != null) {
+        // Same pair closed ranks again — reactivate the old case file.
+        await db
+          .update(rpodEvents)
+          .set({
+            ...base,
+            endedAt: null,
+            reopenCount: sql`${rpodEvents.reopenCount} + 1`,
+            lastReopenedAt: sql`now()`,
+            updatedAt: sql`now()`,
+          })
+          .where(eq(rpodEvents.id, reopenId));
+        eventId = reopenId;
+        await db.delete(rpodEventMembers).where(eq(rpodEventMembers.eventId, eventId));
+        endedWithMembers = endedWithMembers.filter((e) => e.id !== reopenId);
+        logger.info({ eventId }, "rpod-scan: reopened ended coplanar case (pair closed ranks again)");
+      } else {
+        const [row] = await db.insert(rpodEvents).values(base).returning({ id: rpodEvents.id });
+        eventId = row.id;
+      }
     }
 
     // Per-member tightest pair stats
