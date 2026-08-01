@@ -12,4 +12,5 @@
 - [Gunter's Space Page structure & policy](gunter-page-structure.md) — iso-8859-1 pages, stable td ids, cosid join key; polite budgeted crawl + Krebs citation are conditions of use.
 - [Orval path+query params collision](orval-params-collision.md) — an operation with BOTH path and query params breaks api-zod with TS2308; keep ids in the query string.
 - [space-track TLE fetching](spacetrack-tle.md) — gp-class query pattern, aggressive caching, ≥2s request gap, cookie reuse/re-auth rules.
+- [Stale composite builds](stale-composite-builds.md) — "property does not exist" on @workspace types = stale lib dist; run `tsc -b lib/<pkg>`, don't chase phantom bugs.
 - [TLE archive & RPOD screening](tle-archive-rpod.md) — future-dated epochs (clamp watermarks at now), gp_history must walk desc, cluster pairs not members, advisory locks for workers.
