@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import {
   useGetRpodEvents, getGetRpodEventsQueryKey,
   useGetRpodEvent, getGetRpodEventQueryKey,
@@ -10,7 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Crosshair, Loader2, ChevronDown, ChevronRight, Radio } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Crosshair, Loader2, ChevronDown, ChevronRight, Radio, Search } from "lucide-react";
 
 const RpodViewer3D = lazy(() => import("@/components/RpodViewer3D"));
 
@@ -94,12 +95,24 @@ export default function Rpod() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [kindFilter, setKindFilter] = useState("all");
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+      setExpanded(null);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const queryParams = {
     page,
     limit: 50,
     status: statusFilter !== "all" ? (statusFilter as "active" | "stale" | "ended") : undefined,
     kind: kindFilter !== "all" ? (kindFilter as "conjunction" | "coplanar") : undefined,
+    q: debouncedSearch || undefined,
   };
   const { data, isLoading, isError } = useGetRpodEvents(queryParams, {
     query: { queryKey: getGetRpodEventsQueryKey(queryParams), refetchInterval: 5 * 60_000 },
@@ -154,7 +167,16 @@ export default function Rpod() {
           for weeks or months. Formation flying, inspections, dockings — all of it unlicensed,
           none of it with a permit on file.
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="NAME OR NORAD #"
+              className="w-[200px] pl-7 rounded-none border-border bg-background uppercase text-xs font-mono h-9"
+            />
+          </div>
           <Select value={kindFilter} onValueChange={(v) => { setKindFilter(v); setPage(1); setExpanded(null); }}>
             <SelectTrigger className="w-[160px] rounded-none border-border bg-background uppercase text-xs">
               <SelectValue placeholder="KIND" />

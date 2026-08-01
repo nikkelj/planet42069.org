@@ -53,9 +53,50 @@ router.get("/rpod/events", async (req, res): Promise<void> => {
     sortField === "memberCount" ? rpodEvents.memberCount :
     rpodEvents.tca;
 
+  const q = req.query.q ? String(req.query.q).trim() : "";
+
   const conditions: SQL[] = [];
   if (status === "active" || status === "stale" || status === "ended") conditions.push(eq(rpodEvents.status, status));
   if (kind === "conjunction" || kind === "coplanar") conditions.push(eq(rpodEvents.kind, kind));
+
+  if (q) {
+    // Resolve the query to a set of NORAD numbers: direct numeric match plus
+    // case-insensitive substring match against catalog names.
+    const norads = new Set<number>();
+    if (/^\d+$/.test(q)) norads.add(parseInt(q, 10));
+    const needle = q.toLowerCase();
+    if (needle.length >= 2 || norads.size === 0) {
+      try {
+        const entries = await getSatcat();
+        for (const e of entries) {
+          if (e.satno == null) continue;
+          if (
+            e.name.toLowerCase().includes(needle) ||
+            (e.plName && e.plName.toLowerCase().includes(needle))
+          ) {
+            norads.add(e.satno);
+            if (norads.size >= 20000) break;
+          }
+        }
+      } catch {
+        // catalog not ready — fall back to numeric-only matching
+      }
+    }
+    if (norads.size === 0) {
+      // no possible matches — force an empty result set
+      conditions.push(sql`false`);
+    } else {
+      conditions.push(
+        inArray(
+          rpodEvents.id,
+          db
+            .select({ eventId: rpodEventMembers.eventId })
+            .from(rpodEventMembers)
+            .where(inArray(rpodEventMembers.norad, [...norads])),
+        ),
+      );
+    }
+  }
   const where: SQL | undefined = conditions.length ? and(...conditions) : undefined;
 
   const [rows, [{ total }]] = await Promise.all([

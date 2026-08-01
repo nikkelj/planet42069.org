@@ -538,6 +538,7 @@ export const GetRpodEventsQueryParams = zod.object({
   "limit": zod.coerce.number().default(getRpodEventsQueryLimitDefault),
   "status": zod.enum(['active', 'stale', 'ended']).optional().describe('Filter by event status (ended = coplanar pair drifted apart and stopped passing the screen)'),
   "kind": zod.enum(['conjunction', 'coplanar']).optional().describe('Filter by event kind (discrete conjunction vs long-duration coplanar shadowing)'),
+  "q": zod.coerce.string().optional().describe('Search by participant satellite name (substring, case-insensitive) or NORAD number'),
   "sort": zod.enum(['tca', 'minRangeKm', 'relVelKmS', 'memberCount']).optional().describe('Sort field (default tca)'),
   "order": zod.enum(['asc', 'desc']).default(getRpodEventsQueryOrderDefault)
 })

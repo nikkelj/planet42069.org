@@ -440,6 +440,11 @@ paths:
             type: string
             enum: [conjunction, coplanar]
           description: Filter by event kind (discrete conjunction vs long-duration coplanar shadowing)
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Search by participant satellite name (substring, case-insensitive) or NORAD number
         - name: sort
           in: query
           schema:

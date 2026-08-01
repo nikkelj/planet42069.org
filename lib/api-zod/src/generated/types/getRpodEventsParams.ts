@@ -22,6 +22,10 @@ status?: GetRpodEventsStatus;
  */
 kind?: GetRpodEventsKind;
 /**
+ * Search by participant satellite name (substring, case-insensitive) or NORAD number
+ */
+q?: string;
+/**
  * Sort field (default tca)
  */
 sort?: GetRpodEventsSort;
