@@ -174,13 +174,27 @@ function EventDetail({ eventId }: { eventId: number }) {
   );
 }
 
+/** Read initial view state from the URL so shared/bookmarked links restore the same view. */
+function readUrlState() {
+  const sp = new URLSearchParams(window.location.search);
+  const kind = sp.get("kind");
+  const status = sp.get("status");
+  const pageRaw = parseInt(sp.get("page") ?? "", 10);
+  return {
+    q: sp.get("q") ?? "",
+    kind: kind === "conjunction" || kind === "coplanar" ? kind : "all",
+    status: status === "active" || status === "stale" || status === "ended" ? status : "all",
+    page: Number.isFinite(pageRaw) && pageRaw > 1 ? pageRaw : 1,
+  };
+}
 export default function Rpod() {
-  const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [kindFilter, setKindFilter] = useState("all");
+  const initial = React.useMemo(readUrlState, []);
+  const [page, setPage] = useState(initial.page);
+  const [statusFilter, setStatusFilter] = useState(initial.status);
+  const [kindFilter, setKindFilter] = useState(initial.kind);
   const [expanded, setExpanded] = useState<number | null>(null);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [search, setSearch] = useState(initial.q);
+  const [debouncedSearch, setDebouncedSearch] = useState(initial.q.trim());
   // sorts[0] = primary (click), sorts[1] = secondary (shift-click)
   const [sorts, setSorts] = useState<SortSpec[]>([{ field: "tca", order: "desc" }]);
 
@@ -207,12 +221,33 @@ export default function Rpod() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      setDebouncedSearch(search.trim());
-      setPage(1);
-      setExpanded(null);
+      setDebouncedSearch((prev) => {
+        const next = search.trim();
+        if (next !== prev) {
+          setPage(1);
+          setExpanded(null);
+        }
+        return next;
+      });
     }, 300);
     return () => clearTimeout(t);
   }, [search]);
+
+  // Keep q/kind/status/page mirrored into the URL query string so the view is shareable.
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const setOrDelete = (key: string, value: string | null) =>
+      value != null && value !== "" ? sp.set(key, value) : sp.delete(key);
+    setOrDelete("q", debouncedSearch || null);
+    setOrDelete("kind", kindFilter !== "all" ? kindFilter : null);
+    setOrDelete("status", statusFilter !== "all" ? statusFilter : null);
+    setOrDelete("page", page > 1 ? String(page) : null);
+    const qs = sp.toString();
+    const next = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`;
+    if (next !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
+      window.history.replaceState(window.history.state, "", next);
+    }
+  }, [debouncedSearch, kindFilter, statusFilter, page]);
 
   const queryParams = {
     page,
