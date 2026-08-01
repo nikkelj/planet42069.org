@@ -28,6 +28,81 @@ function fmtRange(km: number): string {
   return km >= 100 ? `${km.toFixed(0)} km` : km >= 1 ? `${km.toFixed(1)} km` : `${(km * 1000).toFixed(0)} m`;
 }
 
+function fmtDuration(ms: number): string {
+  if (ms < 0) ms = 0;
+  const days = ms / 86_400_000;
+  if (days >= 1) {
+    const d = Math.floor(days);
+    const h = Math.floor((days - d) * 24);
+    return h > 0 ? `${d}d ${h}h` : `${d}d`;
+  }
+  const hours = ms / 3_600_000;
+  if (hours >= 1) return `${hours.toFixed(1)}h`;
+  return `${Math.max(1, Math.round(ms / 60_000))}m`;
+}
+
+function CaseTimeline({
+  firstDetectedAt, lastSeenAt, endedAt, status,
+}: { firstDetectedAt: string; lastSeenAt: string; endedAt: string | null; status: string }) {
+  const t0 = Date.parse(firstDetectedAt);
+  const t1 = Date.parse(lastSeenAt);
+  const t2 = endedAt ? Date.parse(endedAt) : null;
+  const obsMs = t1 - t0;
+  const gapMs = t2 != null ? t2 - t1 : 0;
+  const totalMs = t2 != null ? t2 - t0 : obsMs;
+  // fraction of the bar occupied by the observation span (min 10% so it's visible)
+  const obsFrac = totalMs > 0 ? Math.max(0.1, Math.min(1, obsMs / totalMs)) : 1;
+  const ended = t2 != null;
+
+  return (
+    <div className="px-4 py-3 font-mono text-[10px] uppercase tracking-widest space-y-2">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <span className="text-muted-foreground">Case timeline</span>
+        <span className="text-primary">
+          shadowed for <span className="font-bold">{fmtDuration(obsMs)}</span>
+          {ended && gapMs > 0 && (
+            <span className="text-muted-foreground normal-case tracking-normal"> · closed {fmtDuration(gapMs)} after last contact</span>
+          )}
+        </span>
+      </div>
+      <div className="flex items-center w-full">
+        {/* observation span */}
+        <div className="relative h-1.5 bg-primary/70" style={{ width: `${obsFrac * 100}%` }}>
+          <span className="absolute -left-0.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-primary" />
+          <span className={`absolute -right-0.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${ended ? "bg-primary/70" : "bg-primary animate-pulse"}`} />
+        </div>
+        {/* post-drift gap for ended cases */}
+        {ended && (
+          <div className="relative h-0 flex-1 border-t-2 border-dashed border-destructive/50">
+            <span className="absolute -right-0.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-destructive" />
+          </div>
+        )}
+      </div>
+      <div className="flex items-start justify-between gap-2 text-[9px]">
+        <div>
+          <span className="block text-muted-foreground">First detected</span>
+          <span className="text-foreground">{fmtUtc(firstDetectedAt)}</span>
+        </div>
+        <div className="text-right sm:text-center">
+          <span className="block text-muted-foreground">{ended ? "Last observed" : status === "active" ? "Last observed (still on file)" : "Last observed"}</span>
+          <span className="text-foreground">{fmtUtc(lastSeenAt)}</span>
+        </div>
+        {ended ? (
+          <div className="text-right">
+            <span className="block text-destructive">Case closed</span>
+            <span className="text-foreground">{fmtUtc(endedAt!)}</span>
+          </div>
+        ) : (
+          <div className="text-right">
+            <span className="block text-muted-foreground">Ended</span>
+            <span className="text-foreground">—</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function EventDetail({ eventId }: { eventId: number }) {
   const { data, isLoading } = useGetRpodEvent(eventId, {
     query: { queryKey: getGetRpodEventQueryKey(eventId), staleTime: 5 * 60_000 },
@@ -42,6 +117,12 @@ function EventDetail({ eventId }: { eventId: number }) {
   const sats = data.members.map((m) => ({ norad: m.norad, name: m.name ?? null, tle: m.tle ?? null }));
   return (
     <div className="border-l-4 border-primary ml-2 my-2 bg-background/60 divide-y divide-border/40">
+      <CaseTimeline
+        firstDetectedAt={data.firstDetectedAt}
+        lastSeenAt={data.lastSeenAt}
+        endedAt={data.endedAt}
+        status={data.status}
+      />
       <div className="w-full h-[300px] sm:h-[420px]">
         <Suspense fallback={
           <div className="w-full h-full flex items-center justify-center bg-black/70 font-mono text-[10px] uppercase tracking-widest text-primary/70">
