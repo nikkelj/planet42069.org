@@ -166,7 +166,7 @@ export const rpodEvents = pgTable(
   "rpod_events",
   {
     id: serial("id").primaryKey(),
-    status: text("status").notNull().default("active"), // "active" | "stale"
+    status: text("status").notNull().default("active"), // "active" | "stale" | "ended"
     /**
      * "conjunction": a discrete predicted close approach (bubble closes).
      * "coplanar": long-duration co-aligned shadowing — same plane and shell,
@@ -182,6 +182,10 @@ export const rpodEvents = pgTable(
     widenedScan: boolean("widened_scan").notNull().default(false),
     screeningMeta: jsonb("screening_meta").$type<Record<string, unknown>>(),
     firstDetectedAt: timestamp("first_detected_at").notNull().defaultNow(),
+    /** Last scan that re-detected this event (drives coplanar retirement). */
+    lastSeenAt: timestamp("last_seen_at").notNull().defaultNow(),
+    /** When the event transitioned to "ended" (pair drifted apart). */
+    endedAt: timestamp("ended_at"),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [index("rpod_events_tca_idx").on(t.tca), index("rpod_events_status_idx").on(t.status, t.tca)],

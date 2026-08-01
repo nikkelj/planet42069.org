@@ -536,7 +536,7 @@ export const getRpodEventsQueryOrderDefault = `desc`;
 export const GetRpodEventsQueryParams = zod.object({
   "page": zod.coerce.number().default(getRpodEventsQueryPageDefault),
   "limit": zod.coerce.number().default(getRpodEventsQueryLimitDefault),
-  "status": zod.enum(['active', 'stale']).optional().describe('Filter by event status'),
+  "status": zod.enum(['active', 'stale', 'ended']).optional().describe('Filter by event status (ended = coplanar pair drifted apart and stopped passing the screen)'),
   "kind": zod.enum(['conjunction', 'coplanar']).optional().describe('Filter by event kind (discrete conjunction vs long-duration coplanar shadowing)'),
   "sort": zod.enum(['tca', 'minRangeKm', 'relVelKmS', 'memberCount']).optional().describe('Sort field (default tca)'),
   "order": zod.enum(['asc', 'desc']).default(getRpodEventsQueryOrderDefault)
@@ -555,6 +555,8 @@ export const GetRpodEventsResponse = zod.object({
   "memberCount": zod.number(),
   "widenedScan": zod.boolean().describe('True when the cluster hit the member cap and a widened neighborhood scan ran'),
   "firstDetectedAt": zod.string(),
+  "lastSeenAt": zod.string().describe('Last scan that re-detected this event'),
+  "endedAt": zod.string().nullable().describe('When the event was retired (pair drifted apart); null while active\/stale'),
   "updatedAt": zod.string(),
   "members": zod.array(zod.object({
   "norad": zod.number(),
@@ -594,6 +596,8 @@ export const GetRpodEventResponse = zod.object({
   "memberCount": zod.number(),
   "widenedScan": zod.boolean(),
   "firstDetectedAt": zod.string(),
+  "lastSeenAt": zod.string(),
+  "endedAt": zod.string().nullable(),
   "updatedAt": zod.string(),
   "members": zod.array(zod.object({
   "norad": zod.number(),

@@ -22,6 +22,10 @@ export interface RpodEvent {
   /** True when the cluster hit the member cap and a widened neighborhood scan ran */
   widenedScan: boolean;
   firstDetectedAt: string;
+  /** Last scan that re-detected this event */
+  lastSeenAt: string;
+  /** When the event was retired (pair drifted apart); null while active/stale */
+  endedAt: string | null;
   updatedAt: string;
   members: RpodMember[];
 }

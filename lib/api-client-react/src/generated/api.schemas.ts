@@ -49,6 +49,10 @@ export interface RpodEvent {
   /** True when the cluster hit the member cap and a widened neighborhood scan ran */
   widenedScan: boolean;
   firstDetectedAt: string;
+  /** Last scan that re-detected this event */
+  lastSeenAt: string;
+  /** When the event was retired (pair drifted apart); null while active/stale */
+  endedAt: string | null;
   updatedAt: string;
   members: RpodMember[];
 }
@@ -72,6 +76,8 @@ export interface RpodEventDetail {
   memberCount: number;
   widenedScan: boolean;
   firstDetectedAt: string;
+  lastSeenAt: string;
+  endedAt: string | null;
   updatedAt: string;
   members: RpodMemberDetail[];
 }
@@ -779,7 +785,7 @@ export type GetRpodEventsParams = {
 page?: number;
 limit?: number;
 /**
- * Filter by event status
+ * Filter by event status (ended = coplanar pair drifted apart and stopped passing the screen)
  */
 status?: GetRpodEventsStatus;
 /**
@@ -799,6 +805,7 @@ export type GetRpodEventsStatus = typeof GetRpodEventsStatus[keyof typeof GetRpo
 export const GetRpodEventsStatus = {
   active: 'active',
   stale: 'stale',
+  ended: 'ended',
 } as const;
 
 export type GetRpodEventsKind = typeof GetRpodEventsKind[keyof typeof GetRpodEventsKind];

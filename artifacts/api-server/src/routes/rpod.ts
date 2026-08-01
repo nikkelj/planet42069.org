@@ -54,7 +54,7 @@ router.get("/rpod/events", async (req, res): Promise<void> => {
     rpodEvents.tca;
 
   const conditions: SQL[] = [];
-  if (status === "active" || status === "stale") conditions.push(eq(rpodEvents.status, status));
+  if (status === "active" || status === "stale" || status === "ended") conditions.push(eq(rpodEvents.status, status));
   if (kind === "conjunction" || kind === "coplanar") conditions.push(eq(rpodEvents.kind, kind));
   const where: SQL | undefined = conditions.length ? and(...conditions) : undefined;
 
@@ -100,6 +100,8 @@ router.get("/rpod/events", async (req, res): Promise<void> => {
       memberCount: r.memberCount,
       widenedScan: r.widenedScan,
       firstDetectedAt: r.firstDetectedAt.toISOString(),
+      lastSeenAt: r.lastSeenAt.toISOString(),
+      endedAt: r.endedAt ? r.endedAt.toISOString() : null,
       updatedAt: r.updatedAt.toISOString(),
       members: (byEvent.get(r.id) ?? []).sort((a, b) => a.norad - b.norad),
     })),
@@ -176,6 +178,8 @@ router.get("/rpod/events/:id", async (req, res): Promise<void> => {
     memberCount: row.memberCount,
     widenedScan: row.widenedScan,
     firstDetectedAt: row.firstDetectedAt.toISOString(),
+    lastSeenAt: row.lastSeenAt.toISOString(),
+    endedAt: row.endedAt ? row.endedAt.toISOString() : null,
     updatedAt: row.updatedAt.toISOString(),
     members: members.sort((a, b) => a.norad - b.norad),
   });

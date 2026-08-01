@@ -98,7 +98,7 @@ export default function Rpod() {
   const queryParams = {
     page,
     limit: 50,
-    status: statusFilter !== "all" ? (statusFilter as "active" | "stale") : undefined,
+    status: statusFilter !== "all" ? (statusFilter as "active" | "stale" | "ended") : undefined,
     kind: kindFilter !== "all" ? (kindFilter as "conjunction" | "coplanar") : undefined,
   };
   const { data, isLoading, isError } = useGetRpodEvents(queryParams, {
@@ -173,6 +173,7 @@ export default function Rpod() {
               <SelectItem value="all">ALL CASES</SelectItem>
               <SelectItem value="active">ACTIVE</SelectItem>
               <SelectItem value="stale">ARCHIVED</SelectItem>
+              <SelectItem value="ended">ENDED</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -225,9 +226,24 @@ export default function Rpod() {
                       </TableCell>
                       <TableCell className="text-primary font-bold">RPOD-{String(ev.id).padStart(4, "0")}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={`font-mono text-[10px] uppercase rounded-none ${ev.status === "active" ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground border-muted-foreground"}`}>
-                          {ev.status === "active" ? "ACTIVE" : "ARCHIVED"}
+                        <Badge
+                          variant="outline"
+                          className={`font-mono text-[10px] uppercase rounded-none ${
+                            ev.status === "active"
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : ev.status === "ended"
+                                ? "bg-destructive/10 text-destructive border-destructive/60"
+                                : "bg-muted text-muted-foreground border-muted-foreground"
+                          }`}
+                          title={ev.status === "ended" ? `Pair drifted apart — last seen together ${fmtUtc(ev.lastSeenAt)}` : undefined}
+                        >
+                          {ev.status === "active" ? "ACTIVE" : ev.status === "ended" ? "ENDED" : "ARCHIVED"}
                         </Badge>
+                        {ev.status === "ended" && (
+                          <span className="block mt-1 font-mono text-[9px] uppercase tracking-wider text-muted-foreground whitespace-nowrap">
+                            last seen {fmtUtc(ev.lastSeenAt)}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge

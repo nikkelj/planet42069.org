@@ -432,8 +432,8 @@ paths:
           in: query
           schema:
             type: string
-            enum: [active, stale]
-          description: Filter by event status
+            enum: [active, stale, ended]
+          description: Filter by event status (ended = coplanar pair drifted apart and stopped passing the screen)
         - name: kind
           in: query
           schema:
@@ -590,13 +590,20 @@ components:
           description: True when the cluster hit the member cap and a widened neighborhood scan ran
         firstDetectedAt:
           type: string
+        lastSeenAt:
+          type: string
+          description: Last scan that re-detected this event
+        endedAt:
+          type: string
+          nullable: true
+          description: When the event was retired (pair drifted apart); null while active/stale
         updatedAt:
           type: string
         members:
           type: array
           items:
             $ref: "#/components/schemas/RpodMember"
-      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, updatedAt, members]
+      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, lastSeenAt, endedAt, updatedAt, members]
 
     RpodEventList:
       type: object
@@ -638,13 +645,18 @@ components:
           type: boolean
         firstDetectedAt:
           type: string
+        lastSeenAt:
+          type: string
+        endedAt:
+          type: string
+          nullable: true
         updatedAt:
           type: string
         members:
           type: array
           items:
             $ref: "#/components/schemas/RpodMemberDetail"
-      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, updatedAt, members]
+      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, lastSeenAt, endedAt, updatedAt, members]
 
     RpodArchiveStatus:
       type: object

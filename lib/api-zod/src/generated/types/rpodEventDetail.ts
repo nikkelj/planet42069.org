@@ -19,6 +19,8 @@ export interface RpodEventDetail {
   memberCount: number;
   widenedScan: boolean;
   firstDetectedAt: string;
+  lastSeenAt: string;
+  endedAt: string | null;
   updatedAt: string;
   members: RpodMemberDetail[];
 }

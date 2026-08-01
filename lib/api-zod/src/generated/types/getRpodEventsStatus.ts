@@ -12,4 +12,5 @@ export type GetRpodEventsStatus = typeof GetRpodEventsStatus[keyof typeof GetRpo
 export const GetRpodEventsStatus = {
   active: 'active',
   stale: 'stale',
+  ended: 'ended',
 } as const;

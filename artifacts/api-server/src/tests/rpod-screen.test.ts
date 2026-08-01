@@ -13,6 +13,7 @@ import {
   screenCandidatePairs, screenCoAlignedPairs, minRaanDiffDeg, minPhaseDiffDeg, raanRateDegPerDay, closeApproach, clusterPairs,
   DEFAULT_SCREEN, DEFAULT_COALIGNED, type ScreenElset, type FlaggedPair,
 } from "../lib/rpod/screen";
+import { selectEndedCoplanarIds, COPLANAR_END_AFTER_MS } from "../lib/rpod/retire";
 
 let failures = 0;
 function check(name: string, cond: boolean, detail?: string): void {
@@ -191,6 +192,28 @@ console.log("Co-aligned (coplanar shadowing) screen");
     check("in-track range under coplanar cap", ca.minRangeKm < 250, `got ${ca.minRangeKm.toFixed(1)} km`);
     check("slow drift under coplanar rel-vel cap", ca.relVelKmS < 0.6, `got ${ca.relVelKmS.toFixed(3)} km/s`);
   }
+}
+
+// ── coplanar retirement rule ────────────────────────────────────────────────
+{
+  console.log("\nCoplanar retirement (drifted pairs end, fresh pairs survive):");
+  const now = Date.parse("2026-08-01T00:00:00Z");
+  const h = 3600_000;
+  const events = [
+    { id: 1, lastSeenAt: new Date(now) },                                  // re-detected this scan
+    { id: 2, lastSeenAt: new Date(now - 12 * h) },                         // brief elset gap
+    { id: 3, lastSeenAt: new Date(now - COPLANAR_END_AFTER_MS) },          // exactly at threshold
+    { id: 4, lastSeenAt: new Date(now - COPLANAR_END_AFTER_MS - 1) },      // just past threshold
+    { id: 5, lastSeenAt: new Date(now - 7 * 24 * h) },                     // long gone
+  ];
+  const ended = selectEndedCoplanarIds(events, now);
+  check("freshly re-detected event stays active", !ended.includes(1));
+  check("short gap stays active", !ended.includes(2));
+  check("event exactly at threshold stays active", !ended.includes(3));
+  check("event just past threshold is ended", ended.includes(4));
+  check("long-drifted event is ended", ended.includes(5));
+  check("only the drifted events end", ended.length === 2, `got ${JSON.stringify(ended)}`);
+  check("no events → nothing to end", selectEndedCoplanarIds([], now).length === 0);
 }
 
 if (failures > 0) {

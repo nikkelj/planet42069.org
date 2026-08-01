@@ -10,6 +10,7 @@ import {
   COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, semiMajorAxisKm, minPhaseDiffDeg,
   type ScreenElset, type FlaggedPair, type ScreenOptions,
 } from "./screen";
+import { selectEndedCoplanarIds } from "./retire";
 
 /**
  * RPOD scan orchestrator: pulls the latest archived elsets, runs the
@@ -240,6 +241,7 @@ async function doScan(): Promise<void> {
     await persistEvents(events, "conjunction");
     await persistEvents(coEvents, "coplanar");
     await markStaleEvents();
+    await retireDriftedCoplanarEvents();
     await logScanRow("success", started, events.length + coEvents.length);
     logger.info(
       {
@@ -307,6 +309,7 @@ async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "con
       widenedScan: ev.hitCap,
       screeningMeta: { pairs: ev.pairs.length },
       status: "active",
+      lastSeenAt: new Date(),
     };
 
     let eventId: number;
@@ -340,4 +343,25 @@ async function markStaleEvents(): Promise<void> {
     .update(rpodEvents)
     .set({ status: "stale", updatedAt: sql`now()` })
     .where(and(eq(rpodEvents.status, "active"), lt(rpodEvents.windowEnd, new Date(Date.now() - STALE_AFTER_MS))));
+}
+
+/**
+ * Retire coplanar shadowing events whose pair has drifted apart: if no scan
+ * has re-detected the event for COPLANAR_END_AFTER_MS, mark it "ended" with
+ * an end date. lastSeenAt is left untouched so the UI can show when the pair
+ * was last observed together. Only runs after a successful scan, so an outage
+ * of the scanner itself can't retire cases.
+ */
+async function retireDriftedCoplanarEvents(): Promise<void> {
+  const active = await db
+    .select({ id: rpodEvents.id, lastSeenAt: rpodEvents.lastSeenAt })
+    .from(rpodEvents)
+    .where(and(eq(rpodEvents.status, "active"), eq(rpodEvents.kind, "coplanar")));
+  const ids = selectEndedCoplanarIds(active, Date.now());
+  if (ids.length === 0) return;
+  await db
+    .update(rpodEvents)
+    .set({ status: "ended", endedAt: sql`now()`, updatedAt: sql`now()` })
+    .where(inArray(rpodEvents.id, ids));
+  logger.info({ ended: ids.length }, "rpod-scan: retired drifted coplanar events");
 }

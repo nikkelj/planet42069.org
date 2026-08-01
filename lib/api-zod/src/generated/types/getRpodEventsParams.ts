@@ -14,7 +14,7 @@ export type GetRpodEventsParams = {
 page?: number;
 limit?: number;
 /**
- * Filter by event status
+ * Filter by event status (ended = coplanar pair drifted apart and stopped passing the screen)
  */
 status?: GetRpodEventsStatus;
 /**
