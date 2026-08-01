@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type GetRpodEventsSort = typeof GetRpodEventsSort[keyof typeof GetRpodEventsSort];
+export type GetRpodEventsSort2 = typeof GetRpodEventsSort2[keyof typeof GetRpodEventsSort2];
 
 
-export const GetRpodEventsSort = {
+export const GetRpodEventsSort2 = {
   id: 'id',
   status: 'status',
   kind: 'kind',

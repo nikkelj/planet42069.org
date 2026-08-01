@@ -44,14 +44,20 @@ router.get("/rpod/events", async (req, res): Promise<void> => {
   const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit ?? "50"), 10) || 50));
   const status = req.query.status ? String(req.query.status) : undefined;
   const kind = req.query.kind ? String(req.query.kind) : undefined;
-  const sortField = String(req.query.sort ?? "tca");
-  const order = String(req.query.order ?? "desc") === "asc" ? asc : desc;
+  const sortColFor = (field: string) =>
+    field === "id" ? rpodEvents.id :
+    field === "status" ? rpodEvents.status :
+    field === "kind" ? rpodEvents.kind :
+    field === "minRangeKm" ? rpodEvents.minRangeKm :
+    field === "relVelKmS" ? rpodEvents.relVelKmS :
+    field === "memberCount" ? rpodEvents.memberCount :
+    field === "tca" ? rpodEvents.tca :
+    null;
 
-  const sortCol =
-    sortField === "minRangeKm" ? rpodEvents.minRangeKm :
-    sortField === "relVelKmS" ? rpodEvents.relVelKmS :
-    sortField === "memberCount" ? rpodEvents.memberCount :
-    rpodEvents.tca;
+  const sortCol = sortColFor(String(req.query.sort ?? "tca")) ?? rpodEvents.tca;
+  const order = String(req.query.order ?? "desc") === "asc" ? asc : desc;
+  const sortCol2 = req.query.sort2 ? sortColFor(String(req.query.sort2)) : null;
+  const order2 = String(req.query.order2 ?? "desc") === "asc" ? asc : desc;
 
   const q = req.query.q ? String(req.query.q).trim() : "";
 
@@ -100,7 +106,8 @@ router.get("/rpod/events", async (req, res): Promise<void> => {
   const where: SQL | undefined = conditions.length ? and(...conditions) : undefined;
 
   const [rows, [{ total }]] = await Promise.all([
-    db.select().from(rpodEvents).where(where).orderBy(order(sortCol), desc(rpodEvents.id))
+    db.select().from(rpodEvents).where(where)
+      .orderBy(...(sortCol2 ? [order(sortCol), order2(sortCol2)] : [order(sortCol)]), desc(rpodEvents.id))
       .limit(limit).offset((page - 1) * limit),
     db.select({ total: sql<number>`count(*)::int` }).from(rpodEvents).where(where),
   ]);

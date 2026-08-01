@@ -449,9 +449,21 @@ paths:
           in: query
           schema:
             type: string
-            enum: [tca, minRangeKm, relVelKmS, memberCount]
-          description: Sort field (default tca)
+            enum: [id, status, kind, tca, minRangeKm, relVelKmS, memberCount]
+          description: Primary sort field (default tca)
         - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: sort2
+          in: query
+          schema:
+            type: string
+            enum: [id, status, kind, tca, minRangeKm, relVelKmS, memberCount]
+          description: Secondary sort field applied within ties of the primary sort
+        - name: order2
           in: query
           schema:
             type: string

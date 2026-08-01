@@ -7,7 +7,9 @@
  */
 import type { GetRpodEventsKind } from './getRpodEventsKind';
 import type { GetRpodEventsOrder } from './getRpodEventsOrder';
+import type { GetRpodEventsOrder2 } from './getRpodEventsOrder2';
 import type { GetRpodEventsSort } from './getRpodEventsSort';
+import type { GetRpodEventsSort2 } from './getRpodEventsSort2';
 import type { GetRpodEventsStatus } from './getRpodEventsStatus';
 
 export type GetRpodEventsParams = {
@@ -26,8 +28,13 @@ kind?: GetRpodEventsKind;
  */
 q?: string;
 /**
- * Sort field (default tca)
+ * Primary sort field (default tca)
  */
 sort?: GetRpodEventsSort;
 order?: GetRpodEventsOrder;
+/**
+ * Secondary sort field applied within ties of the primary sort
+ */
+sort2?: GetRpodEventsSort2;
+order2?: GetRpodEventsOrder2;
 };

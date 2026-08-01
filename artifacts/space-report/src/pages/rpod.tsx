@@ -11,7 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Crosshair, Loader2, ChevronDown, ChevronRight, Radio, Search } from "lucide-react";
+import { Crosshair, Loader2, ChevronDown, ChevronRight, Radio, Search, ArrowUp, ArrowDown } from "lucide-react";
+
+type SortField = "id" | "status" | "kind" | "tca" | "minRangeKm" | "relVelKmS" | "memberCount";
+interface SortSpec { field: SortField; order: "asc" | "desc" }
 
 const RpodViewer3D = lazy(() => import("@/components/RpodViewer3D"));
 
@@ -178,6 +181,29 @@ export default function Rpod() {
   const [expanded, setExpanded] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  // sorts[0] = primary (click), sorts[1] = secondary (shift-click)
+  const [sorts, setSorts] = useState<SortSpec[]>([{ field: "tca", order: "desc" }]);
+
+  const handleSort = (field: SortField, additive: boolean) => {
+    setSorts((prev) => {
+      if (!additive) {
+        // plain click: make this the only sort; toggle direction if already primary
+        if (prev[0]?.field === field) return [{ field, order: prev[0].order === "desc" ? "asc" : "desc" }];
+        return [{ field, order: "desc" }];
+      }
+      // shift-click: set/toggle the secondary sort (keep primary)
+      const primary = prev[0] ?? { field: "tca" as SortField, order: "desc" as const };
+      if (primary.field === field) {
+        // shift-click on the primary column just toggles it
+        return [{ field, order: primary.order === "desc" ? "asc" : "desc" }, ...prev.slice(1)];
+      }
+      const existing = prev[1];
+      if (existing?.field === field) return [primary, { field, order: existing.order === "desc" ? "asc" : "desc" }];
+      return [primary, { field, order: "desc" }];
+    });
+    setPage(1);
+    setExpanded(null);
+  };
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -194,6 +220,10 @@ export default function Rpod() {
     status: statusFilter !== "all" ? (statusFilter as "active" | "stale" | "ended") : undefined,
     kind: kindFilter !== "all" ? (kindFilter as "conjunction" | "coplanar") : undefined,
     q: debouncedSearch || undefined,
+    sort: sorts[0]?.field,
+    order: sorts[0]?.order,
+    sort2: sorts[1]?.field,
+    order2: sorts[1]?.order,
   };
   const { data, isLoading, isError } = useGetRpodEvents(queryParams, {
     query: { queryKey: getGetRpodEventsQueryKey(queryParams), refetchInterval: 5 * 60_000 },
@@ -307,13 +337,34 @@ export default function Rpod() {
               <TableHeader className="bg-muted/50 border-b-2 border-border">
                 <TableRow className="border-b-border hover:bg-transparent">
                   <TableHead />
-                  <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">Case</TableHead>
-                  <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">Status</TableHead>
-                  <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">Kind</TableHead>
-                  <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">TCA (UTC)</TableHead>
-                  <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">Min Range</TableHead>
-                  <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">Rel Vel</TableHead>
-                  <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">Craft</TableHead>
+                  {([
+                    ["id", "Case"],
+                    ["status", "Status"],
+                    ["kind", "Kind"],
+                    ["tca", "TCA (UTC)"],
+                    ["minRangeKm", "Min Range"],
+                    ["relVelKmS", "Rel Vel"],
+                    ["memberCount", "Craft"],
+                  ] as [SortField, string][]).map(([field, label]) => {
+                    const rank = sorts.findIndex((s) => s.field === field);
+                    const spec = rank >= 0 ? sorts[rank] : null;
+                    return (
+                      <TableHead
+                        key={field}
+                        onClick={(e) => handleSort(field, e.shiftKey)}
+                        title="Click to sort · Shift+click to add a secondary sort"
+                        className={`uppercase text-xs tracking-wider cursor-pointer select-none hover:text-primary transition-colors ${spec ? "text-primary" : "text-muted-foreground"}`}
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          {label}
+                          {spec && (spec.order === "desc" ? <ArrowDown className="w-3 h-3" /> : <ArrowUp className="w-3 h-3" />)}
+                          {spec && sorts.length > 1 && (
+                            <span className="text-[9px] border border-primary/50 px-0.5 leading-3">{rank + 1}</span>
+                          )}
+                        </span>
+                      </TableHead>
+                    );
+                  })}
                   <TableHead className="text-muted-foreground uppercase text-xs tracking-wider">Participants</TableHead>
                 </TableRow>
               </TableHeader>

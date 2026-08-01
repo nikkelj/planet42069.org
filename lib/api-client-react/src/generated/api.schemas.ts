@@ -803,10 +803,15 @@ kind?: GetRpodEventsKind;
  */
 q?: string;
 /**
- * Sort field (default tca)
+ * Primary sort field (default tca)
  */
 sort?: GetRpodEventsSort;
 order?: GetRpodEventsOrder;
+/**
+ * Secondary sort field applied within ties of the primary sort
+ */
+sort2?: GetRpodEventsSort2;
+order2?: GetRpodEventsOrder2;
 };
 
 export type GetRpodEventsStatus = typeof GetRpodEventsStatus[keyof typeof GetRpodEventsStatus];
@@ -830,6 +835,9 @@ export type GetRpodEventsSort = typeof GetRpodEventsSort[keyof typeof GetRpodEve
 
 
 export const GetRpodEventsSort = {
+  id: 'id',
+  status: 'status',
+  kind: 'kind',
   tca: 'tca',
   minRangeKm: 'minRangeKm',
   relVelKmS: 'relVelKmS',
@@ -840,6 +848,27 @@ export type GetRpodEventsOrder = typeof GetRpodEventsOrder[keyof typeof GetRpodE
 
 
 export const GetRpodEventsOrder = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export type GetRpodEventsSort2 = typeof GetRpodEventsSort2[keyof typeof GetRpodEventsSort2];
+
+
+export const GetRpodEventsSort2 = {
+  id: 'id',
+  status: 'status',
+  kind: 'kind',
+  tca: 'tca',
+  minRangeKm: 'minRangeKm',
+  relVelKmS: 'relVelKmS',
+  memberCount: 'memberCount',
+} as const;
+
+export type GetRpodEventsOrder2 = typeof GetRpodEventsOrder2[keyof typeof GetRpodEventsOrder2];
+
+
+export const GetRpodEventsOrder2 = {
   asc: 'asc',
   desc: 'desc',
 } as const;

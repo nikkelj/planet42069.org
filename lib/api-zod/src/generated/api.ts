@@ -532,6 +532,7 @@ export const GetSatcatFiltersResponse = zod.object({
 export const getRpodEventsQueryPageDefault = 1;
 export const getRpodEventsQueryLimitDefault = 50;
 export const getRpodEventsQueryOrderDefault = `desc`;
+export const getRpodEventsQueryOrder2Default = `desc`;
 
 export const GetRpodEventsQueryParams = zod.object({
   "page": zod.coerce.number().default(getRpodEventsQueryPageDefault),
@@ -539,8 +540,10 @@ export const GetRpodEventsQueryParams = zod.object({
   "status": zod.enum(['active', 'stale', 'ended']).optional().describe('Filter by event status (ended = coplanar pair drifted apart and stopped passing the screen)'),
   "kind": zod.enum(['conjunction', 'coplanar']).optional().describe('Filter by event kind (discrete conjunction vs long-duration coplanar shadowing)'),
   "q": zod.coerce.string().optional().describe('Search by participant satellite name (substring, case-insensitive) or NORAD number'),
-  "sort": zod.enum(['tca', 'minRangeKm', 'relVelKmS', 'memberCount']).optional().describe('Sort field (default tca)'),
-  "order": zod.enum(['asc', 'desc']).default(getRpodEventsQueryOrderDefault)
+  "sort": zod.enum(['id', 'status', 'kind', 'tca', 'minRangeKm', 'relVelKmS', 'memberCount']).optional().describe('Primary sort field (default tca)'),
+  "order": zod.enum(['asc', 'desc']).default(getRpodEventsQueryOrderDefault),
+  "sort2": zod.enum(['id', 'status', 'kind', 'tca', 'minRangeKm', 'relVelKmS', 'memberCount']).optional().describe('Secondary sort field applied within ties of the primary sort'),
+  "order2": zod.enum(['asc', 'desc']).default(getRpodEventsQueryOrder2Default)
 })
 
 export const GetRpodEventsResponse = zod.object({
