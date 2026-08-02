@@ -148,9 +148,16 @@ function CaseTimeline({
 }
 
 function EventDetail({ eventId }: { eventId: number }) {
-  const { data, isLoading } = useGetRpodEvent(eventId, {
+  const { data, isLoading, isError } = useGetRpodEvent(eventId, {
     query: { queryKey: getGetRpodEventQueryKey(eventId), staleTime: 5 * 60_000 },
   });
+  if (isError) {
+    return (
+      <div className="p-8 text-center font-mono text-xs uppercase tracking-widest text-destructive">
+        No case file found under RPOD-{String(eventId).padStart(4, "0")} — the link may be stale.
+      </div>
+    );
+  }
   if (isLoading || !data) {
     return (
       <div className="flex items-center justify-center p-8 text-primary font-mono text-xs uppercase tracking-widest">
@@ -222,12 +229,14 @@ function readUrlState() {
   const kind = sp.get("kind");
   const status = sp.get("status");
   const pageRaw = parseInt(sp.get("page") ?? "", 10);
+  const caseRaw = parseInt(sp.get("case") ?? "", 10);
   return {
     q: sp.get("q") ?? "",
     kind: kind === "conjunction" || kind === "coplanar" || kind === "docked" ? kind : "all",
     status: status === "active" || status === "stale" || status === "ended" ? status : "all",
     reopened: sp.get("reopened") === "true",
     page: Number.isFinite(pageRaw) && pageRaw > 1 ? pageRaw : 1,
+    case: Number.isFinite(caseRaw) && caseRaw > 0 ? caseRaw : null,
   };
 }
 export default function Rpod() {
@@ -236,7 +245,7 @@ export default function Rpod() {
   const [statusFilter, setStatusFilter] = useState(initial.status);
   const [kindFilter, setKindFilter] = useState(initial.kind);
   const [reopenedOnly, setReopenedOnly] = useState(initial.reopened);
-  const [expanded, setExpanded] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState<number | null>(initial.case);
   const [search, setSearch] = useState(initial.q);
   const [debouncedSearch, setDebouncedSearch] = useState(initial.q.trim());
   // sorts[0] = primary (click), sorts[1] = secondary (shift-click)
@@ -287,12 +296,13 @@ export default function Rpod() {
     setOrDelete("status", statusFilter !== "all" ? statusFilter : null);
     setOrDelete("reopened", reopenedOnly ? "true" : null);
     setOrDelete("page", page > 1 ? String(page) : null);
+    setOrDelete("case", expanded != null ? String(expanded) : null);
     const qs = sp.toString();
     const next = `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`;
     if (next !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
       window.history.replaceState(window.history.state, "", next);
     }
-  }, [debouncedSearch, kindFilter, statusFilter, reopenedOnly, page]);
+  }, [debouncedSearch, kindFilter, statusFilter, reopenedOnly, page, expanded]);
 
   const queryParams = {
     page,
@@ -408,6 +418,23 @@ export default function Rpod() {
           </Button>
         </div>
       </div>
+
+      {/* A shared ?case= link may point at a case that isn't on the current page of
+          results — pin its full case file above the table by fetching it directly. */}
+      {expanded != null && !isLoading && !isError && !data?.data.some((ev) => ev.id === expanded) && (
+        <div className="border-2 border-primary/60 bg-card overflow-hidden relative">
+          <div className="flex items-center justify-between gap-2 px-4 py-2 bg-primary/10 border-b border-border font-mono text-xs uppercase tracking-widest">
+            <span className="text-primary font-bold">Case file RPOD-{String(expanded).padStart(4, "0")}</span>
+            <span className="flex items-center gap-3">
+              <span className="text-muted-foreground normal-case tracking-normal">Not on this page of results — pulled directly</span>
+              <Button variant="outline" size="sm" className="rounded-none h-7 uppercase text-[10px] font-mono" onClick={() => setExpanded(null)}>
+                Close
+              </Button>
+            </span>
+          </div>
+          <EventDetail eventId={expanded} />
+        </div>
+      )}
 
       <div className="border-2 border-border bg-card overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none border-scanline opacity-10" />
