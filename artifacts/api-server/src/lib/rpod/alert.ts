@@ -126,16 +126,44 @@ async function alreadyPosted(eventId: number): Promise<boolean> {
   return rows.length > 0;
 }
 
-async function postToX(text: string): Promise<string> {
-  const { TwitterApi } = await import("twitter-api-v2");
+async function postToX(text: string, image?: Buffer): Promise<string> {
+  const { TwitterApi, EUploadMimeType } = await import("twitter-api-v2");
   const client = new TwitterApi({
     appKey: process.env.X_API_KEY!,
     appSecret: process.env.X_API_SECRET!,
     accessToken: process.env.X_ACCESS_TOKEN!,
     accessSecret: process.env.X_ACCESS_TOKEN_SECRET!,
   });
-  const res = await client.v2.tweet(text);
+  let mediaId: string | null = null;
+  if (image) {
+    // v2 uploadMedia 503s on this tier; v1.1 upload + v2 tweet is the working combo.
+    try {
+      mediaId = await client.v1.uploadMedia(image, { mimeType: EUploadMimeType.Png });
+      await client.v1
+        .createMediaMetadata(mediaId, { alt_text: { text: "Space Police citation case card with case number, cited craft, and closest-approach geometry" } })
+        .catch(() => {}); // alt text is best-effort
+    } catch (err) {
+      logger.warn({ err }, "rpod-alert: media upload failed, posting text-only");
+    }
+  }
+  const res = mediaId
+    ? await client.v2.tweet(text, { media: { media_ids: [mediaId] } })
+    : await client.v2.tweet(text);
   return res.data.id;
+}
+
+/** Best-effort case-card render. Never throws — a bad render must not block the alert. */
+async function tryRenderCaseCard(
+  ev: NewRpodEvent,
+  metaFor: (norad: number) => AlertMeta | undefined,
+): Promise<Buffer | undefined> {
+  try {
+    const { renderCaseCardPng } = await import("./case-card");
+    return await renderCaseCardPng(ev, metaFor);
+  } catch (err) {
+    logger.warn({ err, eventId: ev.eventId }, "rpod-alert: case-card render failed, falling back to text-only");
+    return undefined;
+  }
 }
 
 /**
@@ -167,7 +195,8 @@ export async function postNewRpodEventAlerts(
       if (await alreadyPosted(ev.eventId)) continue;
       const started = new Date();
       try {
-        const tweetId = await postToX(formatCitation(ev, metaFor));
+        const image = await tryRenderCaseCard(ev, metaFor);
+        const tweetId = await postToX(formatCitation(ev, metaFor), image);
         await db.insert(obcSyncLog).values({
           source: ALERT_LOG_SOURCE, status: "success", rowCount: ev.eventId,
           error: null, startedAt: started,

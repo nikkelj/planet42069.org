@@ -92,6 +92,20 @@ async function main(): Promise<void> {
     check("links the case file", text.includes(`/rpod?case=${inserted[0].eventId}`), text);
     check("unknown names fall back to NORAD id",
       formatCitation(inserted[0], () => undefined).includes(`NORAD ${PAIR[0]}`));
+
+    console.log("case-card image");
+    const { renderCaseCardSvg, renderCaseCardPng } = await import("../lib/rpod/case-card");
+    const svg = renderCaseCardSvg(inserted[0], metaFor);
+    check("svg carries case number", svg.includes(caseNumber(inserted[0].eventId)));
+    check("svg carries craft names", svg.includes("COSMOS TEST A") && svg.includes("USA TEST B"));
+    check("svg carries geometry", svg.includes("4.20 km") && / UTC</.test(svg));
+    const hostile: AlertMeta = { name: `<script>&"x`, launchTag: null };
+    const hostileSvg = renderCaseCardSvg(inserted[0], () => hostile);
+    check("svg escapes hostile names", !hostileSvg.includes("<script>") && hostileSvg.includes("&lt;script&gt;"));
+    const png = await renderCaseCardPng(inserted[0], metaFor);
+    check("png renders with PNG magic bytes",
+      png.length > 10_000 && png[0] === 0x89 && png[1] === 0x50 && png[2] === 0x4e && png[3] === 0x47,
+      `len=${png.length}`);
   } finally {
     if (cleanupIds.length) {
       await db.delete(rpodEventMembers).where(inArray(rpodEventMembers.eventId, cleanupIds));
