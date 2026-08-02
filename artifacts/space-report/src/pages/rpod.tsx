@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Crosshair, Loader2, ChevronDown, ChevronRight, Radio, Search, ArrowUp, ArrowDown } from "lucide-react";
 import { Link } from "wouter";
+import { countryLabel, countryName } from "@/lib/countries";
 
 /** Deep link into the satcat explorer; catalog.tsx reads ?sat= and auto-expands the row. */
 const catalogHref = (norad: number) => `/catalog?sat=${norad}`;
@@ -220,7 +221,9 @@ function EventDetail({ eventId }: { eventId: number }) {
                     </Link>
                   ) : "—"}
                 </TableCell>
-                <TableCell className="text-accent">{m.state ?? "—"}</TableCell>
+                <TableCell className="text-accent" title={m.state ? countryName(m.state) ?? undefined : undefined}>
+                  {countryLabel(m.state)}
+                </TableCell>
                 <TableCell>{m.owner ?? "—"}</TableCell>
                 <TableCell>{m.objectClass ?? "—"}</TableCell>
                 <TableCell>{m.opOrbit ?? "—"}</TableCell>
@@ -459,9 +462,12 @@ export default function Rpod() {
             </SelectTrigger>
             <SelectContent className="rounded-none max-h-[300px]">
               <SelectItem value="all">ALL COUNTRIES</SelectItem>
-              {(countries?.countries ?? []).map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              ))}
+              {(countries?.countries ?? [])
+                .map((c) => ({ code: c, label: countryLabel(c) }))
+                .sort((a, b) => a.label.localeCompare(b.label))
+                .map(({ code, label }) => (
+                  <SelectItem key={code} value={code}>{label.toUpperCase()}</SelectItem>
+                ))}
             </SelectContent>
           </Select>
           <Button
@@ -643,7 +649,7 @@ export default function Rpod() {
                               {m.name ?? `#${m.norad}`}
                             </Link>
                             {m.state && (
-                              <span className="text-[10px] text-accent/80"> [{m.state}]</span>
+                              <span className="text-[10px] text-accent/80"> [{countryLabel(m.state)}]</span>
                             )}
                           </React.Fragment>
                         ))}
