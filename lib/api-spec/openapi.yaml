@@ -450,6 +450,11 @@ paths:
           schema:
             type: string
           description: Search by participant satellite name (substring, case-insensitive) or NORAD number
+        - name: country
+          in: query
+          schema:
+            type: string
+          description: Filter to events with at least one participant whose catalog country/state code matches (exact, case-insensitive)
         - name: sort
           in: query
           schema:
@@ -503,6 +508,26 @@ paths:
                 $ref: "#/components/schemas/RpodEventDetail"
         "404":
           description: Event not found
+
+  /rpod/countries:
+    get:
+      operationId: getRpodCountries
+      tags: [rpod]
+      summary: Participant countries
+      description: Distinct catalog country/state codes across all RPOD event participants, for the country filter dropdown
+      responses:
+        "200":
+          description: Distinct participant country codes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [countries]
+                properties:
+                  countries:
+                    type: array
+                    items:
+                      type: string
 
   /rpod/status:
     get:

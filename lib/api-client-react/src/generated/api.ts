@@ -19,6 +19,7 @@ import type {
   ConstellationAnalytics,
   DeorbitHistory,
   FalconVsStarship,
+  GetRpodCountries200,
   GetRpodEventsParams,
   GetSatcatParams,
   GetSatcatPassesParams,
@@ -1791,6 +1792,84 @@ export function useGetRpodEvent<TData = Awaited<ReturnType<typeof getRpodEvent>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetRpodEventQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRpodCountriesUrl = () => {
+
+
+
+
+  return `/api/rpod/countries`
+}
+
+/**
+ * Distinct catalog country/state codes across all RPOD event participants, for the country filter dropdown
+ * @summary Participant countries
+ */
+export const getRpodCountries = async ( options?: RequestInit): Promise<GetRpodCountries200> => {
+
+  return customFetch<GetRpodCountries200>(getGetRpodCountriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRpodCountriesQueryKey = () => {
+    return [
+    `/api/rpod/countries`
+    ] as const;
+    }
+
+
+export const getGetRpodCountriesQueryOptions = <TData = Awaited<ReturnType<typeof getRpodCountries>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRpodCountries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRpodCountriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRpodCountries>>> = ({ signal }) => getRpodCountries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRpodCountries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRpodCountriesQueryResult = NonNullable<Awaited<ReturnType<typeof getRpodCountries>>>
+export type GetRpodCountriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Participant countries
+ */
+
+export function useGetRpodCountries<TData = Awaited<ReturnType<typeof getRpodCountries>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRpodCountries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRpodCountriesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

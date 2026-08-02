@@ -22,6 +22,7 @@ export * from './deorbitHistory';
 export * from './deorbitObject';
 export * from './falconVsStarship';
 export * from './falconVsStarshipRowsItem';
+export * from './getRpodCountries200';
 export * from './getRpodEventsKind';
 export * from './getRpodEventsOrder';
 export * from './getRpodEventsOrder2';

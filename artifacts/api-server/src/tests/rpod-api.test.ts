@@ -156,6 +156,33 @@ async function main(): Promise<void> {
         `${bogus.total} != ${all.total}`);
     }
 
+    console.log("Country filter & /rpod/countries");
+    {
+      const res = await fetch(`${base}/rpod/countries`);
+      check("GET /rpod/countries responds 200", res.ok, String(res.status));
+      const body = (await res.json()) as { countries: string[] };
+      check("countries is an array of strings",
+        Array.isArray(body.countries) && body.countries.every((c) => typeof c === "string" && c.length > 0));
+      check("countries list is sorted and deduped",
+        JSON.stringify(body.countries) === JSON.stringify([...new Set(body.countries)].sort()));
+
+      // Seeded test NORADs are not in the catalog, so any country filter must exclude them.
+      const noMatch = await fetchEvents("?limit=200&country=NOSUCHZZ");
+      check("unknown country returns zero events", noMatch.total === 0, String(noMatch.total));
+
+      if (body.countries.length > 0) {
+        const code = body.countries[0];
+        const upper = await fetchEvents(`?limit=200&country=${encodeURIComponent(code)}`);
+        const lower = await fetchEvents(`?limit=200&country=${encodeURIComponent(code.toLowerCase())}`);
+        check("country filter matches case-insensitively", upper.total === lower.total,
+          `${upper.total} != ${lower.total}`);
+        check("country-filtered events all contain a member from that country",
+          upper.data.every((e) => e.members.some((m) => (m as { state?: string | null }).state === code)));
+        const all = await fetchEvents("?limit=200");
+        check("country filter is a strict subset of the unfiltered list", upper.total <= all.total);
+      }
+    }
+
     console.log("Detail endpoint: kind field");
     {
       for (const [id, expected] of [[conjunctionId, "conjunction"], [coplanarId, "coplanar"], [dockedId, "docked"]] as const) {

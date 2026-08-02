@@ -32,6 +32,10 @@ reopened?: boolean;
  */
 q?: string;
 /**
+ * Filter to events with at least one participant whose catalog country/state code matches (exact, case-insensitive)
+ */
+country?: string;
+/**
  * Primary sort field (default tca); duration orders by observation span (lastSeenAt - firstDetectedAt)
  */
 sort?: GetRpodEventsSort;

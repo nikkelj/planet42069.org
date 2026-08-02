@@ -3,6 +3,7 @@ import {
   useGetRpodEvents, getGetRpodEventsQueryKey,
   useGetRpodEvent, getGetRpodEventQueryKey,
   useGetRpodStatus, getGetRpodStatusQueryKey,
+  useGetRpodCountries, getGetRpodCountriesQueryKey,
 } from "@workspace/api-client-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -195,6 +196,7 @@ function EventDetail({ eventId }: { eventId: number }) {
             <TableRow className="border-b-border hover:bg-transparent">
               <TableHead className="uppercase text-[10px] tracking-wider">NORAD</TableHead>
               <TableHead className="uppercase text-[10px] tracking-wider">Name</TableHead>
+              <TableHead className="uppercase text-[10px] tracking-wider">Country</TableHead>
               <TableHead className="uppercase text-[10px] tracking-wider">Owner</TableHead>
               <TableHead className="uppercase text-[10px] tracking-wider">Class</TableHead>
               <TableHead className="uppercase text-[10px] tracking-wider">Orbit</TableHead>
@@ -218,6 +220,7 @@ function EventDetail({ eventId }: { eventId: number }) {
                     </Link>
                   ) : "—"}
                 </TableCell>
+                <TableCell className="text-accent">{m.state ?? "—"}</TableCell>
                 <TableCell>{m.owner ?? "—"}</TableCell>
                 <TableCell>{m.objectClass ?? "—"}</TableCell>
                 <TableCell>{m.opOrbit ?? "—"}</TableCell>
@@ -250,6 +253,8 @@ function readUrlState() {
     kind: kind === "conjunction" || kind === "coplanar" || kind === "docked" ? kind : "all",
     status: status === "active" || status === "stale" || status === "ended" ? status : "all",
     reopened: sp.get("reopened") === "true",
+    // Country codes are uppercase catalog codes; normalize so ?country=us works.
+    country: (sp.get("country") ?? "").trim() ? sp.get("country")!.trim().toUpperCase() : "all",
     page: Number.isFinite(pageRaw) && pageRaw > 1 ? pageRaw : 1,
     case: Number.isFinite(caseRaw) && caseRaw > 0 ? caseRaw : null,
   };
@@ -260,6 +265,7 @@ export default function Rpod() {
   const [statusFilter, setStatusFilter] = useState(initial.status);
   const [kindFilter, setKindFilter] = useState(initial.kind);
   const [reopenedOnly, setReopenedOnly] = useState(initial.reopened);
+  const [countryFilter, setCountryFilter] = useState(initial.country);
   const [expanded, setExpanded] = useState<number | null>(initial.case);
   const [search, setSearch] = useState(initial.q);
   const [debouncedSearch, setDebouncedSearch] = useState(initial.q.trim());
@@ -313,6 +319,7 @@ export default function Rpod() {
     setOrDelete("kind", kindFilter !== "all" ? kindFilter : null);
     setOrDelete("status", statusFilter !== "all" ? statusFilter : null);
     setOrDelete("reopened", reopenedOnly ? "true" : null);
+    setOrDelete("country", countryFilter !== "all" ? countryFilter : null);
     setOrDelete("page", page > 1 ? String(page) : null);
     setOrDelete("case", expanded != null ? String(expanded) : null);
     const qs = sp.toString();
@@ -320,7 +327,7 @@ export default function Rpod() {
     if (next !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
       window.history.replaceState(window.history.state, "", next);
     }
-  }, [debouncedSearch, kindFilter, statusFilter, reopenedOnly, page, expanded]);
+  }, [debouncedSearch, kindFilter, statusFilter, reopenedOnly, countryFilter, page, expanded]);
 
   const queryParams = {
     page,
@@ -328,6 +335,7 @@ export default function Rpod() {
     status: statusFilter !== "all" ? (statusFilter as "active" | "stale" | "ended") : undefined,
     kind: kindFilter !== "all" ? (kindFilter as "conjunction" | "coplanar" | "docked") : undefined,
     reopened: reopenedOnly ? true : undefined,
+    country: countryFilter !== "all" ? countryFilter : undefined,
     q: debouncedSearch || undefined,
     sort: sorts[0]?.field,
     order: sorts[0]?.order,
@@ -354,6 +362,14 @@ export default function Rpod() {
   }, [isLoading, data, expanded, initial.case]);
 
   const { data: status } = useGetRpodStatus({ query: { queryKey: getGetRpodStatusQueryKey(), refetchInterval: 5 * 60_000 } });
+  const { data: countries } = useGetRpodCountries({ query: { queryKey: getGetRpodCountriesQueryKey(), staleTime: 10 * 60_000 } });
+  // A shared link may carry a country code that isn't (or is no longer) among
+  // the known options — drop the hidden filter instead of silently applying it.
+  useEffect(() => {
+    if (countryFilter !== "all" && countries && !countries.countries.includes(countryFilter)) {
+      setCountryFilter("all");
+    }
+  }, [countries, countryFilter]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
@@ -435,6 +451,17 @@ export default function Rpod() {
               <SelectItem value="active">ACTIVE</SelectItem>
               <SelectItem value="stale">ARCHIVED</SelectItem>
               <SelectItem value="ended">ENDED</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={countryFilter} onValueChange={(v) => { setCountryFilter(v); setPage(1); setExpanded(null); }}>
+            <SelectTrigger className="w-[170px] rounded-none border-border bg-background uppercase text-xs">
+              <SelectValue placeholder="COUNTRY" />
+            </SelectTrigger>
+            <SelectContent className="rounded-none max-h-[300px]">
+              <SelectItem value="all">ALL COUNTRIES</SelectItem>
+              {(countries?.countries ?? []).map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Button
@@ -615,6 +642,9 @@ export default function Rpod() {
                             >
                               {m.name ?? `#${m.norad}`}
                             </Link>
+                            {m.state && (
+                              <span className="text-[10px] text-accent/80"> [{m.state}]</span>
+                            )}
                           </React.Fragment>
                         ))}
                       </TableCell>

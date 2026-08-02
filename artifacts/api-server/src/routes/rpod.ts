@@ -105,6 +105,34 @@ router.get("/rpod/events", async (req, res): Promise<void> => {
       );
     }
   }
+  const country = req.query.country ? String(req.query.country).trim() : "";
+  if (country) {
+    // Filter the (small) set of event-member NORADs by catalog country code,
+    // rather than expanding the country to every catalog object — keeps the
+    // IN list bounded by member count regardless of catalog size.
+    const needle = country.toLowerCase();
+    const memberNorads = await db
+      .selectDistinct({ norad: rpodEventMembers.norad })
+      .from(rpodEventMembers);
+    const countryLookup = await catalogLookup();
+    const norads = memberNorads
+      .map((m) => m.norad)
+      .filter((n) => (countryLookup.get(n)?.state ?? "").toLowerCase() === needle);
+    if (norads.length === 0) {
+      conditions.push(sql`false`);
+    } else {
+      conditions.push(
+        inArray(
+          rpodEvents.id,
+          db
+            .select({ eventId: rpodEventMembers.eventId })
+            .from(rpodEventMembers)
+            .where(inArray(rpodEventMembers.norad, norads)),
+        ),
+      );
+    }
+  }
+
   const where: SQL | undefined = conditions.length ? and(...conditions) : undefined;
 
   const [rows, [{ total }]] = await Promise.all([
@@ -262,6 +290,20 @@ router.get("/rpod/events/:id", async (req, res): Promise<void> => {
     spells,
     members: members.sort((a, b) => a.norad - b.norad),
   });
+});
+
+// ── participant countries (filter dropdown options) ────────────────────────
+router.get("/rpod/countries", async (_req, res): Promise<void> => {
+  const memberNorads = await db
+    .selectDistinct({ norad: rpodEventMembers.norad })
+    .from(rpodEventMembers);
+  const lookup = await catalogLookup();
+  const countries = [...new Set(
+    memberNorads
+      .map((m) => lookup.get(m.norad)?.state)
+      .filter((s): s is string => s != null && s !== ""),
+  )].sort();
+  res.json({ countries });
 });
 
 // ── archive status ─────────────────────────────────────────────────────────
