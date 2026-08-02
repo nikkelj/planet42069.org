@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { ReactNode } from "react";
 import { Radar, Satellite, Database, TerminalSquare, Orbit, Crosshair } from "lucide-react";
+import { DataFreshness } from "./DataFreshness";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -37,6 +38,9 @@ export function AppLayout({ children }: AppLayoutProps) {
             </span>
             Other Jonathan's Space Report // Orbital Bureaucracy Command
           </p>
+          <div className="mt-2">
+            <DataFreshness />
+          </div>
         </div>
 
         <nav className="flex flex-wrap gap-2">
