@@ -10,7 +10,7 @@ import {
   COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, semiMajorAxisKm, minPhaseDiffDeg,
   type ScreenElset, type FlaggedPair, type ScreenOptions,
 } from "./screen";
-import { selectEndedCoplanarIds, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS } from "./retire";
+import { selectEndedCoplanarIds, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS } from "./retire";
 
 /**
  * RPOD scan orchestrator: pulls the latest archived elsets, runs the
@@ -293,6 +293,15 @@ async function logScanRow(status: "success" | "error", startedAt: Date, rowCount
  * of ending, the old case is REACTIVATED (same RPOD number, reopenCount
  * incremented) instead of opening a fresh case, keeping repeat offenders on
  * a single continuous file.
+ *
+ * Conjunction-track events get the analogous treatment against STALE cases:
+ * a conjunction/docked case whose window lapsed (marked "stale" by
+ * markStaleEvents) is reactivated when the same pair is re-flagged within
+ * CONJUNCTION_REOPEN_WINDOW_MS of last being seen — same case number,
+ * reopenCount incremented, the lapsed spell archived into closedSpells.
+ * TCA proximity is deliberately NOT required on this path: a stale case is
+ * by definition days past its window, so membership alone identifies the
+ * continuing pair.
  */
 export async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "conjunction" | "coplanar"): Promise<void> {
   if (events.length === 0) return;
@@ -310,7 +319,9 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
     membersByEvent.set(m.eventId, s);
   }
 
-  // Recently-ended coplanar cases stay eligible for reopening.
+  // Recently-ended coplanar cases (and recently-stale conjunction-track
+  // cases) stay eligible for reopening.
+  const reopenWindowMs = kind === "coplanar" ? COPLANAR_REOPEN_WINDOW_MS : CONJUNCTION_REOPEN_WINDOW_MS;
   let endedWithMembers: {
     id: number; endedAt: Date | null; members: number[];
     firstDetectedAt: Date; lastSeenAt: Date; lastReopenedAt: Date | null;
@@ -340,6 +351,36 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
     }
     endedWithMembers = ended.map((e) => ({
       id: e.id, endedAt: e.endedAt, members: byId.get(e.id) ?? [],
+      firstDetectedAt: e.firstDetectedAt, lastSeenAt: e.lastSeenAt,
+      lastReopenedAt: e.lastReopenedAt, closedSpells: e.closedSpells ?? [],
+    }));
+  } else {
+    // Stale conjunction-track cases (window lapsed >3d ago). They carry no
+    // endedAt, so lastSeenAt — the last scan that re-detected the pair —
+    // stands in as the end of the lapsed spell.
+    const stale = await db
+      .select({
+        id: rpodEvents.id, reopenCount: rpodEvents.reopenCount,
+        firstDetectedAt: rpodEvents.firstDetectedAt, lastSeenAt: rpodEvents.lastSeenAt,
+        lastReopenedAt: rpodEvents.lastReopenedAt, closedSpells: rpodEvents.closedSpells,
+      })
+      .from(rpodEvents)
+      .where(and(
+        eq(rpodEvents.status, "stale"),
+        inArray(rpodEvents.kind, kinds),
+        sql`${rpodEvents.lastSeenAt} > now() - make_interval(secs => ${CONJUNCTION_REOPEN_WINDOW_MS / 1000})`,
+      ));
+    const staleMembers = stale.length
+      ? await db.select().from(rpodEventMembers).where(inArray(rpodEventMembers.eventId, stale.map((e) => e.id)))
+      : [];
+    const byId = new Map<number, number[]>();
+    for (const m of staleMembers) {
+      const arr = byId.get(m.eventId) ?? [];
+      arr.push(m.norad);
+      byId.set(m.eventId, arr);
+    }
+    endedWithMembers = stale.map((e) => ({
+      id: e.id, endedAt: e.lastSeenAt, members: byId.get(e.id) ?? [],
       firstDetectedAt: e.firstDetectedAt, lastSeenAt: e.lastSeenAt,
       lastReopenedAt: e.lastReopenedAt, closedSpells: e.closedSpells ?? [],
     }));
@@ -376,7 +417,7 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
       eventId = match.id;
       await db.delete(rpodEventMembers).where(eq(rpodEventMembers.eventId, eventId));
     } else {
-      const reopenId = kind === "coplanar" ? selectReopenCandidate(endedWithMembers, ev.members, Date.now()) : null;
+      const reopenId = selectReopenCandidate(endedWithMembers, ev.members, Date.now(), reopenWindowMs);
       if (reopenId != null) {
         // Same pair closed ranks again — reactivate the old case file,
         // archiving the spell that just closed so each shadowing interval
@@ -405,7 +446,7 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
         eventId = reopenId;
         await db.delete(rpodEventMembers).where(eq(rpodEventMembers.eventId, eventId));
         endedWithMembers = endedWithMembers.filter((e) => e.id !== reopenId);
-        logger.info({ eventId }, "rpod-scan: reopened ended coplanar case (pair closed ranks again)");
+        logger.info({ eventId, kind }, "rpod-scan: reopened lapsed case (same pair re-detected)");
       } else {
         const [row] = await db.insert(rpodEvents).values(base).returning({ id: rpodEvents.id });
         eventId = row.id;

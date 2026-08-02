@@ -30,6 +30,15 @@ export function selectEndedCoplanarIds(
 export const COPLANAR_REOPEN_WINDOW_MS = 90 * 86400_000;
 
 /**
+ * How long a STALE conjunction-track case (conjunction/docked) remains
+ * eligible for reactivation. Discrete approaches recur on shorter horizons
+ * than shadowing campaigns, so the window is tighter than the coplanar one:
+ * a pair re-flagged within 30 days of last being seen continues the same
+ * case file instead of splitting its history across two case numbers.
+ */
+export const CONJUNCTION_REOPEN_WINDOW_MS = 30 * 86400_000;
+
+/**
  * Pure reopen decision: given recently-ENDED coplanar events (with their
  * memberships) and the member set of a newly detected coplanar cluster,
  * return the id of the ended case to reactivate, or null when a brand-new
@@ -44,13 +53,14 @@ export function selectReopenCandidate(
   endedEvents: { id: number; endedAt: Date | null; members: number[] }[],
   incomingMembers: number[],
   nowMs: number,
+  reopenWindowMs: number = COPLANAR_REOPEN_WINDOW_MS,
 ): number | null {
   const incoming = new Set(incomingMembers);
   let best: { id: number; endedAtMs: number } | null = null;
   for (const ev of endedEvents) {
     if (!ev.endedAt) continue;
     const endedAtMs = ev.endedAt.getTime();
-    if (nowMs - endedAtMs > COPLANAR_REOPEN_WINDOW_MS) continue;
+    if (nowMs - endedAtMs > reopenWindowMs) continue;
     let shared = 0;
     for (const n of ev.members) if (incoming.has(n)) shared++;
     if (shared < 2) continue;
