@@ -112,6 +112,14 @@ export const obcGunterPages = pgTable(
     operator: text("operator"),
     contractors: text("contractors"),
     cosparIds: jsonb("cospar_ids").$type<string[]>(), // COSPAR ids listed on the page
+    // Launch tags (e.g. "2020-086") seen next to this dossier's links on the
+    // chronology pages — a pre-fetch join hint to obc_objects used to
+    // prioritize the pending crawl queue toward heavy/active satellites.
+    launchTags: jsonb("launch_tags").$type<string[]>(),
+    // Crawl-queue priority for pending dossiers: max over hinted objects of
+    // massKg plus a large bonus for operational satState (O/OX). Recomputed
+    // each run; 0 = no hint / no match.
+    priority: real("priority").notNull().default(0),
     error: text("error"),
     discoveredAt: timestamp("discovered_at").notNull().defaultNow(),
     retrievedAt: timestamp("retrieved_at"),

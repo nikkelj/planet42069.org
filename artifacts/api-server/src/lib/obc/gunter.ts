@@ -38,6 +38,13 @@ const CHRON_CURRENT_REVISIT_MS = 20 * 60 * 60 * 1000; // 20h
 const DOSSIER_REVISIT_MS = 45 * 24 * 60 * 60 * 1000; // 45 days
 /** Retry errored pages after this long. */
 const ERROR_RETRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+/**
+ * Re-index an already-fetched chronology year when older than this. Only
+ * fills backfill slots left over after un-indexed years, so it never grows
+ * the fetch budget; it picks up late catalog additions and hydrates
+ * launch-tag hints on dossier rows registered before hint tracking existed.
+ */
+const CHRON_REINDEX_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const FIRST_CHRON_YEAR = 1957;
 
 let gunterInFlight: Promise<void> | null = null;
@@ -89,15 +96,35 @@ export function chronUrl(year: number): string {
   return `${BASE}/doc_chr/lau${year}.htm`;
 }
 
-/** Extract dossier URLs (doc_sdat/*.htm) referenced by a chronology page. */
-export function parseChronology(html: string): string[] {
-  const urls = new Set<string>();
-  const re = /href="(?:\.\.\/)?doc_sdat\/([^"#?]+\.htm)"/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(html)) !== null) {
-    urls.add(`${BASE}/doc_sdat/${m[1]}`);
+export interface ChronEntry {
+  url: string;
+  /** Launch tags (e.g. "2020-086") from rows linking this dossier. */
+  launchTags: string[];
+}
+
+/**
+ * Extract dossier URLs (doc_sdat/*.htm) referenced by a chronology page,
+ * along with the launch tag of each row a URL appears in. The tag is a
+ * pre-fetch hint that lets the crawl queue join to obc_objects (mass,
+ * satState) and prioritize heavy/active satellites.
+ */
+export function parseChronology(html: string): ChronEntry[] {
+  const byUrl = new Map<string, Set<string>>();
+  const dossierRe = /href="(?:\.\.\/)?doc_sdat\/([^"#?]+\.htm)"/g;
+  // Split into table rows; the first cell of a launch row carries the tag.
+  for (const row of html.split(/<tr[^>]*>/i).slice(1)) {
+    const tagMatch = row.match(/<td[^>]*>\s*(\d{4}-\d{3})\b/);
+    const tag = tagMatch ? tagMatch[1] : null;
+    let m: RegExpExecArray | null;
+    dossierRe.lastIndex = 0;
+    while ((m = dossierRe.exec(row)) !== null) {
+      const url = `${BASE}/doc_sdat/${m[1]}`;
+      let tags = byUrl.get(url);
+      if (!tags) byUrl.set(url, (tags = new Set()));
+      if (tag) tags.add(tag);
+    }
   }
-  return [...urls];
+  return [...byUrl.entries()].map(([url, tags]) => ({ url, launchTags: [...tags] }));
 }
 
 export interface GunterDossier {
@@ -254,16 +281,55 @@ async function upsertChronRow(url: string, status: string, error?: string): Prom
 }
 
 /** Register newly-discovered dossier URLs as pending (never downgrades fetched rows). */
-async function registerDossiers(urls: string[]): Promise<number> {
-  if (urls.length === 0) return 0;
+async function registerDossiers(entries: ChronEntry[]): Promise<number> {
+  if (entries.length === 0) return 0;
   const CHUNK = 400;
   let added = 0;
-  for (let i = 0; i < urls.length; i += CHUNK) {
-    const chunk = urls.slice(i, i + CHUNK).map((url) => ({ url, kind: "dossier", status: "pending" }));
+  for (let i = 0; i < entries.length; i += CHUNK) {
+    const chunk = entries.slice(i, i + CHUNK).map((e) => ({
+      url: e.url,
+      kind: "dossier",
+      status: "pending",
+      launchTags: e.launchTags.length > 0 ? e.launchTags : null,
+    }));
     const res = await db.insert(obcGunterPages).values(chunk).onConflictDoNothing();
     added += res.rowCount ?? 0;
   }
+  // Backfill hints onto rows that predate launch-tag tracking (insert above
+  // is a no-op for existing rows).
+  for (const e of entries) {
+    if (e.launchTags.length === 0) continue;
+    await db
+      .update(obcGunterPages)
+      .set({ launchTags: e.launchTags })
+      .where(and(eq(obcGunterPages.url, e.url), isNull(obcGunterPages.launchTags)));
+  }
   return added;
+}
+
+/**
+ * Recompute crawl priority for pending dossiers from their launch-tag hints:
+ * max over matching catalog objects of massKg, plus a large bonus when the
+ * object is operational (satState O/OX) so active satellites always outrank
+ * inactive ones; mass orders within each tier. Pure DB work — no fetches, so
+ * the politeness budget is untouched.
+ */
+async function reprioritizePendingDossiers(): Promise<void> {
+  await db.execute(sql`
+    update obc_gunter_pages p
+    set priority = sub.score
+    from (
+      select p2.url,
+             max(coalesce(o.mass_kg, 0)
+                 + case when o.sat_state in ('O', 'OX') then 1e6 else 0 end) as score
+      from obc_gunter_pages p2
+      cross join lateral jsonb_array_elements_text(p2.launch_tags) as tag(t)
+      join obc_objects o on o.intl_des like tag.t || '%'
+      where p2.kind = 'dossier' and p2.status = 'pending' and p2.launch_tags is not null
+      group by p2.url
+    ) sub
+    where p.url = sub.url and p.priority is distinct from sub.score
+  `);
 }
 
 /** Pick which chronology year pages this run should fetch. */
@@ -289,19 +355,36 @@ async function pickChronYears(now: Date): Promise<number[]> {
       years.push(y);
     }
   }
+  // Leftover slots: re-index the stalest already-fetched years (oldest
+  // retrieval first) so late additions and launch-tag hints stay current.
+  if (years.length < CHRON_BACKFILL_PER_RUN + 1) {
+    const reindexBefore = now.getTime() - CHRON_REINDEX_MS;
+    const stale = chronRows
+      .filter((r) => {
+        if (r.status !== "ok" || !r.retrievedAt || r.retrievedAt.getTime() > reindexBefore) return false;
+        const year = Number(r.url.match(/lau(\d{4})\.htm$/)?.[1]);
+        return Number.isFinite(year) && !years.includes(year);
+      })
+      .sort((a, b) => (a.retrievedAt?.getTime() ?? 0) - (b.retrievedAt?.getTime() ?? 0));
+    for (const r of stale) {
+      if (years.length >= CHRON_BACKFILL_PER_RUN + 1) break;
+      years.push(Number(r.url.match(/lau(\d{4})\.htm$/)![1]));
+    }
+  }
   return years;
 }
 
 /** Pick the dossier pages this run should fetch, within `budget`. */
 async function pickDossiers(budget: number, now: Date): Promise<string[]> {
   if (budget <= 0) return [];
-  // Pending first — newest discoveries first (recent years are indexed first,
-  // so this naturally prioritizes recently-launched objects).
+  // Pending first — heaviest/active satellites first (priority is recomputed
+  // from the launch-tag hints each run), then newest discoveries as a
+  // tiebreak for unhinted rows.
   const pending = await db
     .select({ url: obcGunterPages.url })
     .from(obcGunterPages)
     .where(and(eq(obcGunterPages.kind, "dossier"), eq(obcGunterPages.status, "pending")))
-    .orderBy(desc(obcGunterPages.discoveredAt))
+    .orderBy(desc(obcGunterPages.priority), desc(obcGunterPages.discoveredAt))
     .limit(budget);
   const picked = pending.map((r) => r.url);
   if (picked.length >= budget) return picked;
@@ -388,8 +471,8 @@ async function doGunterSync(): Promise<void> {
       fetches += 1;
       try {
         const html = await fetchPage(url);
-        const dossierUrls = parseChronology(html);
-        discovered += await registerDossiers(dossierUrls);
+        const entries = parseChronology(html);
+        discovered += await registerDossiers(entries);
         await upsertChronRow(url, "ok");
       } catch (err) {
         firstError = firstError ?? String(err);
@@ -399,6 +482,8 @@ async function doGunterSync(): Promise<void> {
     }
 
     // ── 2. dossier extraction + fusion ──────────────────────────────────
+    // Rank the pending queue toward heavy/active satellites before picking.
+    await reprioritizePendingDossiers();
     const dossierUrls = await pickDossiers(RUN_FETCH_BUDGET - fetches, new Date());
     for (const url of dossierUrls) {
       if (fetches > 0) await sleep(DELAY_MS);

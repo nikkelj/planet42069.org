@@ -44,26 +44,42 @@ async function main() {
   // ── parseChronology ────────────────────────────────────────────────
   console.log("parseChronology:");
   const chron = parseChronology(readFixture("gunter-chron.htm"));
+  const chronUrls = chron.map((e) => e.url);
   check("discovers unique dossier urls", chron.length, 3);
   check(
     "resolves ../doc_sdat and dedupes repeat links",
-    chron.includes("https://space.skyrocket.de/doc_sdat/starlink-v1-0.htm"),
+    chronUrls.includes("https://space.skyrocket.de/doc_sdat/starlink-v1-0.htm"),
     true,
   );
   check(
     "handles link without ../ prefix",
-    chron.includes("https://space.skyrocket.de/doc_sdat/hayabusa-2_capsule.htm"),
+    chronUrls.includes("https://space.skyrocket.de/doc_sdat/hayabusa-2_capsule.htm"),
     true,
   );
   check(
     "skips urls with #anchors",
-    chron.includes("https://space.skyrocket.de/doc_sdat/vega-fail.htm"),
+    chronUrls.includes("https://space.skyrocket.de/doc_sdat/vega-fail.htm"),
     false,
   );
   check(
     "skips urls with query strings",
-    chron.some((u) => u.includes("query.htm")),
+    chronUrls.some((u) => u.includes("query.htm")),
     false,
+  );
+  check(
+    "launch tag hint captured per row",
+    chron.find((e) => e.url.endsWith("sentinel-6.htm"))?.launchTags,
+    ["2020-086"],
+  );
+  check(
+    "launch tag for link without ../ prefix",
+    chron.find((e) => e.url.endsWith("hayabusa-2_capsule.htm"))?.launchTags,
+    ["2020-089"],
+  );
+  check(
+    "starlink row tag captured once despite repeat links",
+    chron.find((e) => e.url.endsWith("starlink-v1-0.htm"))?.launchTags,
+    ["2020-088"],
   );
   check("chronUrl shape", chronUrl(2020), "https://space.skyrocket.de/doc_chr/lau2020.htm");
 
