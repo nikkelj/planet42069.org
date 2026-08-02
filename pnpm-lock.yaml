@@ -422,6 +422,9 @@ importers:
       '@tanstack/react-table':
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      satellite.js:
+        specifier: ^7.1.0
+        version: 7.1.0
       three:
         specifier: ^0.185.1
         version: 0.185.1

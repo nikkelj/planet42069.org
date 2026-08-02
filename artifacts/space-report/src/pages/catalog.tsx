@@ -2,6 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from "react";
 import PassFinder, { loadStoredObserver, storeObserver, type ObserverCoords, type PassRow } from "@/components/PassFinder";
 
 const OrbitViewer3D = lazy(() => import("@/components/OrbitViewer3D"));
+const GroundTrackMap = lazy(() => import("@/components/GroundTrackMap"));
 import { 
   useGetSatcat, 
   useGetSatcatFilters, 
@@ -144,6 +145,18 @@ function TrackingPanel({ satno, apogeeKm, perigeeKm, incDeg, name }: {
             onSelectPass={setSelectedPass}
           />
         </Suspense>
+      )}
+      {enabled && selectedPass && observer && tle && (
+        <div className="px-4 pb-4">
+          <Suspense fallback={null}>
+            <GroundTrackMap
+              line1={tle.line1}
+              line2={tle.line2}
+              observer={observer}
+              pass={selectedPass}
+            />
+          </Suspense>
+        </div>
       )}
     </>
   );

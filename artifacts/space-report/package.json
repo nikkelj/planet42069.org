@@ -85,6 +85,7 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "@tanstack/react-table": "^8.21.3",
+    "satellite.js": "^7.1.0",
     "three": "^0.185.1"
   }
 }
