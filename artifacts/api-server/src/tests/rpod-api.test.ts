@@ -40,7 +40,7 @@ interface EventRow {
   [k: string]: unknown;
 }
 
-async function seed(): Promise<{ conjunctionId: number; coplanarId: number; dockedId: number }> {
+async function seed(): Promise<{ conjunctionId: number; coplanarId: number; dockedId: number; durationIds: { short: number; medium: number; long: number } }> {
   const now = new Date("2026-08-01T00:00:00Z");
   const later = new Date("2026-08-01T06:00:00Z");
   const [conj] = await db.insert(rpodEvents).values({
@@ -66,7 +66,29 @@ async function seed(): Promise<{ conjunctionId: number; coplanarId: number; dock
     { eventId: dock.id, norad: TEST_NORADS[0], minRangeKm: 0.05, relVelKmS: 0.001 },
     { eventId: dock.id, norad: TEST_NORADS[1], minRangeKm: 0.05, relVelKmS: 0.001 },
   ]);
-  return { conjunctionId: conj.id, coplanarId: cop.id, dockedId: dock.id };
+  // Duration-sort fixtures: three ended events with identical tca/status/kind
+  // but observation spans of 1h, 3h, and 12h — so ordering by
+  // (lastSeenAt - firstDetectedAt) is unambiguous.
+  const mkSpan = async (hours: number): Promise<number> => {
+    const first = new Date("2026-07-15T00:00:00Z");
+    const last = new Date(first.getTime() + hours * 3600_000);
+    const [row] = await db.insert(rpodEvents).values({
+      status: "ended", kind: "coplanar",
+      windowStart: now, windowEnd: later, tca: now,
+      minRangeKm: 50, relVelKmS: 0.01, memberCount: 2,
+      firstDetectedAt: first, lastSeenAt: last, endedAt: last,
+    }).returning({ id: rpodEvents.id });
+    await db.insert(rpodEventMembers).values([
+      { eventId: row.id, norad: TEST_NORADS[2], minRangeKm: 50, relVelKmS: 0.01 },
+      { eventId: row.id, norad: TEST_NORADS[3], minRangeKm: 50, relVelKmS: 0.01 },
+    ]);
+    return row.id;
+  };
+  const short = await mkSpan(1);
+  const medium = await mkSpan(3);
+  const long = await mkSpan(12);
+
+  return { conjunctionId: conj.id, coplanarId: cop.id, dockedId: dock.id, durationIds: { short, medium, long } };
 }
 
 async function cleanup(ids: number[]): Promise<void> {
@@ -74,8 +96,8 @@ async function cleanup(ids: number[]): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const { conjunctionId, coplanarId, dockedId } = await seed();
-  const seededIds = [conjunctionId, coplanarId, dockedId];
+  const { conjunctionId, coplanarId, dockedId, durationIds } = await seed();
+  const seededIds = [conjunctionId, coplanarId, dockedId, durationIds.short, durationIds.medium, durationIds.long];
 
   const server: Server = await new Promise((resolve) => {
     const s = app.listen(0, () => resolve(s));
@@ -145,6 +167,41 @@ async function main(): Promise<void> {
           Array.isArray(body.members) && body.members.length === 2,
           JSON.stringify(body.members?.map((m) => m.norad)));
       }
+    }
+    console.log("List endpoint: sort=duration (lastSeenAt - firstDetectedAt)");
+    {
+      const durIds = [durationIds.short, durationIds.medium, durationIds.long];
+      const orderOf = (rows: EventRow[]): number[] =>
+        rows.map((e) => e.id).filter((id) => durIds.includes(id));
+
+      const ascRes = await fetchEvents("?limit=200&sort=duration&order=asc");
+      check("sort=duration asc orders short → medium → long",
+        JSON.stringify(orderOf(ascRes.data)) === JSON.stringify([durationIds.short, durationIds.medium, durationIds.long]),
+        JSON.stringify(orderOf(ascRes.data)));
+
+      const descRes = await fetchEvents("?limit=200&sort=duration&order=desc");
+      check("sort=duration desc orders long → medium → short",
+        JSON.stringify(orderOf(descRes.data)) === JSON.stringify([durationIds.long, durationIds.medium, durationIds.short]),
+        JSON.stringify(orderOf(descRes.data)));
+
+      // Global sanity: entire asc result is non-decreasing in observed span.
+      const spanMs = (e: EventRow): number =>
+        new Date(String(e.lastSeenAt)).getTime() - new Date(String(e.firstDetectedAt)).getTime();
+      check("sort=duration asc is globally non-decreasing",
+        ascRes.data.every((e, i) => i === 0 || spanMs(e) >= spanMs(ascRes.data[i - 1])));
+      check("sort=duration desc is globally non-increasing",
+        descRes.data.every((e, i) => i === 0 || spanMs(e) <= spanMs(descRes.data[i - 1])));
+
+      // As a secondary field: the three fixtures share status=ended, so with
+      // sort=status the tie among them must be broken by sort2=duration.
+      const sec = await fetchEvents("?limit=200&status=ended&sort=status&order=asc&sort2=duration&order2=asc");
+      check("sort2=duration asc breaks ties short → medium → long",
+        JSON.stringify(orderOf(sec.data)) === JSON.stringify([durationIds.short, durationIds.medium, durationIds.long]),
+        JSON.stringify(orderOf(sec.data)));
+      const secDesc = await fetchEvents("?limit=200&status=ended&sort=status&order=asc&sort2=duration&order2=desc");
+      check("sort2=duration desc breaks ties long → medium → short",
+        JSON.stringify(orderOf(secDesc.data)) === JSON.stringify([durationIds.long, durationIds.medium, durationIds.short]),
+        JSON.stringify(orderOf(secDesc.data)));
     }
   } finally {
     await cleanup(seededIds);
