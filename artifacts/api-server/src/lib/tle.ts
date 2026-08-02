@@ -16,6 +16,10 @@ const TLE_TTL_MS = 6 * 3600_000;
 const NEG_TTL_MS = 3600_000;
 const COOKIE_TTL_MS = 2 * 3600_000;
 const MIN_GAP_MS = 2000;
+/** Epoch age beyond which a cached elset is considered stale and worth re-querying. */
+const STALE_EPOCH_MS = 24 * 3600_000;
+/** After a stale re-query returns the same epoch, wait this long before re-checking again. */
+const STALE_RECHECK_MS = 3600_000;
 
 export interface TleData {
   norad: number;
@@ -46,7 +50,20 @@ interface GpRow {
   TLE_LINE2: string;
 }
 
-const cache = new Map<number, { data: TleData | null; expires: number }>();
+interface CacheEntry {
+  data: TleData | null;
+  expires: number;
+  /** When the epoch is stale, don't re-query space-track again before this time. */
+  staleRecheckAfter: number;
+}
+
+const cache = new Map<number, CacheEntry>();
+
+function epochIsStale(data: TleData | null): boolean {
+  if (!data) return false;
+  const t = Date.parse(data.epoch);
+  return Number.isFinite(t) && Date.now() - t > STALE_EPOCH_MS;
+}
 const inflight = new Map<number, Promise<TleData | null>>();
 
 let cookie: { value: string; expires: number } | null = null;
@@ -88,7 +105,14 @@ async function getCookie(): Promise<string> {
 /** Fetch the latest GP element set for a NORAD id. Returns null when none exists. */
 export async function getTle(norad: number): Promise<TleData | null> {
   const hit = cache.get(norad);
-  if (hit && hit.expires > Date.now()) return hit.data;
+  const cachedFresh = hit !== undefined && hit.expires > Date.now();
+  if (cachedFresh) {
+    // Serve from cache unless the underlying epoch is >24h old and we're
+    // allowed to re-check space-track for a newer elset.
+    if (!epochIsStale(hit.data) || Date.now() < hit.staleRecheckAfter) {
+      return hit.data;
+    }
+  }
 
   const pending = inflight.get(norad);
   if (pending) return pending;
@@ -110,7 +134,7 @@ export async function getTle(norad: number): Promise<TleData | null> {
     const rows = (await res.json()) as GpRow[];
     const row = Array.isArray(rows) ? rows[0] : undefined;
     if (!row || !row.TLE_LINE1 || !row.TLE_LINE2) {
-      cache.set(norad, { data: null, expires: Date.now() + NEG_TTL_MS });
+      cache.set(norad, { data: null, expires: Date.now() + NEG_TTL_MS, staleRecheckAfter: 0 });
       logger.info({ norad }, "spacetrack: no GP element set on file");
       return null;
     }
@@ -128,9 +152,24 @@ export async function getTle(norad: number): Promise<TleData | null> {
       meanMotionRevPerDay: parseFloat(row.MEAN_MOTION),
       fetchedAt: new Date().toISOString(),
     };
-    cache.set(norad, { data, expires: Date.now() + TLE_TTL_MS });
-    logger.info({ norad, epoch: data.epoch }, "spacetrack: GP element set fetched");
+    // If this was a stale-epoch re-check and space-track has nothing newer,
+    // back off further re-checks for a while so we don't hammer the API.
+    const sameEpoch = hit?.data?.epoch === data.epoch;
+    cache.set(norad, {
+      data,
+      expires: Date.now() + TLE_TTL_MS,
+      staleRecheckAfter: sameEpoch ? Date.now() + STALE_RECHECK_MS : 0,
+    });
+    logger.info({ norad, epoch: data.epoch, sameEpoch }, "spacetrack: GP element set fetched");
     return data;
+  }).catch((err: unknown) => {
+    if (cachedFresh && hit) {
+      // Stale-epoch re-check failed; fall back to the cached copy and back off.
+      logger.warn({ err, norad }, "spacetrack: stale re-check failed, serving cached elset");
+      cache.set(norad, { ...hit, staleRecheckAfter: Date.now() + STALE_RECHECK_MS });
+      return hit.data;
+    }
+    throw err;
   }).finally(() => inflight.delete(norad));
 
   inflight.set(norad, p);
