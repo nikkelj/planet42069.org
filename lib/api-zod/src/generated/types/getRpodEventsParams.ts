@@ -32,7 +32,7 @@ reopened?: boolean;
  */
 q?: string;
 /**
- * Primary sort field (default tca)
+ * Primary sort field (default tca); duration orders by observation span (lastSeenAt - firstDetectedAt)
  */
 sort?: GetRpodEventsSort;
 order?: GetRpodEventsOrder;

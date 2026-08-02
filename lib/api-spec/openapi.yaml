@@ -454,8 +454,8 @@ paths:
           in: query
           schema:
             type: string
-            enum: [id, status, kind, tca, minRangeKm, relVelKmS, memberCount]
-          description: Primary sort field (default tca)
+            enum: [id, status, kind, tca, minRangeKm, relVelKmS, memberCount, duration]
+          description: Primary sort field (default tca); duration orders by observation span (lastSeenAt - firstDetectedAt)
         - name: order
           in: query
           schema:
@@ -466,7 +466,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [id, status, kind, tca, minRangeKm, relVelKmS, memberCount]
+            enum: [id, status, kind, tca, minRangeKm, relVelKmS, memberCount, duration]
           description: Secondary sort field applied within ties of the primary sort
         - name: order2
           in: query

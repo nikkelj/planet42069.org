@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Crosshair, Loader2, ChevronDown, ChevronRight, Radio, Search, ArrowUp, ArrowDown } from "lucide-react";
 
-type SortField = "id" | "status" | "kind" | "tca" | "minRangeKm" | "relVelKmS" | "memberCount";
+type SortField = "id" | "status" | "kind" | "tca" | "duration" | "minRangeKm" | "relVelKmS" | "memberCount";
 interface SortSpec { field: SortField; order: "asc" | "desc" }
 
 const RpodViewer3D = lazy(() => import("@/components/RpodViewer3D"));
@@ -439,6 +439,7 @@ export default function Rpod() {
                     ["status", "Status"],
                     ["kind", "Kind"],
                     ["tca", "TCA (UTC)"],
+                    ["duration", "Duration"],
                     ["minRangeKm", "Min Range"],
                     ["relVelKmS", "Rel Vel"],
                     ["memberCount", "Craft"],
@@ -522,6 +523,12 @@ export default function Rpod() {
                         </Badge>
                       </TableCell>
                       <TableCell>{fmtUtc(ev.tca)}</TableCell>
+                      <TableCell
+                        className="text-primary"
+                        title={`Observation span: first detected ${fmtUtc(ev.firstDetectedAt)} · last seen ${fmtUtc(ev.lastSeenAt)}`}
+                      >
+                        {fmtDuration(Date.parse(ev.lastSeenAt) - Date.parse(ev.firstDetectedAt))}
+                      </TableCell>
                       <TableCell className="text-accent font-bold">{fmtRange(ev.minRangeKm)}</TableCell>
                       <TableCell className="text-secondary">{ev.relVelKmS.toFixed(3)} km/s</TableCell>
                       <TableCell>
@@ -540,7 +547,7 @@ export default function Rpod() {
                     </TableRow>
                     {expanded === ev.id && (
                       <TableRow className="bg-muted/20 border-b-border/50 hover:bg-muted/20">
-                        <TableCell colSpan={9} className="p-0">
+                        <TableCell colSpan={10} className="p-0">
                           <EventDetail eventId={ev.id} />
                         </TableCell>
                       </TableRow>

@@ -829,7 +829,7 @@ reopened?: boolean;
  */
 q?: string;
 /**
- * Primary sort field (default tca)
+ * Primary sort field (default tca); duration orders by observation span (lastSeenAt - firstDetectedAt)
  */
 sort?: GetRpodEventsSort;
 order?: GetRpodEventsOrder;
@@ -869,6 +869,7 @@ export const GetRpodEventsSort = {
   minRangeKm: 'minRangeKm',
   relVelKmS: 'relVelKmS',
   memberCount: 'memberCount',
+  duration: 'duration',
 } as const;
 
 export type GetRpodEventsOrder = typeof GetRpodEventsOrder[keyof typeof GetRpodEventsOrder];
@@ -890,6 +891,7 @@ export const GetRpodEventsSort2 = {
   minRangeKm: 'minRangeKm',
   relVelKmS: 'relVelKmS',
   memberCount: 'memberCount',
+  duration: 'duration',
 } as const;
 
 export type GetRpodEventsOrder2 = typeof GetRpodEventsOrder2[keyof typeof GetRpodEventsOrder2];

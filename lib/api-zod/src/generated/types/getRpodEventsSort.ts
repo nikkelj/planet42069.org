@@ -17,4 +17,5 @@ export const GetRpodEventsSort = {
   minRangeKm: 'minRangeKm',
   relVelKmS: 'relVelKmS',
   memberCount: 'memberCount',
+  duration: 'duration',
 } as const;

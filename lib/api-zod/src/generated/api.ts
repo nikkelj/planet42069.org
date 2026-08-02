@@ -541,9 +541,9 @@ export const GetRpodEventsQueryParams = zod.object({
   "kind": zod.enum(['conjunction', 'coplanar', 'docked']).optional().describe('Filter by event kind (discrete conjunction, long-duration coplanar shadowing, or docked stack)'),
   "reopened": zod.coerce.boolean().optional().describe('When true, only return repeat-offender cases that have been reopened at least once (reopenCount > 0)'),
   "q": zod.coerce.string().optional().describe('Search by participant satellite name (substring, case-insensitive) or NORAD number'),
-  "sort": zod.enum(['id', 'status', 'kind', 'tca', 'minRangeKm', 'relVelKmS', 'memberCount']).optional().describe('Primary sort field (default tca)'),
+  "sort": zod.enum(['id', 'status', 'kind', 'tca', 'minRangeKm', 'relVelKmS', 'memberCount', 'duration']).optional().describe('Primary sort field (default tca); duration orders by observation span (lastSeenAt - firstDetectedAt)'),
   "order": zod.enum(['asc', 'desc']).default(getRpodEventsQueryOrderDefault),
-  "sort2": zod.enum(['id', 'status', 'kind', 'tca', 'minRangeKm', 'relVelKmS', 'memberCount']).optional().describe('Secondary sort field applied within ties of the primary sort'),
+  "sort2": zod.enum(['id', 'status', 'kind', 'tca', 'minRangeKm', 'relVelKmS', 'memberCount', 'duration']).optional().describe('Secondary sort field applied within ties of the primary sort'),
   "order2": zod.enum(['asc', 'desc']).default(getRpodEventsQueryOrder2Default)
 })
 

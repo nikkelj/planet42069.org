@@ -52,6 +52,7 @@ router.get("/rpod/events", async (req, res): Promise<void> => {
     field === "relVelKmS" ? rpodEvents.relVelKmS :
     field === "memberCount" ? rpodEvents.memberCount :
     field === "tca" ? rpodEvents.tca :
+    field === "duration" ? sql`(${rpodEvents.lastSeenAt} - ${rpodEvents.firstDetectedAt})` :
     null;
 
   const sortCol = sortColFor(String(req.query.sort ?? "tca")) ?? rpodEvents.tca;
