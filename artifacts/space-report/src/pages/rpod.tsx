@@ -265,6 +265,9 @@ export default function Rpod() {
   const [debouncedSearch, setDebouncedSearch] = useState(initial.q.trim());
   // sorts[0] = primary (click), sorts[1] = secondary (shift-click)
   const [sorts, setSorts] = useState<SortSpec[]>([{ field: "tca", order: "desc" }]);
+  // One-shot: when arriving via a shared ?case= link, scroll the opened case
+  // into view once it renders. Never fires on normal expand/collapse clicks.
+  const pendingCaseScroll = React.useRef(initial.case != null);
 
   const handleSort = (field: SortField, additive: boolean) => {
     setSorts((prev) => {
@@ -334,6 +337,22 @@ export default function Rpod() {
   const { data, isLoading, isError } = useGetRpodEvents(queryParams, {
     query: { queryKey: getGetRpodEventsQueryKey(queryParams), refetchInterval: 5 * 60_000 },
   });
+  // Deep-link scroll: once the list has loaded and the shared case is rendered
+  // (either as an expanded row or as the pinned case card), bring it into view.
+  useEffect(() => {
+    if (!pendingCaseScroll.current || isLoading) return;
+    if (expanded == null || expanded !== initial.case) {
+      // user navigated away before load — abandon the one-shot scroll
+      pendingCaseScroll.current = false;
+      return;
+    }
+    const el = document.querySelector(`[data-case-anchor="${expanded}"]`);
+    if (el) {
+      pendingCaseScroll.current = false;
+      requestAnimationFrame(() => el.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+  }, [isLoading, data, expanded, initial.case]);
+
   const { data: status } = useGetRpodStatus({ query: { queryKey: getGetRpodStatusQueryKey(), refetchInterval: 5 * 60_000 } });
 
   return (
@@ -437,7 +456,7 @@ export default function Rpod() {
       {/* A shared ?case= link may point at a case that isn't on the current page of
           results — pin its full case file above the table by fetching it directly. */}
       {expanded != null && !isLoading && !isError && !data?.data.some((ev) => ev.id === expanded) && (
-        <div className="border-2 border-primary/60 bg-card overflow-hidden relative">
+        <div className="border-2 border-primary/60 bg-card overflow-hidden relative" data-case-anchor={expanded}>
           <div className="flex items-center justify-between gap-2 px-4 py-2 bg-primary/10 border-b border-border font-mono text-xs uppercase tracking-widest">
             <span className="text-primary font-bold">Case file RPOD-{String(expanded).padStart(4, "0")}</span>
             <span className="flex items-center gap-3">
@@ -512,6 +531,7 @@ export default function Rpod() {
                 {data!.data.map((ev) => (
                   <React.Fragment key={ev.id}>
                     <TableRow
+                      data-case-anchor={expanded === ev.id ? ev.id : undefined}
                       className={`border-b-border/50 hover:bg-primary/5 transition-colors cursor-pointer ${expanded === ev.id ? "bg-primary/5" : ""}`}
                       onClick={() => setExpanded(expanded === ev.id ? null : ev.id)}
                     >
