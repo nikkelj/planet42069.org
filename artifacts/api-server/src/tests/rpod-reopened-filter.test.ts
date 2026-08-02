@@ -32,6 +32,10 @@ function check(name: string, cond: boolean, detail?: string): void {
 }
 
 const TEST_NORADS = [99998001, 99998002];
+// A third NORAD attached only to some events, so q=<norad> selects a subset.
+const EXTRA_NORAD = 99998003;
+// A search string that can't match any catalog name or NORAD.
+const NO_MATCH_Q = "zz-no-such-satellite-name-zz";
 
 interface EventRow {
   id: number;
@@ -45,16 +49,17 @@ interface SeedSpec {
   status: "active" | "stale" | "ended";
   kind: "conjunction" | "coplanar" | "docked";
   reopenCount: number;
+  extraMember?: boolean; // also gets EXTRA_NORAD as a member
 }
 
 // Mix of first-time (reopenCount 0) and repeat-offender (reopenCount > 0)
 // events across statuses and kinds so combined filters are exercised.
 const SPECS: SeedSpec[] = [
   { status: "active", kind: "conjunction", reopenCount: 0 },
-  { status: "active", kind: "conjunction", reopenCount: 1 },
+  { status: "active", kind: "conjunction", reopenCount: 1, extraMember: true },
   { status: "active", kind: "coplanar", reopenCount: 0 },
   { status: "active", kind: "coplanar", reopenCount: 3 },
-  { status: "ended", kind: "conjunction", reopenCount: 0 },
+  { status: "ended", kind: "conjunction", reopenCount: 0, extraMember: true },
   { status: "ended", kind: "conjunction", reopenCount: 2 },
   { status: "ended", kind: "coplanar", reopenCount: 1 },
   { status: "stale", kind: "docked", reopenCount: 0 },
@@ -76,6 +81,9 @@ async function seed(): Promise<Map<number, SeedSpec>> {
     await db.insert(rpodEventMembers).values([
       { eventId: row.id, norad: TEST_NORADS[0], minRangeKm: 10, relVelKmS: 0.05 },
       { eventId: row.id, norad: TEST_NORADS[1], minRangeKm: 10, relVelKmS: 0.05 },
+      ...(spec.extraMember
+        ? [{ eventId: row.id, norad: EXTRA_NORAD, minRangeKm: 10, relVelKmS: 0.05 }]
+        : []),
     ]);
     byId.set(row.id, spec);
   }
@@ -155,6 +163,56 @@ async function main(): Promise<void> {
         check(`reopened=true${qs} rows all have reopenCount > 0`,
           res.data.every((e) => e.reopenCount > 0));
       }
+    }
+
+    console.log("reopened=true combined with q= name/NORAD search");
+    {
+      // q=<EXTRA_NORAD>: only the two extra-member events match by NORAD;
+      // combined with reopened=true, only the repeat offender must remain.
+      const res = await fetchEvents(`?limit=200&reopened=true&q=${EXTRA_NORAD}`);
+      const got = new Set(seededIn(res.data).map((e) => e.id));
+      const expected = seededIds.filter((id) => {
+        const s = seeded.get(id)!;
+        return s.reopenCount > 0 && s.extraMember === true;
+      });
+      const unexpected = seededIds.filter((id) => got.has(id) && !expected.includes(id));
+      check("reopened=true&q=<norad> returns exactly the matching repeat offenders",
+        expected.every((id) => got.has(id)) && unexpected.length === 0,
+        `missing=${JSON.stringify(expected.filter((id) => !got.has(id)))} extra=${JSON.stringify(unexpected)}`);
+      check("reopened=true&q=<norad> rows all have reopenCount > 0",
+        res.data.every((e) => e.reopenCount > 0),
+        JSON.stringify(res.data.filter((e) => e.reopenCount === 0).map((e) => e.id)));
+      check("reopened=true&q=<norad> excludes seeded first-time cases with that member",
+        seededIds.every((id) => seeded.get(id)!.reopenCount > 0 || !got.has(id)));
+
+      // Same q without the filter must include the first-time extra-member event,
+      // proving the reopened filter (not the search) is what excluded it above.
+      const noFilter = await fetchEvents(`?limit=200&q=${EXTRA_NORAD}`);
+      const noFilterIds = new Set(seededIn(noFilter.data).map((e) => e.id));
+      const firstTimeExtra = seededIds.filter((id) => {
+        const s = seeded.get(id)!;
+        return s.reopenCount === 0 && s.extraMember === true;
+      });
+      check("q=<norad> without reopened includes first-time extra-member events",
+        firstTimeExtra.every((id) => noFilterIds.has(id)));
+
+      // q on the shared NORAD combined with reopened=true must equal the plain
+      // reopened set (for seeded rows) — the search must not drop repeat offenders.
+      const shared = await fetchEvents(`?limit=200&reopened=true&q=${TEST_NORADS[0]}`);
+      const sharedIds = new Set(seededIn(shared.data).map((e) => e.id));
+      check("reopened=true&q=<shared norad> includes every seeded repeat offender",
+        seededRepeatIds.every((id) => sharedIds.has(id)),
+        JSON.stringify(seededRepeatIds.filter((id) => !sharedIds.has(id))));
+      check("reopened=true&q=<shared norad> excludes seeded first-time cases",
+        seededFirstTimeIds.every((id) => !sharedIds.has(id)));
+
+      // Empty-match case: a q with no catalog or NORAD hits returns zero rows
+      // under the filter (and reports a zero total).
+      const empty = await fetchEvents(`?limit=200&reopened=true&q=${encodeURIComponent(NO_MATCH_Q)}`);
+      check("reopened=true with no-match q returns zero rows", empty.data.length === 0,
+        `${empty.data.length} rows`);
+      check("reopened=true with no-match q reports total=0", empty.total === 0,
+        `total=${empty.total}`);
     }
 
     console.log("Pagination totals under reopened=true");
