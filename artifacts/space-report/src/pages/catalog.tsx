@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Database, Loader2, Search, ChevronDown, ChevronUp, ChevronRight, Link2, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { countryName, countryLabel } from "@/lib/countries";
 
 /**
  * Orbit viewer wrapper that pulls the live TLE for objects with a NORAD id,
@@ -582,7 +583,12 @@ export default function Catalog() {
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground block mb-1 uppercase tracking-widest text-[10px]">Owner / State</span>
-                                    <span className="text-foreground">{row.original.owner || '---'}{row.original.state && row.original.state !== row.original.owner ? ` · ${row.original.state}` : ''}</span>
+                                    <span className="text-foreground">
+                                      {row.original.owner || '---'}
+                                      {row.original.state && row.original.state !== row.original.owner && (
+                                        <span title={countryName(row.original.state) ?? undefined}> · {countryLabel(row.original.state)}</span>
+                                      )}
+                                    </span>
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground block mb-1 uppercase tracking-widest text-[10px]">Full Status</span>
