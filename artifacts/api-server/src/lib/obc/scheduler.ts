@@ -43,6 +43,20 @@ async function syncIfStale(): Promise<void> {
   }
 }
 
+/**
+ * Run one scheduled tick, swallowing every error. Worker entry points catch
+ * their own failures, but errors thrown BEFORE their try blocks (advisory
+ * lock acquisition, backoff-state reads — both DB round-trips) or from
+ * failure-recording inside their catch blocks would otherwise escape as
+ * unhandled rejections and kill the process on a transient DB disconnect.
+ * A failed tick logs and waits for the next interval instead.
+ */
+function safeTick(label: string, fn: () => Promise<void>): void {
+  fn().catch((err) => {
+    logger.error({ err: String(err) }, `obc-scheduler: ${label} tick failed (will retry next interval)`);
+  });
+}
+
 /** Boot-time staleness check + hourly re-check. Safe for autoscale: also
  *  fires on cold boot, so long-idle instances catch up immediately. */
 export function startObcScheduler(): void {
@@ -50,19 +64,19 @@ export function startObcScheduler(): void {
   // (e.g. the RPOD page's events list) don't pay the ~1s cold-load cost.
   setTimeout(() => { void getSatcatFromStore().catch(() => undefined); }, 500);
 
-  setTimeout(() => { void syncIfStale(); }, 2000);
-  setInterval(() => { void syncIfStale(); }, CHECK_INTERVAL_MS).unref();
+  setTimeout(() => safeTick("sync", syncIfStale), 2000);
+  setInterval(() => safeTick("sync", syncIfStale), CHECK_INTERVAL_MS).unref();
 
   // TLE archive workers. The recent watcher runs first and often (it is the
   // tip-off feed); the backfill is deliberately offset so the two never
   // contend for the shared request queue at the same instant. The RPOD scan
   // is purely local (DB + CPU) and runs hourly after fresh elsets land.
-  setTimeout(() => { void runRecentElsetWatch(); }, 10_000);
-  setInterval(() => { void runRecentElsetWatch(); }, TLE_RECENT_INTERVAL_MS).unref();
+  setTimeout(() => safeTick("tle-recent", runRecentElsetWatch), 10_000);
+  setInterval(() => safeTick("tle-recent", runRecentElsetWatch), TLE_RECENT_INTERVAL_MS).unref();
 
-  setTimeout(() => { void runTleBackfill(); }, 3 * 60_000);
-  setInterval(() => { void runTleBackfill(); }, TLE_BACKFILL_INTERVAL_MS).unref();
+  setTimeout(() => safeTick("tle-backfill", runTleBackfill), 3 * 60_000);
+  setInterval(() => safeTick("tle-backfill", runTleBackfill), TLE_BACKFILL_INTERVAL_MS).unref();
 
-  setTimeout(() => { void runRpodScan(); }, 5 * 60_000);
-  setInterval(() => { void runRpodScan(); }, RPOD_SCAN_INTERVAL_MS).unref();
+  setTimeout(() => safeTick("rpod-scan", runRpodScan), 5 * 60_000);
+  setInterval(() => safeTick("rpod-scan", runRpodScan), RPOD_SCAN_INTERVAL_MS).unref();
 }

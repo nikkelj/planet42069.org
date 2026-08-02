@@ -11,6 +11,15 @@ if (!process.env.DATABASE_URL) {
 }
 
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+// Idle clients in the pool emit 'error' when the server drops the socket
+// (e.g. "Client network socket disconnected before secure TLS connection was
+// established", ECONNRESET). Without a listener, that error event crashes the
+// whole process. Log and move on — the pool discards the dead client and
+// dials a fresh connection on the next query.
+pool.on("error", (err) => {
+  console.error(`[db] idle client error (recovering): ${err.message}`);
+});
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";

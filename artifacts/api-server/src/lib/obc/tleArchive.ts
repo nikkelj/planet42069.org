@@ -147,7 +147,11 @@ export async function withAdvisoryLock(key: number, label: string, fn: () => Pro
     try {
       await fn();
     } finally {
-      await client.query("select pg_advisory_unlock($1)", [key]);
+      // If the connection died mid-run the lock is already gone with the
+      // session; a failed unlock must not mask fn's outcome or crash callers.
+      await client.query("select pg_advisory_unlock($1)", [key]).catch((err) => {
+        logger.warn({ err: String(err), label }, "advisory unlock failed (session likely dropped)");
+      });
     }
   } finally {
     client.release();
