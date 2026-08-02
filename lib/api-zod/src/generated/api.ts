@@ -651,7 +651,11 @@ export const GetRpodStatusResponse = zod.object({
   "oldestEpoch": zod.string().nullish(),
   "backfillCursor": zod.string().nullish().describe('Oldest instant the backward-walking backfill has covered'),
   "recentWatermark": zod.string().nullish(),
-  "backoffUntil": zod.string().nullish().describe('Set when space-track errors have the workers standing down')
+  "backoffUntil": zod.string().nullish().describe('Set when space-track errors have the workers standing down'),
+  "horizonDays": zod.number().describe('Configured retention horizon in days; the backfill never walks past it'),
+  "horizon": zod.string().describe('Oldest instant the archive retains (ISO), i.e. now minus horizonDays'),
+  "coarseAfterDays": zod.number().describe('Beyond this age (days), sampling coarsens to one elset per object per day'),
+  "backfillComplete": zod.boolean().describe('True once the backfill cursor has reached the horizon')
 }),
   "activeEvents": zod.number(),
   "lastScanAt": zod.string().nullish(),

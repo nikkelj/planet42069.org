@@ -32,6 +32,7 @@ A parody "Space Police" website — Orbital Bureaucracy Command files deadpan bu
 - Data comes live from GCAT (planet4589.org) fetched/parsed server-side; no database — the API server caches parsed catalogs in memory.
 - Reports on the homepage are anchored sections (`/#<case-id>`); crawlers can't see hash fragments, hence the static share-page system (see Gotchas).
 - Event annotations for charts (e.g. Shuttle/Falcon cadence) are hardcoded in the API route next to the data they annotate, so chart and briefing copy stay consistent with catalog counts.
+- **TLE archive retention** (`obc_tle_history`): the backward-walking backfill stops at a horizon of 2 years (override with `TLE_ARCHIVE_HORIZON_DAYS`); rows older than 30 days are sampled at 1 elset/object/day (6h bins inside 30 days). A budgeted prune runs with each backfill step: it deletes rows past the horizon and thins aged 6h rows down to daily. Worst-case size ≈ catalog × (30d × 4 + ~700d × 1) ≈ 25k × 820 ≈ 20M rows, bounded. `/api/rpod/status` reports `horizonDays`, `horizon`, `coarseAfterDays`, `backfillComplete`.
 
 ## Product
 

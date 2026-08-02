@@ -112,6 +112,14 @@ export interface RpodArchiveStatus {
   recentWatermark?: string | null;
   /** Set when space-track errors have the workers standing down */
   backoffUntil?: string | null;
+  /** Configured retention horizon in days; the backfill never walks past it */
+  horizonDays: number;
+  /** Oldest instant the archive retains (ISO), i.e. now minus horizonDays */
+  horizon: string;
+  /** Beyond this age (days), sampling coarsens to one elset per object per day */
+  coarseAfterDays: number;
+  /** True once the backfill cursor has reached the horizon */
+  backfillComplete: boolean;
 }
 
 export interface RpodStatus {

@@ -738,7 +738,19 @@ components:
           type: string
           nullable: true
           description: Set when space-track errors have the workers standing down
-      required: [totalRows, objects]
+        horizonDays:
+          type: integer
+          description: Configured retention horizon in days; the backfill never walks past it
+        horizon:
+          type: string
+          description: Oldest instant the archive retains (ISO), i.e. now minus horizonDays
+        coarseAfterDays:
+          type: integer
+          description: Beyond this age (days), sampling coarsens to one elset per object per day
+        backfillComplete:
+          type: boolean
+          description: True once the backfill cursor has reached the horizon
+      required: [totalRows, objects, horizonDays, horizon, coarseAfterDays, backfillComplete]
 
     RpodStatus:
       type: object

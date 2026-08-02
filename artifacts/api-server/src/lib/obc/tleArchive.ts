@@ -26,9 +26,25 @@ const MIN_GAP_MS = 2500;
 const COOKIE_TTL_MS = 2 * 3600_000;
 const FETCH_TIMEOUT_MS = 120_000;
 
-// Sampling: keep at most one archived elset per object per UTC 6-hour bin.
+// Sampling: keep at most one archived elset per object per UTC 6-hour bin
+// for the recent window; beyond COARSE_AFTER_DAYS keep one per UTC day.
 // Bounded storage, still enough time-resolution to see RAAN drift trends.
 const SAMPLE_BIN_MS = 6 * 3600_000;
+const COARSE_BIN_MS = 24 * 3600_000;
+export const COARSE_AFTER_DAYS = 30;
+
+// Retention horizon: the backfill stops walking once its cursor reaches this
+// far into the past, and rows older than the horizon are pruned. Overridable
+// via TLE_ARCHIVE_HORIZON_DAYS. Default 2 years — combined with 1/day
+// sampling beyond 30 days, worst-case table size is bounded at roughly
+// catalog_size × (30d × 4 + horizon_remainder × 1) rows.
+export const BACKFILL_HORIZON_DAYS = (() => {
+  const v = parseInt(process.env["TLE_ARCHIVE_HORIZON_DAYS"] ?? "", 10);
+  return Number.isFinite(v) && v > 0 ? v : 730;
+})();
+
+// Prune pacing: bounded per backfill run so the delete never monopolizes the DB.
+const PRUNE_ROW_LIMIT = 20_000;
 
 // Backfill pacing
 const BACKFILL_CHUNK_HOURS = 6;
@@ -209,12 +225,19 @@ function toRow(r: GpRow, source: "recent" | "backfill"): InsertObcTleHistory | n
   };
 }
 
-/** Downsample to one elset per object per SAMPLE_BIN (latest wins). */
-export function sampleRows(rows: InsertObcTleHistory[]): InsertObcTleHistory[] {
+/**
+ * Downsample to one elset per object per bin (latest wins). Bins are 6h for
+ * epochs within COARSE_AFTER_DAYS of `nowMs`, one UTC day beyond that — so
+ * backfilled deep history lands at 1/object/day from the start.
+ */
+export function sampleRows(rows: InsertObcTleHistory[], nowMs: number = Date.now()): InsertObcTleHistory[] {
+  const coarseBefore = nowMs - COARSE_AFTER_DAYS * 86_400_000;
   const byBin = new Map<string, InsertObcTleHistory>();
   for (const r of rows) {
-    const bin = Math.floor(new Date(r.epoch as Date).getTime() / SAMPLE_BIN_MS);
-    const key = `${r.norad}:${bin}`;
+    const epochMs = new Date(r.epoch as Date).getTime();
+    const binMs = epochMs < coarseBefore ? COARSE_BIN_MS : SAMPLE_BIN_MS;
+    const bin = Math.floor(epochMs / binMs);
+    const key = `${r.norad}:${binMs}:${bin}`;
     const prev = byBin.get(key);
     if (!prev || new Date(r.epoch as Date).getTime() > new Date(prev.epoch as Date).getTime()) {
       byBin.set(key, r);
@@ -309,15 +332,30 @@ export async function runTleBackfill(): Promise<void> {
   return withAdvisoryLock(LOCK_TLE_BACKFILL, "tle-backfill", doTleBackfill);
 }
 
+/** Oldest instant the backfill is allowed to cover (ms since epoch). */
+export function backfillHorizonMs(nowMs: number = Date.now()): number {
+  return nowMs - BACKFILL_HORIZON_DAYS * 86_400_000;
+}
+
 async function doTleBackfill(): Promise<void> {
   const started = new Date();
   let totalWritten = 0;
   try {
+    const horizonMs = backfillHorizonMs();
     const s = await getWorkerState<{ cursorMs: number }>(STATE_BACKFILL);
     let cursorMs = s?.cursorMs ?? Date.now();
-    for (let i = 0; i < BACKFILL_REQUESTS_PER_RUN; i++) {
+    if (cursorMs <= horizonMs) {
+      // Horizon reached: backfill is done. Keep pruning so retention holds
+      // as the horizon slides forward with time.
+      const pruned = await pruneTleHistory(horizonMs);
+      await clearFailure();
+      await logSync("tle-backfill", "success", started, pruned);
+      logger.info({ pruned, horizonDays: BACKFILL_HORIZON_DAYS }, "tle-archive: backfill at horizon, prune-only run");
+      return;
+    }
+    for (let i = 0; i < BACKFILL_REQUESTS_PER_RUN && cursorMs > horizonMs; i++) {
       const endMs = cursorMs;
-      const startMs = endMs - BACKFILL_CHUNK_HOURS * 3600_000;
+      const startMs = Math.max(endMs - BACKFILL_CHUNK_HOURS * 3600_000, horizonMs);
       // Descending epoch order: the walker moves backward in time, so on a
       // capped response the rows we HAVE are the newest of the interval and
       // everything already covered is contiguous with the previous chunk.
@@ -340,6 +378,7 @@ async function doTleBackfill(): Promise<void> {
       }
       await setWorkerState(STATE_BACKFILL, { cursorMs });
     }
+    await pruneTleHistory(horizonMs);
     await clearFailure();
     await logSync("tle-backfill", "success", started, totalWritten);
     logger.info({ written: totalWritten, cursor: new Date((await getWorkerState<{ cursorMs: number }>(STATE_BACKFILL))!.cursorMs).toISOString() }, "tle-archive: backfill step ok");
@@ -348,6 +387,51 @@ async function doTleBackfill(): Promise<void> {
     await logSync("tle-backfill", "error", started, totalWritten, String(err));
     logger.warn({ err }, "tle-archive: backfill failed");
   }
+}
+
+// ── retention pruning ──────────────────────────────────────────────────────
+
+/**
+ * Enforce retention on obc_tle_history, bounded to PRUNE_ROW_LIMIT deletes
+ * per call so it never monopolizes the DB:
+ *  1. drop rows with epoch older than the horizon;
+ *  2. thin rows older than COARSE_AFTER_DAYS down to one per object per UTC
+ *     day (newest of each day wins) — recent-feed rows are stored at 6h
+ *     resolution and age past the coarse boundary over time.
+ */
+export async function pruneTleHistory(horizonMs: number, nowMs: number = Date.now()): Promise<number> {
+  let deleted = 0;
+  try {
+    const beyondHorizon = await db.execute(sql`
+      delete from obc_tle_history where id in (
+        select id from obc_tle_history
+        where epoch < ${new Date(horizonMs)}
+        limit ${PRUNE_ROW_LIMIT}
+      )`);
+    deleted += beyondHorizon.rowCount ?? 0;
+
+    const budget = PRUNE_ROW_LIMIT - deleted;
+    if (budget > 0) {
+      const coarseBefore = new Date(nowMs - COARSE_AFTER_DAYS * 86_400_000);
+      const thinned = await db.execute(sql`
+        delete from obc_tle_history where id in (
+          select id from (
+            select id, row_number() over (
+              partition by norad, date_trunc('day', epoch)
+              order by epoch desc, id desc
+            ) as rn
+            from obc_tle_history
+            where epoch < ${coarseBefore} and epoch >= ${new Date(horizonMs)}
+          ) t where t.rn > 1
+          limit ${budget}
+        )`);
+      deleted += thinned.rowCount ?? 0;
+    }
+    if (deleted > 0) logger.info({ deleted }, "tle-archive: retention prune");
+  } catch (err) {
+    logger.warn({ err }, "tle-archive: retention prune failed");
+  }
+  return deleted;
 }
 
 // ── queries used by the RPOD scanner & status endpoint ─────────────────────
@@ -414,6 +498,14 @@ export interface ArchiveStatus {
   backfillCursor: string | null;
   recentWatermark: string | null;
   backoffUntil: string | null;
+  /** Configured retention horizon in days; backfill never walks past it. */
+  horizonDays: number;
+  /** Oldest instant the archive retains (ISO), i.e. now − horizonDays. */
+  horizon: string;
+  /** Beyond this age (days), sampling coarsens to one elset/object/day. */
+  coarseAfterDays: number;
+  /** True once the backfill cursor has reached the horizon. */
+  backfillComplete: boolean;
 }
 
 export async function getArchiveStatus(): Promise<ArchiveStatus> {
@@ -437,6 +529,10 @@ export async function getArchiveStatus(): Promise<ArchiveStatus> {
     objects: agg?.objects ?? 0,
     newestEpoch: iso(agg?.newest ?? null),
     oldestEpoch: iso(agg?.oldest ?? null),
+    horizonDays: BACKFILL_HORIZON_DAYS,
+    horizon: new Date(backfillHorizonMs()).toISOString(),
+    coarseAfterDays: COARSE_AFTER_DAYS,
+    backfillComplete: bf?.cursorMs != null && bf.cursorMs <= backfillHorizonMs(),
     backfillCursor: bf?.cursorMs != null ? new Date(bf.cursorMs).toISOString() : null,
     recentWatermark: wm?.epochMs != null ? new Date(wm.epochMs).toISOString() : null,
     backoffUntil: bo?.until != null && bo.until > Date.now() ? new Date(bo.until).toISOString() : null,
