@@ -1072,7 +1072,9 @@ router.get("/satcat", async (req, res): Promise<void> => {
         e.name.toLowerCase().includes(search) ||
         (e.plName?.toLowerCase().includes(search) ?? false) ||
         e.jcat.toLowerCase().includes(search) ||
-        (e.satno != null && String(e.satno).includes(search)),
+        (e.satno != null && String(e.satno).includes(search)) ||
+        (e.gunterOperator?.toLowerCase().includes(search) ?? false) ||
+        (e.gunterContractors?.toLowerCase().includes(search) ?? false),
     );
   }
   if (ownerFilter) {

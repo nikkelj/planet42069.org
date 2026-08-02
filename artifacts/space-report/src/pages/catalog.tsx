@@ -393,7 +393,7 @@ export default function Catalog() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
-              placeholder="SEARCH NAME, JCAT, OR NORAD ID..." 
+              placeholder="SEARCH NAME, JCAT, NORAD, OPERATOR, OR BUILDER..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 bg-background/50 border-primary/50 text-primary placeholder:text-primary/30 uppercase font-mono rounded-none focus-visible:ring-primary"

@@ -50,7 +50,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Text search across name fields
+          description: Text search across name fields, JCAT/NORAD ids, and Gunter operator/contractor facts (who operates or built the satellite)
         - name: owner
           in: query
           schema:

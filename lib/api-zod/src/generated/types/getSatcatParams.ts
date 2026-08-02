@@ -11,7 +11,7 @@ export type GetSatcatParams = {
 page?: number;
 limit?: number;
 /**
- * Text search across name fields
+ * Text search across name fields, JCAT/NORAD ids, and Gunter operator/contractor facts (who operates or built the satellite)
  */
 search?: string;
 /**

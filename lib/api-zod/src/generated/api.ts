@@ -28,7 +28,7 @@ export const getSatcatQueryOrderDefault = `asc`;
 export const GetSatcatQueryParams = zod.object({
   "page": zod.coerce.number().default(getSatcatQueryPageDefault),
   "limit": zod.coerce.number().default(getSatcatQueryLimitDefault),
-  "search": zod.coerce.string().optional().describe('Text search across name fields'),
+  "search": zod.coerce.string().optional().describe('Text search across name fields, JCAT\/NORAD ids, and Gunter operator\/contractor facts (who operates or built the satellite)'),
   "owner": zod.coerce.string().optional().describe('Filter by owner\/country code'),
   "objectClass": zod.coerce.string().optional().describe('Filter by object class: P (payload), R (rocket body), D (debris), U (unknown)'),
   "orbit": zod.coerce.string().optional().describe('Filter by operational orbit type (LEO, MEO, GEO, HEO, etc.)'),
