@@ -46,7 +46,7 @@ function fmtDuration(ms: number): string {
 
 interface SpellInterval { start: string; lastSeenAt: string | null; endedAt: string | null }
 
-function CaseTimeline({
+export function CaseTimeline({
   firstDetectedAt, lastSeenAt, endedAt, status, spells,
 }: { firstDetectedAt: string; lastSeenAt: string; endedAt: string | null; status: string; spells?: SpellInterval[] }) {
   // Fall back to a single spell when the API doesn't provide the list.
@@ -104,7 +104,7 @@ function CaseTimeline({
           const isFinalGap = seg.kind === "gap" && i === segs.length - 1 && ended;
           if (seg.kind === "obs") {
             return (
-              <div key={i} className="relative h-1.5 bg-primary/70" style={{ width }} title={`Shadowing spell — ${fmtDuration(seg.ms)}`}>
+              <div key={i} data-testid="timeline-spell" className="relative h-1.5 bg-primary/70" style={{ width }} title={`Shadowing spell — ${fmtDuration(seg.ms)}`}>
                 <span className="absolute -left-0.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-primary" />
                 <span className={`absolute -right-0.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full ${seg.live ? "bg-primary animate-pulse" : "bg-primary/70"}`} />
               </div>
@@ -113,6 +113,7 @@ function CaseTimeline({
           return (
             <div
               key={i}
+              data-testid={isFinalGap ? "timeline-final-gap" : "timeline-gap"}
               className={`relative h-0 border-t-2 border-dashed ${isFinalGap ? "border-destructive/50" : "border-accent/50"}`}
               style={{ width }}
               title={isFinalGap ? `Case closed ${fmtDuration(seg.ms)} after last contact` : `Pair drifted apart for ${fmtDuration(seg.ms)} before closing ranks again`}
