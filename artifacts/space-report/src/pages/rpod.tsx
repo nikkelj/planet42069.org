@@ -12,6 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Crosshair, Loader2, ChevronDown, ChevronRight, Radio, Search, ArrowUp, ArrowDown } from "lucide-react";
+import { Link } from "wouter";
+
+/** Deep link into the satcat explorer; catalog.tsx reads ?sat= and auto-expands the row. */
+const catalogHref = (norad: number) => `/catalog?sat=${norad}`;
 
 type SortField = "id" | "status" | "kind" | "tca" | "duration" | "minRangeKm" | "relVelKmS" | "memberCount";
 interface SortSpec { field: SortField; order: "asc" | "desc" }
@@ -202,8 +206,18 @@ function EventDetail({ eventId }: { eventId: number }) {
           <TableBody>
             {data.members.map((m) => (
               <TableRow key={m.norad} className="border-b-border/40 hover:bg-primary/5">
-                <TableCell className="text-primary font-bold">#{m.norad}</TableCell>
-                <TableCell>{m.name ?? "—"}</TableCell>
+                <TableCell className="text-primary font-bold">
+                  <Link href={catalogHref(m.norad)} className="hover:underline underline-offset-2" title="Open in satcat explorer">
+                    #{m.norad}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  {m.name != null ? (
+                    <Link href={catalogHref(m.norad)} className="hover:underline underline-offset-2 hover:text-primary" title="Open in satcat explorer">
+                      {m.name}
+                    </Link>
+                  ) : "—"}
+                </TableCell>
                 <TableCell>{m.owner ?? "—"}</TableCell>
                 <TableCell>{m.objectClass ?? "—"}</TableCell>
                 <TableCell>{m.opOrbit ?? "—"}</TableCell>
@@ -570,7 +584,19 @@ export default function Rpod() {
                         </span>
                       </TableCell>
                       <TableCell className="max-w-[360px] truncate text-muted-foreground">
-                        {ev.members.map((m) => m.name ?? `#${m.norad}`).join(" · ")}
+                        {ev.members.map((m, i) => (
+                          <React.Fragment key={m.norad}>
+                            {i > 0 && " · "}
+                            <Link
+                              href={catalogHref(m.norad)}
+                              className="hover:underline underline-offset-2 hover:text-primary"
+                              title="Open in satcat explorer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {m.name ?? `#${m.norad}`}
+                            </Link>
+                          </React.Fragment>
+                        ))}
                       </TableCell>
                     </TableRow>
                     {expanded === ev.id && (
