@@ -52,6 +52,7 @@ A parody "Space Police" website — Orbital Bureaucracy Command files deadpan bu
 - Social card images must be served from `www.planet42069.org` — the `.replit.app` domain serves a platform-level `robots.txt` `Disallow: /` (blocks Twitterbot), and the bare apex `planet42069.org` refuses connections (only www is wired up).
 - Building space-report manually requires env vars: `PORT=<any> BASE_PATH=/ pnpm --filter @workspace/space-report run build`.
 - X posting is done via `twitter-api-v2` with the `X_API_KEY`/`X_API_SECRET`/`X_ACCESS_TOKEN`/`X_ACCESS_TOKEN_SECRET` secrets (bash/node, not the code sandbox). Editing a tweet = delete + repost with a cache-buster URL.
+- **Automated RPOD citations** (user-approved exception to the confirm-before-posting rule): the hourly RPOD scan auto-posts a Space Police citation for genuinely NEW cases (`artifacts/api-server/src/lib/rpod/alert.ts`). Production only (`NODE_ENV=production`, or `RPOD_ALERTS_FORCE=1` for manual verification); docked stacks and co-launched formations never post; once-per-event ledger + 5/day cap live in `obc_sync_log` rows with source `rpod-alert` (rowCount = event id).
 - GitHub repo: `nikkelj/planet42069.org` (pushed via the Replit GitHub integration).
 
 ## Pointers

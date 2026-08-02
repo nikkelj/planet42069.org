@@ -11,6 +11,7 @@ import {
   type ScreenElset, type FlaggedPair, type ScreenOptions,
 } from "./screen";
 import { selectEndedCoplanarIds, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS } from "./retire";
+import { postNewRpodEventAlerts, type NewRpodEvent } from "./alert";
 
 /**
  * RPOD scan orchestrator: pulls the latest archived elsets, runs the
@@ -251,8 +252,14 @@ async function doScan(): Promise<void> {
 
     const coEvents = clusterPairs(coFlagged, MEMBER_CAP, COALIGNED_MERGE_WINDOW_MS);
 
-    await persistEvents(events, "conjunction");
-    await persistEvents(coEvents, "coplanar");
+    const newConj = await persistEvents(events, "conjunction");
+    const newCo = await persistEvents(coEvents, "coplanar");
+    // Alert on genuinely NEW cases only (never updates/reopens). Failures
+    // are swallowed inside — posting must never fail the scan.
+    await postNewRpodEventAlerts([...newConj, ...newCo], (norad) => {
+      const m = meta.get(norad);
+      return m ? { name: m.name, launchTag: m.launchTag } : undefined;
+    });
     await reclassifyDockedEvents();
     await markStaleEvents();
     await retireDriftedCoplanarEvents();
@@ -303,8 +310,9 @@ async function logScanRow(status: "success" | "error", startedAt: Date, rowCount
  * by definition days past its window, so membership alone identifies the
  * continuing pair.
  */
-export async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "conjunction" | "coplanar"): Promise<void> {
-  if (events.length === 0) return;
+export async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "conjunction" | "coplanar"): Promise<NewRpodEvent[]> {
+  const newlyInserted: NewRpodEvent[] = [];
+  if (events.length === 0) return newlyInserted;
   // Conjunction-track events may be stored as "conjunction" OR "docked" —
   // match across both so a stack flipping labels never spawns a duplicate case.
   const kinds = kind === "conjunction" ? ["conjunction", "docked"] : [kind];
@@ -450,6 +458,14 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
       } else {
         const [row] = await db.insert(rpodEvents).values(base).returning({ id: rpodEvents.id });
         eventId = row.id;
+        newlyInserted.push({
+          eventId,
+          kind: base.kind,
+          members: ev.members,
+          minRangeKm: base.minRangeKm,
+          relVelKmS: base.relVelKmS,
+          tcaMs: ev.tcaMs,
+        });
       }
     }
 
@@ -466,6 +482,7 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
     });
     await db.insert(rpodEventMembers).values(memberRows).onConflictDoNothing();
   }
+  return newlyInserted;
 }
 
 /**

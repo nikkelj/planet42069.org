@@ -196,6 +196,9 @@ importers:
       satellite.js:
         specifier: ^7.1.0
         version: 7.1.0
+      twitter-api-v2:
+        specifier: ^1.29.0
+        version: 1.29.0
     devDependencies:
       '@types/cookie-parser':
         specifier: ^1.4.10
