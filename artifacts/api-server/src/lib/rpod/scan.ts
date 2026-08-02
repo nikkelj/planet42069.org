@@ -11,7 +11,7 @@ import {
   type ScreenElset, type FlaggedPair, type ScreenOptions,
 } from "./screen";
 import { selectEndedCoplanarIds, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS } from "./retire";
-import { postNewRpodEventAlerts, type NewRpodEvent } from "./alert";
+import { postNewRpodEventAlerts, postEscalationAlerts, isEscalation, type NewRpodEvent, type EscalatedRpodEvent } from "./alert";
 
 /**
  * RPOD scan orchestrator: pulls the latest archived elsets, runs the
@@ -252,14 +252,18 @@ async function doScan(): Promise<void> {
 
     const coEvents = clusterPairs(coFlagged, MEMBER_CAP, COALIGNED_MERGE_WINDOW_MS);
 
-    const newConj = await persistEvents(events, "conjunction");
-    const newCo = await persistEvents(coEvents, "coplanar");
-    // Alert on genuinely NEW cases only (never updates/reopens). Failures
-    // are swallowed inside — posting must never fail the scan.
-    await postNewRpodEventAlerts([...newConj, ...newCo], (norad) => {
+    const conjResult = await persistEvents(events, "conjunction");
+    const coResult = await persistEvents(coEvents, "coplanar");
+    // Alert on genuinely NEW cases (never routine updates/reopens), plus
+    // one follow-up when an ACTIVE case escalates (min range tightening
+    // sharply). Failures are swallowed inside — posting must never fail
+    // the scan.
+    const metaFor = (norad: number) => {
       const m = meta.get(norad);
       return m ? { name: m.name, launchTag: m.launchTag } : undefined;
-    });
+    };
+    await postNewRpodEventAlerts([...conjResult.inserted, ...coResult.inserted], metaFor);
+    await postEscalationAlerts([...conjResult.escalated, ...coResult.escalated], metaFor);
     await reclassifyDockedEvents();
     await markStaleEvents();
     await retireDriftedCoplanarEvents();
@@ -310,9 +314,17 @@ async function logScanRow(status: "success" | "error", startedAt: Date, rowCount
  * by definition days past its window, so membership alone identifies the
  * continuing pair.
  */
-export async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "conjunction" | "coplanar"): Promise<NewRpodEvent[]> {
+export interface PersistResult {
+  /** Freshly INSERTED cases (candidates for the new-case citation). */
+  inserted: NewRpodEvent[];
+  /** ACTIVE cases whose min range tightened sharply on this update. */
+  escalated: EscalatedRpodEvent[];
+}
+
+export async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "conjunction" | "coplanar"): Promise<PersistResult> {
   const newlyInserted: NewRpodEvent[] = [];
-  if (events.length === 0) return newlyInserted;
+  const escalated: EscalatedRpodEvent[] = [];
+  if (events.length === 0) return { inserted: newlyInserted, escalated };
   // Conjunction-track events may be stored as "conjunction" OR "docked" —
   // match across both so a stack flipping labels never spawns a duplicate case.
   const kinds = kind === "conjunction" ? ["conjunction", "docked"] : [kind];
@@ -423,6 +435,20 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
     if (match) {
       await db.update(rpodEvents).set({ ...base, updatedAt: sql`now()` }).where(eq(rpodEvents.id, match.id));
       eventId = match.id;
+      // Escalation: an active case whose predicted min range tightened from
+      // "keeping their distance" to "genuinely close" is the newsworthy
+      // moment — report it so the alert pass can post one follow-up.
+      if (base.kind !== "docked" && isEscalation(match.minRangeKm, base.minRangeKm)) {
+        escalated.push({
+          eventId,
+          kind: base.kind,
+          members: ev.members,
+          minRangeKm: base.minRangeKm,
+          relVelKmS: base.relVelKmS,
+          tcaMs: ev.tcaMs,
+          prevMinRangeKm: match.minRangeKm,
+        });
+      }
       await db.delete(rpodEventMembers).where(eq(rpodEventMembers.eventId, eventId));
     } else {
       const reopenId = selectReopenCandidate(endedWithMembers, ev.members, Date.now(), reopenWindowMs);
@@ -482,7 +508,7 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
     });
     await db.insert(rpodEventMembers).values(memberRows).onConflictDoNothing();
   }
-  return newlyInserted;
+  return { inserted: newlyInserted, escalated };
 }
 
 /**

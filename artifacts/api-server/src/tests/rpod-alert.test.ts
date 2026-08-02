@@ -16,7 +16,11 @@ import { db, pool } from "@workspace/db";
 import { rpodEvents, rpodEventMembers, obcSyncLog } from "@workspace/db/schema";
 import { inArray, eq } from "drizzle-orm";
 import { persistEvents, DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S } from "../lib/rpod/scan";
-import { selectAlertableEvents, formatCitation, isCoLaunched, caseNumber, type NewRpodEvent, type AlertMeta } from "../lib/rpod/alert";
+import {
+  selectAlertableEvents, formatCitation, formatEscalationCitation, isCoLaunched, isEscalation, caseNumber,
+  ESCALATION_TRIGGER_KM, ESCALATION_PRIOR_MIN_KM,
+  type NewRpodEvent, type EscalatedRpodEvent, type AlertMeta,
+} from "../lib/rpod/alert";
 import type { ClusteredEvent } from "../lib/rpod/screen";
 
 let failures = 0;
@@ -45,7 +49,7 @@ async function main(): Promise<void> {
   const cleanupIds: number[] = [];
   try {
     console.log("persistEvents reporting: insert vs update");
-    const inserted = await persistEvents([makeCluster(PAIR, nowMs, 4.2, 0.05)], "conjunction");
+    const { inserted } = await persistEvents([makeCluster(PAIR, nowMs, 4.2, 0.05)], "conjunction");
     check("fresh insert is reported exactly once", inserted.length === 1, JSON.stringify(inserted));
     if (inserted[0]) cleanupIds.push(inserted[0].eventId);
     check("reported event carries members, stats, tca",
@@ -56,10 +60,27 @@ async function main(): Promise<void> {
       JSON.stringify(inserted[0]));
 
     const updated = await persistEvents([makeCluster(PAIR, nowMs + 60_000, 3.9, 0.04)], "conjunction");
-    check("update to the same active case reports NOTHING", updated.length === 0, JSON.stringify(updated));
+    check("update to the same active case reports NO insert", updated.inserted.length === 0, JSON.stringify(updated.inserted));
+    check("mild tightening (4.2 → 3.9 km) is NOT an escalation", updated.escalated.length === 0, JSON.stringify(updated.escalated));
+
+    console.log("escalation detection on active-case updates");
+    check("isEscalation: 25 → 2 km escalates", isEscalation(25, 2));
+    check("isEscalation: prior must exceed the floor", !isEscalation(ESCALATION_PRIOR_MIN_KM, 2));
+    check("isEscalation: new range must be under the trigger", !isEscalation(25, ESCALATION_TRIGGER_KM));
+    // Widen the case back out (routine update), then tighten sharply.
+    const widened = await persistEvents([makeCluster(PAIR, nowMs + 120_000, 25, 0.05)], "conjunction");
+    check("widening reports no escalation", widened.escalated.length === 0, JSON.stringify(widened.escalated));
+    const tightened = await persistEvents([makeCluster(PAIR, nowMs + 180_000, 2.1, 0.05)], "conjunction");
+    check("sharp tightening (25 → 2.1 km) reports ONE escalation, no insert",
+      tightened.escalated.length === 1 && tightened.inserted.length === 0, JSON.stringify(tightened));
+    check("escalation carries old and new stats",
+      tightened.escalated[0]?.eventId === inserted[0].eventId &&
+      tightened.escalated[0]?.prevMinRangeKm === 25 &&
+      tightened.escalated[0]?.minRangeKm === 2.1,
+      JSON.stringify(tightened.escalated[0]));
 
     console.log("docked-geometry insert reported as docked");
-    const docked = await persistEvents(
+    const { inserted: docked } = await persistEvents(
       [makeCluster(DOCKED_PAIR, nowMs, DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S)], "conjunction");
     check("docked insert reported with kind=docked", docked.length === 1 && docked[0].kind === "docked", JSON.stringify(docked));
     if (docked[0]) cleanupIds.push(docked[0].eventId);
@@ -92,6 +113,17 @@ async function main(): Promise<void> {
     check("links the case file", text.includes(`/rpod?case=${inserted[0].eventId}`), text);
     check("unknown names fall back to NORAD id",
       formatCitation(inserted[0], () => undefined).includes(`NORAD ${PAIR[0]}`));
+
+    console.log("escalation citation text");
+    const escEv: EscalatedRpodEvent = tightened.escalated[0] ?? { ...inserted[0], prevMinRangeKm: 25 };
+    const escText = formatEscalationCitation(escEv, metaFor);
+    check("escalation text has case number", escText.includes(caseNumber(escEv.eventId)), escText);
+    check("escalation text says ESCALATION", escText.includes("ESCALATION"), escText);
+    check("escalation text shows old → new range", escText.includes("25.0 km") && escText.includes("2.10 km"), escText);
+    check("escalation text links the case file", escText.includes(`/rpod?case=${escEv.eventId}`), escText);
+    check("docked escalations never alert",
+      selectAlertableEvents([{ ...escEv, kind: "docked" }], metaFor).length === 0);
+    check("trigger below prior floor (sane thresholds)", ESCALATION_TRIGGER_KM < ESCALATION_PRIOR_MIN_KM);
 
     console.log("case-card image");
     const { renderCaseCardSvg, renderCaseCardPng } = await import("../lib/rpod/case-card");

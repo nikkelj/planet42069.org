@@ -6,8 +6,10 @@ import { logger } from "../logger";
 /**
  * X (Twitter) alerts for genuinely NEW RPOD events.
  *
- * Only events freshly INSERTED by persistEvents qualify — updates to an
- * active case and reopened lapsed cases never re-post. On top of that:
+ * Two milestones can post per case: the freshly INSERTED opening (reported
+ * by persistEvents) and at most one escalation follow-up when an ACTIVE
+ * case's min range tightens sharply. Routine updates and reopened lapsed
+ * cases never post. On top of that:
  *  - "docked" geometry (station stacks, visiting vehicles) never posts
  *  - co-launched formations (all members share one launch tag) never post
  *  - a per-event dedupe ledger (obc_sync_log, source "rpod-alert") means an
@@ -22,6 +24,16 @@ export const DAILY_ALERT_CAP = 5;
 const ALERT_LOG_SOURCE = "rpod-alert";
 const SITE_BASE = "https://www.planet42069.org";
 
+/**
+ * Escalation follow-ups: an ACTIVE case whose predicted minimum range
+ * tightens from "keeping their distance" (> ESCALATION_PRIOR_MIN_KM) to
+ * "genuinely close" (< ESCALATION_TRIGGER_KM) posts ONE follow-up citation.
+ * The ledger key is -eventId (new-case posts use +eventId), so each case can
+ * escalate-post at most once, ever — no repeat posts as the range oscillates.
+ */
+export const ESCALATION_TRIGGER_KM = 5;
+export const ESCALATION_PRIOR_MIN_KM = 15;
+
 /** A freshly inserted event, as reported by persistEvents. */
 export interface NewRpodEvent {
   eventId: number;
@@ -30,6 +42,16 @@ export interface NewRpodEvent {
   minRangeKm: number;
   relVelKmS: number;
   tcaMs: number;
+}
+
+/** An active case whose min range tightened sharply on this scan. */
+export interface EscalatedRpodEvent extends NewRpodEvent {
+  prevMinRangeKm: number;
+}
+
+/** Does an old→new min-range change qualify as a newsworthy escalation? */
+export function isEscalation(prevMinRangeKm: number, newMinRangeKm: number): boolean {
+  return prevMinRangeKm > ESCALATION_PRIOR_MIN_KM && newMinRangeKm < ESCALATION_TRIGGER_KM;
 }
 
 export interface AlertMeta {
@@ -88,6 +110,23 @@ export function formatCitation(ev: NewRpodEvent, metaFor: (norad: number) => Ale
   ].join("\n");
 }
 
+/** Deadpan bureaucratic follow-up text for a sharply tightening case. */
+export function formatEscalationCitation(
+  ev: EscalatedRpodEvent,
+  metaFor: (norad: number) => AlertMeta | undefined,
+): string {
+  const names = ev.members.map((n) => metaFor(n)?.name?.trim() || `NORAD ${n}`);
+  return [
+    `🚨 SPACE POLICE ESCALATION — Case ${caseNumber(ev.eventId)}`,
+    `Previously cited craft are now closing rapidly.`,
+    ``,
+    `Cited craft: ${names.join(", ")}`,
+    `Predicted closest approach tightened: ${fmtRange(ev.prevMinRangeKm)} → ${fmtRange(ev.minRangeKm)} at ${fmtUtc(ev.tcaMs)}`,
+    ``,
+    `Case file: ${SITE_BASE}/rpod?case=${ev.eventId}`,
+  ].join("\n");
+}
+
 function credsAvailable(): boolean {
   return Boolean(
     process.env.X_API_KEY && process.env.X_API_SECRET &&
@@ -112,15 +151,18 @@ async function postsInLastDay(): Promise<number> {
   return rows[0]?.n ?? 0;
 }
 
-/** Has this event id ever posted? (rowCount stores the event id.) */
-async function alreadyPosted(eventId: number): Promise<boolean> {
+/**
+ * Has this milestone ever posted? rowCount stores the ledger key:
+ * +eventId for the new-case citation, -eventId for the escalation follow-up.
+ */
+async function alreadyPosted(ledgerKey: number): Promise<boolean> {
   const rows = await db
     .select({ id: obcSyncLog.id })
     .from(obcSyncLog)
     .where(and(
       eq(obcSyncLog.source, ALERT_LOG_SOURCE),
       eq(obcSyncLog.status, "success"),
-      eq(obcSyncLog.rowCount, eventId),
+      eq(obcSyncLog.rowCount, ledgerKey),
     ))
     .limit(1);
   return rows.length > 0;
@@ -166,6 +208,63 @@ async function tryRenderCaseCard(
   }
 }
 
+interface PostItem {
+  ev: NewRpodEvent;
+  /** obc_sync_log rowCount: +eventId for new cases, -eventId for escalations. */
+  ledgerKey: number;
+  text: string;
+  what: string; // for logs: "new event" | "escalation"
+}
+
+/**
+ * Shared posting loop: honors the daily cap and the once-per-milestone
+ * ledger. Never throws — a posting failure must not fail the scan.
+ */
+async function postAlertItems(
+  items: PostItem[],
+  metaFor: (norad: number) => AlertMeta | undefined,
+): Promise<void> {
+  if (items.length === 0) return;
+  if (!postingEnabled()) {
+    logger.info({ events: items.map((i) => i.ledgerKey) }, "rpod-alert: posting disabled outside production, skipping");
+    return;
+  }
+  if (!credsAvailable()) {
+    logger.warn({ events: items.map((i) => i.ledgerKey) }, "rpod-alert: X credentials missing, skipping");
+    return;
+  }
+  try {
+    let remaining = DAILY_ALERT_CAP - (await postsInLastDay());
+    for (const item of items) {
+      const { ev } = item;
+      if (remaining <= 0) {
+        logger.warn({ eventId: ev.eventId }, "rpod-alert: daily cap reached, skipping remaining alerts");
+        break;
+      }
+      if (await alreadyPosted(item.ledgerKey)) continue;
+      const started = new Date();
+      try {
+        const image = await tryRenderCaseCard(ev, metaFor);
+        const tweetId = await postToX(item.text, image);
+        await db.insert(obcSyncLog).values({
+          source: ALERT_LOG_SOURCE, status: "success", rowCount: item.ledgerKey,
+          error: null, startedAt: started,
+        });
+        remaining--;
+        logger.info({ eventId: ev.eventId, tweetId }, `rpod-alert: posted citation for ${item.what}`);
+      } catch (err) {
+        await db.insert(obcSyncLog).values({
+          source: ALERT_LOG_SOURCE, status: "error", rowCount: item.ledgerKey,
+          error: String(err).slice(0, 2000), startedAt: started,
+        }).catch(() => {});
+        logger.error({ err, eventId: ev.eventId }, `rpod-alert: failed to post citation for ${item.what}`);
+      }
+    }
+  } catch (err) {
+    logger.error({ err }, "rpod-alert: alert pass failed");
+  }
+}
+
 /**
  * Post one standalone citation per alertable new event, honoring the daily
  * cap and the once-per-event ledger. Never throws — a posting failure must
@@ -176,42 +275,26 @@ export async function postNewRpodEventAlerts(
   metaFor: (norad: number) => AlertMeta | undefined,
 ): Promise<void> {
   const alertable = selectAlertableEvents(newEvents, metaFor);
-  if (alertable.length === 0) return;
-  if (!postingEnabled()) {
-    logger.info({ events: alertable.map((e) => e.eventId) }, "rpod-alert: posting disabled outside production, skipping");
-    return;
-  }
-  if (!credsAvailable()) {
-    logger.warn({ events: alertable.map((e) => e.eventId) }, "rpod-alert: X credentials missing, skipping");
-    return;
-  }
-  try {
-    let remaining = DAILY_ALERT_CAP - (await postsInLastDay());
-    for (const ev of alertable) {
-      if (remaining <= 0) {
-        logger.warn({ eventId: ev.eventId }, "rpod-alert: daily cap reached, skipping remaining new events");
-        break;
-      }
-      if (await alreadyPosted(ev.eventId)) continue;
-      const started = new Date();
-      try {
-        const image = await tryRenderCaseCard(ev, metaFor);
-        const tweetId = await postToX(formatCitation(ev, metaFor), image);
-        await db.insert(obcSyncLog).values({
-          source: ALERT_LOG_SOURCE, status: "success", rowCount: ev.eventId,
-          error: null, startedAt: started,
-        });
-        remaining--;
-        logger.info({ eventId: ev.eventId, tweetId }, "rpod-alert: posted citation for new event");
-      } catch (err) {
-        await db.insert(obcSyncLog).values({
-          source: ALERT_LOG_SOURCE, status: "error", rowCount: ev.eventId,
-          error: String(err).slice(0, 2000), startedAt: started,
-        }).catch(() => {});
-        logger.error({ err, eventId: ev.eventId }, "rpod-alert: failed to post citation");
-      }
-    }
-  } catch (err) {
-    logger.error({ err }, "rpod-alert: alert pass failed");
-  }
+  await postAlertItems(
+    alertable.map((ev) => ({ ev, ledgerKey: ev.eventId, text: formatCitation(ev, metaFor), what: "new event" })),
+    metaFor,
+  );
+}
+
+/**
+ * Post one follow-up citation per escalated ACTIVE case (min range tightened
+ * from > ESCALATION_PRIOR_MIN_KM to < ESCALATION_TRIGGER_KM). Same filters
+ * (no docked geometry, no co-launched formations), same daily cap, and a
+ * once-ever ledger entry keyed on -eventId so a case can never escalate-post
+ * twice. Never throws.
+ */
+export async function postEscalationAlerts(
+  escalated: EscalatedRpodEvent[],
+  metaFor: (norad: number) => AlertMeta | undefined,
+): Promise<void> {
+  const alertable = selectAlertableEvents(escalated, metaFor) as EscalatedRpodEvent[];
+  await postAlertItems(
+    alertable.map((ev) => ({ ev, ledgerKey: -ev.eventId, text: formatEscalationCitation(ev, metaFor), what: "escalation" })),
+    metaFor,
+  );
 }
