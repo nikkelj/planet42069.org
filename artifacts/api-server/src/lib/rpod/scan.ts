@@ -433,7 +433,7 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
  * right label: near-zero range + near-zero relative velocity ⇒ "docked",
  * and back to "conjunction" if the stats no longer qualify.
  */
-async function reclassifyDockedEvents(): Promise<void> {
+export async function reclassifyDockedEvents(): Promise<void> {
   const toDocked = await db
     .update(rpodEvents)
     .set({ kind: "docked", updatedAt: sql`now()` })

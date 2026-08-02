@@ -13,7 +13,7 @@
     "test:upsert": "tsx ./src/tests/upsert-precedence.test.ts",
     "test:dedupe": "tsx ./src/tests/dedupe-reconcile.test.ts",
     "test:gunter": "tsx ./src/tests/gunter-parser.test.ts",
-    "test:rpod": "tsx ./src/tests/rpod-screen.test.ts && tsx ./src/tests/rpod-api.test.ts && tsx ./src/tests/rpod-search.test.ts && tsx ./src/tests/rpod-reopen.test.ts && tsx ./src/tests/rpod-reopened-filter.test.ts && tsx ./src/tests/tle-retention.test.ts"
+    "test:rpod": "tsx ./src/tests/rpod-screen.test.ts && tsx ./src/tests/rpod-api.test.ts && tsx ./src/tests/rpod-search.test.ts && tsx ./src/tests/rpod-reopen.test.ts && tsx ./src/tests/rpod-flip.test.ts && tsx ./src/tests/rpod-reopened-filter.test.ts && tsx ./src/tests/tle-retention.test.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*",
