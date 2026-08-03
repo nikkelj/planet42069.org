@@ -8,6 +8,11 @@
 
 export interface ProviderUpmassRow {
   provider: string;
+  /** Confirmed (GCAT-catalogued) mass in kg */
   massKg: number;
+  /** Additional theorized mass in kg (Bureau estimates) */
+  estMassKg: number;
+  /** Provisional estimate for launches not yet catalogued */
+  pendingMassKg: number;
   count: number;
 }

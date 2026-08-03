@@ -10,4 +10,6 @@ export type FalconVsStarshipRowsItem = {
   year: string;
   falcon: number;
   starship: number;
+  /** Provisional estimate for Falcon launches not yet catalogued */
+  pendingFalcon: number;
 };

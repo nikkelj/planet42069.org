@@ -11,4 +11,10 @@ export interface SatcatFilters {
   orbits: string[];
   satStates: string[];
   objectClasses: string[];
+  /** Distinct Gunter "Type / Application" values present in the catalog */
+  gunterTypes: string[];
+  /** Number of catalog objects with a matched Gunter dossier */
+  gunterMatched: number;
+  /** Total catalog objects (denominator for Gunter coverage) */
+  totalObjects: number;
 }

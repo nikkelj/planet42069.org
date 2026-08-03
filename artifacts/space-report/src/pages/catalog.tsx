@@ -1,8 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
+import PassFinder, { loadStoredObserver, storeObserver, type ObserverCoords, type PassRow } from "@/components/PassFinder";
+
+const OrbitViewer3D = lazy(() => import("@/components/OrbitViewer3D"));
+const GroundTrackMap = lazy(() => import("@/components/GroundTrackMap"));
 import { 
   useGetSatcat, 
   useGetSatcatFilters, 
-  getGetSatcatQueryKey 
+  getGetSatcatQueryKey,
+  useGetSatcatTle,
+  getGetSatcatTleQueryKey,
 } from "@workspace/api-client-react";
 import {
   flexRender,
@@ -17,125 +23,154 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Database, Loader2, Search, ChevronDown, ChevronUp, ChevronRight } from "lucide-react";
+import { Database, Loader2, Search, ChevronDown, ChevronUp, ChevronRight, Link2, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { countryName, countryLabel } from "@/lib/countries";
 
-function OrbitDiagram({ apogeeKm, perigeeKm, incDeg }: {
+/**
+ * Orbit viewer wrapper that pulls the live TLE for objects with a NORAD id,
+ * so the 3D view can show the REAL RAAN / arg-perigee / current position
+ * instead of drawing them at 0°. Falls back to GCAT-only geometry when no
+ * element set exists (decayed objects, deep-space probes, fetch failures).
+ */
+function TrackingPanel({ satno, apogeeKm, perigeeKm, incDeg, name }: {
+  satno?: number | null;
   apogeeKm?: number | null;
   perigeeKm?: number | null;
   incDeg?: number | null;
+  name?: string;
 }) {
-  const EARTH_R = 6371;
-  const W = 260, H = 160;
-  const pad = 22;
+  const enabled = satno != null && satno > 0;
+  const { data: tle } = useGetSatcatTle(satno ?? 0, {
+    query: {
+      enabled,
+      queryKey: getGetSatcatTleQueryKey(satno ?? 0),
+      staleTime: 30 * 60_000,
+      retry: false,
+    },
+  });
 
-  const apDist = (apogeeKm ?? 500) + EARTH_R;
-  const peDist = (perigeeKm ?? 300) + EARTH_R;
+  // Observer + prediction inputs, shared between the pass finder and the 3D
+  // view (visibility cone / slant vector). Seeded from a share link when its
+  // sat matches this row, else from the browser-cached station location.
+  const [observer, setObserver] = useState<ObserverCoords | null>(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get("sat") === String(satno)) {
+      const lat = parseFloat(p.get("lat") ?? "");
+      const lon = parseFloat(p.get("lon") ?? "");
+      if (Number.isFinite(lat) && Math.abs(lat) <= 90 && Number.isFinite(lon) && Math.abs(lon) <= 180) {
+        const coords = { lat, lon };
+        storeObserver(coords);
+        return coords;
+      }
+    }
+    return loadStoredObserver();
+  });
+  const [days, setDays] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    const d = p.get("sat") === String(satno) ? p.get("days") : null;
+    return d && ["1", "2", "3", "5", "7"].includes(d) ? d : "3";
+  });
+  const [selectedPass, setSelectedPass] = useState<PassRow | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const a = (apDist + peDist) / 2;
-  const c = (apDist - peDist) / 2;
-  const b = Math.sqrt(Math.max(1, a * a - c * c));
+  const onObserverChange = (coords: ObserverCoords) => {
+    storeObserver(coords);
+    setObserver(coords);
+    setSelectedPass(null);
+  };
 
-  const scale = (W - 2 * pad) / (apDist + peDist);
-  const rx = a * scale;
-  const ry = Math.max(4, b * scale);
+  const shareLink = () => {
+    const url = new URL(window.location.origin + window.location.pathname);
+    url.searchParams.set("sat", String(satno ?? ""));
+    if (observer) {
+      url.searchParams.set("lat", String(observer.lat));
+      url.searchParams.set("lon", String(observer.lon));
+      url.searchParams.set("days", days);
+    }
+    navigator.clipboard?.writeText(url.toString()).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => { /* clipboard unavailable — button just won't confirm */ });
+  };
 
-  const earthX = pad + apDist * scale;
-  const earthY = H / 2;
-  const ecx = earthX - c * scale;
-  const ecy = earthY;
-
-  const earthSvgR = Math.max(5, Math.min(10, EARTH_R * scale));
-
-  const apX = ecx - rx;
-  const peX = ecx + rx;
-
-  const inc = incDeg ?? 0;
-  const isHighInc = inc >= 70;
-  const isLowInc = inc < 20;
+  const passWindow = (() => {
+    if (!selectedPass) return null;
+    const startMs = Date.parse(selectedPass.startTime);
+    const endMs = Date.parse(selectedPass.endTime);
+    // Guard malformed timestamps — NaN bounds would break the time slider.
+    return Number.isFinite(startMs) && Number.isFinite(endMs) && endMs > startMs
+      ? { startMs, endMs }
+      : null;
+  })();
 
   return (
-    <svg
-      width={W}
-      height={H}
-      viewBox={`0 0 ${W} ${H}`}
-      className="block"
-      aria-label={`Orbit diagram: apogee ${apogeeKm ?? "?"}km, perigee ${perigeeKm ?? "?"}km, inclination ${inc}°`}
-    >
-      <defs>
-        <radialGradient id="earthGrad" cx="40%" cy="35%" r="60%">
-          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.6" />
-          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.15" />
-        </radialGradient>
-        <filter id="orbitGlow">
-          <feGaussianBlur stdDeviation="1.5" result="blur" />
-          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-        </filter>
-      </defs>
-
-      <line x1={pad} y1={ecy} x2={W - pad} y2={ecy}
-        stroke="hsl(var(--muted-foreground))" strokeWidth="0.5" strokeDasharray="2 4" opacity="0.3" />
-
-      <ellipse
-        cx={ecx} cy={ecy}
-        rx={rx} ry={ry}
-        fill="none"
-        stroke="hsl(var(--accent))"
-        strokeWidth="1.5"
-        strokeDasharray="6 3"
-        filter="url(#orbitGlow)"
-        opacity="0.85"
-      />
-
-      <circle cx={earthX} cy={earthY} r={earthSvgR}
-        fill="url(#earthGrad)"
-        stroke="hsl(var(--primary))"
-        strokeWidth="1.5"
-      />
-      <text x={earthX} y={earthY + earthSvgR + 9}
-        textAnchor="middle" fontSize="7"
-        fill="hsl(var(--primary))" fontFamily="monospace" fontWeight="bold"
-      >EARTH</text>
-
-      <circle cx={apX} cy={ecy} r="3.5" fill="hsl(var(--accent))" />
-      <text
-        x={apX + (apX < pad + 20 ? 6 : 0)}
-        y={ecy - 8}
-        textAnchor={apX < pad + 20 ? "start" : "middle"}
-        fontSize="7" fill="hsl(var(--accent))" fontFamily="monospace"
-      >APO</text>
-      {apogeeKm != null && (
-        <text
-          x={apX + (apX < pad + 20 ? 6 : 0)}
-          y={ecy - 1}
-          textAnchor={apX < pad + 20 ? "start" : "middle"}
-          fontSize="6" fill="hsl(var(--accent))" fontFamily="monospace" opacity="0.7"
-        >{apogeeKm.toLocaleString()}km</text>
+    <>
+      <div className="w-full h-[280px] sm:h-[420px]">
+        <OrbitViewer3D
+          apogeeKm={apogeeKm}
+          perigeeKm={perigeeKm}
+          incDeg={incDeg}
+          name={name}
+          tle={tle ?? null}
+          observer={selectedPass ? observer : null}
+          passWindow={passWindow}
+          onExitPassMode={() => setSelectedPass(null)}
+        />
+      </div>
+      {enabled && (
+        <div className="flex items-center justify-between gap-2 px-4 py-1.5 border-t border-border/40">
+          <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground/70">
+            Tracking file #{satno}
+          </span>
+          <Button
+            type="button" variant="outline" size="sm" onClick={shareLink}
+            className="h-6 rounded-none border-border text-muted-foreground hover:text-primary uppercase text-[10px] font-mono"
+            title="Copy a link to this satellite with your station location and prediction window"
+          >
+            {copied ? <Check className="w-3 h-3 mr-1 text-primary" /> : <Link2 className="w-3 h-3 mr-1" />}
+            {copied ? "Link copied" : "Share link"}
+          </Button>
+        </div>
       )}
-
-      <circle cx={peX} cy={ecy} r="3.5" fill="hsl(var(--secondary))" />
-      <text x={peX} y={ecy + 14} textAnchor="middle" fontSize="7" fill="hsl(var(--secondary))" fontFamily="monospace">PER</text>
-      {perigeeKm != null && (
-        <text x={peX} y={ecy + 21} textAnchor="middle" fontSize="6" fill="hsl(var(--secondary))" fontFamily="monospace" opacity="0.7"
-        >{perigeeKm.toLocaleString()}km</text>
+      {enabled && (
+        <Suspense fallback={null}>
+          <PassFinder
+            norad={satno!}
+            name={name}
+            observer={observer}
+            onObserverChange={onObserverChange}
+            days={days}
+            onDaysChange={(d) => { setDays(d); setSelectedPass(null); }}
+            selectedPass={selectedPass}
+            onSelectPass={setSelectedPass}
+          />
+        </Suspense>
       )}
-
-      <text x={W / 2} y={H - 4} textAnchor="middle" fontSize="8"
-        fill={isHighInc ? "hsl(var(--chart-4))" : isLowInc ? "hsl(var(--muted-foreground))" : "hsl(var(--muted-foreground))"}
-        fontFamily="monospace"
-      >
-        INC {inc}° {isHighInc ? "· POLAR" : isLowInc ? "· EQUATORIAL" : ""}
-      </text>
-    </svg>
+      {enabled && selectedPass && observer && tle && (
+        <div className="px-4 pb-4">
+          <Suspense fallback={null}>
+            <GroundTrackMap
+              line1={tle.line1}
+              line2={tle.line2}
+              observer={observer}
+              pass={selectedPass}
+            />
+          </Suspense>
+        </div>
+      )}
+    </>
   );
 }
 
 export default function Catalog() {
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [initialSearch] = useState(
-    () => new URLSearchParams(window.location.search).get("search") ?? "",
-  );
+  const [initialSearch] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    // Share links carry ?sat=<norad>; searching by it surfaces the row.
+    return p.get("search") ?? p.get("sat") ?? "";
+  });
   const [search, setSearch] = useState(initialSearch);
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch);
   
@@ -143,6 +178,11 @@ export default function Catalog() {
   const [classFilter, setObjectClassFilter] = useState<string>("all");
   const [orbitFilter, setOrbitFilter] = useState<string>("all");
   const [stateFilter, setSatStateFilter] = useState<string>("all");
+  const [gunterTypeFilter, setGunterTypeFilter] = useState<string>("all");
+  const [massMinInput, setMassMinInput] = useState<string>("");
+  const [massMaxInput, setMassMaxInput] = useState<string>("");
+  const [massMin, setMassMin] = useState<string>("");
+  const [massMax, setMassMax] = useState<string>("");
 
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
@@ -156,6 +196,9 @@ export default function Catalog() {
     objectClass: classFilter !== "all" ? classFilter : undefined,
     orbit: orbitFilter !== "all" ? orbitFilter : undefined,
     satState: stateFilter !== "all" ? stateFilter : undefined,
+    gunterType: gunterTypeFilter !== "all" ? gunterTypeFilter : undefined,
+    massMin: massMin !== "" && !Number.isNaN(Number(massMin)) ? Number(massMin) : undefined,
+    massMax: massMax !== "" && !Number.isNaN(Number(massMax)) ? Number(massMax) : undefined,
     sort: sorting.length > 0 ? sorting[0].id : undefined,
     order: sorting.length > 0 ? (sorting[0].desc ? "desc" as const : "asc" as const) : undefined,
   };
@@ -167,15 +210,43 @@ export default function Catalog() {
     }
   });
 
+  // Share-link deep link: once results arrive, auto-expand the shared satellite.
+  const [pendingShareSat, setPendingShareSat] = useState<string | null>(
+    () => new URLSearchParams(window.location.search).get("sat"),
+  );
+  useEffect(() => {
+    if (!pendingShareSat || !catData) return;
+    const match = catData.data.find((e) => String(e.satno) === pendingShareSat);
+    if (match) setExpandedRows({ [match.jcat]: true });
+    setPendingShareSat(null);
+  }, [pendingShareSat, catData]);
+
   const toggleRow = (id: string) => {
-    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+    // Only one row expanded at a time — each viewer owns a WebGL context,
+    // and browsers hard-limit concurrent contexts.
+    setExpandedRows(prev => (prev[id] ? {} : { [id]: true }));
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setDebouncedSearch(search);
+    setMassMin(massMinInput);
+    setMassMax(massMaxInput);
     setPagination(p => ({ ...p, pageIndex: 0 }));
   };
+
+  const applyMassFilter = () => {
+    setMassMin(massMinInput);
+    setMassMax(massMaxInput);
+    setPagination(p => ({ ...p, pageIndex: 0 }));
+  };
+
+  const formatTonnes = (kg: number) =>
+    kg >= 1_000_000
+      ? `${(kg / 1000).toLocaleString(undefined, { maximumFractionDigits: 0 })} t`
+      : kg >= 10_000
+        ? `${(kg / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} t`
+        : `${Math.round(kg).toLocaleString()} kg`;
 
   const getClassBadgeColor = (cls?: string | null) => {
     switch(cls) {
@@ -259,7 +330,23 @@ export default function Catalog() {
     { 
       accessorKey: "massKg", 
       header: "MASS (KG)",
-      cell: ({ row }: any) => row.original.massKg?.toLocaleString() || '---'
+      cell: ({ row }: any) => {
+        const kg = row.original.massKg;
+        if (kg == null) return <span className="text-muted-foreground">---</span>;
+        return (
+          <span className="inline-flex items-center gap-1.5">
+            <span className={row.original.massEstimated ? "text-accent/80" : ""}>{kg.toLocaleString()}</span>
+            {row.original.massEstimated && (
+              <span
+                className="text-[9px] font-mono uppercase border border-accent/60 text-accent px-1 leading-4 cursor-help"
+                title="Mass not on file with GCAT. Value theorized by the Bureau's Office of Estimated Tonnage (median of comparable objects). Treat with appropriate suspicion."
+              >
+                EST
+              </span>
+            )}
+          </span>
+        );
+      }
     },
     { 
       accessorKey: "satState", 
@@ -307,7 +394,7 @@ export default function Catalog() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
-              placeholder="SEARCH NAME, JCAT, OR NORAD ID..." 
+              placeholder="SEARCH NAME, JCAT, NORAD, OPERATOR, OR BUILDER..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 bg-background/50 border-primary/50 text-primary placeholder:text-primary/30 uppercase font-mono rounded-none focus-visible:ring-primary"
@@ -358,6 +445,42 @@ export default function Catalog() {
               {filters?.satStates.filter(Boolean).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
             </SelectContent>
           </Select>
+
+          {(filters?.gunterTypes?.length ?? 0) > 0 && (
+            <Select value={gunterTypeFilter} onValueChange={(v) => {setGunterTypeFilter(v); setPagination(p=>({...p, pageIndex: 0}));}}>
+              <SelectTrigger className="w-[170px] rounded-none border-border bg-background uppercase text-xs" title="Satellite type per Gunter's Space Page (space.skyrocket.de)">
+                <SelectValue placeholder="GUNTER TYPE" />
+              </SelectTrigger>
+              <SelectContent className="rounded-none">
+                <SelectItem value="all">ALL GUNTER TYPES</SelectItem>
+                {filters?.gunterTypes.filter(Boolean).map(t => <SelectItem key={t} value={t}>{t.toUpperCase()}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+
+          <div className="flex items-center gap-1">
+            <Input
+              type="number"
+              min={0}
+              placeholder="MASS ≥ KG"
+              value={massMinInput}
+              onChange={(e) => setMassMinInput(e.target.value)}
+              onBlur={applyMassFilter}
+              onKeyDown={(e) => { if (e.key === "Enter") applyMassFilter(); }}
+              className="w-[110px] rounded-none border-border bg-background uppercase text-xs font-mono placeholder:text-muted-foreground/60"
+            />
+            <span className="text-muted-foreground text-xs font-mono">—</span>
+            <Input
+              type="number"
+              min={0}
+              placeholder="MASS ≤ KG"
+              value={massMaxInput}
+              onChange={(e) => setMassMaxInput(e.target.value)}
+              onBlur={applyMassFilter}
+              onKeyDown={(e) => { if (e.key === "Enter") applyMassFilter(); }}
+              className="w-[110px] rounded-none border-border bg-background uppercase text-xs font-mono placeholder:text-muted-foreground/60"
+            />
+          </div>
         </div>
       </div>
 
@@ -420,14 +543,20 @@ export default function Catalog() {
                         <TableRow className="bg-muted/20 border-b-border/50 hover:bg-muted/20">
                           <TableCell colSpan={columns.length} className="p-0">
                             <div className="border-l-4 border-primary ml-2 my-2 bg-background/60">
-                              <div className="flex flex-col md:flex-row gap-0 divide-y md:divide-y-0 md:divide-x divide-border/40">
-                                <div className="flex-shrink-0 flex items-center justify-center p-4 bg-muted/10">
-                                  <OrbitDiagram
+                              <div className="flex flex-col gap-0 divide-y divide-border/40">
+                                <Suspense fallback={
+                                  <div className="w-full h-[280px] sm:h-[420px] flex items-center justify-center bg-black/70 font-mono text-[10px] uppercase tracking-widest text-primary/70">
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Initializing ECI tracking display…
+                                  </div>
+                                }>
+                                  <TrackingPanel
+                                    satno={row.original.satno}
                                     apogeeKm={row.original.apogeeKm}
                                     perigeeKm={row.original.perigeeKm}
                                     incDeg={row.original.incDeg}
+                                    name={row.original.plName || row.original.name}
                                   />
-                                </div>
+                                </Suspense>
                                 <div className="flex-1 p-4 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4 text-xs font-mono">
                                   <div>
                                     <span className="text-muted-foreground block mb-1 uppercase tracking-widest text-[10px]">Apogee</span>
@@ -442,12 +571,24 @@ export default function Catalog() {
                                     <span className="text-chart-4 font-bold">{row.original.incDeg != null ? `${row.original.incDeg}°` : '---'}</span>
                                   </div>
                                   <div>
+                                    <span className="text-muted-foreground block mb-1 uppercase tracking-widest text-[10px]">Mass</span>
+                                    <span className={`font-bold ${row.original.massEstimated ? 'text-accent' : 'text-foreground'}`}>
+                                      {row.original.massKg != null ? `${row.original.massKg.toLocaleString()} kg` : '---'}
+                                      {row.original.massEstimated && <span className="ml-1 text-[9px] uppercase opacity-80">(Bureau estimate)</span>}
+                                    </span>
+                                  </div>
+                                  <div>
                                     <span className="text-muted-foreground block mb-1 uppercase tracking-widest text-[10px]">Period</span>
                                     <span className="text-primary">{row.original.periodMin != null ? `${row.original.periodMin} min` : '---'}</span>
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground block mb-1 uppercase tracking-widest text-[10px]">Owner / State</span>
-                                    <span className="text-foreground">{row.original.owner || '---'}{row.original.state && row.original.state !== row.original.owner ? ` · ${row.original.state}` : ''}</span>
+                                    <span className="text-foreground">
+                                      {row.original.owner || '---'}
+                                      {row.original.state && row.original.state !== row.original.owner && (
+                                        <span title={countryName(row.original.state) ?? undefined}> · {countryLabel(row.original.state)}</span>
+                                      )}
+                                    </span>
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground block mb-1 uppercase tracking-widest text-[10px]">Full Status</span>
@@ -473,6 +614,57 @@ export default function Catalog() {
                                     <span className="text-muted-foreground block mb-1 uppercase tracking-widest text-[10px]">Payload Name</span>
                                     <span className="text-foreground">{row.original.plName || row.original.name || '---'}</span>
                                   </div>
+                                  {row.original.gunterUrl && (
+                                    <div className="col-span-2 md:col-span-3 border-t border-border/40 pt-3 mt-1 space-y-1">
+                                      <span className="text-muted-foreground block uppercase tracking-widest text-[10px]">
+                                        Gunter Dossier — Type / Application
+                                      </span>
+                                      {(row.original.gunterNation || row.original.gunterOperator || row.original.gunterContractors) && (
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 pb-1">
+                                          {row.original.gunterNation && (
+                                            <div>
+                                              <span className="text-muted-foreground block mb-0.5 uppercase tracking-widest text-[10px]">Nation</span>
+                                              <span className="text-foreground">{row.original.gunterNation}</span>
+                                            </div>
+                                          )}
+                                          {row.original.gunterOperator && (
+                                            <div>
+                                              <span className="text-muted-foreground block mb-0.5 uppercase tracking-widest text-[10px]">Operator</span>
+                                              <span className="text-foreground">{row.original.gunterOperator}</span>
+                                            </div>
+                                          )}
+                                          {row.original.gunterContractors && (
+                                            <div className={row.original.gunterContractors.length > 60 ? "col-span-2 md:col-span-3" : ""}>
+                                              <span className="text-muted-foreground block mb-0.5 uppercase tracking-widest text-[10px]">Contractors</span>
+                                              <span className="text-foreground whitespace-normal">{row.original.gunterContractors}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                        {row.original.gunterType && (
+                                          <Badge variant="outline" className="font-mono text-[10px] uppercase rounded-none border-accent/60 text-accent">
+                                            {row.original.gunterType}
+                                          </Badge>
+                                        )}
+                                        <a
+                                          href={row.original.gunterUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="text-accent underline underline-offset-2 hover:text-primary transition-colors inline-flex items-center gap-1"
+                                        >
+                                          Full dossier — Gunter's Space Page
+                                          <ChevronRight className="w-3 h-3" />
+                                        </a>
+                                      </div>
+                                      <p className="text-muted-foreground/60 text-[10px] normal-case leading-relaxed">
+                                        Krebs, Gunter D. "{row.original.gunterTitle || 'Satellite dossier'}". Gunter's Space Page.
+                                        Retrieved {row.original.gunterRetrievedAt ? new Date(row.original.gunterRetrievedAt).toISOString().slice(0, 10) : '---'}, from{' '}
+                                        {row.original.gunterUrl}
+                                      </p>
+                                    </div>
+                                  )}
                                   {row.original.decayDate && (
                                     <div className="col-span-2 md:col-span-3 mt-1">
                                       <span className="text-destructive font-bold uppercase inline-flex items-center gap-2">
@@ -503,8 +695,29 @@ export default function Catalog() {
 
         {catData && !isLoading && (
           <div className="flex flex-col md:flex-row items-center justify-between p-4 border-t-2 border-border bg-muted/30 gap-4 relative z-10">
-            <div className="text-xs text-muted-foreground uppercase font-mono">
-              Displaying {(pagination.pageIndex * pagination.pageSize) + 1} - {Math.min((pagination.pageIndex + 1) * pagination.pageSize, catData.total)} of {catData.total.toLocaleString()} records
+            <div className="text-xs text-muted-foreground uppercase font-mono space-y-1">
+              <div>
+                Displaying {(pagination.pageIndex * pagination.pageSize) + 1} - {Math.min((pagination.pageIndex + 1) * pagination.pageSize, catData.total)} of {catData.total.toLocaleString()} records
+              </div>
+              <div>
+                <span className="text-primary">Total mass in selection: {formatTonnes(catData.filteredMassKg)}</span>
+                {catData.filteredEstMassKg > 0 && (
+                  <span
+                    className="text-accent cursor-help"
+                    title="Mass theorized by the Bureau's Office of Estimated Tonnage for objects GCAT has not weighed."
+                  > + {formatTonnes(catData.filteredEstMassKg)} theorized</span>
+                )}
+              </div>
+              {(filters?.gunterMatched ?? 0) > 0 && (
+                <div
+                  className="cursor-help"
+                  title="Objects cross-matched by COSPAR id to a satellite dossier on Gunter's Space Page (space.skyrocket.de, Gunter Dirk Krebs). Coverage grows daily as the Bureau's crawler works through the backlog at a polite pace."
+                >
+                  <span className="text-accent">Gunter dossiers on file: {filters!.gunterMatched.toLocaleString()}</span>
+                  {" "}of {filters!.totalObjects.toLocaleString()} objects
+                  {" "}({((filters!.gunterMatched / Math.max(1, filters!.totalObjects)) * 100).toFixed(1)}%)
+                </div>
+              )}
             </div>
             
             <div className="flex items-center gap-2">

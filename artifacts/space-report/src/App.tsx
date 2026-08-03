@@ -6,6 +6,8 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Analytics from "@/pages/analytics";
 import Catalog from "@/pages/catalog";
+import Constellations from "@/pages/constellations";
+import Rpod from "@/pages/rpod";
 import { AppLayout } from "@/components/layout/app-layout";
 
 const queryClient = new QueryClient({
@@ -25,6 +27,8 @@ function Router() {
         <Route path="/analytics" component={Analytics} />
         <Route path="/briefing" component={Home} />
         <Route path="/catalog" component={Catalog} />
+        <Route path="/constellations" component={Constellations} />
+        <Route path="/rpod" component={Rpod} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

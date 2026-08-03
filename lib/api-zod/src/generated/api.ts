@@ -28,11 +28,14 @@ export const getSatcatQueryOrderDefault = `asc`;
 export const GetSatcatQueryParams = zod.object({
   "page": zod.coerce.number().default(getSatcatQueryPageDefault),
   "limit": zod.coerce.number().default(getSatcatQueryLimitDefault),
-  "search": zod.coerce.string().optional().describe('Text search across name fields'),
+  "search": zod.coerce.string().optional().describe('Text search across name fields, JCAT\/NORAD ids, and Gunter operator\/contractor facts (who operates or built the satellite)'),
   "owner": zod.coerce.string().optional().describe('Filter by owner\/country code'),
   "objectClass": zod.coerce.string().optional().describe('Filter by object class: P (payload), R (rocket body), D (debris), U (unknown)'),
   "orbit": zod.coerce.string().optional().describe('Filter by operational orbit type (LEO, MEO, GEO, HEO, etc.)'),
   "satState": zod.coerce.string().optional().describe('Filter by satellite state'),
+  "gunterType": zod.coerce.string().optional().describe('Filter by Gunter\'s Space Page \"Type \/ Application\" classification'),
+  "massMin": zod.coerce.number().optional().describe('Minimum mass in kg (inclusive); entries with unknown mass are excluded'),
+  "massMax": zod.coerce.number().optional().describe('Maximum mass in kg (inclusive); entries with unknown mass are excluded'),
   "sort": zod.coerce.string().optional().describe('Field to sort by'),
   "order": zod.enum(['asc', 'desc']).default(getSatcatQueryOrderDefault)
 })
@@ -54,16 +57,82 @@ export const GetSatcatResponse = zod.object({
   "opOrbit": zod.string().nullish().describe('Operational orbit type (LEO, MEO, GEO, HEO, etc.)'),
   "satState": zod.string().nullish().describe('Satellite state (Operational, Dead, Reentry, etc.)'),
   "massKg": zod.number().nullish().describe('Dry mass in kilograms'),
+  "massEstimated": zod.boolean().optional().describe('True when massKg is a Bureau estimate rather than GCAT-catalogued data'),
   "apogeeKm": zod.number().nullish().describe('Apogee altitude in km'),
   "perigeeKm": zod.number().nullish().describe('Perigee altitude in km'),
   "incDeg": zod.number().nullish().describe('Orbital inclination in degrees'),
   "periodMin": zod.number().nullish().describe('Orbital period in minutes'),
-  "decayDate": zod.string().nullish().describe('Decay or reentry date')
+  "decayDate": zod.string().nullish().describe('Decay or reentry date'),
+  "gunterType": zod.string().nullish().describe('Gunter\'s Space Page \"Type \/ Application\" classification'),
+  "gunterNation": zod.string().nullish().describe('Gunter\'s Space Page \"Nation\" fact'),
+  "gunterOperator": zod.string().nullish().describe('Gunter\'s Space Page \"Operator\" fact'),
+  "gunterContractors": zod.string().nullish().describe('Gunter\'s Space Page \"Contractors\" fact'),
+  "gunterUrl": zod.string().nullish().describe('Cross-link to the full dossier on space.skyrocket.de'),
+  "gunterTitle": zod.string().nullish().describe('Dossier page title, for Krebs-format citations'),
+  "gunterRetrievedAt": zod.string().nullish().describe('ISO timestamp the dossier was retrieved')
 })),
   "total": zod.number().describe('Total matching records'),
   "page": zod.number(),
   "limit": zod.number(),
-  "pages": zod.number().describe('Total pages')
+  "pages": zod.number().describe('Total pages'),
+  "filteredMassKg": zod.number().describe('Total confirmed mass (kg) of ALL entries matching the current filters (not just this page)'),
+  "filteredEstMassKg": zod.number().describe('Total Bureau-estimated mass (kg) of ALL entries matching the current filters')
+})
+
+
+/**
+ * Latest general-perturbations element set from space-track.org, cached server-side
+ * @summary Current TLE and orbital elements for a NORAD id
+ */
+export const GetSatcatTleParams = zod.object({
+  "norad": zod.coerce.number()
+})
+
+export const GetSatcatTleResponse = zod.object({
+  "norad": zod.number(),
+  "name": zod.string().nullish(),
+  "line1": zod.string(),
+  "line2": zod.string(),
+  "epoch": zod.string().describe('Element-set epoch (ISO 8601)'),
+  "incDeg": zod.number(),
+  "raanDeg": zod.number().describe('Right ascension of the ascending node, degrees'),
+  "argPerigeeDeg": zod.number().describe('Argument of perigee, degrees'),
+  "meanAnomalyDeg": zod.number(),
+  "eccentricity": zod.number(),
+  "meanMotionRevPerDay": zod.number(),
+  "fetchedAt": zod.string().describe('When this element set was fetched from space-track (ISO 8601)')
+})
+
+
+/**
+ * Predicted passes (SGP4-propagated) for the next N days over the given lat/lon
+ * @summary Upcoming passes over an observer location
+ */
+export const getSatcatPassesQueryDaysDefault = 3;
+
+export const GetSatcatPassesQueryParams = zod.object({
+  "norad": zod.coerce.number(),
+  "lat": zod.coerce.number().describe('Observer latitude in degrees (-90..90)'),
+  "lon": zod.coerce.number().describe('Observer longitude in degrees (-180..180)'),
+  "days": zod.coerce.number().default(getSatcatPassesQueryDaysDefault).describe('Days ahead to search (1-7)')
+})
+
+export const GetSatcatPassesResponse = zod.object({
+  "norad": zod.number(),
+  "lat": zod.number(),
+  "lon": zod.number(),
+  "days": zod.number(),
+  "epoch": zod.string().describe('Element-set epoch used for propagation (ISO 8601)'),
+  "passes": zod.array(zod.object({
+  "startTime": zod.string().describe('Pass start (rises above 0° elevation), ISO 8601'),
+  "maxTime": zod.string().describe('Time of maximum elevation, ISO 8601'),
+  "endTime": zod.string().describe('Pass end (drops below 0° elevation), ISO 8601'),
+  "maxElevationDeg": zod.number(),
+  "startAzDeg": zod.number(),
+  "maxAzDeg": zod.number(),
+  "endAzDeg": zod.number(),
+  "visible": zod.boolean().describe('True when the satellite is sunlit while the observer sky is dark during the pass')
+}))
 })
 
 
@@ -74,34 +143,50 @@ export const GetSatcatResponse = zod.object({
 export const GetSatcatStatsResponse = zod.object({
   "byYear": zod.array(zod.object({
   "label": zod.string(),
-  "massKg": zod.number(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates for uncatalogued objects)'),
   "count": zod.number(),
   "payloadCount": zod.number()
 })),
   "byCountry": zod.array(zod.object({
   "label": zod.string(),
-  "massKg": zod.number(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates for uncatalogued objects)'),
   "count": zod.number(),
   "payloadCount": zod.number()
 })),
   "byOrbit": zod.array(zod.object({
   "label": zod.string(),
-  "massKg": zod.number(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates for uncatalogued objects)'),
   "count": zod.number(),
   "payloadCount": zod.number()
 })),
   "byObjectClass": zod.array(zod.object({
   "label": zod.string(),
-  "massKg": zod.number(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates for uncatalogued objects)'),
   "count": zod.number(),
   "payloadCount": zod.number()
 })),
   "byLaunchVehicle": zod.array(zod.object({
   "label": zod.string(),
-  "massKg": zod.number(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates for uncatalogued objects)'),
   "count": zod.number(),
   "payloadCount": zod.number()
-}))
+})),
+  "byGunterType": zod.array(zod.object({
+  "label": zod.string(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates for uncatalogued objects)'),
+  "count": zod.number(),
+  "payloadCount": zod.number()
+})).describe('Payload counts\/mass grouped by Gunter\'s Space Page Type\/Application; unmatched objects fall back to GCAT object-class buckets'),
+  "gunterCoverage": zod.object({
+  "matchedPayloads": zod.number(),
+  "totalPayloads": zod.number()
+}).describe('How many payloads have a Gunter\'s Space Page type match (crawl is budgeted; coverage grows over time)')
 })
 
 
@@ -119,7 +204,15 @@ export const GetSatcatSummaryResponse = zod.object({
   "firstLaunchYear": zod.number(),
   "lastLaunchYear": zod.number(),
   "starlinkActive": zod.number().describe('Number of active Starlink satellites in orbit'),
-  "cacheAge": zod.number().describe('How old the cached data is in seconds')
+  "cacheAge": zod.number().describe('How old the in-memory catalog cache is in seconds'),
+  "estimatedObjects": zod.number().describe('Number of objects whose mass is a Bureau estimate (not GCAT data)'),
+  "estimatedMassKg": zod.number().describe('Total estimated (theorized) payload mass in kg'),
+  "freshness": zod.object({
+  "gcatSyncedAt": zod.string().nullable(),
+  "spacetrackSyncedAt": zod.string().nullable(),
+  "mergeSyncedAt": zod.string().nullable(),
+  "gunterSyncedAt": zod.string().nullable()
+}).describe('Last successful sync per upstream source (ISO timestamps, null if never)')
 })
 
 
@@ -132,6 +225,7 @@ export const GetSatcatByYearProviderResponse = zod.object({
   "year": zod.string(),
   "spacex": zod.number().describe('SpaceX (Falcon family) payload mass in kg'),
   "others": zod.number().describe('Rest-of-world payload mass in kg'),
+  "pendingSpacex": zod.number().describe('Provisional SpaceX estimate for launches not yet catalogued'),
   "spacexCount": zod.number(),
   "othersCount": zod.number()
 }))
@@ -154,10 +248,13 @@ export const GetSatcatUpmassByProviderResponse = zod.object({
 }),
   "providers": zod.array(zod.object({
   "provider": zod.string(),
-  "massKg": zod.number(),
+  "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
+  "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates)'),
+  "pendingMassKg": zod.number().describe('Provisional estimate for launches not yet catalogued'),
   "count": zod.number()
 })),
   "totalMassKg": zod.number(),
+  "totalPendingMassKg": zod.number().describe('Total provisional (pending cataloguing) estimate in kg'),
   "totalCount": zod.number()
 })
 
@@ -261,7 +358,8 @@ export const GetSatcatFalconVsStarshipResponse = zod.object({
   "rows": zod.array(zod.object({
   "year": zod.string(),
   "falcon": zod.number(),
-  "starship": zod.number()
+  "starship": zod.number(),
+  "pendingFalcon": zod.number().describe('Provisional estimate for Falcon launches not yet catalogued')
 })),
   "starshipTotal": zod.number()
 })
@@ -281,7 +379,10 @@ export const GetSatcatSpacexBySiteMonthlyResponse = zod.object({
   "monthNum": zod.number(),
   "capeCanaveral": zod.number(),
   "vandenberg": zod.number(),
-  "other": zod.number()
+  "other": zod.number(),
+  "pendingCapeCanaveral": zod.number().describe('Provisional estimate for launches not yet catalogued'),
+  "pendingVandenberg": zod.number().describe('Provisional estimate for launches not yet catalogued'),
+  "pendingOther": zod.number().describe('Provisional estimate for launches not yet catalogued')
 }))
 })
 
@@ -294,7 +395,10 @@ export const GetSatcatSpacexBySiteResponse = zod.object({
   "year": zod.string(),
   "capeCanaveral": zod.number(),
   "vandenberg": zod.number(),
-  "other": zod.number()
+  "other": zod.number(),
+  "pendingCapeCanaveral": zod.number().describe('Provisional estimate for launches not yet catalogued'),
+  "pendingVandenberg": zod.number().describe('Provisional estimate for launches not yet catalogued'),
+  "pendingOther": zod.number().describe('Provisional estimate for launches not yet catalogued')
 }))
 })
 
@@ -307,8 +411,44 @@ export const GetSatcatSpacexByEntityResponse = zod.object({
   "year": zod.string(),
   "starlink": zod.number(),
   "usGov": zod.number(),
-  "commercial": zod.number()
+  "commercial": zod.number(),
+  "pending": zod.number().describe('Provisional estimate for launches not yet catalogued (segment unknown)')
 }))
+})
+
+
+/**
+ * Quarterly active-satellite time series for major constellations, per-constellation shell and variant breakouts, and annual deployment cadence
+ * @summary Constellation analytics
+ */
+export const GetConstellationAnalyticsResponse = zod.object({
+  "quarters": zod.array(zod.string()).describe('Shared quarterly time axis, e.g. \"2019-Q1\"; the final entry is \"NOW\" (current in-progress quarter, counted as of request time)'),
+  "overall": zod.array(zod.object({
+  "name": zod.string(),
+  "active": zod.array(zod.number()).describe('Active satellites at the end of each quarter (aligned with ConstellationAnalytics.quarters)')
+})).describe('Active satellites per constellation per quarter, largest first'),
+  "launchYears": zod.array(zod.number()),
+  "launchedPerYear": zod.array(zod.object({
+  "name": zod.string(),
+  "counts": zod.array(zod.number()).describe('Satellites launched per year (aligned with ConstellationAnalytics.launchYears)')
+})),
+  "breakouts": zod.array(zod.object({
+  "name": zod.string(),
+  "totals": zod.object({
+  "launched": zod.number(),
+  "active": zod.number(),
+  "decayed": zod.number(),
+  "massTonnes": zod.number().describe('Total launched mass in tonnes (confirmed + estimated)')
+}),
+  "shells": zod.array(zod.object({
+  "label": zod.string().describe('Shell (e.g. \"~550 km · 53°\") or variant (e.g. \"≈800 kg class\") label'),
+  "active": zod.array(zod.number())
+})).describe('Active satellites per orbital shell over time'),
+  "variants": zod.array(zod.object({
+  "label": zod.string().describe('Shell (e.g. \"~550 km · 53°\") or variant (e.g. \"≈800 kg class\") label'),
+  "active": zod.array(zod.number())
+})).describe('Active satellites per hardware variant (mass class) over time')
+})).describe('Shell\/variant breakouts for the biggest constellations')
 })
 
 
@@ -378,7 +518,159 @@ export const GetSatcatFiltersResponse = zod.object({
   "owners": zod.array(zod.string()),
   "orbits": zod.array(zod.string()),
   "satStates": zod.array(zod.string()),
-  "objectClasses": zod.array(zod.string())
+  "objectClasses": zod.array(zod.string()),
+  "gunterTypes": zod.array(zod.string()).describe('Distinct Gunter \"Type \/ Application\" values present in the catalog'),
+  "gunterMatched": zod.number().describe('Number of catalog objects with a matched Gunter dossier'),
+  "totalObjects": zod.number().describe('Total catalog objects (denominator for Gunter coverage)')
+})
+
+
+/**
+ * Flagged rendezvous/proximity events, paginated and sortable; each event carries all involved spacecraft
+ * @summary List RPOD events
+ */
+export const getRpodEventsQueryPageDefault = 1;
+export const getRpodEventsQueryLimitDefault = 50;
+export const getRpodEventsQueryOrderDefault = `desc`;
+export const getRpodEventsQueryOrder2Default = `desc`;
+
+export const GetRpodEventsQueryParams = zod.object({
+  "page": zod.coerce.number().default(getRpodEventsQueryPageDefault),
+  "limit": zod.coerce.number().default(getRpodEventsQueryLimitDefault),
+  "status": zod.enum(['active', 'stale', 'ended']).optional().describe('Filter by event status (ended = coplanar pair drifted apart and stopped passing the screen)'),
+  "kind": zod.enum(['conjunction', 'coplanar', 'docked']).optional().describe('Filter by event kind (discrete conjunction, long-duration coplanar shadowing, or docked stack)'),
+  "reopened": zod.coerce.boolean().optional().describe('When true, only return repeat-offender cases that have been reopened at least once (reopenCount > 0)'),
+  "q": zod.coerce.string().optional().describe('Search by participant satellite name (substring, case-insensitive) or NORAD number'),
+  "country": zod.coerce.string().optional().describe('Filter to events with at least one participant whose catalog country\/state code matches (exact, case-insensitive)'),
+  "sort": zod.enum(['id', 'status', 'kind', 'tca', 'minRangeKm', 'relVelKmS', 'memberCount', 'duration']).optional().describe('Primary sort field (default tca); duration orders by observation span (lastSeenAt - firstDetectedAt)'),
+  "order": zod.enum(['asc', 'desc']).default(getRpodEventsQueryOrderDefault),
+  "sort2": zod.enum(['id', 'status', 'kind', 'tca', 'minRangeKm', 'relVelKmS', 'memberCount', 'duration']).optional().describe('Secondary sort field applied within ties of the primary sort'),
+  "order2": zod.enum(['asc', 'desc']).default(getRpodEventsQueryOrder2Default)
+})
+
+export const GetRpodEventsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.number(),
+  "status": zod.string(),
+  "kind": zod.string().describe('conjunction (discrete close approach), coplanar (long-duration co-aligned shadowing), or docked (near-zero range and relative velocity — a physically joined stack, not a proximity operation)'),
+  "windowStart": zod.string(),
+  "windowEnd": zod.string(),
+  "tca": zod.string().describe('Predicted time of closest approach (ISO)'),
+  "minRangeKm": zod.number(),
+  "relVelKmS": zod.number(),
+  "memberCount": zod.number(),
+  "widenedScan": zod.boolean().describe('True when the cluster hit the member cap and a widened neighborhood scan ran'),
+  "firstDetectedAt": zod.string(),
+  "lastSeenAt": zod.string().describe('Last scan that re-detected this event'),
+  "endedAt": zod.string().nullable().describe('When the event was retired (pair drifted apart); null while active\/stale'),
+  "reopenCount": zod.number().describe('Times this case was reopened after ending (same pair closed ranks again)'),
+  "lastReopenedAt": zod.string().nullable().describe('Most recent reopen; null if never reopened'),
+  "updatedAt": zod.string(),
+  "members": zod.array(zod.object({
+  "norad": zod.number(),
+  "name": zod.string().nullish(),
+  "owner": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "objectClass": zod.string().nullish(),
+  "opOrbit": zod.string().nullish(),
+  "ldate": zod.string().nullish(),
+  "minRangeKm": zod.number().nullish().describe('Tightest pairwise range this member reached vs any other member (km)'),
+  "relVelKmS": zod.number().nullish()
+}))
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pages": zod.number()
+})
+
+
+/**
+ * Event with per-member catalog info and latest element sets for 3D plotting
+ * @summary RPOD event detail
+ */
+export const GetRpodEventParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetRpodEventResponse = zod.object({
+  "id": zod.number(),
+  "status": zod.string(),
+  "kind": zod.string(),
+  "windowStart": zod.string(),
+  "windowEnd": zod.string(),
+  "tca": zod.string(),
+  "minRangeKm": zod.number(),
+  "relVelKmS": zod.number(),
+  "memberCount": zod.number(),
+  "widenedScan": zod.boolean(),
+  "firstDetectedAt": zod.string(),
+  "lastSeenAt": zod.string(),
+  "endedAt": zod.string().nullable(),
+  "reopenCount": zod.number(),
+  "lastReopenedAt": zod.string().nullable(),
+  "updatedAt": zod.string(),
+  "spells": zod.array(zod.object({
+  "start": zod.string().describe('When this spell began (first detection, or the reopen that started it)'),
+  "lastSeenAt": zod.string().nullable().describe('Last scan that observed the pair together during this spell; null when unknown (legacy reopens)'),
+  "endedAt": zod.string().nullable().describe('When this spell ended (pair drifted apart); null for the ongoing spell')
+}).describe('One distinct shadowing spell — an interval during which the pair was continuously on file')).describe('Distinct shadowing spells, oldest first; the final entry is the current\/most recent spell. Reopened cases have multiple entries.'),
+  "members": zod.array(zod.object({
+  "norad": zod.number(),
+  "name": zod.string().nullish(),
+  "owner": zod.string().nullish(),
+  "state": zod.string().nullish(),
+  "objectClass": zod.string().nullish(),
+  "opOrbit": zod.string().nullish(),
+  "ldate": zod.string().nullish(),
+  "minRangeKm": zod.number().nullish().describe('Tightest pairwise range this member reached vs any other member (km)'),
+  "relVelKmS": zod.number().nullish()
+}).and(zod.object({
+  "tle": zod.object({
+  "line1": zod.string(),
+  "line2": zod.string(),
+  "epoch": zod.string(),
+  "incDeg": zod.number(),
+  "raanDeg": zod.number(),
+  "eccentricity": zod.number(),
+  "argPerigeeDeg": zod.number(),
+  "meanAnomalyDeg": zod.number(),
+  "meanMotionRevPerDay": zod.number()
+}).nullish()
+})))
+})
+
+
+/**
+ * Distinct catalog country/state codes across all RPOD event participants, for the country filter dropdown
+ * @summary Participant countries
+ */
+export const GetRpodCountriesResponse = zod.object({
+  "countries": zod.array(zod.string())
+})
+
+
+/**
+ * Archive row counts, backfill cursor position, recent-feed watermark, and last scan result
+ * @summary TLE archive and scan status
+ */
+export const GetRpodStatusResponse = zod.object({
+  "archive": zod.object({
+  "totalRows": zod.number(),
+  "objects": zod.number(),
+  "newestEpoch": zod.string().nullish(),
+  "oldestEpoch": zod.string().nullish(),
+  "backfillCursor": zod.string().nullish().describe('Oldest instant the backward-walking backfill has covered'),
+  "recentWatermark": zod.string().nullish(),
+  "backoffUntil": zod.string().nullish().describe('Set when space-track errors have the workers standing down'),
+  "horizonDays": zod.number().describe('Configured retention horizon in days; the backfill never walks past it'),
+  "horizon": zod.string().describe('Oldest instant the archive retains (ISO), i.e. now minus horizonDays'),
+  "coarseAfterDays": zod.number().describe('Beyond this age (days), sampling coarsens to one elset per object per day'),
+  "backfillComplete": zod.boolean().describe('True once the backfill cursor has reached the horizon')
+}),
+  "activeEvents": zod.number(),
+  "lastScanAt": zod.string().nullish(),
+  "lastScanStatus": zod.string().nullish(),
+  "lastScanEvents": zod.number().nullish()
 })
 
 

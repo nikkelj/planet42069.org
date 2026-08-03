@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ObcFreshness } from './obcFreshness';
 
 export interface SatcatSummary {
   totalObjects: number;
@@ -17,6 +18,11 @@ export interface SatcatSummary {
   lastLaunchYear: number;
   /** Number of active Starlink satellites in orbit */
   starlinkActive: number;
-  /** How old the cached data is in seconds */
+  /** How old the in-memory catalog cache is in seconds */
   cacheAge: number;
+  /** Number of objects whose mass is a Bureau estimate (not GCAT data) */
+  estimatedObjects: number;
+  /** Total estimated (theorized) payload mass in kg */
+  estimatedMassKg: number;
+  freshness: ObcFreshness;
 }

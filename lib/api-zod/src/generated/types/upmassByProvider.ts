@@ -12,5 +12,7 @@ export interface UpmassByProvider {
   window: UpmassByProviderWindow;
   providers: ProviderUpmassRow[];
   totalMassKg: number;
+  /** Total provisional (pending cataloguing) estimate in kg */
+  totalPendingMassKg: number;
   totalCount: number;
 }

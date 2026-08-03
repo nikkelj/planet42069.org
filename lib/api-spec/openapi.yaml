@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: satcat
     description: Satellite catalog operations
+  - name: rpod
+    description: RPOD (rendezvous & proximity operations) watch
 paths:
   /healthz:
     get:
@@ -48,7 +50,7 @@ paths:
           in: query
           schema:
             type: string
-          description: Text search across name fields
+          description: Text search across name fields, JCAT/NORAD ids, and Gunter operator/contractor facts (who operates or built the satellite)
         - name: owner
           in: query
           schema:
@@ -69,6 +71,21 @@ paths:
           schema:
             type: string
           description: Filter by satellite state
+        - name: gunterType
+          in: query
+          schema:
+            type: string
+          description: Filter by Gunter's Space Page "Type / Application" classification
+        - name: massMin
+          in: query
+          schema:
+            type: number
+          description: Minimum mass in kg (inclusive); entries with unknown mass are excluded
+        - name: massMax
+          in: query
+          schema:
+            type: number
+          description: Maximum mass in kg (inclusive); entries with unknown mass are excluded
         - name: sort
           in: query
           schema:
@@ -87,6 +104,74 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SatcatListResponse"
+
+  /satcat/tle/{norad}:
+    get:
+      operationId: getSatcatTle
+      tags: [satcat]
+      summary: Current TLE and orbital elements for a NORAD id
+      description: Latest general-perturbations element set from space-track.org, cached server-side
+      parameters:
+        - name: norad
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Latest element set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TleData"
+        "404":
+          description: No element set on file for this object
+        "502":
+          description: space-track.org unavailable
+
+  /satcat/passes:
+    get:
+      operationId: getSatcatPasses
+      tags: [satcat]
+      summary: Upcoming passes over an observer location
+      description: Predicted passes (SGP4-propagated) for the next N days over the given lat/lon
+      parameters:
+        - name: norad
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+          description: Observer latitude in degrees (-90..90)
+        - name: lon
+          in: query
+          required: true
+          schema:
+            type: number
+          description: Observer longitude in degrees (-180..180)
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 3
+          description: Days ahead to search (1-7)
+      responses:
+        "200":
+          description: Predicted passes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PassesResponse"
+        "400":
+          description: Invalid coordinates
+        "404":
+          description: No element set on file for this object
+        "502":
+          description: space-track.org unavailable
 
   /satcat/stats:
     get:
@@ -258,6 +343,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/SpacexByEntity"
 
+  /satcat/constellations:
+    get:
+      operationId: getConstellationAnalytics
+      tags: [satcat]
+      summary: Constellation analytics
+      description: Quarterly active-satellite time series for major constellations, per-constellation shell and variant breakouts, and annual deployment cadence
+      responses:
+        "200":
+          description: Constellation analytics dataset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConstellationAnalytics"
+
   /satcat/deorbit-history:
     get:
       operationId: getSatcatDeorbitHistory
@@ -312,8 +411,487 @@ paths:
               schema:
                 $ref: "#/components/schemas/SatcatFilters"
 
+  /rpod/events:
+    get:
+      operationId: getRpodEvents
+      tags: [rpod]
+      summary: List RPOD events
+      description: Flagged rendezvous/proximity events, paginated and sortable; each event carries all involved spacecraft
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, stale, ended]
+          description: Filter by event status (ended = coplanar pair drifted apart and stopped passing the screen)
+        - name: kind
+          in: query
+          schema:
+            type: string
+            enum: [conjunction, coplanar, docked]
+          description: Filter by event kind (discrete conjunction, long-duration coplanar shadowing, or docked stack)
+        - name: reopened
+          in: query
+          schema:
+            type: boolean
+          description: When true, only return repeat-offender cases that have been reopened at least once (reopenCount > 0)
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Search by participant satellite name (substring, case-insensitive) or NORAD number
+        - name: country
+          in: query
+          schema:
+            type: string
+          description: Filter to events with at least one participant whose catalog country/state code matches (exact, case-insensitive)
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [id, status, kind, tca, minRangeKm, relVelKmS, memberCount, duration]
+          description: Primary sort field (default tca); duration orders by observation span (lastSeenAt - firstDetectedAt)
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: sort2
+          in: query
+          schema:
+            type: string
+            enum: [id, status, kind, tca, minRangeKm, relVelKmS, memberCount, duration]
+          description: Secondary sort field applied within ties of the primary sort
+        - name: order2
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        "200":
+          description: Paginated RPOD event list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RpodEventList"
+
+  /rpod/events/{id}:
+    get:
+      operationId: getRpodEvent
+      tags: [rpod]
+      summary: RPOD event detail
+      description: Event with per-member catalog info and latest element sets for 3D plotting
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Event detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RpodEventDetail"
+        "404":
+          description: Event not found
+
+  /rpod/countries:
+    get:
+      operationId: getRpodCountries
+      tags: [rpod]
+      summary: Participant countries
+      description: Distinct catalog country/state codes across all RPOD event participants, for the country filter dropdown
+      responses:
+        "200":
+          description: Distinct participant country codes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [countries]
+                properties:
+                  countries:
+                    type: array
+                    items:
+                      type: string
+
+  /rpod/status:
+    get:
+      operationId: getRpodStatus
+      tags: [rpod]
+      summary: TLE archive and scan status
+      description: Archive row counts, backfill cursor position, recent-feed watermark, and last scan result
+      responses:
+        "200":
+          description: Archive/scan status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RpodStatus"
+
 components:
   schemas:
+    RpodMember:
+      type: object
+      properties:
+        norad:
+          type: integer
+        name:
+          type: string
+          nullable: true
+        owner:
+          type: string
+          nullable: true
+        state:
+          type: string
+          nullable: true
+        objectClass:
+          type: string
+          nullable: true
+        opOrbit:
+          type: string
+          nullable: true
+        ldate:
+          type: string
+          nullable: true
+        minRangeKm:
+          type: number
+          nullable: true
+          description: Tightest pairwise range this member reached vs any other member (km)
+        relVelKmS:
+          type: number
+          nullable: true
+      required: [norad]
+
+    RpodTle:
+      type: object
+      properties:
+        line1:
+          type: string
+        line2:
+          type: string
+        epoch:
+          type: string
+        incDeg:
+          type: number
+        raanDeg:
+          type: number
+        eccentricity:
+          type: number
+        argPerigeeDeg:
+          type: number
+        meanAnomalyDeg:
+          type: number
+        meanMotionRevPerDay:
+          type: number
+      required: [line1, line2, epoch, incDeg, raanDeg, eccentricity, argPerigeeDeg, meanAnomalyDeg, meanMotionRevPerDay]
+
+    RpodMemberDetail:
+      allOf:
+        - $ref: "#/components/schemas/RpodMember"
+        - type: object
+          properties:
+            tle:
+              $ref: "#/components/schemas/RpodTle"
+              nullable: true
+
+    RpodEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        kind:
+          type: string
+          description: conjunction (discrete close approach), coplanar (long-duration co-aligned shadowing), or docked (near-zero range and relative velocity — a physically joined stack, not a proximity operation)
+        windowStart:
+          type: string
+        windowEnd:
+          type: string
+        tca:
+          type: string
+          description: Predicted time of closest approach (ISO)
+        minRangeKm:
+          type: number
+        relVelKmS:
+          type: number
+        memberCount:
+          type: integer
+        widenedScan:
+          type: boolean
+          description: True when the cluster hit the member cap and a widened neighborhood scan ran
+        firstDetectedAt:
+          type: string
+        lastSeenAt:
+          type: string
+          description: Last scan that re-detected this event
+        endedAt:
+          type: string
+          nullable: true
+          description: When the event was retired (pair drifted apart); null while active/stale
+        reopenCount:
+          type: integer
+          description: Times this case was reopened after ending (same pair closed ranks again)
+        lastReopenedAt:
+          type: string
+          nullable: true
+          description: Most recent reopen; null if never reopened
+        updatedAt:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/RpodMember"
+      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, lastSeenAt, endedAt, reopenCount, lastReopenedAt, updatedAt, members]
+
+    RpodEventList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RpodEvent"
+        total:
+          type: integer
+        page:
+          type: integer
+        pages:
+          type: integer
+      required: [data, total, page, pages]
+
+    RpodSpell:
+      type: object
+      description: One distinct shadowing spell — an interval during which the pair was continuously on file
+      properties:
+        start:
+          type: string
+          description: When this spell began (first detection, or the reopen that started it)
+        lastSeenAt:
+          type: string
+          nullable: true
+          description: Last scan that observed the pair together during this spell; null when unknown (legacy reopens)
+        endedAt:
+          type: string
+          nullable: true
+          description: When this spell ended (pair drifted apart); null for the ongoing spell
+      required: [start, lastSeenAt, endedAt]
+
+    RpodEventDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        kind:
+          type: string
+        windowStart:
+          type: string
+        windowEnd:
+          type: string
+        tca:
+          type: string
+        minRangeKm:
+          type: number
+        relVelKmS:
+          type: number
+        memberCount:
+          type: integer
+        widenedScan:
+          type: boolean
+        firstDetectedAt:
+          type: string
+        lastSeenAt:
+          type: string
+        endedAt:
+          type: string
+          nullable: true
+        reopenCount:
+          type: integer
+        lastReopenedAt:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+        spells:
+          type: array
+          description: Distinct shadowing spells, oldest first; the final entry is the current/most recent spell. Reopened cases have multiple entries.
+          items:
+            $ref: "#/components/schemas/RpodSpell"
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/RpodMemberDetail"
+      required: [id, status, kind, windowStart, windowEnd, tca, minRangeKm, relVelKmS, memberCount, widenedScan, firstDetectedAt, lastSeenAt, endedAt, reopenCount, lastReopenedAt, updatedAt, spells, members]
+
+    RpodArchiveStatus:
+      type: object
+      properties:
+        totalRows:
+          type: integer
+        objects:
+          type: integer
+        newestEpoch:
+          type: string
+          nullable: true
+        oldestEpoch:
+          type: string
+          nullable: true
+        backfillCursor:
+          type: string
+          nullable: true
+          description: Oldest instant the backward-walking backfill has covered
+        recentWatermark:
+          type: string
+          nullable: true
+        backoffUntil:
+          type: string
+          nullable: true
+          description: Set when space-track errors have the workers standing down
+        horizonDays:
+          type: integer
+          description: Configured retention horizon in days; the backfill never walks past it
+        horizon:
+          type: string
+          description: Oldest instant the archive retains (ISO), i.e. now minus horizonDays
+        coarseAfterDays:
+          type: integer
+          description: Beyond this age (days), sampling coarsens to one elset per object per day
+        backfillComplete:
+          type: boolean
+          description: True once the backfill cursor has reached the horizon
+      required: [totalRows, objects, horizonDays, horizon, coarseAfterDays, backfillComplete]
+
+    RpodStatus:
+      type: object
+      properties:
+        archive:
+          $ref: "#/components/schemas/RpodArchiveStatus"
+        activeEvents:
+          type: integer
+        lastScanAt:
+          type: string
+          nullable: true
+        lastScanStatus:
+          type: string
+          nullable: true
+        lastScanEvents:
+          type: integer
+          nullable: true
+      required: [archive, activeEvents]
+
+    ConstellationSeries:
+      type: object
+      properties:
+        name:
+          type: string
+        active:
+          type: array
+          items:
+            type: integer
+          description: Active satellites at the end of each quarter (aligned with ConstellationAnalytics.quarters)
+      required: [name, active]
+
+    ConstellationSegmentSeries:
+      type: object
+      properties:
+        label:
+          type: string
+          description: Shell (e.g. "~550 km · 53°") or variant (e.g. "≈800 kg class") label
+        active:
+          type: array
+          items:
+            type: integer
+      required: [label, active]
+
+    ConstellationTotals:
+      type: object
+      properties:
+        launched:
+          type: integer
+        active:
+          type: integer
+        decayed:
+          type: integer
+        massTonnes:
+          type: number
+          description: Total launched mass in tonnes (confirmed + estimated)
+      required: [launched, active, decayed, massTonnes]
+
+    ConstellationBreakout:
+      type: object
+      properties:
+        name:
+          type: string
+        totals:
+          $ref: "#/components/schemas/ConstellationTotals"
+        shells:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConstellationSegmentSeries"
+          description: Active satellites per orbital shell over time
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConstellationSegmentSeries"
+          description: Active satellites per hardware variant (mass class) over time
+      required: [name, totals, shells, variants]
+
+    ConstellationCadenceSeries:
+      type: object
+      properties:
+        name:
+          type: string
+        counts:
+          type: array
+          items:
+            type: integer
+          description: Satellites launched per year (aligned with ConstellationAnalytics.launchYears)
+      required: [name, counts]
+
+    ConstellationAnalytics:
+      type: object
+      properties:
+        quarters:
+          type: array
+          items:
+            type: string
+          description: Shared quarterly time axis, e.g. "2019-Q1"; the final entry is "NOW" (current in-progress quarter, counted as of request time)
+        overall:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConstellationSeries"
+          description: Active satellites per constellation per quarter, largest first
+        launchYears:
+          type: array
+          items:
+            type: integer
+        launchedPerYear:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConstellationCadenceSeries"
+        breakouts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConstellationBreakout"
+          description: Shell/variant breakouts for the biggest constellations
+      required: [quarters, overall, launchYears, launchedPerYear, breakouts]
+
     HealthStatus:
       type: object
       properties:
@@ -370,6 +948,9 @@ components:
         massKg:
           type: ["number", "null"]
           description: Dry mass in kilograms
+        massEstimated:
+          type: boolean
+          description: True when massKg is a Bureau estimate rather than GCAT-catalogued data
         apogeeKm:
           type: ["number", "null"]
           description: Apogee altitude in km
@@ -385,9 +966,133 @@ components:
         decayDate:
           type: ["string", "null"]
           description: Decay or reentry date
+        gunterType:
+          type: ["string", "null"]
+          description: Gunter's Space Page "Type / Application" classification
+        gunterNation:
+          type: ["string", "null"]
+          description: Gunter's Space Page "Nation" fact
+        gunterOperator:
+          type: ["string", "null"]
+          description: Gunter's Space Page "Operator" fact
+        gunterContractors:
+          type: ["string", "null"]
+          description: Gunter's Space Page "Contractors" fact
+        gunterUrl:
+          type: ["string", "null"]
+          description: Cross-link to the full dossier on space.skyrocket.de
+        gunterTitle:
+          type: ["string", "null"]
+          description: Dossier page title, for Krebs-format citations
+        gunterRetrievedAt:
+          type: ["string", "null"]
+          description: ISO timestamp the dossier was retrieved
       required:
         - jcat
         - name
+
+    TleData:
+      type: object
+      properties:
+        norad:
+          type: integer
+        name:
+          type: ["string", "null"]
+        line1:
+          type: string
+        line2:
+          type: string
+        epoch:
+          type: string
+          description: Element-set epoch (ISO 8601)
+        incDeg:
+          type: number
+        raanDeg:
+          type: number
+          description: Right ascension of the ascending node, degrees
+        argPerigeeDeg:
+          type: number
+          description: Argument of perigee, degrees
+        meanAnomalyDeg:
+          type: number
+        eccentricity:
+          type: number
+        meanMotionRevPerDay:
+          type: number
+        fetchedAt:
+          type: string
+          description: When this element set was fetched from space-track (ISO 8601)
+      required:
+        - norad
+        - line1
+        - line2
+        - epoch
+        - incDeg
+        - raanDeg
+        - argPerigeeDeg
+        - meanAnomalyDeg
+        - eccentricity
+        - meanMotionRevPerDay
+        - fetchedAt
+
+    SatPass:
+      type: object
+      properties:
+        startTime:
+          type: string
+          description: Pass start (rises above 0° elevation), ISO 8601
+        maxTime:
+          type: string
+          description: Time of maximum elevation, ISO 8601
+        endTime:
+          type: string
+          description: Pass end (drops below 0° elevation), ISO 8601
+        maxElevationDeg:
+          type: number
+        startAzDeg:
+          type: number
+        maxAzDeg:
+          type: number
+        endAzDeg:
+          type: number
+        visible:
+          type: boolean
+          description: True when the satellite is sunlit while the observer sky is dark during the pass
+      required:
+        - startTime
+        - maxTime
+        - endTime
+        - maxElevationDeg
+        - startAzDeg
+        - maxAzDeg
+        - endAzDeg
+        - visible
+
+    PassesResponse:
+      type: object
+      properties:
+        norad:
+          type: integer
+        lat:
+          type: number
+        lon:
+          type: number
+        days:
+          type: integer
+        epoch:
+          type: string
+          description: Element-set epoch used for propagation (ISO 8601)
+        passes:
+          type: array
+          items:
+            $ref: "#/components/schemas/SatPass"
+      required:
+        - norad
+        - lat
+        - lon
+        - days
+        - epoch
+        - passes
 
     SatcatListResponse:
       type: object
@@ -406,12 +1111,20 @@ components:
         pages:
           type: integer
           description: Total pages
+        filteredMassKg:
+          type: number
+          description: Total confirmed mass (kg) of ALL entries matching the current filters (not just this page)
+        filteredEstMassKg:
+          type: number
+          description: Total Bureau-estimated mass (kg) of ALL entries matching the current filters
       required:
         - data
         - total
         - page
         - limit
         - pages
+        - filteredMassKg
+        - filteredEstMassKg
 
     MassAggregate:
       type: object
@@ -420,6 +1133,10 @@ components:
           type: string
         massKg:
           type: number
+          description: Confirmed (GCAT-catalogued) mass in kg
+        estMassKg:
+          type: number
+          description: Additional theorized mass in kg (Bureau estimates for uncatalogued objects)
         count:
           type: integer
         payloadCount:
@@ -427,8 +1144,31 @@ components:
       required:
         - label
         - massKg
+        - estMassKg
         - count
         - payloadCount
+
+    ObcFreshness:
+      type: object
+      description: Last successful sync per upstream source (ISO timestamps, null if never)
+      properties:
+        gcatSyncedAt:
+          type: string
+          nullable: true
+        spacetrackSyncedAt:
+          type: string
+          nullable: true
+        mergeSyncedAt:
+          type: string
+          nullable: true
+        gunterSyncedAt:
+          type: string
+          nullable: true
+      required:
+        - gcatSyncedAt
+        - spacetrackSyncedAt
+        - mergeSyncedAt
+        - gunterSyncedAt
 
     SatcatStats:
       type: object
@@ -453,12 +1193,33 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MassAggregate"
+        byGunterType:
+          type: array
+          items:
+            $ref: "#/components/schemas/MassAggregate"
+          description: Payload counts/mass grouped by Gunter's Space Page Type/Application; unmatched objects fall back to GCAT object-class buckets
+        gunterCoverage:
+          $ref: "#/components/schemas/GunterCoverage"
       required:
         - byYear
         - byCountry
         - byOrbit
         - byObjectClass
         - byLaunchVehicle
+        - byGunterType
+        - gunterCoverage
+
+    GunterCoverage:
+      type: object
+      description: How many payloads have a Gunter's Space Page type match (crawl is budgeted; coverage grows over time)
+      properties:
+        matchedPayloads:
+          type: integer
+        totalPayloads:
+          type: integer
+      required:
+        - matchedPayloads
+        - totalPayloads
 
     SatcatSummary:
       type: object
@@ -484,7 +1245,15 @@ components:
           description: Number of active Starlink satellites in orbit
         cacheAge:
           type: integer
-          description: How old the cached data is in seconds
+          description: How old the in-memory catalog cache is in seconds
+        estimatedObjects:
+          type: integer
+          description: Number of objects whose mass is a Bureau estimate (not GCAT data)
+        estimatedMassKg:
+          type: number
+          description: Total estimated (theorized) payload mass in kg
+        freshness:
+          $ref: "#/components/schemas/ObcFreshness"
       required:
         - totalObjects
         - totalPayloads
@@ -496,6 +1265,9 @@ components:
         - firstLaunchYear
         - lastLaunchYear
         - cacheAge
+        - estimatedObjects
+        - estimatedMassKg
+        - freshness
 
     YearProviderRow:
       type: object
@@ -508,6 +1280,9 @@ components:
         others:
           type: number
           description: Rest-of-world payload mass in kg
+        pendingSpacex:
+          type: number
+          description: Provisional SpaceX estimate for launches not yet catalogued
         spacexCount:
           type: integer
         othersCount:
@@ -516,6 +1291,7 @@ components:
         - year
         - spacex
         - others
+        - pendingSpacex
         - spacexCount
         - othersCount
 
@@ -536,11 +1312,20 @@ components:
           type: string
         massKg:
           type: number
+          description: Confirmed (GCAT-catalogued) mass in kg
+        estMassKg:
+          type: number
+          description: Additional theorized mass in kg (Bureau estimates)
+        pendingMassKg:
+          type: number
+          description: Provisional estimate for launches not yet catalogued
         count:
           type: integer
       required:
         - provider
         - massKg
+        - estMassKg
+        - pendingMassKg
         - count
 
     UpmassByProvider:
@@ -562,12 +1347,16 @@ components:
             $ref: "#/components/schemas/ProviderUpmassRow"
         totalMassKg:
           type: number
+        totalPendingMassKg:
+          type: number
+          description: Total provisional (pending cataloguing) estimate in kg
         totalCount:
           type: integer
       required:
         - window
         - providers
         - totalMassKg
+        - totalPendingMassKg
         - totalCount
 
     ShuttleAudit:
@@ -830,10 +1619,14 @@ components:
                 type: number
               starship:
                 type: number
+              pendingFalcon:
+                type: number
+                description: Provisional estimate for Falcon launches not yet catalogued
             required:
               - year
               - falcon
               - starship
+              - pendingFalcon
         starshipTotal:
           type: number
       required:
@@ -860,12 +1653,24 @@ components:
                 type: number
               other:
                 type: number
+              pendingCapeCanaveral:
+                type: number
+                description: Provisional estimate for launches not yet catalogued
+              pendingVandenberg:
+                type: number
+                description: Provisional estimate for launches not yet catalogued
+              pendingOther:
+                type: number
+                description: Provisional estimate for launches not yet catalogued
             required:
               - month
               - monthNum
               - capeCanaveral
               - vandenberg
               - other
+              - pendingCapeCanaveral
+              - pendingVandenberg
+              - pendingOther
       required:
         - year
         - rows
@@ -886,11 +1691,23 @@ components:
                 type: number
               other:
                 type: number
+              pendingCapeCanaveral:
+                type: number
+                description: Provisional estimate for launches not yet catalogued
+              pendingVandenberg:
+                type: number
+                description: Provisional estimate for launches not yet catalogued
+              pendingOther:
+                type: number
+                description: Provisional estimate for launches not yet catalogued
             required:
               - year
               - capeCanaveral
               - vandenberg
               - other
+              - pendingCapeCanaveral
+              - pendingVandenberg
+              - pendingOther
       required:
         - rows
 
@@ -910,11 +1727,15 @@ components:
                 type: number
               commercial:
                 type: number
+              pending:
+                type: number
+                description: Provisional estimate for launches not yet catalogued (segment unknown)
             required:
               - year
               - starlink
               - usGov
               - commercial
+              - pending
       required:
         - rows
 
@@ -1068,8 +1889,22 @@ components:
           type: array
           items:
             type: string
+        gunterTypes:
+          type: array
+          items:
+            type: string
+          description: Distinct Gunter "Type / Application" values present in the catalog
+        gunterMatched:
+          type: integer
+          description: Number of catalog objects with a matched Gunter dossier
+        totalObjects:
+          type: integer
+          description: Total catalog objects (denominator for Gunter coverage)
       required:
         - owners
         - orbits
         - satStates
         - objectClasses
+        - gunterTypes
+        - gunterMatched
+        - totalObjects

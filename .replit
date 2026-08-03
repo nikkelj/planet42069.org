@@ -1,4 +1,4 @@
-modules = ["nodejs-24", "python-3.11"]
+modules = ["nodejs-24", "python-3.11", "postgresql-16"]
 
 [deployment]
 router = "application"
@@ -10,6 +10,116 @@ env = { "CI" = "true" }
 
 [workflows]
 runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-upsert"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-dedupe"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "typecheck-api"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "typecheck-web"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-gunter"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-passes"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-rpod"
+
+[[workflows.workflow]]
+name = "test-upsert"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:upsert"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "test-dedupe"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:dedupe"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "typecheck-api"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run typecheck"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "typecheck-web"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/space-report run typecheck"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "test-gunter"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:gunter"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "test-passes"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:passes"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "test-rpod"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run test:rpod"
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [agent]
 stack = "PNPM_WORKSPACE"

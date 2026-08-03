@@ -5,6 +5,177 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface RpodMember {
+  norad: number;
+  name?: string | null;
+  owner?: string | null;
+  state?: string | null;
+  objectClass?: string | null;
+  opOrbit?: string | null;
+  ldate?: string | null;
+  /** Tightest pairwise range this member reached vs any other member (km) */
+  minRangeKm?: number | null;
+  relVelKmS?: number | null;
+}
+
+export interface RpodTle {
+  line1: string;
+  line2: string;
+  epoch: string;
+  incDeg: number;
+  raanDeg: number;
+  eccentricity: number;
+  argPerigeeDeg: number;
+  meanAnomalyDeg: number;
+  meanMotionRevPerDay: number;
+}
+
+export type RpodMemberDetail = RpodMember & ({
+  tle?: RpodTle | null;
+});
+
+export interface RpodEvent {
+  id: number;
+  status: string;
+  /** conjunction (discrete close approach), coplanar (long-duration co-aligned shadowing), or docked (near-zero range and relative velocity — a physically joined stack, not a proximity operation) */
+  kind: string;
+  windowStart: string;
+  windowEnd: string;
+  /** Predicted time of closest approach (ISO) */
+  tca: string;
+  minRangeKm: number;
+  relVelKmS: number;
+  memberCount: number;
+  /** True when the cluster hit the member cap and a widened neighborhood scan ran */
+  widenedScan: boolean;
+  firstDetectedAt: string;
+  /** Last scan that re-detected this event */
+  lastSeenAt: string;
+  /** When the event was retired (pair drifted apart); null while active/stale */
+  endedAt: string | null;
+  /** Times this case was reopened after ending (same pair closed ranks again) */
+  reopenCount: number;
+  /** Most recent reopen; null if never reopened */
+  lastReopenedAt: string | null;
+  updatedAt: string;
+  members: RpodMember[];
+}
+
+export interface RpodEventList {
+  data: RpodEvent[];
+  total: number;
+  page: number;
+  pages: number;
+}
+
+/**
+ * One distinct shadowing spell — an interval during which the pair was continuously on file
+ */
+export interface RpodSpell {
+  /** When this spell began (first detection, or the reopen that started it) */
+  start: string;
+  /** Last scan that observed the pair together during this spell; null when unknown (legacy reopens) */
+  lastSeenAt: string | null;
+  /** When this spell ended (pair drifted apart); null for the ongoing spell */
+  endedAt: string | null;
+}
+
+export interface RpodEventDetail {
+  id: number;
+  status: string;
+  kind: string;
+  windowStart: string;
+  windowEnd: string;
+  tca: string;
+  minRangeKm: number;
+  relVelKmS: number;
+  memberCount: number;
+  widenedScan: boolean;
+  firstDetectedAt: string;
+  lastSeenAt: string;
+  endedAt: string | null;
+  reopenCount: number;
+  lastReopenedAt: string | null;
+  updatedAt: string;
+  /** Distinct shadowing spells, oldest first; the final entry is the current/most recent spell. Reopened cases have multiple entries. */
+  spells: RpodSpell[];
+  members: RpodMemberDetail[];
+}
+
+export interface RpodArchiveStatus {
+  totalRows: number;
+  objects: number;
+  newestEpoch?: string | null;
+  oldestEpoch?: string | null;
+  /** Oldest instant the backward-walking backfill has covered */
+  backfillCursor?: string | null;
+  recentWatermark?: string | null;
+  /** Set when space-track errors have the workers standing down */
+  backoffUntil?: string | null;
+  /** Configured retention horizon in days; the backfill never walks past it */
+  horizonDays: number;
+  /** Oldest instant the archive retains (ISO), i.e. now minus horizonDays */
+  horizon: string;
+  /** Beyond this age (days), sampling coarsens to one elset per object per day */
+  coarseAfterDays: number;
+  /** True once the backfill cursor has reached the horizon */
+  backfillComplete: boolean;
+}
+
+export interface RpodStatus {
+  archive: RpodArchiveStatus;
+  activeEvents: number;
+  lastScanAt?: string | null;
+  lastScanStatus?: string | null;
+  lastScanEvents?: number | null;
+}
+
+export interface ConstellationSeries {
+  name: string;
+  /** Active satellites at the end of each quarter (aligned with ConstellationAnalytics.quarters) */
+  active: number[];
+}
+
+export interface ConstellationSegmentSeries {
+  /** Shell (e.g. "~550 km · 53°") or variant (e.g. "≈800 kg class") label */
+  label: string;
+  active: number[];
+}
+
+export interface ConstellationTotals {
+  launched: number;
+  active: number;
+  decayed: number;
+  /** Total launched mass in tonnes (confirmed + estimated) */
+  massTonnes: number;
+}
+
+export interface ConstellationBreakout {
+  name: string;
+  totals: ConstellationTotals;
+  /** Active satellites per orbital shell over time */
+  shells: ConstellationSegmentSeries[];
+  /** Active satellites per hardware variant (mass class) over time */
+  variants: ConstellationSegmentSeries[];
+}
+
+export interface ConstellationCadenceSeries {
+  name: string;
+  /** Satellites launched per year (aligned with ConstellationAnalytics.launchYears) */
+  counts: number[];
+}
+
+export interface ConstellationAnalytics {
+  /** Shared quarterly time axis, e.g. "2019-Q1"; the final entry is "NOW" (current in-progress quarter, counted as of request time) */
+  quarters: string[];
+  /** Active satellites per constellation per quarter, largest first */
+  overall: ConstellationSeries[];
+  launchYears: number[];
+  launchedPerYear: ConstellationCadenceSeries[];
+  /** Shell/variant breakouts for the biggest constellations */
+  breakouts: ConstellationBreakout[];
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -79,6 +250,8 @@ export interface SatcatEntry {
      * @nullable
      */
   massKg?: number | null;
+  /** True when massKg is a Bureau estimate rather than GCAT-catalogued data */
+  massEstimated?: boolean;
   /**
      * Apogee altitude in km
      * @nullable
@@ -104,6 +277,86 @@ export interface SatcatEntry {
      * @nullable
      */
   decayDate?: string | null;
+  /**
+     * Gunter's Space Page "Type / Application" classification
+     * @nullable
+     */
+  gunterType?: string | null;
+  /**
+     * Gunter's Space Page "Nation" fact
+     * @nullable
+     */
+  gunterNation?: string | null;
+  /**
+     * Gunter's Space Page "Operator" fact
+     * @nullable
+     */
+  gunterOperator?: string | null;
+  /**
+     * Gunter's Space Page "Contractors" fact
+     * @nullable
+     */
+  gunterContractors?: string | null;
+  /**
+     * Cross-link to the full dossier on space.skyrocket.de
+     * @nullable
+     */
+  gunterUrl?: string | null;
+  /**
+     * Dossier page title, for Krebs-format citations
+     * @nullable
+     */
+  gunterTitle?: string | null;
+  /**
+     * ISO timestamp the dossier was retrieved
+     * @nullable
+     */
+  gunterRetrievedAt?: string | null;
+}
+
+export interface TleData {
+  norad: number;
+  /** @nullable */
+  name?: string | null;
+  line1: string;
+  line2: string;
+  /** Element-set epoch (ISO 8601) */
+  epoch: string;
+  incDeg: number;
+  /** Right ascension of the ascending node, degrees */
+  raanDeg: number;
+  /** Argument of perigee, degrees */
+  argPerigeeDeg: number;
+  meanAnomalyDeg: number;
+  eccentricity: number;
+  meanMotionRevPerDay: number;
+  /** When this element set was fetched from space-track (ISO 8601) */
+  fetchedAt: string;
+}
+
+export interface SatPass {
+  /** Pass start (rises above 0° elevation), ISO 8601 */
+  startTime: string;
+  /** Time of maximum elevation, ISO 8601 */
+  maxTime: string;
+  /** Pass end (drops below 0° elevation), ISO 8601 */
+  endTime: string;
+  maxElevationDeg: number;
+  startAzDeg: number;
+  maxAzDeg: number;
+  endAzDeg: number;
+  /** True when the satellite is sunlit while the observer sky is dark during the pass */
+  visible: boolean;
+}
+
+export interface PassesResponse {
+  norad: number;
+  lat: number;
+  lon: number;
+  days: number;
+  /** Element-set epoch used for propagation (ISO 8601) */
+  epoch: string;
+  passes: SatPass[];
 }
 
 export interface SatcatListResponse {
@@ -114,13 +367,38 @@ export interface SatcatListResponse {
   limit: number;
   /** Total pages */
   pages: number;
+  /** Total confirmed mass (kg) of ALL entries matching the current filters (not just this page) */
+  filteredMassKg: number;
+  /** Total Bureau-estimated mass (kg) of ALL entries matching the current filters */
+  filteredEstMassKg: number;
 }
 
 export interface MassAggregate {
   label: string;
+  /** Confirmed (GCAT-catalogued) mass in kg */
   massKg: number;
+  /** Additional theorized mass in kg (Bureau estimates for uncatalogued objects) */
+  estMassKg: number;
   count: number;
   payloadCount: number;
+}
+
+/**
+ * Last successful sync per upstream source (ISO timestamps, null if never)
+ */
+export interface ObcFreshness {
+  gcatSyncedAt: string | null;
+  spacetrackSyncedAt: string | null;
+  mergeSyncedAt: string | null;
+  gunterSyncedAt: string | null;
+}
+
+/**
+ * How many payloads have a Gunter's Space Page type match (crawl is budgeted; coverage grows over time)
+ */
+export interface GunterCoverage {
+  matchedPayloads: number;
+  totalPayloads: number;
 }
 
 export interface SatcatStats {
@@ -129,6 +407,9 @@ export interface SatcatStats {
   byOrbit: MassAggregate[];
   byObjectClass: MassAggregate[];
   byLaunchVehicle: MassAggregate[];
+  /** Payload counts/mass grouped by Gunter's Space Page Type/Application; unmatched objects fall back to GCAT object-class buckets */
+  byGunterType: MassAggregate[];
+  gunterCoverage: GunterCoverage;
 }
 
 export interface SatcatSummary {
@@ -142,8 +423,13 @@ export interface SatcatSummary {
   lastLaunchYear: number;
   /** Number of active Starlink satellites in orbit */
   starlinkActive: number;
-  /** How old the cached data is in seconds */
+  /** How old the in-memory catalog cache is in seconds */
   cacheAge: number;
+  /** Number of objects whose mass is a Bureau estimate (not GCAT data) */
+  estimatedObjects: number;
+  /** Total estimated (theorized) payload mass in kg */
+  estimatedMassKg: number;
+  freshness: ObcFreshness;
 }
 
 export interface YearProviderRow {
@@ -152,6 +438,8 @@ export interface YearProviderRow {
   spacex: number;
   /** Rest-of-world payload mass in kg */
   others: number;
+  /** Provisional SpaceX estimate for launches not yet catalogued */
+  pendingSpacex: number;
   spacexCount: number;
   othersCount: number;
 }
@@ -162,7 +450,12 @@ export interface SatcatByYearProvider {
 
 export interface ProviderUpmassRow {
   provider: string;
+  /** Confirmed (GCAT-catalogued) mass in kg */
   massKg: number;
+  /** Additional theorized mass in kg (Bureau estimates) */
+  estMassKg: number;
+  /** Provisional estimate for launches not yet catalogued */
+  pendingMassKg: number;
   count: number;
 }
 
@@ -175,6 +468,8 @@ export interface UpmassByProvider {
   window: UpmassByProviderWindow;
   providers: ProviderUpmassRow[];
   totalMassKg: number;
+  /** Total provisional (pending cataloguing) estimate in kg */
+  totalPendingMassKg: number;
   totalCount: number;
 }
 
@@ -300,6 +595,8 @@ export type FalconVsStarshipRowsItem = {
   year: string;
   falcon: number;
   starship: number;
+  /** Provisional estimate for Falcon launches not yet catalogued */
+  pendingFalcon: number;
 };
 
 export interface FalconVsStarship {
@@ -313,6 +610,12 @@ export type SpacexBySiteMonthlyRowsItem = {
   capeCanaveral: number;
   vandenberg: number;
   other: number;
+  /** Provisional estimate for launches not yet catalogued */
+  pendingCapeCanaveral: number;
+  /** Provisional estimate for launches not yet catalogued */
+  pendingVandenberg: number;
+  /** Provisional estimate for launches not yet catalogued */
+  pendingOther: number;
 };
 
 export interface SpacexBySiteMonthly {
@@ -325,6 +628,12 @@ export type SpacexBySiteRowsItem = {
   capeCanaveral: number;
   vandenberg: number;
   other: number;
+  /** Provisional estimate for launches not yet catalogued */
+  pendingCapeCanaveral: number;
+  /** Provisional estimate for launches not yet catalogued */
+  pendingVandenberg: number;
+  /** Provisional estimate for launches not yet catalogued */
+  pendingOther: number;
 };
 
 export interface SpacexBySite {
@@ -336,6 +645,8 @@ export type SpacexByEntityRowsItem = {
   starlink: number;
   usGov: number;
   commercial: number;
+  /** Provisional estimate for launches not yet catalogued (segment unknown) */
+  pending: number;
 };
 
 export interface SpacexByEntity {
@@ -406,13 +717,19 @@ export interface SatcatFilters {
   orbits: string[];
   satStates: string[];
   objectClasses: string[];
+  /** Distinct Gunter "Type / Application" values present in the catalog */
+  gunterTypes: string[];
+  /** Number of catalog objects with a matched Gunter dossier */
+  gunterMatched: number;
+  /** Total catalog objects (denominator for Gunter coverage) */
+  totalObjects: number;
 }
 
 export type GetSatcatParams = {
 page?: number;
 limit?: number;
 /**
- * Text search across name fields
+ * Text search across name fields, JCAT/NORAD ids, and Gunter operator/contractor facts (who operates or built the satellite)
  */
 search?: string;
 /**
@@ -432,6 +749,18 @@ orbit?: string;
  */
 satState?: string;
 /**
+ * Filter by Gunter's Space Page "Type / Application" classification
+ */
+gunterType?: string;
+/**
+ * Minimum mass in kg (inclusive); entries with unknown mass are excluded
+ */
+massMin?: number;
+/**
+ * Maximum mass in kg (inclusive); entries with unknown mass are excluded
+ */
+massMax?: number;
+/**
  * Field to sort by
  */
 sort?: string;
@@ -445,6 +774,22 @@ export const GetSatcatOrder = {
   asc: 'asc',
   desc: 'desc',
 } as const;
+
+export type GetSatcatPassesParams = {
+norad: number;
+/**
+ * Observer latitude in degrees (-90..90)
+ */
+lat: number;
+/**
+ * Observer longitude in degrees (-180..180)
+ */
+lon: number;
+/**
+ * Days ahead to search (1-7)
+ */
+days?: number;
+};
 
 export type GetSatcatUpmassByProviderParams = {
 /**
@@ -462,5 +807,106 @@ export type GetSatcatSpacexBySiteMonthlyParams = {
  * Year (YYYY), defaults to current year
  */
 year?: string;
+};
+
+export type GetRpodEventsParams = {
+page?: number;
+limit?: number;
+/**
+ * Filter by event status (ended = coplanar pair drifted apart and stopped passing the screen)
+ */
+status?: GetRpodEventsStatus;
+/**
+ * Filter by event kind (discrete conjunction, long-duration coplanar shadowing, or docked stack)
+ */
+kind?: GetRpodEventsKind;
+/**
+ * When true, only return repeat-offender cases that have been reopened at least once (reopenCount > 0)
+ */
+reopened?: boolean;
+/**
+ * Search by participant satellite name (substring, case-insensitive) or NORAD number
+ */
+q?: string;
+/**
+ * Filter to events with at least one participant whose catalog country/state code matches (exact, case-insensitive)
+ */
+country?: string;
+/**
+ * Primary sort field (default tca); duration orders by observation span (lastSeenAt - firstDetectedAt)
+ */
+sort?: GetRpodEventsSort;
+order?: GetRpodEventsOrder;
+/**
+ * Secondary sort field applied within ties of the primary sort
+ */
+sort2?: GetRpodEventsSort2;
+order2?: GetRpodEventsOrder2;
+};
+
+export type GetRpodEventsStatus = typeof GetRpodEventsStatus[keyof typeof GetRpodEventsStatus];
+
+
+export const GetRpodEventsStatus = {
+  active: 'active',
+  stale: 'stale',
+  ended: 'ended',
+} as const;
+
+export type GetRpodEventsKind = typeof GetRpodEventsKind[keyof typeof GetRpodEventsKind];
+
+
+export const GetRpodEventsKind = {
+  conjunction: 'conjunction',
+  coplanar: 'coplanar',
+  docked: 'docked',
+} as const;
+
+export type GetRpodEventsSort = typeof GetRpodEventsSort[keyof typeof GetRpodEventsSort];
+
+
+export const GetRpodEventsSort = {
+  id: 'id',
+  status: 'status',
+  kind: 'kind',
+  tca: 'tca',
+  minRangeKm: 'minRangeKm',
+  relVelKmS: 'relVelKmS',
+  memberCount: 'memberCount',
+  duration: 'duration',
+} as const;
+
+export type GetRpodEventsOrder = typeof GetRpodEventsOrder[keyof typeof GetRpodEventsOrder];
+
+
+export const GetRpodEventsOrder = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export type GetRpodEventsSort2 = typeof GetRpodEventsSort2[keyof typeof GetRpodEventsSort2];
+
+
+export const GetRpodEventsSort2 = {
+  id: 'id',
+  status: 'status',
+  kind: 'kind',
+  tca: 'tca',
+  minRangeKm: 'minRangeKm',
+  relVelKmS: 'relVelKmS',
+  memberCount: 'memberCount',
+  duration: 'duration',
+} as const;
+
+export type GetRpodEventsOrder2 = typeof GetRpodEventsOrder2[keyof typeof GetRpodEventsOrder2];
+
+
+export const GetRpodEventsOrder2 = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export type GetRpodCountries200 = {
+  countries: string[];
 };
 

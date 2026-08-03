@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { ReactNode } from "react";
-import { Radar, Satellite, Database, TerminalSquare } from "lucide-react";
+import { Radar, Satellite, Database, TerminalSquare, Orbit, Crosshair } from "lucide-react";
+import { DataFreshness } from "./DataFreshness";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -11,7 +12,9 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const navItems = [
     { href: "/analytics", label: "MASS ANALYTICS", icon: Radar },
+    { href: "/constellations", label: "CONSTELLATION WATCH", icon: Orbit },
     { href: "/catalog", label: "SATCAT EXPLORER", icon: Database },
+    { href: "/rpod", label: "RPOD WATCH", icon: Crosshair },
     { href: "/briefing", label: "BRIEFING", icon: TerminalSquare },
   ];
 
@@ -35,6 +38,9 @@ export function AppLayout({ children }: AppLayoutProps) {
             </span>
             Other Jonathan's Space Report // Orbital Bureaucracy Command
           </p>
+          <div className="mt-2">
+            <DataFreshness />
+          </div>
         </div>
 
         <nav className="flex flex-wrap gap-2">
@@ -69,7 +75,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className="border border-muted/40 px-6 py-4 max-w-2xl space-y-2 text-left w-full">
           <p className="text-primary/80 uppercase tracking-widest text-[10px]">// DATA ATTRIBUTION</p>
           <p className="leading-relaxed normal-case">
-            All orbital data is sourced from the{" "}
+            Orbital data is fused from multiple primary sources. The backbone is the{" "}
             <span className="text-primary font-bold">General Catalog of Artificial Space Objects (GCAT)</span>,
             maintained by{" "}
             <a
@@ -80,12 +86,34 @@ export function AppLayout({ children }: AppLayoutProps) {
             >
               Jonathan McDowell (planet4589.org)
             </a>
-            . Jonathan's meticulous work tracking every nut, bolt, and derelict rocket stage
+            , whose meticulous work tracking every nut, bolt, and derelict rocket stage
             in Earth orbit is what makes this parody possible — and frankly embarrassing to contemplate.
+            Fresh catalog entries and orbital elements come from{" "}
+            <a
+              href="https://www.space-track.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent underline underline-offset-2 hover:text-primary transition-colors"
+            >
+              space-track.org
+            </a>{" "}
+            (18th Space Defense Squadron, US Space Force). Satellite types and dossier
+            cross-links come from{" "}
+            <a
+              href="https://space.skyrocket.de"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent underline underline-offset-2 hover:text-primary transition-colors"
+            >
+              Gunter's Space Page
+            </a>{" "}
+            (© Gunter Dirk Krebs), the encyclopedia of who actually built all this stuff —
+            each matched catalog entry links to his full dossier, where the real detail lives.
           </p>
           <p className="leading-relaxed normal-case text-muted-foreground/70">
             This site is a fan parody. It is not affiliated with Jonathan McDowell,
-            Harvard-Smithsonian CfA, nor any actual Space Police force
+            Harvard-Smithsonian CfA, Gunter Dirk Krebs, the US Space Force,
+            nor any actual Space Police force
             (which, for the record, we fully support creating).
           </p>
         </div>

@@ -76,6 +76,8 @@ export interface SatcatEntry {
      * @nullable
      */
   massKg?: number | null;
+  /** True when massKg is a Bureau estimate rather than GCAT-catalogued data */
+  massEstimated?: boolean;
   /**
      * Apogee altitude in km
      * @nullable
@@ -101,4 +103,39 @@ export interface SatcatEntry {
      * @nullable
      */
   decayDate?: string | null;
+  /**
+     * Gunter's Space Page "Type / Application" classification
+     * @nullable
+     */
+  gunterType?: string | null;
+  /**
+     * Gunter's Space Page "Nation" fact
+     * @nullable
+     */
+  gunterNation?: string | null;
+  /**
+     * Gunter's Space Page "Operator" fact
+     * @nullable
+     */
+  gunterOperator?: string | null;
+  /**
+     * Gunter's Space Page "Contractors" fact
+     * @nullable
+     */
+  gunterContractors?: string | null;
+  /**
+     * Cross-link to the full dossier on space.skyrocket.de
+     * @nullable
+     */
+  gunterUrl?: string | null;
+  /**
+     * Dossier page title, for Krebs-format citations
+     * @nullable
+     */
+  gunterTitle?: string | null;
+  /**
+     * ISO timestamp the dossier was retrieved
+     * @nullable
+     */
+  gunterRetrievedAt?: string | null;
 }

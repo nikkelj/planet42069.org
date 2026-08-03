@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { getSatcat, getCacheAge, type SatcatEntry } from "../lib/satcat";
 import { getLaunchMap } from "../lib/launch";
+import { getFreshness } from "../lib/obc/store";
 
 const router: IRouter = Router();
 
@@ -10,8 +11,104 @@ function getYear(ldate: string | null): string | null {
   return m ? m[1] : null;
 }
 
+// ── Provisional (pending-cataloguing) tonnage ──────────────────────────────
+// Space-track takes days (and GCAT weeks) to catalog fresh launches, so the
+// trailing edge of the site charts undercounts. For known Falcon/Starship
+// orbital launches inside the lag window that have ZERO catalogued payload
+// mass, we add a clearly-marked provisional estimate (median catalogued
+// per-launch mass at the same site classification).
+
+const PENDING_WINDOW_DAYS = 45;
+
+type SiteClass = "capeCanaveral" | "vandenberg" | "other";
+
+function classifySite(site: string | null): SiteClass {
+  const s = (site ?? "").toUpperCase();
+  if (s === "CC" || s.startsWith("KSC")) return "capeCanaveral";
+  if (s.startsWith("VSFB") || s.startsWith("VAFB")) return "vandenberg";
+  return "other";
+}
+
+function isSpacexFamily(fam: string | null | undefined): boolean {
+  const f = (fam ?? "").toLowerCase();
+  return f.includes("falcon") || f.includes("starship");
+}
+
+interface PendingLaunch {
+  ldate: string;          // ISO date
+  siteClass: SiteClass;
+  estMassKg: number;
+}
+
+/**
+ * Find recent SpaceX orbital launches with zero catalogued payload mass and
+ * estimate their tonnage. Launch<->object matching is by (ldate, siteClass) —
+ * good enough for a provisional figure, replaced by real catalog data as
+ * space-track/GCAT catch up.
+ */
+async function getPendingSpacexLaunches(data: SatcatEntry[]): Promise<PendingLaunch[]> {
+  const launchMap = await getLaunchMap();
+  const now = Date.now();
+  const windowStart = now - PENDING_WINDOW_DAYS * 24 * 3600 * 1000;
+
+  // Catalogued Falcon payload mass per launch, keyed by launch tag (with an
+  // ldate|siteClass fallback for entries missing a tag). Falcon-only so a
+  // catalogued Starship payload can never suppress a Falcon pending estimate.
+  const tagMass = new Map<string, number>();
+  const dateSiteMass = new Map<string, number>();
+  for (const e of data) {
+    if (e.objectClass !== "P" || !e.ldate) continue;
+    if (!(e.lvFamily ?? "").toLowerCase().includes("falcon")) continue;
+    const mass = e.massKg ?? 0;
+    if (e.launchTag) {
+      tagMass.set(e.launchTag, (tagMass.get(e.launchTag) ?? 0) + mass);
+    } else {
+      const key = `${e.ldate}|${classifySite(e.site)}`;
+      dateSiteMass.set(key, (dateSiteMass.get(key) ?? 0) + mass);
+    }
+  }
+
+  // Median per-launch catalogued mass by site class (for the estimate),
+  // from launches in the last year (representative of a current batch).
+  const perClass: Record<SiteClass, number[]> = { capeCanaveral: [], vandenberg: [], other: [] };
+  const all: number[] = [];
+  for (const [tag, mass] of tagMass) {
+    if (mass <= 0) continue;
+    const l = launchMap.get(tag);
+    if (!l?.ldate) continue;
+    const t = Date.parse(l.ldate);
+    if (Number.isFinite(t) && now - t <= 365 * 24 * 3600 * 1000) {
+      const cls = classifySite(l.site);
+      perClass[cls].push(mass);
+      all.push(mass);
+    }
+  }
+  const median = (xs: number[]): number | null => {
+    if (xs.length === 0) return null;
+    const s = [...xs].sort((a, b) => a - b);
+    return s[Math.floor(s.length / 2)];
+  };
+  const FALLBACK_KG = 14000; // typical current Starlink batch
+  const estFor = (cls: SiteClass): number =>
+    median(perClass[cls]) ?? median(all) ?? FALLBACK_KG;
+
+  const pending: PendingLaunch[] = [];
+  for (const l of launchMap.values()) {
+    // Falcon only: a Falcon-median estimate for Starship cargo would be pure
+    // invention — Starbase stays honest-zero until a catalog says otherwise.
+    if (!l.orbital || !l.ldate || !(l.lvFamily ?? "").toLowerCase().includes("falcon")) continue;
+    const t = Date.parse(l.ldate);
+    if (!Number.isFinite(t) || t < windowStart || t > now) continue;
+    const cls = classifySite(l.site);
+    if ((tagMass.get(l.launchTag) ?? 0) > 0) continue;
+    if ((dateSiteMass.get(`${l.ldate}|${cls}`) ?? 0) > 0) continue;
+    pending.push({ ldate: l.ldate, siteClass: cls, estMassKg: estFor(cls) });
+  }
+  return pending;
+}
+
 router.get("/satcat/summary", async (req, res): Promise<void> => {
-  const data = await getSatcat();
+  const [data, freshness] = await Promise.all([getSatcat(), getFreshness()]);
 
   const payloads = data.filter((e) => e.objectClass === "P");
   // Status "O" = Operational, "OX" = Operational Extended
@@ -28,6 +125,9 @@ router.get("/satcat/summary", async (req, res): Promise<void> => {
     (sum, e) => sum + (e.massKg ?? 0),
     0,
   );
+
+  const estimatedRows = data.filter((e) => e.massEstimated);
+  const estimatedMassKg = estimatedRows.reduce((s, e) => s + (e.massKg ?? 0), 0);
 
   const owners = new Set(data.map((e) => e.owner).filter(Boolean));
   const lvs = new Set(data.map((e) => e.lv).filter(Boolean));
@@ -48,6 +148,9 @@ router.get("/satcat/summary", async (req, res): Promise<void> => {
     firstLaunchYear: years.length ? Math.min(...years) : 0,
     lastLaunchYear: years.length ? Math.max(...years) : 0,
     cacheAge: getCacheAge(),
+    estimatedObjects: estimatedRows.length,
+    estimatedMassKg: Math.round(estimatedMassKg),
+    freshness,
   });
 });
 
@@ -59,37 +162,42 @@ router.get("/satcat/stats", async (_req, res): Promise<void> => {
     (e) => e.objectClass === "P",
   );
 
-  type Agg = { massKg: number; count: number; payloadCount: number };
+  type Agg = { massKg: number; estMassKg: number; count: number; payloadCount: number };
+  const addTo = (existing: Agg, e: SatcatEntry) => {
+    if (e.massEstimated) existing.estMassKg += e.massKg ?? 0;
+    else existing.massKg += e.massKg ?? 0;
+    existing.count += 1;
+    existing.payloadCount += e.objectClass === "P" ? 1 : 0;
+  };
+  const finish = (label: string, v: Agg) => ({
+    label, ...v, massKg: Math.round(v.massKg), estMassKg: Math.round(v.estMassKg),
+  });
   const agg = (
     entries: SatcatEntry[],
     keyFn: (e: SatcatEntry) => string | null,
-  ): { label: string; massKg: number; count: number; payloadCount: number }[] => {
+  ): { label: string; massKg: number; estMassKg: number; count: number; payloadCount: number }[] => {
     const map = new Map<string, Agg>();
     for (const e of entries) {
       const key = keyFn(e) ?? "Unknown";
-      const existing = map.get(key) ?? { massKg: 0, count: 0, payloadCount: 0 };
-      existing.massKg += e.massKg ?? 0;
-      existing.count += 1;
-      existing.payloadCount += e.objectClass === "P" ? 1 : 0;
+      const existing = map.get(key) ?? { massKg: 0, estMassKg: 0, count: 0, payloadCount: 0 };
+      addTo(existing, e);
       map.set(key, existing);
     }
     return Array.from(map.entries())
-      .map(([label, v]) => ({ label, ...v, massKg: Math.round(v.massKg) }))
-      .sort((a, b) => b.massKg - a.massKg);
+      .map(([label, v]) => finish(label, v))
+      .sort((a, b) => (b.massKg + b.estMassKg) - (a.massKg + a.estMassKg));
   };
 
   // byYear — use all data for count, payloads for mass
   const yearMap = new Map<string, Agg>();
   for (const e of data) {
     const key = getYear(e.ldate) ?? "Unknown";
-    const existing = yearMap.get(key) ?? { massKg: 0, count: 0, payloadCount: 0 };
-    existing.massKg += e.massKg ?? 0;
-    existing.count += 1;
-    existing.payloadCount += e.objectClass === "P" ? 1 : 0;
+    const existing = yearMap.get(key) ?? { massKg: 0, estMassKg: 0, count: 0, payloadCount: 0 };
+    addTo(existing, e);
     yearMap.set(key, existing);
   }
   const byYear = Array.from(yearMap.entries())
-    .map(([label, v]) => ({ label, ...v, massKg: Math.round(v.massKg) }))
+    .map(([label, v]) => finish(label, v))
     .sort((a, b) => a.label.localeCompare(b.label))
     .filter((y) => y.label !== "Unknown");
 
@@ -108,7 +216,18 @@ router.get("/satcat/stats", async (_req, res): Promise<void> => {
   // LV family for readability, fall back to LV
   const byLaunchVehicle = agg(payloads, (e) => e.lvFamily ?? e.lv).slice(0, 25);
 
-  res.json({ byYear, byCountry, byOrbit, byObjectClass, byLaunchVehicle });
+  // Gunter's Space Page Type/Application breakdown (payloads only).
+  // Payloads without a Gunter match fall back to the existing GCAT
+  // object-class bucket ("Payload (unclassified)") so nothing is dropped.
+  const byGunterType = agg(payloads, (e) =>
+    e.gunterType ?? "Payload (unclassified)",
+  ).slice(0, 15);
+  const gunterCoverage = {
+    matchedPayloads: payloads.filter((e) => e.gunterType != null).length,
+    totalPayloads: payloads.length,
+  };
+
+  res.json({ byYear, byCountry, byOrbit, byObjectClass, byLaunchVehicle, byGunterType, gunterCoverage });
 });
 
 router.get("/satcat/by-year-provider", async (_req, res): Promise<void> => {
@@ -117,15 +236,16 @@ router.get("/satcat/by-year-provider", async (_req, res): Promise<void> => {
   // Only payloads; SpaceX = any Falcon-family vehicle
   const payloads = data.filter((e) => e.objectClass === "P");
 
-  type YearRow = { year: string; spacex: number; others: number; spacexCount: number; othersCount: number };
+  type YearRow = { year: string; spacex: number; others: number; pendingSpacex: number; spacexCount: number; othersCount: number };
   const map = new Map<string, YearRow>();
+  const emptyRow = (year: string): YearRow => ({ year, spacex: 0, others: 0, pendingSpacex: 0, spacexCount: 0, othersCount: 0 });
 
   for (const e of payloads) {
     const year = getYear(e.ldate);
     if (!year) continue;
     const mass = e.massKg ?? 0;
     const isSpaceX = (e.lvFamily ?? "").toLowerCase().includes("falcon");
-    const row = map.get(year) ?? { year, spacex: 0, others: 0, spacexCount: 0, othersCount: 0 };
+    const row = map.get(year) ?? emptyRow(year);
     if (isSpaceX) {
       row.spacex += mass;
       row.spacexCount += 1;
@@ -136,8 +256,22 @@ router.get("/satcat/by-year-provider", async (_req, res): Promise<void> => {
     map.set(year, row);
   }
 
+  // Provisional estimates for recent Falcon launches pending cataloguing
+  for (const p of await getPendingSpacexLaunches(data)) {
+    const year = getYear(p.ldate);
+    if (!year) continue;
+    const row = map.get(year) ?? emptyRow(year);
+    row.pendingSpacex += p.estMassKg;
+    map.set(year, row);
+  }
+
   const byYearProvider = Array.from(map.values())
-    .map((r) => ({ ...r, spacex: Math.round(r.spacex), others: Math.round(r.others) }))
+    .map((r) => ({
+      ...r,
+      spacex: Math.round(r.spacex),
+      others: Math.round(r.others),
+      pendingSpacex: Math.round(r.pendingSpacex),
+    }))
     .sort((a, b) => a.year.localeCompare(b.year));
 
   res.json({ byYearProvider });
@@ -207,24 +341,41 @@ router.get("/satcat/upmass-by-provider", async (req, res): Promise<void> => {
       e.ldate <= end,
   );
 
-  type Row = { provider: string; massKg: number; count: number };
+  type Row = { provider: string; massKg: number; estMassKg: number; pendingMassKg: number; count: number };
   const map = new Map<string, Row>();
+  const emptyRow = (provider: string): Row => ({ provider, massKg: 0, estMassKg: 0, pendingMassKg: 0, count: 0 });
   for (const e of payloads) {
     const provider = classifyProvider(e);
-    const row = map.get(provider) ?? { provider, massKg: 0, count: 0 };
-    row.massKg += e.massKg ?? 0;
+    const row = map.get(provider) ?? emptyRow(provider);
+    if (e.massEstimated) row.estMassKg += e.massKg ?? 0;
+    else row.massKg += e.massKg ?? 0;
     row.count += 1;
     map.set(provider, row);
   }
 
+  // Provisional tonnage for recent SpaceX launches the catalogs haven't
+  // processed yet (only affects windows that overlap the trailing weeks).
+  for (const p of await getPendingSpacexLaunches(data)) {
+    if (p.ldate < start || p.ldate > end) continue;
+    const row = map.get("SpaceX") ?? emptyRow("SpaceX");
+    row.pendingMassKg += p.estMassKg;
+    map.set("SpaceX", row);
+  }
+
   const providers = Array.from(map.values())
-    .map((r) => ({ ...r, massKg: Math.round(r.massKg) }))
-    .sort((a, b) => b.massKg - a.massKg);
+    .map((r) => ({
+      ...r,
+      massKg: Math.round(r.massKg),
+      estMassKg: Math.round(r.estMassKg),
+      pendingMassKg: Math.round(r.pendingMassKg),
+    }))
+    .sort((a, b) => (b.massKg + b.estMassKg + b.pendingMassKg) - (a.massKg + a.estMassKg + a.pendingMassKg));
 
   res.json({
     window: { start, end },
     providers,
-    totalMassKg: providers.reduce((s, r) => s + r.massKg, 0),
+    totalMassKg: providers.reduce((s, r) => s + r.massKg + r.estMassKg, 0),
+    totalPendingMassKg: providers.reduce((s, r) => s + r.pendingMassKg, 0),
     totalCount: payloads.length,
   });
 });
@@ -534,8 +685,9 @@ router.get("/satcat/falcon-vs-starship", async (_req, res): Promise<void> => {
   const data = await getSatcat();
   const payloads = data.filter((e) => e.objectClass === "P");
 
-  type Row = { year: string; falcon: number; starship: number };
+  type Row = { year: string; falcon: number; starship: number; pendingFalcon: number };
   const map = new Map<string, Row>();
+  const emptyRow = (year: string): Row => ({ year, falcon: 0, starship: 0, pendingFalcon: 0 });
 
   for (const e of payloads) {
     const year = getYear(e.ldate);
@@ -543,7 +695,7 @@ router.get("/satcat/falcon-vs-starship", async (_req, res): Promise<void> => {
     const mass = e.massKg ?? 0;
     const lv = ((e.lvFamily ?? "") + " " + (e.lv ?? "")).toLowerCase();
     if (!lv.includes("falcon") && !lv.includes("starship")) continue;
-    const row = map.get(year) ?? { year, falcon: 0, starship: 0 };
+    const row = map.get(year) ?? emptyRow(year);
     if (lv.includes("falcon")) {
       row.falcon += mass;
     } else {
@@ -552,8 +704,22 @@ router.get("/satcat/falcon-vs-starship", async (_req, res): Promise<void> => {
     map.set(year, row);
   }
 
+  // Provisional estimates for recent Falcon launches pending cataloguing
+  for (const p of await getPendingSpacexLaunches(data)) {
+    const year = getYear(p.ldate);
+    if (!year) continue;
+    const row = map.get(year) ?? emptyRow(year);
+    row.pendingFalcon += p.estMassKg;
+    map.set(year, row);
+  }
+
   const rows = Array.from(map.values())
-    .map((r) => ({ ...r, falcon: Math.round(r.falcon), starship: Math.round(r.starship) }))
+    .map((r) => ({
+      ...r,
+      falcon: Math.round(r.falcon),
+      starship: Math.round(r.starship),
+      pendingFalcon: Math.round(r.pendingFalcon),
+    }))
     .sort((a, b) => a.year.localeCompare(b.year));
 
   const starshipTotal = rows.reduce((s, r) => s + r.starship, 0);
@@ -565,18 +731,25 @@ router.get("/satcat/spacex-by-site-monthly", async (req, res): Promise<void> => 
   const data = await getSatcat();
   const year = String(req.query.year ?? new Date().getFullYear()).trim();
 
-  const payloads = data.filter(
-    (e) =>
+  const payloads = data.filter((e) => {
+    const fam = (e.lvFamily ?? "").toLowerCase();
+    return (
       e.objectClass === "P" &&
-      (e.lvFamily ?? "").toLowerCase().includes("falcon") &&
-      getYear(e.ldate) === year,
-  );
+      (fam.includes("falcon") || fam.includes("starship")) &&
+      getYear(e.ldate) === year
+    );
+  });
 
   const MONTH_NAMES = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 
-  type MonthRow = { month: string; monthNum: number; capeCanaveral: number; vandenberg: number; other: number };
+  type MonthRow = {
+    month: string; monthNum: number;
+    capeCanaveral: number; vandenberg: number; other: number;
+    pendingCapeCanaveral: number; pendingVandenberg: number; pendingOther: number;
+  };
   const rows: MonthRow[] = MONTH_NAMES.map((month, i) => ({
     month, monthNum: i + 1, capeCanaveral: 0, vandenberg: 0, other: 0,
+    pendingCapeCanaveral: 0, pendingVandenberg: 0, pendingOther: 0,
   }));
 
   for (const e of payloads) {
@@ -584,15 +757,20 @@ router.get("/satcat/spacex-by-site-monthly", async (req, res): Promise<void> => 
     const monthNum = parseInt(e.ldate.split("-")[1] ?? "0", 10);
     if (monthNum < 1 || monthNum > 12) continue;
     const mass = e.massKg ?? 0;
-    const site = (e.site ?? "").toUpperCase();
     const row = rows[monthNum - 1];
-    if (site === "CC" || site.startsWith("KSC")) {
-      row.capeCanaveral += mass;
-    } else if (site.startsWith("VSFB") || site.startsWith("VAFB")) {
-      row.vandenberg += mass;
-    } else {
-      row.other += mass;
-    }
+    row[classifySite(e.site)] += mass;
+  }
+
+  const PENDING_KEY: Record<SiteClass, "pendingCapeCanaveral" | "pendingVandenberg" | "pendingOther"> = {
+    capeCanaveral: "pendingCapeCanaveral",
+    vandenberg: "pendingVandenberg",
+    other: "pendingOther",
+  };
+  for (const p of await getPendingSpacexLaunches(data)) {
+    if (getYear(p.ldate) !== year) continue;
+    const monthNum = parseInt(p.ldate.split("-")[1] ?? "0", 10);
+    if (monthNum < 1 || monthNum > 12) continue;
+    rows[monthNum - 1][PENDING_KEY[p.siteClass]] += p.estMassKg;
   }
 
   const result = rows.map((r) => ({
@@ -600,34 +778,52 @@ router.get("/satcat/spacex-by-site-monthly", async (req, res): Promise<void> => 
     capeCanaveral: Math.round(r.capeCanaveral),
     vandenberg: Math.round(r.vandenberg),
     other: Math.round(r.other),
+    pendingCapeCanaveral: Math.round(r.pendingCapeCanaveral),
+    pendingVandenberg: Math.round(r.pendingVandenberg),
+    pendingOther: Math.round(r.pendingOther),
   }));
 
   res.json({ year, rows: result });
 });
 
-// SpaceX (Falcon family) mass by launch site, 2010+
+// SpaceX (Falcon + Starship families) mass by launch site, 2010+
 router.get("/satcat/spacex-by-site", async (_req, res): Promise<void> => {
   const data = await getSatcat();
-  const payloads = data.filter(
-    (e) => e.objectClass === "P" && (e.lvFamily ?? "").toLowerCase().includes("falcon"),
-  );
+  const payloads = data.filter((e) => {
+    const fam = (e.lvFamily ?? "").toLowerCase();
+    return e.objectClass === "P" && (fam.includes("falcon") || fam.includes("starship"));
+  });
 
-  type SiteRow = { year: string; capeCanaveral: number; vandenberg: number; other: number };
+  type SiteRow = {
+    year: string;
+    capeCanaveral: number; vandenberg: number; other: number;
+    pendingCapeCanaveral: number; pendingVandenberg: number; pendingOther: number;
+  };
   const map = new Map<string, SiteRow>();
+  const emptyRow = (year: string): SiteRow => ({
+    year, capeCanaveral: 0, vandenberg: 0, other: 0,
+    pendingCapeCanaveral: 0, pendingVandenberg: 0, pendingOther: 0,
+  });
 
   for (const e of payloads) {
     const year = getYear(e.ldate);
     if (!year || parseInt(year) < 2010) continue;
     const mass = e.massKg ?? 0;
-    const site = (e.site ?? "").toUpperCase();
-    const row = map.get(year) ?? { year, capeCanaveral: 0, vandenberg: 0, other: 0 };
-    if (site === "CC" || site.startsWith("KSC")) {
-      row.capeCanaveral += mass;
-    } else if (site.startsWith("VSFB") || site.startsWith("VAFB")) {
-      row.vandenberg += mass;
-    } else {
-      row.other += mass;
-    }
+    const row = map.get(year) ?? emptyRow(year);
+    row[classifySite(e.site)] += mass;
+    map.set(year, row);
+  }
+
+  const PENDING_KEY: Record<SiteClass, "pendingCapeCanaveral" | "pendingVandenberg" | "pendingOther"> = {
+    capeCanaveral: "pendingCapeCanaveral",
+    vandenberg: "pendingVandenberg",
+    other: "pendingOther",
+  };
+  for (const p of await getPendingSpacexLaunches(data)) {
+    const year = getYear(p.ldate);
+    if (!year) continue;
+    const row = map.get(year) ?? emptyRow(year);
+    row[PENDING_KEY[p.siteClass]] += p.estMassKg;
     map.set(year, row);
   }
 
@@ -637,6 +833,9 @@ router.get("/satcat/spacex-by-site", async (_req, res): Promise<void> => {
       capeCanaveral: Math.round(r.capeCanaveral),
       vandenberg: Math.round(r.vandenberg),
       other: Math.round(r.other),
+      pendingCapeCanaveral: Math.round(r.pendingCapeCanaveral),
+      pendingVandenberg: Math.round(r.pendingVandenberg),
+      pendingOther: Math.round(r.pendingOther),
     }))
     .sort((a, b) => a.year.localeCompare(b.year));
 
@@ -655,14 +854,15 @@ router.get("/satcat/spacex-by-entity", async (_req, res): Promise<void> => {
     (e) => e.objectClass === "P" && (e.lvFamily ?? "").toLowerCase().includes("falcon"),
   );
 
-  type EntityRow = { year: string; starlink: number; usGov: number; commercial: number };
+  type EntityRow = { year: string; starlink: number; usGov: number; commercial: number; pending: number };
   const map = new Map<string, EntityRow>();
+  const emptyRow = (year: string): EntityRow => ({ year, starlink: 0, usGov: 0, commercial: 0, pending: 0 });
 
   for (const e of payloads) {
     const year = getYear(e.ldate);
     if (!year || parseInt(year) < 2010) continue;
     const mass = e.massKg ?? 0;
-    const row = map.get(year) ?? { year, starlink: 0, usGov: 0, commercial: 0 };
+    const row = map.get(year) ?? emptyRow(year);
 
     if (e.name.toUpperCase().includes("STARLINK")) {
       row.starlink += mass;
@@ -674,12 +874,24 @@ router.get("/satcat/spacex-by-entity", async (_req, res): Promise<void> => {
     map.set(year, row);
   }
 
+  // Provisional estimates for recent Falcon launches pending cataloguing.
+  // Customer segment is unknown until the catalog lands, so pending mass is
+  // kept as its own unattributed segment rather than guessed into one.
+  for (const p of await getPendingSpacexLaunches(data)) {
+    const year = getYear(p.ldate);
+    if (!year) continue;
+    const row = map.get(year) ?? emptyRow(year);
+    row.pending += p.estMassKg;
+    map.set(year, row);
+  }
+
   const rows = Array.from(map.values())
     .map((r) => ({
       ...r,
       starlink: Math.round(r.starlink),
       usGov: Math.round(r.usGov),
       commercial: Math.round(r.commercial),
+      pending: Math.round(r.pending),
     }))
     .sort((a, b) => a.year.localeCompare(b.year));
 
@@ -826,8 +1038,12 @@ router.get("/satcat/filters", async (_req, res): Promise<void> => {
   const objectClasses = [
     ...new Set(data.map((e) => e.objectClass).filter(Boolean) as string[]),
   ].sort();
+  const gunterTypes = [
+    ...new Set(data.map((e) => e.gunterType).filter(Boolean) as string[]),
+  ].sort();
+  const gunterMatched = data.reduce((n, e) => n + (e.gunterUrl ? 1 : 0), 0);
 
-  res.json({ owners, orbits, satStates, objectClasses });
+  res.json({ owners, orbits, satStates, objectClasses, gunterTypes, gunterMatched, totalObjects: data.length });
 });
 
 router.get("/satcat", async (req, res): Promise<void> => {
@@ -840,6 +1056,11 @@ router.get("/satcat", async (req, res): Promise<void> => {
   const classFilter = String(req.query.objectClass ?? "").trim();
   const orbitFilter = String(req.query.orbit ?? "").trim();
   const stateFilter = String(req.query.satState ?? "").trim();
+  const gunterTypeFilter = String(req.query.gunterType ?? "").trim();
+  const massMinRaw = parseFloat(String(req.query.massMin ?? ""));
+  const massMaxRaw = parseFloat(String(req.query.massMax ?? ""));
+  const massMin = Number.isFinite(massMinRaw) ? massMinRaw : null;
+  const massMax = Number.isFinite(massMaxRaw) ? massMaxRaw : null;
   const sortField = String(req.query.sort ?? "ldate").trim();
   const sortOrder = String(req.query.order ?? "desc").trim();
 
@@ -851,7 +1072,9 @@ router.get("/satcat", async (req, res): Promise<void> => {
         e.name.toLowerCase().includes(search) ||
         (e.plName?.toLowerCase().includes(search) ?? false) ||
         e.jcat.toLowerCase().includes(search) ||
-        (e.satno != null && String(e.satno).includes(search)),
+        (e.satno != null && String(e.satno).includes(search)) ||
+        (e.gunterOperator?.toLowerCase().includes(search) ?? false) ||
+        (e.gunterContractors?.toLowerCase().includes(search) ?? false),
     );
   }
   if (ownerFilter) {
@@ -865,6 +1088,25 @@ router.get("/satcat", async (req, res): Promise<void> => {
   }
   if (stateFilter) {
     filtered = filtered.filter((e) => e.satState === stateFilter);
+  }
+  if (gunterTypeFilter) {
+    filtered = filtered.filter((e) => e.gunterType === gunterTypeFilter);
+  }
+  if (massMin != null || massMax != null) {
+    filtered = filtered.filter(
+      (e) =>
+        e.massKg != null &&
+        (massMin == null || e.massKg >= massMin) &&
+        (massMax == null || e.massKg <= massMax),
+    );
+  }
+
+  let filteredMassKg = 0;
+  let filteredEstMassKg = 0;
+  for (const e of filtered) {
+    if (e.massKg == null) continue;
+    if (e.massEstimated) filteredEstMassKg += e.massKg;
+    else filteredMassKg += e.massKg;
   }
 
   // Sort — use a typed whitelist to avoid TS2352 index-access errors
@@ -895,7 +1137,7 @@ router.get("/satcat", async (req, res): Promise<void> => {
   const offset = (page - 1) * limit;
   const slice = filtered.slice(offset, offset + limit);
 
-  res.json({ data: slice, total, page, limit, pages });
+  res.json({ data: slice, total, page, limit, pages, filteredMassKg, filteredEstMassKg });
 });
 
 export default router;

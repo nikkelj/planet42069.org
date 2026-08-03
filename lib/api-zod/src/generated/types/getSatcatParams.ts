@@ -11,7 +11,7 @@ export type GetSatcatParams = {
 page?: number;
 limit?: number;
 /**
- * Text search across name fields
+ * Text search across name fields, JCAT/NORAD ids, and Gunter operator/contractor facts (who operates or built the satellite)
  */
 search?: string;
 /**
@@ -30,6 +30,18 @@ orbit?: string;
  * Filter by satellite state
  */
 satState?: string;
+/**
+ * Filter by Gunter's Space Page "Type / Application" classification
+ */
+gunterType?: string;
+/**
+ * Minimum mass in kg (inclusive); entries with unknown mass are excluded
+ */
+massMin?: number;
+/**
+ * Maximum mass in kg (inclusive); entries with unknown mass are excluded
+ */
+massMax?: number;
 /**
  * Field to sort by
  */

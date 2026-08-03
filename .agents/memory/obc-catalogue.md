@@ -1,0 +1,17 @@
+---
+name: OBC catalogue merge rules
+description: Merged GCAT + space-track Postgres catalog — key scheme, sentinels, and sync gotchas
+---
+
+- Object key = GCAT JCAT id, or `ST<norad>` for space-track-only rows. Sync must dedupe: when GCAT later catalogs an ST-only norad, the ST row is deleted post-upsert (JOIN on norad where jcat is null).
+- **Why:** upsert targets `key` only, so identity transitions would otherwise double-count mass in every analytics endpoint.
+- ST-only rows use satState sentinel `"O?"` — do NOT treat as operational in `satState === "O" || "OX"` checks unless intended.
+- Estimated masses carry `massEstimated=true` + `massEstMethod` (name-family → class+lvFamily → class medians); charts render them as 0.55-opacity "theorized" segments (estMassKg fields).
+- Autoscale prod only grants CPU during in-flight requests: the boot sync stalls mid-run when traffic quiets (took ~9 min of sustained pinging post-deploy vs ~25s in dev). Store must gate serving on a completed merge sync-log row, not non-empty tables — chunked upserts make partial catalogs visible mid-sync.
+- space-track full satcat JSON fetch (~70k rows) takes ~5s; GCAT TSVs ~7s. Whole sync ≈ 25s. Analytics never fetch upstream on the request path — DB store with 10-min memory cache; empty catalog throws (Express 5 turns async throws into error responses).
+
+## Fresh-launch analytics gap (fixed 2026-07-30)
+GCAT catalogs individual objects days-to-weeks after launch, but its launch list updates within a day. Space-track-only rows (ST keys) must be enriched with lv/lvFamily/site from the GCAT launch mirror (tag derived from OBJECT_ID "YYYY-NNN"), or vehicle/site analytics (e.g. `lv_family ILIKE '%falcon%'` filters) silently drop the most recent weeks. Also prefer GCAT site codes (CC/KSC/VSFBS) — space-track's AFETR/AFWTR never match the site classifiers.
+
+## Provisional "pending cataloguing" tonnage
+SpaceX-by-site endpoints add hatched provisional segments for Falcon orbital launches <45 days old with zero catalogued Falcon payload mass (matched per launch tag; SatcatEntry now carries launchTag derived from intl_des). Estimate = median same-site per-launch catalogued mass over the last year. **Starship deliberately excluded** — Starbase stays honest-zero until a catalog has objects. Space-track catalogs fresh Starlink batches days late (anonymous "OBJECT A…" rows, type UNKNOWN, no mass); GCAT takes weeks — so trailing-edge undercount is upstream lag, not sync staleness.

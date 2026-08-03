@@ -54,6 +54,11 @@ export default defineConfig({
     dedupe: ["react", "react-dom"],
   },
   root: path.resolve(import.meta.dirname),
+  // satellite.js ships WASM worker builds that use top-level await; Vite's
+  // default iife worker format can't bundle them — emit workers as ES modules.
+  worker: {
+    format: "es",
+  },
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,

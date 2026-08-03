@@ -32,6 +32,7 @@ A parody "Space Police" website — Orbital Bureaucracy Command files deadpan bu
 - Data comes live from GCAT (planet4589.org) fetched/parsed server-side; no database — the API server caches parsed catalogs in memory.
 - Reports on the homepage are anchored sections (`/#<case-id>`); crawlers can't see hash fragments, hence the static share-page system (see Gotchas).
 - Event annotations for charts (e.g. Shuttle/Falcon cadence) are hardcoded in the API route next to the data they annotate, so chart and briefing copy stay consistent with catalog counts.
+- **TLE archive retention** (`obc_tle_history`): the backward-walking backfill stops at a horizon of 2 years (override with `TLE_ARCHIVE_HORIZON_DAYS`); rows older than 30 days are sampled at 1 elset/object/day (6h bins inside 30 days). A budgeted prune runs with each backfill step: it deletes rows past the horizon and thins aged 6h rows down to daily. Worst-case size ≈ catalog × (30d × 4 + ~700d × 1) ≈ 25k × 820 ≈ 20M rows, bounded. `/api/rpod/status` reports `horizonDays`, `horizon`, `coarseAfterDays`, `backfillComplete`.
 
 ## Product
 
@@ -51,6 +52,7 @@ A parody "Space Police" website — Orbital Bureaucracy Command files deadpan bu
 - Social card images must be served from `www.planet42069.org` — the `.replit.app` domain serves a platform-level `robots.txt` `Disallow: /` (blocks Twitterbot), and the bare apex `planet42069.org` refuses connections (only www is wired up).
 - Building space-report manually requires env vars: `PORT=<any> BASE_PATH=/ pnpm --filter @workspace/space-report run build`.
 - X posting is done via `twitter-api-v2` with the `X_API_KEY`/`X_API_SECRET`/`X_ACCESS_TOKEN`/`X_ACCESS_TOKEN_SECRET` secrets (bash/node, not the code sandbox). Editing a tweet = delete + repost with a cache-buster URL.
+- **Automated RPOD citations** (user-approved exception to the confirm-before-posting rule): the hourly RPOD scan auto-posts a Space Police citation for genuinely NEW cases (`artifacts/api-server/src/lib/rpod/alert.ts`). Production only (`NODE_ENV=production`, or `RPOD_ALERTS_FORCE=1` for manual verification); docked stacks and co-launched formations never post; once-per-event ledger + 5/day cap live in `obc_sync_log` rows with source `rpod-alert` (rowCount = event id).
 - GitHub repo: `nikkelj/planet42069.org` (pushed via the Replit GitHub integration).
 
 ## Pointers

@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import { useGetSatcatSummary } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert, Signal, Link2, Check, Anchor } from "lucide-react";
+import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert, Signal, Link2, Check, Anchor, Hash } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import bryceUpmassChart from "@assets/image_1782288004026.png";
+import yaoganSkyMap from "@assets/image_1785335135041.png";
+import yaoganCams from "@assets/image_1785335156202.png";
+import yaoganPassVideo from "@assets/yaogan11-pass.mp4";
 import alpha5Faq from "@assets/image_1782450578315.png";
 import { UpmassAudit } from "@/components/UpmassAudit";
 import { ShuttleMassComplaint } from "@/components/ShuttleMassComplaint";
 import { ShuttleVsFalconChart } from "@/components/ShuttleVsFalconChart";
 import { LongMarchCatchBulletin } from "@/components/LongMarchCatchBulletin";
+import { StarlinkMajorityExhibit } from "@/components/StarlinkMajorityExhibit";
 
 export default function Home() {
   const { data: summary, isLoading, isError } = useGetSatcatSummary();
@@ -38,7 +42,7 @@ export default function Home() {
                 Welcome to <span className="text-primary font-bold">PLANET 42069.ORG</span>. The Space Police have mandated total transparency regarding orbital litter. We track every satellite, every rocket body, and every piece of debris currently cluttering up the neighborhood.
               </p>
               <p>
-                All data is sourced directly from the{" "}
+                Data is fused from the{" "}
                 <a
                   href="https://planet4589.org/space/gcat/"
                   target="_blank"
@@ -56,8 +60,27 @@ export default function Home() {
                 >
                   Jonathan McDowell
                 </a>
-                , who has been painstakingly counting humanity's orbital mess since before half of it existed.
-                If the numbers look scary, blame the humans — not the catalog.
+                , who has been painstakingly counting humanity's orbital mess since before half of it existed,
+                cross-checked live against{" "}
+                <a
+                  href="https://www.space-track.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent underline underline-offset-2 hover:text-primary transition-colors font-semibold"
+                >
+                  space-track.org
+                </a>{" "}
+                (the US Space Force's official catalog), and enriched with satellite types and
+                dossier links from{" "}
+                <a
+                  href="https://space.skyrocket.de"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-accent underline underline-offset-2 hover:text-primary transition-colors font-semibold"
+                >
+                  Gunter's Space Page
+                </a>{" "}
+                (Gunter Dirk Krebs). If the numbers look scary, blame the humans — not the catalogs.
               </p>
               <p className="text-muted-foreground text-xs uppercase tracking-wider">
                 ⚠ This is a fan parody. Jonathan McDowell is not responsible for any of this.
@@ -103,6 +126,353 @@ export default function Home() {
 
       {/* BRIEFING DOCKET — CASE INDEX */}
       <DossierIndex />
+
+      {/* INTERNAL AFFAIRS — THE BUREAU AUDITS ITSELF */}
+      <div id="ia-0001" className="scroll-mt-24 border border-amber-400/30 bg-amber-950/15 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-amber-400/60 via-amber-400/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <FileWarning className="w-5 h-5 text-amber-400/80 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-400/20 pb-2">
+              <span className="text-amber-300/90 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Internal Affairs
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #IA-0001 · Posted: 2026-07-30 · Status: SELF-CITED, SELF-CORRECTED</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-amber-400/60">Subject:</span> The Bureau's own mass-to-orbit charts</span>
+              <span><span className="text-amber-400/60">Violation:</span> Staleness (the exact crime we were founded to police)</span>
+              <span><span className="text-amber-400/60">Verdict:</span> Guilty, with corrective action</span>
+            </div>
+            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                This agency exists because official mass-to-orbit metrics went stale. That is the founding grievance.
+                It is carved above the door. So it is with the particular discomfort unique to bureaucracies that the
+                Bureau must report the following finding: <span className="text-amber-300/80 font-bold">our own July
+                tonnage figures went stale</span>. The auditors have been audited. By themselves. It went about as well
+                as you'd expect.
+              </p>
+              <p>
+                The mechanism of the offense: the Bureau's primary catalog records new satellites weeks after launch,
+                and its secondary catalog takes days — filing fresh Starlink batches as anonymous rows named
+                "OBJECT A" with no mass, no type, and no shame. Meanwhile our merge pipeline quietly dropped
+                launch-vehicle attribution on the freshest rows, so half of July's Falcon tonnage was sitting in the
+                database wearing a trench coat labeled <em>provider unknown</em>. The chart said ~63 tonnes. Reality
+                had shipped nearly twice that.
+              </p>
+              <p>
+                <span className="text-amber-300 font-bold">Corrective actions, filed in triplicate:</span> the pipeline
+                now cross-references every fresh row against the launch registry, so new objects arrive with their
+                rocket, launch site, and paperwork attached. And for launches the catalogs haven't processed at all —
+                there are Falcon flights from last week with <em>zero</em> catalogued objects anywhere on Earth — the
+                charts now show a hatched <span className="text-amber-300/80 font-bold">"pending cataloguing"</span>{" "}
+                segment: a clearly-marked provisional estimate that is automatically replaced by real catalog data the
+                moment the catalogs catch up. Estimated tonnage is labeled as estimated. Radical concept. Still legal.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-amber-400/20 pl-3">
+                <span className="text-amber-300/80 font-bold uppercase">Finding:</span> a bureaucracy that polices
+                staleness must expect to one day cite itself. The Bureau regards this as the system working. The fine
+                has been paid from the left pocket into the right pocket, and the charts on the{" "}
+                <span className="text-amber-300/80 font-bold">Mass Analytics</span> desk are current to within hours.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 border-t border-amber-400/20 pt-2 text-[10px] text-amber-400/40 uppercase tracking-wider">
+              <span>— Orbital Bureaucracy Command, Office of Internal Affairs (staffed by the accused)</span>
+              <span>One self-citation issued · Zero appeals filed · The mirror has been reprimanded</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FIELD VERIFICATION — YAOGAN-11 OPTICAL AUDIT */}
+      <div id="verify-37165" className="scroll-mt-24 border border-rose-400/30 bg-rose-950/15 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-rose-400/60 via-rose-400/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <Radar className="w-5 h-5 text-rose-400/80 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rose-400/20 pb-2">
+              <span className="text-rose-300/90 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Field Verification
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #VERIFY-37165 · Posted: 2026-07-29 · Status: SATELLITE LOCATED (SUSPICIOUSLY COOPERATIVE)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-rose-400/60">Subject:</span> YAOGAN-11 · NORAD 37165 · Int'l Desig 2010-047A</span>
+              <span><span className="text-rose-400/60">Method:</span> Two cameras, one tripod, zero excuses</span>
+              <span><span className="text-rose-400/60">Verdict:</span> Present where filed</span>
+            </div>
+            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                The Bureau has begun conducting <span className="text-rose-300/80 font-bold">physical spot-checks</span> of
+                the catalog. Not spreadsheet spot-checks. Optical ones. Cameras were pointed at the sky at the time and
+                place where the two-line element set for <span className="text-rose-300/80 font-bold">Yaogan-11</span> — a
+                Chinese Earth-imaging satellite whose declared purpose is "scientific experiments and land surveys" and
+                whose actual purpose the Bureau will describe, diplomatically, as{" "}
+                <em>enthusiastic photography of other people's countries</em> — said it would appear.
+              </p>
+              <p>
+                At <span className="text-rose-300/80 font-bold">2026-07-29 04:54:49 UTC</span>, azimuth 115°, elevation 55°,
+                slant range 726 km, a dot arrived. On schedule. On the predicted track. On <em>both</em> cameras. The Bureau
+                confirms that the People's Republic of China is operating its possibly-military reconnaissance satellite{" "}
+                <span className="text-rose-300/80 font-bold">exactly where the paperwork says it is</span>, which is
+                frankly more than can be said for most of the objects the Bureau audits, and the Bureau does not know how
+                to feel about being able to trust the surveillance satellite.
+              </p>
+              <figure className="my-1 border border-rose-400/20 bg-background/40 p-2">
+                <video
+                  src={yaoganPassVideo}
+                  aria-label="Stabilized telescope footage of YAOGAN-11 crossing the camera frame on its predicted track, 2026-07-29 04:54 UTC"
+                  className="w-full h-auto"
+                  controls
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  data-testid="video-yaogan-pass"
+                />
+                <figcaption className="text-[10px] text-muted-foreground/70 uppercase tracking-wider pt-2 text-center">
+                  Exhibit A · Stabilized Camera 1 footage, 2026-07-29 04:54 UTC · One (1) satellite, as advertised
+                </figcaption>
+              </figure>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <figure className="border border-rose-400/20 bg-background/40 p-2">
+                  <img
+                    src={yaoganSkyMap}
+                    alt="All-sky chart showing the predicted position of YAOGAN-11 (NORAD 37165) with camera 1 and camera 2 fields of view, TLE epoch 2026-07-28."
+                    className="w-full h-auto"
+                    loading="lazy"
+                  />
+                  <figcaption className="text-[10px] text-muted-foreground/70 uppercase tracking-wider pt-2 text-center">
+                    Exhibit B · The prediction. TLE epoch 2026-07-28, barely a day old.
+                  </figcaption>
+                </figure>
+                <figure className="border border-rose-400/20 bg-background/40 p-2">
+                  <img
+                    src={yaoganCams}
+                    alt="Side-by-side frames from camera 1 and camera 2 at 04:54:49 UTC showing YAOGAN-11 at azimuth 115 degrees, elevation 55 degrees, range 726 km, centered on the predicted cross-track marker."
+                    className="w-full h-auto"
+                    loading="lazy"
+                  />
+                  <figcaption className="text-[10px] text-muted-foreground/70 uppercase tracking-wider pt-2 text-center">
+                    Exhibit C · The reality. Both cameras. Same dot. Same spot.
+                  </figcaption>
+                </figure>
+              </div>
+              <p>
+                <span className="text-rose-300 font-bold">By way of contrast:</span> the Bureau ran the same audit against
+                a sample of <span className="text-rose-300/80 font-bold">Starlink</span> element sets and found{" "}
+                <span className="text-destructive font-bold">not one satellite where its TLE said it would be</span>.
+                This is not negligence — it is worse, it is <em>diligence</em>. Starlink satellites autonomously maneuver
+                so often that their published elements are stale before the ink dries. The constellation is effectively
+                self-driving, and the public catalog is a photograph of where the cars were parked yesterday.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-rose-400/20 pl-3">
+                <span className="text-rose-300/80 font-bold uppercase">Safety advisory:</span> if a TLE cannot reliably put
+                a dot in a camera frame, it certainly cannot be trusted to keep two spacecraft from occupying the same
+                cubic meter. Do not use public TLEs for collision avoidance. Use operator ephemerides, conjunction data
+                messages, or — the Bureau's preference — fewer satellites.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 border-t border-rose-400/20 pt-2 text-[10px] text-rose-400/40 uppercase tracking-wider">
+              <span>— Orbital Bureaucracy Command, Department of Pointing Cameras at the Sky and Waiting</span>
+              <span>One satellite verified · Several hundred pending · The backlog is aware of itself</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* BULLETIN — MULTI-SOURCE DATA FUSION */}
+      <div id="fusion-0003" className="scroll-mt-24 border border-emerald-400/30 bg-emerald-950/15 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-emerald-400/60 via-emerald-400/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <Database className="w-5 h-5 text-emerald-400/80 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-400/20 pb-2">
+              <span className="text-emerald-300/90 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Bulletin
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #FUSION-0003 · Posted: 2026-07-25 · Classification: Organizational Growth (Involuntary)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-emerald-400/60">Re:</span> The Bureau Is Now a Multi-Source Data Fusion Bureaucracy</span>
+              <span><span className="text-emerald-400/60">Cause:</span> Our sole source went on holiday</span>
+              <span><span className="text-emerald-400/60">Status:</span> Fused · Redundant · Insufferable about it</span>
+            </div>
+            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                The Bureau wishes to announce, with the enthusiasm of any agency announcing something
+                it was forced into, that it has become a{" "}
+                <span className="text-emerald-300/80 font-bold">multi-source data fusion bureaucracy</span>.
+                This was not a strategic initiative. There was no offsite. Our single upstream catalog
+                simply stopped updating for two weeks (see Case #ROLLOVER-A5000, in which two astronauts
+                were briefly not in space, as far as we knew), and the Bureau responded the way all great
+                bureaucracies are built: <span className="text-emerald-300/80">by adding departments in a panic
+                and then pretending it was the plan all along</span>.
+              </p>
+              <p>
+                The fusion pipeline now cross-examines the{" "}
+                <span className="text-emerald-300/80">GCAT</span> (Jonathan McDowell's life's work,
+                still the backbone, still the only catalog that knows what everything <em>is</em>) against{" "}
+                <span className="text-emerald-300/80">space-track.org</span> (the US Space Force's official
+                ledger, which learns about new objects within hours but describes them all as "OBJECT A"
+                with the descriptive flair of a customs form). Where they disagree, the Bureau adjudicates.
+                Where they agree, the Bureau takes credit.{" "}
+                <span className="text-emerald-300/80">Gunter's Space Page</span> — the encyclopedia that
+                knows who actually built all of this — has been served notice that it is next.
+              </p>
+              <p>
+                And here is the part the Bureau resents most: <span className="text-emerald-300/80 font-bold">it's
+                better now</span>. New launches appear in the catalog within hours instead of weeks. Every object
+                carries a paper trail of which source vouched for it. When one catalog goes dark, the others keep
+                the lights on. The fused view can answer questions no single source could. The Bureau was dragged
+                kicking and screaming into resilience, discovered it enjoys the view, and would like the record to
+                show it objected the entire time.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-emerald-400/20 pl-3">
+                Every bureaucracy doubles in size during a crisis and calls it reform.
+                The Bureau is proud to report it is no exception. The difference is that ours worked.
+              </p>
+              <p className="text-emerald-300/70 border border-emerald-400/20 bg-emerald-950/20 p-3">
+                <span className="font-bold uppercase">Addendum (2026-07-25):</span> The notice served on{" "}
+                <span className="text-emerald-300/90">Gunter's Space Page</span> has been executed.
+                Satellite type classifications and dossier cross-links now flow into the fused catalog
+                daily, matched by COSPAR id, with citations rendered exactly to Mr. Krebs' specification.
+                The crawler proceeds at a courteous four seconds between requests, because the Bureau
+                may be relentless but it is not rude. Check any satellite in the{" "}
+                <Link href="/catalog" className="text-accent underline underline-offset-2 hover:text-primary transition-colors">Satcat Explorer</Link>{" "}
+                — matched entries link straight to his full dossier. Source count: three. Departments
+                added: one. Regrets: withheld pending review.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 border-t border-emerald-400/20 pt-2 text-[10px] text-emerald-400/40 uppercase tracking-wider">
+              <span>— Orbital Bureaucracy Command, Department of Redundant Redundancy (est. last Tuesday)</span>
+              <span>Sources fused · Outage survived · Vindication filed under protest</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* BULLETIN — THE FIVE-DIGIT ERA IS OVER */}
+      <div id="rollover-a5000" className="scroll-mt-24 border border-fuchsia-400/30 bg-fuchsia-950/15 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-fuchsia-400/60 via-fuchsia-400/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <Hash className="w-5 h-5 text-fuchsia-400/80 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-fuchsia-400/20 pb-2">
+              <span className="text-fuchsia-300/90 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Bulletin
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #ROLLOVER-A5000 · Posted: 2026-07-23 · Classification: Numbering Emergency (Scheduled)</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-fuchsia-400/60">Re:</span> The Five-Digit Era Is Over</span>
+              <span><span className="text-fuchsia-400/60">Effective:</span> 2026-07-14, without ceremony</span>
+              <span><span className="text-fuchsia-400/60">Status:</span> Alpha-5 in force · Y2K veterans notified</span>
+            </div>
+            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                On July 14, 2026, the United States Space Force catalog assigned satellite number{" "}
+                <span className="text-fuchsia-300/80">100,000</span>, exhausting the five-digit
+                numbering scheme that has organized every object in orbit since Sputnik. The
+                Bureau's verification of the historic boundary, live from space-track.org:
+              </p>
+              <div className="border border-fuchsia-400/20 bg-black/30 p-3 space-y-1 text-[11px]">
+                <div className="text-fuchsia-300/70 uppercase tracking-widest text-[10px] pb-1 border-b border-fuchsia-400/10">Exhibit A — The Rollover Boundary, As Cataloged</div>
+                <div className="grid grid-cols-[80px_92px_1fr] gap-x-3 text-muted-foreground">
+                  <span className="text-fuchsia-400/50">99,999</span><span>—</span><span>The last five-digit number, retired after 68 years of service</span>
+                  <span className="text-fuchsia-400/50">100,000</span><span>2026-067CY</span><span>SARAMAGO — launched in March, cataloged four months late. The milestone went to backfiled paperwork</span>
+                  <span className="text-fuchsia-400/50">100,001</span><span>2026-160A</span><span>STARLINK-38128 — the first live object past the limit. The Bureau declines to act surprised</span>
+                </div>
+              </div>
+              <p>
+                Legacy systems will render these objects under the{" "}
+                <span className="text-fuchsia-300/80">Alpha-5</span> scheme — "A0001" and counting —
+                a format the Bureau previously reviewed in Case #JCAT-0001, where it was forced to
+                apologize to the defendant. The Bureau notes that a civilization that can catalog
+                one hundred thousand orbital objects but cannot widen a fixed-width text column is
+                a civilization that deserves study by someone.
+              </p>
+              <p>
+                <span className="text-fuchsia-300/80 font-bold uppercase">Related finding — source catalog wellness check.</span>{" "}
+                This site's source catalog (GCAT) has not updated since July 11 and has therefore
+                missed the entire rollover. Missing as of this bulletin: <span className="text-fuchsia-300/80">75 objects
+                across 6 launches</span>, including 56 Starlinks (among them satellite #100,001 itself),
+                ten objects from a sea-launched Long March, a geosynchronous servicing mission, and —
+                the Bureau checked this three times — <span className="text-fuchsia-300/80">one crewed Soyuz
+                (MS-29, two humans, July 14)</span>. The humans are fine. They are simply, as far as our
+                dataset is concerned, not yet in space.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-fuchsia-400/20 pl-3">
+                The Bureau extends its sympathies to the catalog's sole maintainer, who is presumably
+                on a well-earned holiday, and who will return to discover that the numbering system
+                itself broke in his absence. Some vacations are simply scheduled by fate.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 border-t border-fuchsia-400/20 pt-2 text-[10px] text-fuchsia-400/40 uppercase tracking-wider">
+              <span>— Orbital Bureaucracy Command, Numeric Standards Division</span>
+              <span>Rollover certified · Sixth digit begrudgingly issued · Wellness check filed</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CASE STUDY — THE ORBITAL MAJORITY */}
+      <div id="majority-5680" className="scroll-mt-24 border border-cyan-400/30 bg-cyan-950/15 p-5 font-mono text-xs relative">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-cyan-400/60 via-cyan-400/20 to-transparent" />
+        <div className="flex items-start gap-3">
+          <Signal className="w-5 h-5 text-cyan-400/80 shrink-0 mt-0.5" />
+          <div className="space-y-3 w-full">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-cyan-400/20 pb-2">
+              <span className="text-cyan-300/90 font-bold uppercase tracking-widest text-[11px]">
+                Space Police — Case Study
+              </span>
+              <span className="text-muted-foreground text-[10px] uppercase tracking-wider">Case #MAJORITY-5680 · Posted: 2026-07-23 · Classification: Census Irregularity</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <span><span className="text-cyan-400/60">Re:</span> The Orbital Majority — One Operator, Most of the Sky</span>
+              <span><span className="text-cyan-400/60">Precinct:</span> Low Earth Orbit, all shells</span>
+              <span><span className="text-cyan-400/60">Status:</span> Certified · Recount denied</span>
+            </div>
+            <div className="space-y-3 text-muted-foreground leading-relaxed normal-case">
+              <p>
+                During a routine census of the orbital population, the Bureau discovered an irregularity
+                it is required by statute to report: the word{" "}
+                <span className="text-cyan-300/80">"satellites"</span> no longer describes a diverse
+                population of spacecraft. It describes, by simple majority, the inventory of a single
+                company. Every government, military, corporation, university, and weather service on
+                Earth — combined — now constitutes the minority party in orbit.
+              </p>
+              <StarlinkMajorityExhibit />
+              <p>
+                The Bureau wishes to stress that no rules were broken. That is, in fact, the substance
+                of the complaint. There is no form for this. The licensing regime contemplated operators
+                who launch a satellite, or several, or at worst a few hundred. It did not contemplate an
+                operator that becomes the median. When the Bureau's inspectors point their instruments at
+                a random working satellite, the most statistically responsible assumption is now{" "}
+                <span className="text-cyan-300/80">"it's a Starlink"</span> — an assumption that is
+                correct more often than a coin flip, and improving on every Falcon 9 flight.
+              </p>
+              <p>
+                For historical perspective: the crossing of the 50% line occurred without ceremony,
+                press release, or permit. The catalog simply recorded another batch of 24 payloads at
+                575 kg apiece, as it does most weeks, and at some point between two of those batches the
+                majority changed hands. The Bureau finds this quietly appropriate. Empires used to
+                announce themselves. This one just files accurate paperwork at a cadence no one else
+                can match.
+              </p>
+              <p className="text-muted-foreground/80 border-l-2 border-cyan-400/20 pl-3">
+                The exhibit above is computed live from the catalog on every page load. The Bureau
+                declines to hardcode the percentage, because it would be out of date before the ink
+                dried — which is, the Bureau notes, the entire problem being reported.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 border-t border-cyan-400/20 pt-2 text-[10px] text-cyan-400/40 uppercase tracking-wider">
+              <span>— Orbital Bureaucracy Command, Census Division</span>
+              <span>Majority certified · Minority notified · No further action available</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* CASE STUDY — THE MISSING EXPONENTIAL */}
       <div id="cadence-0135" className="scroll-mt-24 border border-orange-400/30 bg-orange-950/15 p-5 font-mono text-xs relative">
@@ -584,6 +954,66 @@ function useScrollToHashOnLoad() {
 }
 
 const DOSSIERS = [
+  {
+    id: "ia-0001",
+    caseNo: "IA-0001",
+    kind: "Internal Affairs",
+    posted: "2026-07-30",
+    title: "The Bureau Cites Itself for Stale Mass Metrics — Guilty, Corrected, Smug About It",
+    status: "SELF-CORRECTED",
+    icon: FileWarning,
+    tone: "text-amber-300/90",
+    toneDim: "text-amber-400/60",
+    hover: "hover:border-amber-400/50 hover:bg-amber-950/25",
+  },
+  {
+    id: "verify-37165",
+    caseNo: "VERIFY-37165",
+    kind: "Field Verification",
+    posted: "2026-07-29",
+    title: "Yaogan-11 Located On Camera, Exactly Where Filed — Starlink, Not So Much",
+    status: "VERIFIED",
+    icon: Radar,
+    tone: "text-rose-300/90",
+    toneDim: "text-rose-400/60",
+    hover: "hover:border-rose-400/50 hover:bg-rose-950/25",
+  },
+  {
+    id: "fusion-0003",
+    caseNo: "FUSION-0003",
+    kind: "Bulletin",
+    posted: "2026-07-25",
+    title: "The Bureau Becomes a Multi-Source Data Fusion Bureaucracy (Under Protest)",
+    status: "FUSED",
+    icon: Database,
+    tone: "text-emerald-300/90",
+    toneDim: "text-emerald-400/60",
+    hover: "hover:border-emerald-400/50 hover:bg-emerald-950/25",
+  },
+  {
+    id: "rollover-a5000",
+    caseNo: "ROLLOVER-A5000",
+    kind: "Bulletin",
+    posted: "2026-07-23",
+    title: "The Five-Digit Era Is Over — Satellite #100,000 Has Been Assigned",
+    status: "ALPHA-5 IN FORCE",
+    icon: Hash,
+    tone: "text-fuchsia-300/90",
+    toneDim: "text-fuchsia-400/60",
+    hover: "hover:border-fuchsia-400/50 hover:bg-fuchsia-950/25",
+  },
+  {
+    id: "majority-5680",
+    caseNo: "MAJORITY-5680",
+    kind: "Case Study",
+    posted: "2026-07-23",
+    title: "The Orbital Majority — One Operator, Most of the Sky",
+    status: "CERTIFIED",
+    icon: Signal,
+    tone: "text-cyan-300/90",
+    toneDim: "text-cyan-400/60",
+    hover: "hover:border-cyan-400/50 hover:bg-cyan-950/25",
+  },
   {
     id: "cadence-0135",
     caseNo: "CADENCE-0135",

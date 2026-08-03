@@ -8,7 +8,10 @@
 
 export interface MassAggregate {
   label: string;
+  /** Confirmed (GCAT-catalogued) mass in kg */
   massKg: number;
+  /** Additional theorized mass in kg (Bureau estimates for uncatalogued objects) */
+  estMassKg: number;
   count: number;
   payloadCount: number;
 }

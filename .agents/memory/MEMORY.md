@@ -4,4 +4,14 @@
 - [Deorbit sim in-orbit objects](deorbit-history-in-orbit.md) — orbital-decay animation must include still-in-orbit sats (dday=-1 sentinel) or plot empties at present day.
 - [Recharts log scale workaround](recharts-log-scale.md) — native scale="log" on XAxis is unreliable; pre-transform to log10 and use linear axis with custom tick labels instead.
 - [GCAT counts Shuttle orbiter as payload](gcat-shuttle-orbiter-payload.md) — one ~90t payload row per flight (PLName OV-xxx) inflates vehicle mass charts; segment or exclude.
+- [X API tier limits](x-api-tier-limits.md) — replies/quotes to non-mentioning accounts 403; standalone posts, media upload, and timeline reads work.
 - [Recharts tooltip row lookup](recharts-tooltip-label.md) — use payload[0].payload, not label matching; label can be a string and break === lookups.
+- [OBC catalogue merge rules](obc-catalogue.md) — GCAT+space-track merged DB: ST-key dedupe on norad, "O?" satState sentinel, estimated-mass conventions.
+- [GitHub sync](github-sync.md) — repo is nikkelj/planet42069.org; gitPush can't update main directly, push side branch + PR.
+- [WebGL in headless verification](webgl-headless.md) — screenshot/test browsers have no WebGL; ship a fallback UI and limit to one Canvas at a time.
+- [Gunter's Space Page structure & policy](gunter-page-structure.md) — iso-8859-1 pages, stable td ids, cosid join key; polite budgeted crawl + Krebs citation are conditions of use.
+- [Orval path+query params collision](orval-params-collision.md) — an operation with BOTH path and query params breaks api-zod with TS2308; keep ids in the query string.
+- [space-track TLE fetching](spacetrack-tle.md) — gp-class query pattern, aggressive caching, ≥2s request gap, cookie reuse/re-auth rules.
+- [Stale composite builds](stale-composite-builds.md) — "property does not exist" on @workspace types = stale lib dist; run `tsc -b lib/<pkg>`, don't chase phantom bugs.
+- [Server-side card rendering](svg-card-rendering.md) — pure SVG string + @resvg/resvg-js with DejaVu system fonts; no emoji; text-only fallback on failure.
+- [TLE archive & RPOD screening](tle-archive-rpod.md) — future-dated epochs (clamp watermarks at now), gp_history must walk desc, cluster pairs not members, advisory locks for workers.

@@ -11,4 +11,10 @@ export type SpacexBySiteRowsItem = {
   capeCanaveral: number;
   vandenberg: number;
   other: number;
+  /** Provisional estimate for launches not yet catalogued */
+  pendingCapeCanaveral: number;
+  /** Provisional estimate for launches not yet catalogued */
+  pendingVandenberg: number;
+  /** Provisional estimate for launches not yet catalogued */
+  pendingOther: number;
 };

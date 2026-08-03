@@ -12,6 +12,8 @@ export interface YearProviderRow {
   spacex: number;
   /** Rest-of-world payload mass in kg */
   others: number;
+  /** Provisional SpaceX estimate for launches not yet catalogued */
+  pendingSpacex: number;
   spacexCount: number;
   othersCount: number;
 }

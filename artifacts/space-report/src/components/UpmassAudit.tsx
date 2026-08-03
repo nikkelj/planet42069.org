@@ -1,11 +1,12 @@
 import { useGetSatcatUpmassByProvider } from "@workspace/api-client-react";
 import { Scale, Loader2, FileSearch } from "lucide-react";
 
-type ProviderRow = { provider: string; massKg: number; count: number };
+type ProviderRow = { provider: string; massKg: number; estMassKg: number; pendingMassKg: number; count: number };
 type UpmassResponse = {
   window: { start: string; end: string };
   providers: ProviderRow[];
   totalMassKg: number;
+  totalPendingMassKg: number;
   totalCount: number;
 };
 
@@ -65,13 +66,14 @@ export function UpmassAudit() {
       provider: b.provider,
       label: b.label,
       bryce: b.kg,
-      gcat: g?.massKg ?? 0,
+      gcat: (g?.massKg ?? 0) + (g?.estMassKg ?? 0),
+      pending: g?.pendingMassKg ?? 0,
       count: g?.count ?? 0,
     };
   });
   const extra = (data?.providers ?? [])
-    .filter((p) => !BRYCE.some((b) => b.provider === p.provider) && p.massKg > 0)
-    .map((p) => ({ provider: p.provider, label: p.provider, bryce: 0, gcat: p.massKg, count: p.count }));
+    .filter((p) => !BRYCE.some((b) => b.provider === p.provider) && p.massKg + (p.estMassKg ?? 0) + (p.pendingMassKg ?? 0) > 0)
+    .map((p) => ({ provider: p.provider, label: p.provider, bryce: 0, gcat: p.massKg + (p.estMassKg ?? 0), pending: p.pendingMassKg ?? 0, count: p.count }));
   const allRows = [...rows, ...extra].sort((a, b) => Math.max(b.bryce, b.gcat) - Math.max(a.bryce, a.gcat));
 
   const gcatTotal = data?.totalMassKg ?? 0;
@@ -168,6 +170,9 @@ export function UpmassAudit() {
                           </td>
                           <td className="p-2 text-right font-mono text-foreground/90">
                             {r.gcat > 0 ? fmt(r.gcat) : "—"}
+                            {r.pending > 0 && (
+                              <span className="text-muted-foreground/70 text-[9px]"> +~{fmt(r.pending)} est. pending</span>
+                            )}
                           </td>
                           <td className="p-2 text-right font-mono hidden sm:table-cell">
                             <span className={delta === 0 ? "text-muted-foreground" : delta > 0 ? "text-orange-400/80" : "text-yellow-400/80"}>
