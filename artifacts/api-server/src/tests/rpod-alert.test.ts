@@ -17,8 +17,9 @@ import { rpodEvents, rpodEventMembers, obcSyncLog } from "@workspace/db/schema";
 import { inArray, eq } from "drizzle-orm";
 import { persistEvents, DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S } from "../lib/rpod/scan";
 import {
-  selectAlertableEvents, formatCitation, formatEscalationCitation, isCoLaunched, isEscalation, caseNumber,
-  ESCALATION_TRIGGER_KM, ESCALATION_PRIOR_MIN_KM,
+  selectAlertableEvents, selectNewCaseAlertableEvents, formatCitation, formatEscalationCitation, isCoLaunched, isEscalation, caseNumber,
+  ESCALATION_TRIGGER_KM, ESCALATION_PRIOR_MIN_KM, NEW_CASE_ALERT_MAX_KM,
+  weightedTweetLength, TWEET_MAX_WEIGHTED,
   type NewRpodEvent, type EscalatedRpodEvent, type AlertMeta,
 } from "../lib/rpod/alert";
 import type { ClusteredEvent } from "../lib/rpod/screen";
@@ -103,6 +104,39 @@ async function main(): Promise<void> {
     const coLaunched: NewRpodEvent = { ...inserted[0], eventId: 999, kind: "conjunction", members: DOCKED_PAIR };
     check("co-launched formation never alerts",
       selectAlertableEvents([coLaunched], metaFor).length === 0);
+
+    console.log("new-case alert selection (noise gate)");
+    const closeConj: NewRpodEvent = { ...inserted[0], kind: "conjunction", minRangeKm: 4.2 };
+    const looseConj: NewRpodEvent = { ...inserted[0], eventId: 998, kind: "conjunction", minRangeKm: NEW_CASE_ALERT_MAX_KM + 1 };
+    const coplanarEv: NewRpodEvent = { ...inserted[0], eventId: 997, kind: "coplanar", minRangeKm: 2 };
+    const newCaseAlertable = selectNewCaseAlertableEvents([closeConj, looseConj, coplanarEv, ...docked], metaFor);
+    check("close conjunction passes the new-case gate",
+      newCaseAlertable.length === 1 && newCaseAlertable[0].eventId === closeConj.eventId, JSON.stringify(newCaseAlertable));
+    check("loose conjunction beyond the range gate never alerts",
+      !newCaseAlertable.some((e) => e.eventId === looseConj.eventId));
+    check("coplanar shadowing cases never alert as new cases",
+      !newCaseAlertable.some((e) => e.kind === "coplanar"));
+    check("new-case gate is sane (positive, ≥ escalation trigger)",
+      NEW_CASE_ALERT_MAX_KM > 0 && NEW_CASE_ALERT_MAX_KM >= ESCALATION_TRIGGER_KM);
+    check("co-launched pair still blocked by the new-case gate",
+      selectNewCaseAlertableEvents([{ ...coLaunched, minRangeKm: 1 }], metaFor).length === 0);
+
+    console.log("tweet length budget");
+    const longMeta = (n: number): AlertMeta => ({ name: `EXTREMELY LONG SATELLITE DESIGNATION ${n}`, launchTag: null });
+    const threeEv: NewRpodEvent = { ...inserted[0], members: [44835, 44836, 44837] };
+    const threeEsc: EscalatedRpodEvent = { ...threeEv, prevMinRangeKm: 25 };
+    check("2-member citation fits 280 weighted",
+      weightedTweetLength(formatCitation(inserted[0], metaFor)) <= TWEET_MAX_WEIGHTED);
+    check("3-member citation with long names fits 280 weighted",
+      weightedTweetLength(formatCitation(threeEv, longMeta)) <= TWEET_MAX_WEIGHTED);
+    check("2-member escalation fits 280 weighted",
+      weightedTweetLength(formatEscalationCitation({ ...inserted[0], prevMinRangeKm: 25 }, metaFor)) <= TWEET_MAX_WEIGHTED);
+    check("3-member escalation with long names fits 280 weighted",
+      weightedTweetLength(formatEscalationCitation(threeEsc, longMeta)) <= TWEET_MAX_WEIGHTED);
+    check("citation still carries name and NORAD id when it fits",
+      formatCitation(inserted[0], metaFor).includes(`COSMOS TEST A (NORAD ${PAIR[0]})`));
+    check("weightedTweetLength counts URLs as 23",
+      weightedTweetLength("https://example.com/very/long/path/that/is/long x") === 25);
 
     console.log("citation text");
     const text = formatCitation(inserted[0], metaFor);

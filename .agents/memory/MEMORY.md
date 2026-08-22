@@ -15,3 +15,5 @@
 - [Stale composite builds](stale-composite-builds.md) — "property does not exist" on @workspace types = stale lib dist; run `tsc -b lib/<pkg>`, don't chase phantom bugs.
 - [Server-side card rendering](svg-card-rendering.md) — pure SVG string + @resvg/resvg-js with DejaVu system fonts; no emoji; text-only fallback on failure.
 - [TLE archive & RPOD screening](tle-archive-rpod.md) — future-dated epochs (clamp watermarks at now), gp_history must walk desc, cluster pairs not members, advisory locks for workers.
+- [Production Postgres blips](production-postgres-blips.md) — managed Postgres can terminate sockets/authenticate slowly; API survives, but hourly workers may skip a run.
+- [RPOD API limit cap](rpod-api-limit-cap.md) — route caps limit at 1000; test unfiltered fetches need ?limit=1000 or seeded events (old TCA) fall off the page as DB grows.

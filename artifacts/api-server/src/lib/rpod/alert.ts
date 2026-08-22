@@ -34,6 +34,15 @@ const SITE_BASE = "https://www.planet42069.org";
 export const ESCALATION_TRIGGER_KM = 5;
 export const ESCALATION_PRIOR_MIN_KM = 15;
 
+/**
+ * New-case citations only fire for genuinely interesting geometry: an
+ * SGP4-verified close approach (kind "conjunction") predicted to come
+ * within this range. Coplanar "shadowing" cases — the bulk of what the
+ * scan files — are tracked on the site but never posted; if one later
+ * tightens sharply, the escalation path covers it.
+ */
+export const NEW_CASE_ALERT_MAX_KM = 10;
+
 /** A freshly inserted event, as reported by persistEvents. */
 export interface NewRpodEvent {
   eventId: number;
@@ -63,6 +72,12 @@ export function caseNumber(eventId: number): string {
   return `RPOD-${String(eventId).padStart(4, "0")}`;
 }
 
+/** "COSMOS 2542 (NORAD 44835)" — always carries both name and id. */
+export function craftLabel(norad: number, metaFor: (n: number) => AlertMeta | undefined): string {
+  const name = metaFor(norad)?.name?.trim();
+  return name ? `${name} (NORAD ${norad})` : `NORAD ${norad}`;
+}
+
 /** All members share one non-null launch tag ⇒ co-launched formation, not RPOD. */
 export function isCoLaunched(members: number[], metaFor: (norad: number) => AlertMeta | undefined): boolean {
   if (members.length < 2) return false;
@@ -72,14 +87,28 @@ export function isCoLaunched(members: number[], metaFor: (norad: number) => Aler
 }
 
 /**
- * Which of the freshly inserted events deserve a citation post.
- * Pure — DB dedupe/cap checks happen in postNewRpodEventAlerts.
+ * Baseline eligibility shared by every citation type: no docked stacks,
+ * no co-launched formations.
  */
 export function selectAlertableEvents(
   events: NewRpodEvent[],
   metaFor: (norad: number) => AlertMeta | undefined,
 ): NewRpodEvent[] {
   return events.filter((ev) => ev.kind !== "docked" && !isCoLaunched(ev.members, metaFor));
+}
+
+/**
+ * Which freshly inserted events deserve a citation post. Stricter than the
+ * baseline: only verified conjunctions predicted inside NEW_CASE_ALERT_MAX_KM
+ * are newsworthy. Pure — DB dedupe/cap checks happen in postNewRpodEventAlerts.
+ */
+export function selectNewCaseAlertableEvents(
+  events: NewRpodEvent[],
+  metaFor: (norad: number) => AlertMeta | undefined,
+): NewRpodEvent[] {
+  return selectAlertableEvents(events, metaFor).filter(
+    (ev) => ev.kind === "conjunction" && ev.minRangeKm < NEW_CASE_ALERT_MAX_KM,
+  );
 }
 
 function fmtUtc(ms: number): string {
@@ -93,21 +122,65 @@ function fmtRange(km: number): string {
   return `${km < 10 ? km.toFixed(2) : km.toFixed(1)} km`;
 }
 
+/**
+ * X counts URLs as 23 chars (t.co) and most emoji as 2. Approximate the
+ * weighted length so citations never bounce off the 280 limit.
+ */
+export const TWEET_MAX_WEIGHTED = 280;
+export function weightedTweetLength(text: string): number {
+  const urlRe = /https?:\/\/\S+/g;
+  let len = 0;
+  const withoutUrls = text.replace(urlRe, () => { len += 23; return ""; });
+  // Count astral-plane chars (emoji etc.) as 2, everything else as 1.
+  for (const ch of withoutUrls) len += ch.codePointAt(0)! > 0xffff ? 2 : 1;
+  return len;
+}
+
+/**
+ * Craft list that fits the tweet budget: prefer "NAME (NORAD id)" for every
+ * member, degrade to names only, then to the first two + "+N more".
+ */
+function craftListForBudget(
+  members: number[],
+  metaFor: (n: number) => AlertMeta | undefined,
+  build: (list: string) => string,
+): string {
+  const name = (n: number) => metaFor(n)?.name?.trim() || `NORAD ${n}`;
+  const shortName = (n: number) => {
+    const s = name(n);
+    return s.length > 20 ? `${s.slice(0, 19)}…` : s;
+  };
+  const variants = [
+    members.map((n) => craftLabel(n, metaFor)).join(", "),
+    members.map(name).join(", "),
+    members.map(shortName).join(", "),
+    [...members.slice(0, 2).map(shortName),
+      ...(members.length > 2 ? [`+${members.length - 2} more`] : [])].join(", "),
+    members.map((n) => `NORAD ${n}`).join(", "),
+    [...members.slice(0, 2).map((n) => `NORAD ${n}`),
+      ...(members.length > 2 ? [`+${members.length - 2} more`] : [])].join(", "),
+  ];
+  for (const list of variants) {
+    const text = build(list);
+    if (weightedTweetLength(text) <= TWEET_MAX_WEIGHTED) return text;
+  }
+  return build(variants[variants.length - 1]);
+}
+
 /** Deadpan bureaucratic citation text for a new case. */
 export function formatCitation(ev: NewRpodEvent, metaFor: (norad: number) => AlertMeta | undefined): string {
-  const names = ev.members.map((n) => metaFor(n)?.name?.trim() || `NORAD ${n}`);
   const kindLine = ev.kind === "coplanar"
     ? "Sustained co-planar shadowing detected."
     : "Unscheduled proximity operation detected.";
-  return [
+  return craftListForBudget(ev.members, metaFor, (list) => [
     `🚨 SPACE POLICE CITATION — Case ${caseNumber(ev.eventId)}`,
     kindLine,
     ``,
-    `Cited craft: ${names.join(", ")}`,
+    `Cited craft: ${list}`,
     `Predicted closest approach: ${fmtRange(ev.minRangeKm)} at ${fmtUtc(ev.tcaMs)}`,
     ``,
     `Case file: ${SITE_BASE}/rpod?case=${ev.eventId}`,
-  ].join("\n");
+  ].join("\n"));
 }
 
 /** Deadpan bureaucratic follow-up text for a sharply tightening case. */
@@ -115,16 +188,15 @@ export function formatEscalationCitation(
   ev: EscalatedRpodEvent,
   metaFor: (norad: number) => AlertMeta | undefined,
 ): string {
-  const names = ev.members.map((n) => metaFor(n)?.name?.trim() || `NORAD ${n}`);
-  return [
+  return craftListForBudget(ev.members, metaFor, (list) => [
     `🚨 SPACE POLICE ESCALATION — Case ${caseNumber(ev.eventId)}`,
     `Previously cited craft are now closing rapidly.`,
     ``,
-    `Cited craft: ${names.join(", ")}`,
+    `Cited craft: ${list}`,
     `Predicted closest approach tightened: ${fmtRange(ev.prevMinRangeKm)} → ${fmtRange(ev.minRangeKm)} at ${fmtUtc(ev.tcaMs)}`,
     ``,
     `Case file: ${SITE_BASE}/rpod?case=${ev.eventId}`,
-  ].join("\n");
+  ].join("\n"));
 }
 
 function credsAvailable(): boolean {
@@ -274,7 +346,7 @@ export async function postNewRpodEventAlerts(
   newEvents: NewRpodEvent[],
   metaFor: (norad: number) => AlertMeta | undefined,
 ): Promise<void> {
-  const alertable = selectAlertableEvents(newEvents, metaFor);
+  const alertable = selectNewCaseAlertableEvents(newEvents, metaFor);
   await postAlertItems(
     alertable.map((ev) => ({ ev, ledgerKey: ev.eventId, text: formatCitation(ev, metaFor), what: "new event" })),
     metaFor,

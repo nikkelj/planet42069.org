@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useGetSatcatSummary } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert, Signal, Link2, Check, Anchor, Hash } from "lucide-react";
+import { LucideIcon, AlertTriangle, ChevronRight, Activity, Globe2, Rocket, Calendar, Database, Server, Radar, FileWarning, Scale, ShieldAlert, Signal, Link2, Check, Anchor, Hash } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import bryceUpmassChart from "@assets/image_1782288004026.png";
@@ -14,6 +14,7 @@ import { ShuttleMassComplaint } from "@/components/ShuttleMassComplaint";
 import { ShuttleVsFalconChart } from "@/components/ShuttleVsFalconChart";
 import { LongMarchCatchBulletin } from "@/components/LongMarchCatchBulletin";
 import { StarlinkMajorityExhibit } from "@/components/StarlinkMajorityExhibit";
+import LandspaceZhuque3 from "@/pages/briefing/landspace-zhuque-3";
 
 export default function Home() {
   const { data: summary, isLoading, isError } = useGetSatcatSummary();
@@ -126,6 +127,9 @@ export default function Home() {
 
       {/* BRIEFING DOCKET — CASE INDEX */}
       <DossierIndex />
+
+      {/* HARDWARE REVIEW — ZHUQUE-3 */}
+      <LandspaceZhuque3 embedded />
 
       {/* INTERNAL AFFAIRS — THE BUREAU AUDITS ITSELF */}
       <div id="ia-0001" className="scroll-mt-24 border border-amber-400/30 bg-amber-950/15 p-5 font-mono text-xs relative">
@@ -953,7 +957,38 @@ function useScrollToHashOnLoad() {
   }, []);
 }
 
-const DOSSIERS = [
+type DossierEntry = {
+  id: string;
+  caseNo: string;
+  kind: string;
+  posted: string;
+  title: string;
+  status: string;
+  icon: LucideIcon;
+  href?: string;
+  inline?: boolean;
+  sharePath?: string;
+  tone: string;
+  toneDim: string;
+  hover: string;
+};
+
+const DOSSIERS: DossierEntry[] = [
+  {
+    id: "zq3-0002",
+    caseNo: "ZQ3-0002",
+    kind: "Hardware Review",
+    posted: "2026-08-19",
+    title: "Landspace Zhuque-3 Y2 — Reusable Hardware With Legs",
+    status: "R-3 PENDING",
+    icon: Rocket,
+    href: "/briefing/landspace-zhuque-3",
+    inline: true,
+    sharePath: "/r/zq3-0002.html",
+    tone: "text-purple-300/90",
+    toneDim: "text-purple-400/60",
+    hover: "hover:border-purple-400/50 hover:bg-purple-950/30",
+  },
   {
     id: "ia-0001",
     caseNo: "IA-0001",
@@ -1098,7 +1133,7 @@ const DOSSIERS = [
     toneDim: "text-yellow-500/60",
     hover: "hover:border-yellow-500/50 hover:bg-yellow-500/5",
   },
-] as const;
+];
 
 function DossierIndex() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -1109,10 +1144,12 @@ function DossierIndex() {
     window.history.pushState(null, "", `#${id}`);
   };
 
-  const copyLink = (id: string) => (e: { preventDefault: () => void; stopPropagation: () => void }) => {
+  const copyLink = (id: string, sharePath?: string) => (e: { preventDefault: () => void; stopPropagation: () => void }) => {
     e.preventDefault();
     e.stopPropagation();
-    const url = `${window.location.origin}${window.location.pathname}#${id}`;
+    const url = sharePath
+      ? new URL(sharePath, window.location.origin).toString()
+      : `${window.location.origin}${window.location.pathname}#${id}`;
     navigator.clipboard?.writeText(url).then(() => {
       setCopiedId(id);
       window.setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1500);
@@ -1134,29 +1171,72 @@ function DossierIndex() {
       <ol className="space-y-1.5">
         {DOSSIERS.map((d) => (
           <li key={d.id} className="flex items-stretch gap-1">
-            <a
-              href={`#${d.id}`}
-              onClick={scrollTo(d.id)}
-              className={`group flex-1 grid grid-cols-[auto_1fr] sm:grid-cols-[7rem_9rem_1fr_auto] items-baseline gap-x-3 gap-y-0.5 border border-transparent px-2 py-1.5 transition-colors ${d.hover}`}
-            >
-              <span className="text-muted-foreground/70 text-[10px] uppercase tracking-wider tabular-nums">
-                {d.posted}
-              </span>
-              <span className={`${d.toneDim} text-[10px] uppercase tracking-wider whitespace-nowrap`}>
-                #{d.caseNo}
-              </span>
-              <span className="col-span-2 sm:col-span-1 text-foreground/80 group-hover:text-foreground transition-colors normal-case flex items-center gap-1.5">
-                <d.icon className={`w-3 h-3 shrink-0 ${d.toneDim}`} />
-                {d.title}
-                <ChevronRight className={`w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${d.tone}`} />
-              </span>
-              <span className={`hidden sm:block ${d.tone} text-[10px] uppercase tracking-wider text-right`}>
-                {d.kind} · {d.status}
-              </span>
-            </a>
+            {d.inline ? (
+              <a
+                href={`#${d.id}`}
+                onClick={scrollTo(d.id)}
+                className={`group flex-1 grid grid-cols-[auto_1fr] sm:grid-cols-[7rem_9rem_1fr_auto] items-baseline gap-x-3 gap-y-0.5 border border-transparent px-2 py-1.5 transition-colors ${d.hover}`}
+              >
+                <span className="text-muted-foreground/70 text-[10px] uppercase tracking-wider tabular-nums">
+                  {d.posted}
+                </span>
+                <span className={`${d.toneDim} text-[10px] uppercase tracking-wider whitespace-nowrap`}>
+                  #{d.caseNo}
+                </span>
+                <span className="col-span-2 sm:col-span-1 text-foreground/80 group-hover:text-foreground transition-colors normal-case flex items-center gap-1.5">
+                  <d.icon className={`w-3 h-3 shrink-0 ${d.toneDim}`} />
+                  {d.title}
+                  <ChevronRight className={`w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${d.tone}`} />
+                </span>
+                <span className={`hidden sm:block ${d.tone} text-[10px] uppercase tracking-wider text-right`}>
+                  {d.kind} · {d.status}
+                </span>
+              </a>
+            ) : d.href ? (
+              <Link
+                href={d.href}
+                className={`group flex-1 grid grid-cols-[auto_1fr] sm:grid-cols-[7rem_9rem_1fr_auto] items-baseline gap-x-3 gap-y-0.5 border border-transparent px-2 py-1.5 transition-colors ${d.hover}`}
+              >
+                <span className="text-muted-foreground/70 text-[10px] uppercase tracking-wider tabular-nums">
+                  {d.posted}
+                </span>
+                <span className={`${d.toneDim} text-[10px] uppercase tracking-wider whitespace-nowrap`}>
+                  #{d.caseNo}
+                </span>
+                <span className="col-span-2 sm:col-span-1 text-foreground/80 group-hover:text-foreground transition-colors normal-case flex items-center gap-1.5">
+                  <d.icon className={`w-3 h-3 shrink-0 ${d.toneDim}`} />
+                  {d.title}
+                  <ChevronRight className={`w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${d.tone}`} />
+                </span>
+                <span className={`hidden sm:block ${d.tone} text-[10px] uppercase tracking-wider text-right`}>
+                  {d.kind} · {d.status}
+                </span>
+              </Link>
+            ) : (
+              <a
+                href={`#${d.id}`}
+                onClick={scrollTo(d.id)}
+                className={`group flex-1 grid grid-cols-[auto_1fr] sm:grid-cols-[7rem_9rem_1fr_auto] items-baseline gap-x-3 gap-y-0.5 border border-transparent px-2 py-1.5 transition-colors ${d.hover}`}
+              >
+                <span className="text-muted-foreground/70 text-[10px] uppercase tracking-wider tabular-nums">
+                  {d.posted}
+                </span>
+                <span className={`${d.toneDim} text-[10px] uppercase tracking-wider whitespace-nowrap`}>
+                  #{d.caseNo}
+                </span>
+                <span className="col-span-2 sm:col-span-1 text-foreground/80 group-hover:text-foreground transition-colors normal-case flex items-center gap-1.5">
+                  <d.icon className={`w-3 h-3 shrink-0 ${d.toneDim}`} />
+                  {d.title}
+                  <ChevronRight className={`w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${d.tone}`} />
+                </span>
+                <span className={`hidden sm:block ${d.tone} text-[10px] uppercase tracking-wider text-right`}>
+                  {d.kind} · {d.status}
+                </span>
+              </a>
+            )}
             <button
               type="button"
-              onClick={copyLink(d.id)}
+              onClick={copyLink(d.id, d.sharePath)}
               title={copiedId === d.id ? "Link copied" : `Copy direct link to #${d.caseNo}`}
               aria-label={`Copy direct link to case ${d.caseNo}`}
               className={`shrink-0 px-2 border border-transparent transition-colors ${

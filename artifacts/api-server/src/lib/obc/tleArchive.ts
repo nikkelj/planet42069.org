@@ -321,6 +321,7 @@ async function doRecentElsetWatch(): Promise<void> {
     await recordFailure(err);
     await logSync("tle-recent", "error", started, null, String(err));
     logger.warn({ err }, "tle-archive: recent watch failed");
+    throw err;
   }
 }
 
@@ -390,6 +391,7 @@ async function doTleBackfill(): Promise<void> {
     await recordFailure(err);
     await logSync("tle-backfill", "error", started, totalWritten, String(err));
     logger.warn({ err }, "tle-archive: backfill failed");
+    throw err;
   }
 }
 

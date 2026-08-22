@@ -115,7 +115,7 @@ async function main(): Promise<void> {
   try {
     console.log("reopened=true basic contract");
     {
-      const all = await fetchEvents("?limit=200");
+      const all = await fetchEvents("?limit=1000");
       const allIds = new Set(all.data.map((e) => e.id));
       check("omitting reopened returns first-time cases too",
         seededFirstTimeIds.every((id) => allIds.has(id)));
@@ -150,7 +150,7 @@ async function main(): Promise<void> {
         { qs: "&status=ended&kind=conjunction", match: (s) => s.status === "ended" && s.kind === "conjunction" },
       ];
       for (const { qs, match } of combos) {
-        const res = await fetchEvents(`?limit=200&reopened=true${qs}`);
+        const res = await fetchEvents(`?limit=1000&reopened=true${qs}`);
         const got = new Set(seededIn(res.data).map((e) => e.id));
         const expected = seededIds.filter((id) => {
           const s = seeded.get(id)!;
@@ -169,7 +169,7 @@ async function main(): Promise<void> {
     {
       // q=<EXTRA_NORAD>: only the two extra-member events match by NORAD;
       // combined with reopened=true, only the repeat offender must remain.
-      const res = await fetchEvents(`?limit=200&reopened=true&q=${EXTRA_NORAD}`);
+      const res = await fetchEvents(`?limit=1000&reopened=true&q=${EXTRA_NORAD}`);
       const got = new Set(seededIn(res.data).map((e) => e.id));
       const expected = seededIds.filter((id) => {
         const s = seeded.get(id)!;
@@ -187,7 +187,7 @@ async function main(): Promise<void> {
 
       // Same q without the filter must include the first-time extra-member event,
       // proving the reopened filter (not the search) is what excluded it above.
-      const noFilter = await fetchEvents(`?limit=200&q=${EXTRA_NORAD}`);
+      const noFilter = await fetchEvents(`?limit=1000&q=${EXTRA_NORAD}`);
       const noFilterIds = new Set(seededIn(noFilter.data).map((e) => e.id));
       const firstTimeExtra = seededIds.filter((id) => {
         const s = seeded.get(id)!;
@@ -198,7 +198,7 @@ async function main(): Promise<void> {
 
       // q on the shared NORAD combined with reopened=true must equal the plain
       // reopened set (for seeded rows) — the search must not drop repeat offenders.
-      const shared = await fetchEvents(`?limit=200&reopened=true&q=${TEST_NORADS[0]}`);
+      const shared = await fetchEvents(`?limit=1000&reopened=true&q=${TEST_NORADS[0]}`);
       const sharedIds = new Set(seededIn(shared.data).map((e) => e.id));
       check("reopened=true&q=<shared norad> includes every seeded repeat offender",
         seededRepeatIds.every((id) => sharedIds.has(id)),
@@ -208,7 +208,7 @@ async function main(): Promise<void> {
 
       // Empty-match case: a q with no catalog or NORAD hits returns zero rows
       // under the filter (and reports a zero total).
-      const empty = await fetchEvents(`?limit=200&reopened=true&q=${encodeURIComponent(NO_MATCH_Q)}`);
+      const empty = await fetchEvents(`?limit=1000&reopened=true&q=${encodeURIComponent(NO_MATCH_Q)}`);
       check("reopened=true with no-match q returns zero rows", empty.data.length === 0,
         `${empty.data.length} rows`);
       check("reopened=true with no-match q reports total=0", empty.total === 0,

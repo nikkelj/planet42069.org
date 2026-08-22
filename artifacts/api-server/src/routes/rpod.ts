@@ -41,7 +41,7 @@ async function catalogLookup(): Promise<Map<number, { name: string; owner: strin
 // ── list ────────────────────────────────────────────────────────────────────
 router.get("/rpod/events", async (req, res): Promise<void> => {
   const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10) || 1);
-  const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit ?? "50"), 10) || 50));
+  const limit = Math.min(1000, Math.max(1, parseInt(String(req.query.limit ?? "50"), 10) || 50));
   const status = req.query.status ? String(req.query.status) : undefined;
   const kind = req.query.kind ? String(req.query.kind) : undefined;
   const sortColFor = (field: string) =>
