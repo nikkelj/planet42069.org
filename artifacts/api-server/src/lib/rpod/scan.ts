@@ -282,6 +282,7 @@ async function doScan(): Promise<void> {
   } catch (err) {
     await logScanRow("error", started, null, String(err));
     logger.error({ err }, "rpod-scan: failed");
+    throw err; // propagate so the scheduler can schedule a short retry
   }
 }
 

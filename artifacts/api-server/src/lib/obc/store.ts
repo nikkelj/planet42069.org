@@ -13,6 +13,17 @@ interface CatalogCache {
   loadedAt: number;
 }
 
+/**
+ * Thrown when a request touches the catalog before the background load has
+ * finished. Callers should convert this to an HTTP 503 rather than waiting.
+ */
+export class CatalogLoadingError extends Error {
+  constructor() {
+    super("OBC catalogue is still loading — please retry in a few seconds");
+    this.name = "CatalogLoadingError";
+  }
+}
+
 let cache: CatalogCache | null = null;
 let inflight: Promise<CatalogCache> | null = null;
 
@@ -88,16 +99,18 @@ async function loadCatalog(): Promise<CatalogCache> {
   return { entries, launchMap, loadedAt: Date.now() };
 }
 
-async function getCache(): Promise<CatalogCache> {
-  const now = Date.now();
-  if (cache && now - cache.loadedAt < CACHE_TTL_MS && cache.entries.length > 0) return cache;
-  if (inflight) return inflight;
-  inflight = loadCatalog()
+/**
+ * Start a background load (or TTL-refresh) of the catalog if one isn't
+ * already running.  Does NOT wait for the result — callers that need the
+ * data should call getCache() which will either serve the (now-warm or
+ * stale) cache or throw CatalogLoadingError if no cache exists yet.
+ */
+export function primeCache(): void {
+  if (inflight) return; // load already in progress — don't start a second one
+  const p = loadCatalog()
     .then((c) => {
-      // Keep serving the old cache if the DB is (still) empty
       if (c.entries.length === 0 && cache && cache.entries.length > 0) return cache;
       if (c.entries.length === 0) {
-        // Defensive: merge logged success but tables are empty.
         throw new Error("OBC catalogue is empty — initial sync has not completed yet");
       }
       cache = c;
@@ -108,10 +121,42 @@ async function getCache(): Promise<CatalogCache> {
         logger.warn({ err }, "obc-store: DB load failed, serving stale cache");
         return cache;
       }
+      logger.error({ err }, "obc-store: catalog load failed with no stale cache to fall back on");
       throw err;
     })
     .finally(() => { inflight = null; });
-  return inflight;
+  inflight = p;
+  // Prevent an unhandled-rejection warning when the load fails and nobody is
+  // currently awaiting `inflight` (e.g. on a failed cold-boot load).  Errors
+  // are already logged in the .catch above; getCache() surfaces the failure
+  // as a CatalogLoadingError to HTTP callers.
+  p.catch(() => undefined);
+}
+
+async function getCache(): Promise<CatalogCache> {
+  const now = Date.now();
+  // Serve the in-memory cache if it's still fresh.
+  if (cache && now - cache.loadedAt < CACHE_TTL_MS && cache.entries.length > 0) return cache;
+
+  // If there's no in-flight load yet, start one now (TTL-refresh path).
+  if (!inflight) {
+    primeCache();
+  }
+
+  // If we have a stale-but-non-empty cache, serve it rather than waiting for
+  // the refresh to finish (the refresh will update `cache` when it lands).
+  if (cache && cache.entries.length > 0) return cache;
+
+  // No cache at all yet — the server just started and the background load is
+  // still running. Throw immediately so the caller can return 503 rather than
+  // hanging until the full 70 k-row load completes (up to ~4 minutes).
+  if (inflight) {
+    throw new CatalogLoadingError();
+  }
+
+  // inflight was cleared between the primeCache() call and here (load failed
+  // before we read inflight). Surface the error.
+  throw new Error("OBC catalogue failed to load — check server logs");
 }
 
 export async function getSatcatFromStore(): Promise<SatcatEntry[]> {
@@ -127,6 +172,35 @@ export function getStoreCacheAge(): number {
   if (!cache) return -1;
   return Math.floor((Date.now() - cache.loadedAt) / 1000);
 }
+
+// ── Test helpers (never call in production code) ──────────────────────────
+
+/** Reset all in-process state.  Unit tests only. */
+export function _resetStoreForTest(): void {
+  cache = null;
+  inflight = null;
+}
+
+/** Inject a pre-built cache snapshot.  Unit tests only. */
+export function _setCacheForTest(c: CatalogCache | null): void {
+  cache = c;
+}
+
+/** Inject a pending inflight promise.  Unit tests only. */
+export function _setInflightForTest(p: Promise<CatalogCache> | null): void {
+  inflight = p;
+}
+
+/**
+ * Await the current in-flight catalog load, if any.  Unit tests only.
+ * Call after invalidateStore() + primeCache() to ensure the cache is fully
+ * populated before the first request that needs name-based catalog lookups.
+ */
+export async function _awaitLoadForTest(): Promise<void> {
+  if (inflight) await inflight;
+}
+
+export type { CatalogCache };
 
 export interface ObcFreshness {
   gcatSyncedAt: string | null;

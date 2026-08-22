@@ -46,13 +46,14 @@ export function AppLayout({ children }: AppLayoutProps) {
         <nav className="flex flex-wrap gap-2">
           {navItems.map((item) => {
             const isActive = item.href === "/briefing"
-              ? (location === "/" || location === "/briefing")
+              ? (location === "/" || location.startsWith("/briefing"))
               : location === item.href;
             const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={`flex items-center gap-2 px-4 py-2 uppercase text-sm font-bold transition-all border ${
                   isActive
                     ? "bg-primary text-primary-foreground border-primary box-glow"

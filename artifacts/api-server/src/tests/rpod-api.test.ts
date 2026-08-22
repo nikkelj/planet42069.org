@@ -116,7 +116,7 @@ async function main(): Promise<void> {
     console.log("List endpoint: kind field & filtering");
     {
       // Unfiltered list (large limit so seeded rows appear regardless of others).
-      const all = await fetchEvents("?limit=200");
+      const all = await fetchEvents("?limit=1000");
       check("every listed event carries a kind field",
         all.data.every((e) => e.kind === "conjunction" || e.kind === "coplanar" || e.kind === "docked"),
         JSON.stringify([...new Set(all.data.map((e) => e.kind))]));

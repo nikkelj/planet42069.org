@@ -19,7 +19,7 @@ import { rpodEvents, rpodEventMembers, obcObjects } from "@workspace/db/schema";
 import { inArray } from "drizzle-orm";
 import type { Server } from "node:http";
 import app from "../app";
-import { invalidateStore } from "../lib/obc/store";
+import { invalidateStore, primeCache, _awaitLoadForTest } from "../lib/obc/store";
 
 let failures = 0;
 function check(name: string, cond: boolean, detail?: string): void {
@@ -82,7 +82,14 @@ async function cleanup(ids: number[]): Promise<void> {
 async function main(): Promise<void> {
   const { conjId, copId } = await seed();
   const seededIds = [conjId, copId];
-  invalidateStore(); // force the next getSatcat() to see the seeded rows
+  // Invalidate and immediately prime the cache so the background load runs
+  // with the seeded rows in the DB.  Await it so that name-based queries
+  // never hit the CatalogLoadingError fast-path (task #114 made the catalog
+  // non-blocking, so without this wait the name query arrives before the
+  // cache is warm and falls back to numeric-only matching → 0 results).
+  invalidateStore();
+  primeCache();
+  await _awaitLoadForTest();
 
   const server: Server = await new Promise((resolve) => {
     const s = app.listen(0, () => resolve(s));

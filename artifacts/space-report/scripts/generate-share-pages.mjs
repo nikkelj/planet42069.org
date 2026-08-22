@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,17 +7,20 @@ const SITE = "https://www.planet42069.org";
 const IMAGE = `${SITE}/opengraph.jpg`;
 
 const cards = JSON.parse(readFileSync(join(__dirname, "share-cards.json"), "utf8"));
-const { existsSync } = await import("node:fs");
 
 const esc = (s) =>
   s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 
 for (const card of cards) {
   const title = `CASE #${card.caseNo} — ${card.title}`;
-  const target = `/#${card.id}`;
+  const target = card.target ?? `/#${card.id}`;
   const pageUrl = `${SITE}/r/${card.id}.html`;
-  const hasOwnImage = existsSync(join(__dirname, "..", "public", "r", `${card.id}.jpg`));
-  const image = hasOwnImage ? `${SITE}/r/${card.id}.jpg` : IMAGE;
+  const legacyImage = ["jpg", "png", "webp"]
+    .map((extension) => `${card.id}.${extension}`)
+    .find((fileName) => existsSync(join(__dirname, "..", "public", "r", fileName)));
+  const cardImage = card.image ?? legacyImage;
+  const image = cardImage ? `${SITE}/r/${cardImage}` : IMAGE;
+  const canonical = card.canonical ? `${SITE}${card.canonical}` : `${SITE}/`;
   const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -25,7 +28,7 @@ for (const card of cards) {
     <title>${esc(title)}</title>
     <meta name="description" content="${esc(card.description)}" />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="${SITE}/" />
+    <link rel="canonical" href="${canonical}" />
     <meta property="og:title" content="${esc(title)}" />
     <meta property="og:description" content="${esc(card.description)}" />
     <meta property="og:type" content="article" />

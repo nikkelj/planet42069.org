@@ -10,7 +10,17 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  // Retire idle connections after 60 s so the driver beats Postgres's own
+  // idle-connection timeout to the punch. Without this, Postgres terminates
+  // long-idle sockets with "terminating connection due to administrator
+  // command", which surfaces as an unhandled error on the next query.
+  idleTimeoutMillis: 60_000,
+  // Fail fast if the DB is temporarily unreachable rather than hanging an
+  // entire worker tick waiting for a connection that will never arrive.
+  connectionTimeoutMillis: 10_000,
+});
 
 // Idle clients in the pool emit 'error' when the server drops the socket
 // (e.g. "Client network socket disconnected before secure TLS connection was

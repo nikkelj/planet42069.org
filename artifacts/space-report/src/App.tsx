@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
+import LandspaceZhuque3 from "@/pages/briefing/landspace-zhuque-3";
 import Analytics from "@/pages/analytics";
 import Catalog from "@/pages/catalog";
 import Constellations from "@/pages/constellations";
@@ -26,6 +27,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/analytics" component={Analytics} />
         <Route path="/briefing" component={Home} />
+        <Route path="/briefing/landspace-zhuque-3" component={LandspaceZhuque3Route} />
         <Route path="/catalog" component={Catalog} />
         <Route path="/constellations" component={Constellations} />
         <Route path="/rpod" component={Rpod} />
@@ -33,6 +35,10 @@ function Router() {
       </Switch>
     </AppLayout>
   );
+}
+
+function LandspaceZhuque3Route() {
+  return <LandspaceZhuque3 />;
 }
 
 function App() {
