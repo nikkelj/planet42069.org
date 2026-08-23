@@ -2,12 +2,13 @@ import { db } from "@workspace/db";
 import { rpodEvents, rpodEventMembers, obcSyncLog } from "@workspace/db/schema";
 import { sql, eq, and, inArray, lt } from "drizzle-orm";
 import { logger } from "../logger";
-import { getLatestElsets, withAdvisoryLock, LOCK_RPOD_SCAN, type LatestElset } from "../obc/tleArchive";
+import { getLatestElsets, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, type LatestElset } from "../obc/tleArchive";
 import { getSatcatFromStore } from "../obc/store";
 import {
   screenCandidatePairs, screenCoAlignedPairs, closeApproach, clusterPairs,
   DEFAULT_SCREEN, DEFAULT_COALIGNED, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S,
   COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, semiMajorAxisKm, minPhaseDiffDeg,
+  hasUsableTleLines,
   type ScreenElset, type FlaggedPair, type ScreenOptions,
 } from "./screen";
 import { selectEndedCoplanarIds, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS } from "./retire";
@@ -152,14 +153,20 @@ async function doScan(): Promise<void> {
   const nowMs = Date.now();
   try {
     const [latest, meta] = await Promise.all([
-      getLatestElsets(nowMs - ELSET_MAX_AGE_MS),
+      getLatestElsets(nowMs - ELSET_MAX_AGE_MS, nowMs + ELSET_FUTURE_SLACK_MS),
       loadCatalogMeta(),
     ]);
     if (latest.length < 2) {
       logger.info({ elsets: latest.length }, "rpod-scan: not enough archived elsets yet, skipping");
       return;
     }
-    const elsets = latest.map(toScreenElset);
+    const elsets = latest.map(toScreenElset).filter((e) =>
+      hasUsableTleLines(e) && Number.isFinite(e.epochMs) && e.epochMs <= nowMs + ELSET_FUTURE_SLACK_MS,
+    );
+    if (elsets.length < 2) {
+      logger.info({ fetched: latest.length, usable: elsets.length }, "rpod-scan: not enough usable elsets, skipping");
+      return;
+    }
     const byNorad = new Map(elsets.map((e) => [e.norad, e]));
 
     // Stage 1
@@ -408,6 +415,18 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
   }
 
   for (const ev of events) {
+    if (
+      ev.members.length < 2 ||
+      !Number.isFinite(ev.tcaMs) ||
+      !Number.isFinite(ev.minRangeKm) ||
+      !Number.isFinite(ev.relVelKmS) ||
+      !Number.isFinite(ev.windowStartMs) ||
+      !Number.isFinite(ev.windowEndMs)
+    ) {
+      logger.warn({ members: ev.members }, "rpod-scan: skipping event with non-finite geometry");
+      continue;
+    }
+
     const evSet = new Set(ev.members);
     const match = active.find((ex) => {
       const exSet = membersByEvent.get(ex.id);
@@ -432,82 +451,90 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
       lastSeenAt: new Date(),
     };
 
-    let eventId: number;
-    if (match) {
-      await db.update(rpodEvents).set({ ...base, updatedAt: sql`now()` }).where(eq(rpodEvents.id, match.id));
-      eventId = match.id;
-      // Escalation: an active case whose predicted min range tightened from
-      // "keeping their distance" to "genuinely close" is the newsworthy
-      // moment — report it so the alert pass can post one follow-up.
-      if (base.kind !== "docked" && isEscalation(match.minRangeKm, base.minRangeKm)) {
-        escalated.push({
-          eventId,
-          kind: base.kind,
-          members: ev.members,
-          minRangeKm: base.minRangeKm,
-          relVelKmS: base.relVelKmS,
-          tcaMs: ev.tcaMs,
-          prevMinRangeKm: match.minRangeKm,
-        });
-      }
-      await db.delete(rpodEventMembers).where(eq(rpodEventMembers.eventId, eventId));
-    } else {
-      const reopenId = selectReopenCandidate(endedWithMembers, ev.members, Date.now(), reopenWindowMs);
-      if (reopenId != null) {
-        // Same pair closed ranks again — reactivate the old case file,
-        // archiving the spell that just closed so each shadowing interval
-        // stays reconstructible.
-        const prior = endedWithMembers.find((e) => e.id === reopenId)!;
-        const spellStart = prior.lastReopenedAt ?? prior.firstDetectedAt;
-        const closedSpells = [
-          ...prior.closedSpells,
-          {
-            start: spellStart.toISOString(),
-            lastSeenAt: prior.lastSeenAt.toISOString(),
-            endedAt: (prior.endedAt ?? prior.lastSeenAt).toISOString(),
-          },
-        ];
-        await db
-          .update(rpodEvents)
-          .set({
-            ...base,
-            endedAt: null,
-            reopenCount: sql`${rpodEvents.reopenCount} + 1`,
-            lastReopenedAt: sql`now()`,
-            closedSpells,
-            updatedAt: sql`now()`,
-          })
-          .where(eq(rpodEvents.id, reopenId));
-        eventId = reopenId;
-        await db.delete(rpodEventMembers).where(eq(rpodEventMembers.eventId, eventId));
-        endedWithMembers = endedWithMembers.filter((e) => e.id !== reopenId);
-        logger.info({ eventId, kind }, "rpod-scan: reopened lapsed case (same pair re-detected)");
-      } else {
-        const [row] = await db.insert(rpodEvents).values(base).returning({ id: rpodEvents.id });
-        eventId = row.id;
-        newlyInserted.push({
-          eventId,
-          kind: base.kind,
-          members: ev.members,
-          minRangeKm: base.minRangeKm,
-          relVelKmS: base.relVelKmS,
-          tcaMs: ev.tcaMs,
-        });
-      }
-    }
-
-    // Per-member tightest pair stats
-    const memberRows = ev.members.map((norad) => {
+    const memberStats = ev.members.map((norad) => {
       const mine = ev.pairs.filter((p) => p.a === norad || p.b === norad);
       const tight = mine.reduce((m, p) => (p.minRangeKm < m.minRangeKm ? p : m), mine[0]);
       return {
-        eventId,
         norad,
-        minRangeKm: tight ? Math.round(tight.minRangeKm * 1000) / 1000 : null,
-        relVelKmS: tight ? Math.round(tight.relVelKmS * 10000) / 10000 : null,
+        minRangeKm: tight && Number.isFinite(tight.minRangeKm) ? Math.round(tight.minRangeKm * 1000) / 1000 : null,
+        relVelKmS: tight && Number.isFinite(tight.relVelKmS) ? Math.round(tight.relVelKmS * 10000) / 10000 : null,
       };
     });
-    await db.insert(rpodEventMembers).values(memberRows).onConflictDoNothing();
+
+    // Update + replace members in one transaction so a failed insert cannot
+    // leave an active case with an empty member list (prod case 274).
+    const persisted = await db.transaction(async (tx) => {
+      let eventId: number;
+      let inserted = false;
+      let reopened = false;
+      let escalation: EscalatedRpodEvent | null = null;
+      if (match) {
+        await tx.update(rpodEvents).set({ ...base, updatedAt: sql`now()` }).where(eq(rpodEvents.id, match.id));
+        eventId = match.id;
+        if (base.kind !== "docked" && isEscalation(match.minRangeKm, base.minRangeKm)) {
+          escalation = {
+            eventId,
+            kind: base.kind,
+            members: ev.members,
+            minRangeKm: base.minRangeKm,
+            relVelKmS: base.relVelKmS,
+            tcaMs: ev.tcaMs,
+            prevMinRangeKm: match.minRangeKm,
+          };
+        }
+        await tx.delete(rpodEventMembers).where(eq(rpodEventMembers.eventId, eventId));
+      } else {
+        const reopenId = selectReopenCandidate(endedWithMembers, ev.members, Date.now(), reopenWindowMs);
+        if (reopenId != null) {
+          const prior = endedWithMembers.find((e) => e.id === reopenId)!;
+          const spellStart = prior.lastReopenedAt ?? prior.firstDetectedAt;
+          const closedSpells = [
+            ...prior.closedSpells,
+            {
+              start: spellStart.toISOString(),
+              lastSeenAt: prior.lastSeenAt.toISOString(),
+              endedAt: (prior.endedAt ?? prior.lastSeenAt).toISOString(),
+            },
+          ];
+          await tx
+            .update(rpodEvents)
+            .set({
+              ...base,
+              endedAt: null,
+              reopenCount: sql`${rpodEvents.reopenCount} + 1`,
+              lastReopenedAt: sql`now()`,
+              closedSpells,
+              updatedAt: sql`now()`,
+            })
+            .where(eq(rpodEvents.id, reopenId));
+          eventId = reopenId;
+          reopened = true;
+          await tx.delete(rpodEventMembers).where(eq(rpodEventMembers.eventId, eventId));
+        } else {
+          const [row] = await tx.insert(rpodEvents).values(base).returning({ id: rpodEvents.id });
+          eventId = row.id;
+          inserted = true;
+        }
+      }
+      await tx.insert(rpodEventMembers).values(memberStats.map((m) => ({ eventId, ...m }))).onConflictDoNothing();
+      return { eventId, inserted, reopened, escalation };
+    });
+
+    if (persisted.inserted) {
+      newlyInserted.push({
+        eventId: persisted.eventId,
+        kind: base.kind,
+        members: ev.members,
+        minRangeKm: base.minRangeKm,
+        relVelKmS: base.relVelKmS,
+        tcaMs: ev.tcaMs,
+      });
+    }
+    if (persisted.escalation) escalated.push(persisted.escalation);
+    if (persisted.reopened) {
+      endedWithMembers = endedWithMembers.filter((e) => e.id !== persisted.eventId);
+      logger.info({ eventId: persisted.eventId, kind }, "rpod-scan: reopened lapsed case (same pair re-detected)");
+    }
   }
   return { inserted: newlyInserted, escalated };
 }

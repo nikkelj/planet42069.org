@@ -11,7 +11,7 @@
  */
 import {
   screenCandidatePairs, screenCoAlignedPairs, minRaanDiffDeg, minPhaseDiffDeg, raanRateDegPerDay, closeApproach, clusterPairs,
-  DEFAULT_SCREEN, DEFAULT_COALIGNED, type ScreenElset, type FlaggedPair,
+  DEFAULT_SCREEN, DEFAULT_COALIGNED, hasUsableTleLines, type ScreenElset, type FlaggedPair,
 } from "../lib/rpod/screen";
 import { selectEndedCoplanarIds, COPLANAR_END_AFTER_MS, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS } from "../lib/rpod/retire";
 
@@ -110,6 +110,58 @@ console.log("Stage 2: SGP4 close approach");
   const c = makeElset({ norad: 302, incDeg: 97.5, raanDeg: 140, ma: 180, mm: 15.1 });
   const far = closeApproach(a, c, startMs, win);
   check("separated planes stay far", far != null && far.minRangeKm > 100, far ? `got ${far.minRangeKm.toFixed(1)} km` : "null");
+}
+
+console.log("Stage 2: unusable / future / Alpha-5 TLEs must not throw");
+{
+  const startMs = Date.parse("2026-08-23T15:00:00Z");
+  const win = 6 * 3600_000;
+  const good = makeElset({ norad: 400, incDeg: 97.5, raanDeg: 120, mm: 15.1 });
+  check("null TLE lines are unusable", !hasUsableTleLines({ line1: null as unknown as string, line2: good.line2 }));
+  check("short garbage is unusable", !hasUsableTleLines({ line1: "N/A", line2: "N/A" }));
+  check("empty strings are unusable", !hasUsableTleLines({ line1: "", line2: "" }));
+
+  let threw = false;
+  try {
+    const ca = closeApproach(
+      { line1: null as unknown as string, line2: null as unknown as string },
+      good,
+      startMs,
+      win,
+    );
+    check("null TLE lines return null (no throw)", ca == null);
+  } catch (err) {
+    threw = true;
+    check("null TLE lines return null (no throw)", false, String(err));
+  }
+  check("null TLE did not throw", !threw);
+
+  threw = false;
+  try {
+    const ca = closeApproach({ line1: "N/A", line2: "N/A" }, good, startMs, win);
+    check("garbage TLE returns null (no fake 0 km hit)", ca == null);
+  } catch (err) {
+    threw = true;
+    check("garbage TLE returns null (no fake 0 km hit)", false, String(err));
+  }
+  check("garbage TLE did not throw", !threw);
+
+  // Alpha-5 catalog numbers (≥100000) in the TLE satnum field. USSF exhausted
+  // 5-digit numbers on 2026-07-11; GP JSON still carries numeric NORAD_CAT_ID
+  // while TLE_LINE1/2 use Axxxx encoding. satellite.js must still propagate.
+  const alpha = makeElset({ norad: 400, incDeg: 97.5, raanDeg: 120, ma: 0.02, mm: 15.1 });
+  alpha.line1 = alpha.line1.replace(" 00400U", " A0001U");
+  alpha.line2 = alpha.line2.replace(" 00400 ", " A0001 ");
+  check("Alpha-5 lines look usable", hasUsableTleLines(alpha));
+  const caAlpha = closeApproach(good, alpha, startMs, win);
+  check("Alpha-5 pair propagates", caAlpha != null, caAlpha ? `range ${caAlpha.minRangeKm.toFixed(2)} km` : "null");
+
+  // Predicted epoch ~4 days ahead of "now" (live newestEpoch 2026-08-27).
+  const futureEpoch = makeElset({ norad: 401, incDeg: 97.5, raanDeg: 120, ma: 0.02, mm: 15.1 });
+  futureEpoch.line1 = futureEpoch.line1.replace("26211.00000000", "26239.47140641");
+  futureEpoch.epochMs = Date.parse("2026-08-27T11:19:49Z");
+  const caFuture = closeApproach(good, futureEpoch, startMs, win);
+  check("future-epoch TLE does not throw", caFuture == null || Number.isFinite(caFuture.minRangeKm));
 }
 
 console.log("Stage 3: clustering");

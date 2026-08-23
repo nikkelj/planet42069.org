@@ -169,8 +169,16 @@ export function semiMajorAxisKm(meanMotionRevPerDay: number): number {
   return Math.cbrt(MU / (n * n));
 }
 
+/** Fixed-width TLE lines are 69 chars; satellite.js reads through column 63. */
+export function hasUsableTleLines(e: Pick<ScreenElset, "line1" | "line2">): boolean {
+  return typeof e.line1 === "string" && typeof e.line2 === "string"
+    && e.line1.length >= 68 && e.line2.length >= 68
+    && e.line1.startsWith("1") && e.line2.startsWith("2");
+}
+
 /** Mean argument of latitude (argp + mean anomaly, deg) parsed from TLE line 2. */
 function meanArgLatDeg(e: ScreenElset): number | null {
+  if (typeof e.line2 !== "string" || e.line2.length < 51) return null;
   const argp = parseFloat(e.line2.slice(34, 42));
   const ma = parseFloat(e.line2.slice(43, 51));
   if (!Number.isFinite(argp) || !Number.isFinite(ma)) return null;
@@ -255,10 +263,21 @@ function dist(p: Vec3, q: Vec3): number {
   return Math.hypot(p.x - q.x, p.y - q.y, p.z - q.z);
 }
 
+function isFiniteVec3(v: unknown): v is Vec3 {
+  if (!v || typeof v !== "object") return false;
+  const o = v as Vec3;
+  return Number.isFinite(o.x) && Number.isFinite(o.y) && Number.isFinite(o.z);
+}
+
 /**
  * Stage 2: SGP4-difference a candidate pair over [startMs, startMs+windowMs].
  * Coarse 60s scan, then 1s refinement around the coarse minimum.
  * Returns null when either elset fails to propagate.
+ *
+ * Must never throw: twoline2satrec throws TypeError on null/undefined lines,
+ * and satellite.js 7 can return {x:null,y:null,z:null} for unusable TLEs
+ * (null coerces to 0 in Math.hypot → fake 0 km "docked" hits). One bad
+ * catalog row must skip the pair, not fail the hourly scan.
  */
 export function closeApproach(
   a: Pick<ScreenElset, "line1" | "line2">,
@@ -266,42 +285,51 @@ export function closeApproach(
   startMs: number,
   windowMs: number,
 ): CloseApproach | null {
-  const recA = satellite.twoline2satrec(a.line1, a.line2);
-  const recB = satellite.twoline2satrec(b.line1, b.line2);
-  const posAt = (rec: satellite.SatRec, ms: number): { p: Vec3; v: Vec3 } | null => {
-    const pv = satellite.propagate(rec, new Date(ms));
-    if (!pv || !pv.position || typeof pv.position === "boolean" || !pv.velocity || typeof pv.velocity === "boolean") return null;
-    return { p: pv.position as Vec3, v: pv.velocity as Vec3 };
-  };
+  try {
+    if (!hasUsableTleLines(a) || !hasUsableTleLines(b)) return null;
+    const recA = satellite.twoline2satrec(a.line1, a.line2);
+    const recB = satellite.twoline2satrec(b.line1, b.line2);
+    const posAt = (rec: satellite.SatRec, ms: number): { p: Vec3; v: Vec3 } | null => {
+      const pv = satellite.propagate(rec, new Date(ms));
+      if (!pv || typeof pv.position === "boolean" || typeof pv.velocity === "boolean") return null;
+      if (!isFiniteVec3(pv.position) || !isFiniteVec3(pv.velocity)) return null;
+      return { p: pv.position, v: pv.velocity };
+    };
 
-  const COARSE_MS = 60_000;
-  let bestT = -1;
-  let bestD = Infinity;
-  for (let t = startMs; t <= startMs + windowMs; t += COARSE_MS) {
-    const pa = posAt(recA, t);
-    const pb = posAt(recB, t);
+    const COARSE_MS = 60_000;
+    let bestT = -1;
+    let bestD = Infinity;
+    for (let t = startMs; t <= startMs + windowMs; t += COARSE_MS) {
+      const pa = posAt(recA, t);
+      const pb = posAt(recB, t);
+      // Skip unpropagable samples (decayed, bad TLE) rather than aborting the
+      // whole pair — a single failed 60s step used to discard real approaches.
+      if (!pa || !pb) continue;
+      const d = dist(pa.p, pb.p);
+      if (d < bestD) { bestD = d; bestT = t; }
+    }
+    if (bestT < 0 || !Number.isFinite(bestD)) return null;
+
+    // 1s refinement around the coarse minimum
+    let refT = bestT;
+    let refD = bestD;
+    for (let t = bestT - COARSE_MS; t <= bestT + COARSE_MS; t += 1000) {
+      const pa = posAt(recA, t);
+      const pb = posAt(recB, t);
+      if (!pa || !pb) continue;
+      const d = dist(pa.p, pb.p);
+      if (d < refD) { refD = d; refT = t; }
+    }
+
+    const pa = posAt(recA, refT);
+    const pb = posAt(recB, refT);
     if (!pa || !pb) return null;
-    const d = dist(pa.p, pb.p);
-    if (d < bestD) { bestD = d; bestT = t; }
+    const relVel = Math.hypot(pa.v.x - pb.v.x, pa.v.y - pb.v.y, pa.v.z - pb.v.z);
+    if (!Number.isFinite(relVel) || !Number.isFinite(refD) || !Number.isFinite(refT)) return null;
+    return { minRangeKm: refD, relVelKmS: relVel, tcaMs: refT };
+  } catch {
+    return null;
   }
-  if (bestT < 0) return null;
-
-  // 1s refinement around the coarse minimum
-  let refT = bestT;
-  let refD = bestD;
-  for (let t = bestT - COARSE_MS; t <= bestT + COARSE_MS; t += 1000) {
-    const pa = posAt(recA, t);
-    const pb = posAt(recB, t);
-    if (!pa || !pb) continue;
-    const d = dist(pa.p, pb.p);
-    if (d < refD) { refD = d; refT = t; }
-  }
-
-  const pa = posAt(recA, refT);
-  const pb = posAt(recB, refT);
-  if (!pa || !pb) return null;
-  const relVel = Math.hypot(pa.v.x - pb.v.x, pa.v.y - pb.v.y, pa.v.z - pb.v.z);
-  return { minRangeKm: refD, relVelKmS: relVel, tcaMs: refT };
 }
 
 export interface FlaggedPair {
