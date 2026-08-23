@@ -1,6 +1,6 @@
 import { db, pool } from "@workspace/db";
 import { obcTleHistory, obcWorkerState, obcSyncLog, type InsertObcTleHistory } from "@workspace/db/schema";
-import { sql, desc, asc, gt, and, gte, eq } from "drizzle-orm";
+import { sql, desc, asc, gt, lte, and, gte, eq } from "drizzle-orm";
 import { logger } from "../logger";
 
 /**
@@ -455,8 +455,23 @@ export interface LatestElset {
   meanMotionRevPerDay: number;
 }
 
-/** Latest archived elset per object with epoch newer than `sinceMs`. */
-export async function getLatestElsets(sinceMs: number): Promise<LatestElset[]> {
+/**
+ * space-track publishes future-dated epochs for "multi-day" objects (period
+ * of days; the provider slides the epoch forward to the next perigee so
+ * sensors can acquire them). Live newestEpoch has been ~4 days ahead.
+ * DISTINCT ON (norad) … ORDER BY epoch DESC would otherwise pick that
+ * predicted elset as "latest" and hide a real current TLE.
+ *
+ * 6h of slack covers clock skew and near-term predicted epochs without
+ * letting multi-day objects monopolize the scan set.
+ */
+export const ELSET_FUTURE_SLACK_MS = 6 * 3600_000;
+
+/** Latest archived elset per object with epoch in (`sinceMs`, `untilMs`]. */
+export async function getLatestElsets(
+  sinceMs: number,
+  untilMs: number = Date.now() + ELSET_FUTURE_SLACK_MS,
+): Promise<LatestElset[]> {
   const rows = await db
     .selectDistinctOn([obcTleHistory.norad], {
       norad: obcTleHistory.norad,
@@ -471,7 +486,10 @@ export async function getLatestElsets(sinceMs: number): Promise<LatestElset[]> {
       meanMotionRevPerDay: obcTleHistory.meanMotionRevPerDay,
     })
     .from(obcTleHistory)
-    .where(gt(obcTleHistory.epoch, new Date(sinceMs)))
+    .where(and(
+      gt(obcTleHistory.epoch, new Date(sinceMs)),
+      lte(obcTleHistory.epoch, new Date(untilMs)),
+    ))
     .orderBy(obcTleHistory.norad, desc(obcTleHistory.epoch));
   return rows;
 }

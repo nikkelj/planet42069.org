@@ -8,7 +8,7 @@
  * Run with: pnpm --filter @workspace/api-server run test:rpod
  */
 import {
-  sampleRows, backfillHorizonMs, BACKFILL_HORIZON_DAYS, COARSE_AFTER_DAYS,
+  sampleRows, backfillHorizonMs, BACKFILL_HORIZON_DAYS, COARSE_AFTER_DAYS, ELSET_FUTURE_SLACK_MS,
 } from "../lib/obc/tleArchive";
 import type { InsertObcTleHistory } from "@workspace/db/schema";
 
@@ -74,6 +74,18 @@ console.log("Backfill horizon");
 {
   check("horizon = now − configured days", backfillHorizonMs(NOW) === NOW - BACKFILL_HORIZON_DAYS * DAY);
   check("horizon days configured and positive", Number.isFinite(BACKFILL_HORIZON_DAYS) && BACKFILL_HORIZON_DAYS > 0);
+}
+
+console.log("RPOD latest-elset epoch window");
+{
+  check("future slack is 6 hours", ELSET_FUTURE_SLACK_MS === 6 * HOUR);
+  // space-track multi-day objects publish epochs days ahead (live newestEpoch
+  // 2026-08-27 while now is 2026-08-23). Those must sit outside untilMs so
+  // DISTINCT ON (norad) ORDER BY epoch DESC cannot hide a current TLE.
+  const now = Date.parse("2026-08-23T15:00:00Z");
+  const until = now + ELSET_FUTURE_SLACK_MS;
+  const newestEpoch = Date.parse("2026-08-27T11:19:49.514Z");
+  check("live newestEpoch is after the scan until bound", newestEpoch > until);
 }
 
 if (failures > 0) {
