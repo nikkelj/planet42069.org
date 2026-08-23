@@ -176,6 +176,32 @@ export function hasUsableTleLines(e: Pick<ScreenElset, "line1" | "line2">): bool
     && e.line1.startsWith("1") && e.line2.startsWith("2");
 }
 
+/**
+ * How far the TLE-line epoch may sit from the propagate start time.
+ * JSON EPOCH and TLE columns can disagree (6-digit catalog numbers shift
+ * the fixed-width fields). satellite.js deep-space resonance then integrates
+ * in 720-minute steps from the *line* epoch — decades of steps hang the
+ * Node event loop and starve HTTP (live /api/rpod/status 20s / 0 bytes).
+ */
+export const MAX_SGP4_EPOCH_AGE_MS = 10 * 86400_000;
+
+/** Epoch encoded in TLE line 1 columns 19–32 (YY + day-of-year). */
+export function tleEpochMs(line1: string): number | null {
+  if (typeof line1 !== "string" || line1.length < 32) return null;
+  const yr = parseInt(line1.substring(18, 20), 10);
+  const days = parseFloat(line1.substring(20, 32));
+  if (!Number.isFinite(yr) || yr < 0 || yr > 99) return null;
+  if (!Number.isFinite(days) || days < 1 || days >= 367) return null;
+  const year = yr < 57 ? 2000 + yr : 1900 + yr;
+  const ms = Date.UTC(year, 0, 1) + (days - 1) * 86400_000;
+  return Number.isFinite(ms) ? ms : null;
+}
+
+export function tleEpochIsCurrent(line1: string, nowMs: number, maxAgeMs: number = MAX_SGP4_EPOCH_AGE_MS): boolean {
+  const epoch = tleEpochMs(line1);
+  return epoch != null && Math.abs(epoch - nowMs) <= maxAgeMs;
+}
+
 /** Mean argument of latitude (argp + mean anomaly, deg) parsed from TLE line 2. */
 function meanArgLatDeg(e: ScreenElset): number | null {
   if (typeof e.line2 !== "string" || e.line2.length < 51) return null;
@@ -287,6 +313,7 @@ export function closeApproach(
 ): CloseApproach | null {
   try {
     if (!hasUsableTleLines(a) || !hasUsableTleLines(b)) return null;
+    if (!tleEpochIsCurrent(a.line1, startMs) || !tleEpochIsCurrent(b.line1, startMs)) return null;
     const recA = satellite.twoline2satrec(a.line1, a.line2);
     const recB = satellite.twoline2satrec(b.line1, b.line2);
     const posAt = (rec: satellite.SatRec, ms: number): { p: Vec3; v: Vec3 } | null => {

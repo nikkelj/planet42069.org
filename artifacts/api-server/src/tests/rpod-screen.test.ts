@@ -11,7 +11,7 @@
  */
 import {
   screenCandidatePairs, screenCoAlignedPairs, minRaanDiffDeg, minPhaseDiffDeg, raanRateDegPerDay, closeApproach, clusterPairs,
-  DEFAULT_SCREEN, DEFAULT_COALIGNED, hasUsableTleLines, type ScreenElset, type FlaggedPair,
+  DEFAULT_SCREEN, DEFAULT_COALIGNED, hasUsableTleLines, tleEpochMs, tleEpochIsCurrent, type ScreenElset, type FlaggedPair,
 } from "../lib/rpod/screen";
 import { selectEndedCoplanarIds, COPLANAR_END_AFTER_MS, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS } from "../lib/rpod/retire";
 
@@ -153,15 +153,30 @@ console.log("Stage 2: unusable / future / Alpha-5 TLEs must not throw");
   alpha.line1 = alpha.line1.replace(" 00400U", " A0001U");
   alpha.line2 = alpha.line2.replace(" 00400 ", " A0001 ");
   check("Alpha-5 lines look usable", hasUsableTleLines(alpha));
-  const caAlpha = closeApproach(good, alpha, startMs, win);
+  // Line epoch is day 211 (2026-07-30); SGP4 is skipped when |tleEpoch-start| > 10d.
+  const caAlpha = closeApproach(good, alpha, Date.parse("2026-07-30T00:00:00Z"), win);
   check("Alpha-5 pair propagates", caAlpha != null, caAlpha ? `range ${caAlpha.minRangeKm.toFixed(2)} km` : "null");
 
   // Predicted epoch ~4 days ahead of "now" (live newestEpoch 2026-08-27).
+  const currentCompanion = makeElset({ norad: 400, incDeg: 97.5, raanDeg: 120, mm: 15.1 });
+  currentCompanion.line1 = currentCompanion.line1.replace("26211.00000000", "26235.62500000");
   const futureEpoch = makeElset({ norad: 401, incDeg: 97.5, raanDeg: 120, ma: 0.02, mm: 15.1 });
   futureEpoch.line1 = futureEpoch.line1.replace("26211.00000000", "26239.47140641");
   futureEpoch.epochMs = Date.parse("2026-08-27T11:19:49Z");
-  const caFuture = closeApproach(good, futureEpoch, startMs, win);
+  const caFuture = closeApproach(currentCompanion, futureEpoch, startMs, win);
   check("future-epoch TLE does not throw", caFuture == null || Number.isFinite(caFuture.minRangeKm));
+
+  // 6-digit catalog numbers in the 5-digit TLE satnum field shift columns
+  // 19–32. satellite.js then reads epochyr≈2 / epochdays≈6200 and deep-space
+  // (mm≈1) dspace integrates decades of 720-minute steps — one pair hung the
+  // live Node event loop (GET /api/rpod/status 20s / 0 bytes).
+  const shifted = makeElset({ norad: 100000, incDeg: 0.1, raanDeg: 120, mm: 1.0027 });
+  check("shifted 6-digit line epoch is unusable (doy ≥ 367)", tleEpochMs(shifted.line1) == null, `got ${tleEpochMs(shifted.line1)}`);
+  check("shifted 6-digit epoch is not current", !tleEpochIsCurrent(shifted.line1, startMs));
+  const tHang = Date.now();
+  const caShifted = closeApproach(good, shifted, startMs, 48 * 3600_000);
+  check("shifted 6-digit pair returns null (no SGP4)", caShifted == null);
+  check("shifted 6-digit pair returns in <200ms", Date.now() - tHang < 200, `took ${Date.now() - tHang}ms`);
 }
 
 console.log("Stage 3: clustering");

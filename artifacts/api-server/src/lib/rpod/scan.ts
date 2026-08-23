@@ -8,7 +8,7 @@ import {
   screenCandidatePairs, screenCoAlignedPairs, closeApproach, clusterPairs,
   DEFAULT_SCREEN, DEFAULT_COALIGNED, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S,
   COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, semiMajorAxisKm, minPhaseDiffDeg,
-  hasUsableTleLines,
+  hasUsableTleLines, tleEpochIsCurrent,
   type ScreenElset, type FlaggedPair, type ScreenOptions,
 } from "./screen";
 import { selectEndedCoplanarIds, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS } from "./retire";
@@ -148,6 +148,29 @@ function isSameFreshLaunch(a: number, b: number, meta: Map<number, CatalogMeta>,
   return Number.isFinite(t) && nowMs - t < DEPLOY_QUIET_DAYS * 86400_000;
 }
 
+/** Let HTTP (e.g. GET /rpod/status) run between sync SGP4 pair diffs. */
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
+async function sgp4FlagPairs(
+  pairs: { a: ScreenElset; b: ScreenElset }[],
+  nowMs: number,
+  maxRangeKm: number,
+  maxRelVelKmS: number,
+): Promise<FlaggedPair[]> {
+  const flagged: FlaggedPair[] = [];
+  for (let i = 0; i < pairs.length; i++) {
+    const { a, b } = pairs[i];
+    const ca = closeApproach(a, b, nowMs, DEFAULT_SCREEN.windowMs);
+    if (ca && ca.minRangeKm <= maxRangeKm && ca.relVelKmS <= maxRelVelKmS) {
+      flagged.push({ a: a.norad, b: b.norad, minRangeKm: ca.minRangeKm, relVelKmS: ca.relVelKmS, tcaMs: ca.tcaMs });
+    }
+    await yieldToEventLoop();
+  }
+  return flagged;
+}
+
 async function doScan(): Promise<void> {
   const started = new Date();
   const nowMs = Date.now();
@@ -161,7 +184,9 @@ async function doScan(): Promise<void> {
       return;
     }
     const elsets = latest.map(toScreenElset).filter((e) =>
-      hasUsableTleLines(e) && Number.isFinite(e.epochMs) && e.epochMs <= nowMs + ELSET_FUTURE_SLACK_MS,
+      hasUsableTleLines(e)
+      && Number.isFinite(e.epochMs) && e.epochMs <= nowMs + ELSET_FUTURE_SLACK_MS
+      && tleEpochIsCurrent(e.line1, nowMs),
     );
     if (elsets.length < 2) {
       logger.info({ fetched: latest.length, usable: elsets.length }, "rpod-scan: not enough usable elsets, skipping");
@@ -181,15 +206,8 @@ async function doScan(): Promise<void> {
         .map((x) => x.p);
     }
 
-    // Stage 2
-    const flagged: FlaggedPair[] = [];
-    for (const { a, b } of candidates) {
-      const ca = closeApproach(a, b, nowMs, DEFAULT_SCREEN.windowMs);
-      if (!ca) continue;
-      if (ca.minRangeKm <= RPOD_MAX_RANGE_KM && ca.relVelKmS <= RPOD_MAX_RELVEL_KM_S) {
-        flagged.push({ a: a.norad, b: b.norad, minRangeKm: ca.minRangeKm, relVelKmS: ca.relVelKmS, tcaMs: ca.tcaMs });
-      }
-    }
+    // Stage 2 — yield between pairs so GET /api/rpod/status can still flush.
+    const flagged = await sgp4FlagPairs(candidates, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S);
 
     // Co-aligned (coplanar shadowing) screen: same plane + same radial shell,
     // slowly drifting in phase. The 30 km bubble rarely closes for these, so
@@ -215,14 +233,7 @@ async function doScan(): Promise<void> {
         .slice(0, MAX_COALIGNED_SGP4_PAIRS)
         .map((x) => x.p);
     }
-    const coFlagged: FlaggedPair[] = [];
-    for (const { a, b } of coCandidates) {
-      const ca = closeApproach(a, b, nowMs, DEFAULT_SCREEN.windowMs);
-      if (!ca) continue;
-      if (ca.minRangeKm <= COALIGNED_MAX_RANGE_KM && ca.relVelKmS <= COALIGNED_MAX_RELVEL_KM_S) {
-        coFlagged.push({ a: a.norad, b: b.norad, minRangeKm: ca.minRangeKm, relVelKmS: ca.relVelKmS, tcaMs: ca.tcaMs });
-      }
-    }
+    const coFlagged = await sgp4FlagPairs(coCandidates, nowMs, COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S);
 
     // Stage 3 + widened scan for capped clusters
     let events = clusterPairs(flagged, MEMBER_CAP);
@@ -241,17 +252,13 @@ async function doScan(): Promise<void> {
             Math.abs(me.meanMotionRevPerDay - e.meanMotionRevPerDay) <= relaxed.maxMeanMotionDiff;
         });
       });
+      const flaggedKeys = new Set(flagged.map((f) => pairKey(f.a, f.b)));
       const widePairs = screenCandidatePairs(neighborhood, relaxed)
         .filter((p) => memberSet.has(p.a.norad) || memberSet.has(p.b.norad))
         .filter((p) => !isSameFreshLaunch(p.a.norad, p.b.norad, meta, nowMs))
+        .filter((p) => !flaggedKeys.has(pairKey(p.a.norad, p.b.norad)))
         .slice(0, 400);
-      for (const { a, b } of widePairs) {
-        if (flagged.some((f) => (f.a === a.norad && f.b === b.norad) || (f.a === b.norad && f.b === a.norad))) continue;
-        const ca = closeApproach(a, b, nowMs, DEFAULT_SCREEN.windowMs);
-        if (ca && ca.minRangeKm <= RPOD_MAX_RANGE_KM && ca.relVelKmS <= RPOD_MAX_RELVEL_KM_S) {
-          flagged.push({ a: a.norad, b: b.norad, minRangeKm: ca.minRangeKm, relVelKmS: ca.relVelKmS, tcaMs: ca.tcaMs });
-        }
-      }
+      flagged.push(...await sgp4FlagPairs(widePairs, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S));
       // Re-cluster once after all widened pairs are in.
       events = clusterPairs(flagged, MEMBER_CAP);
       break;
