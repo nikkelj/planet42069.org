@@ -127,11 +127,33 @@ export interface CandidatePair {
   b: ScreenElset;
 }
 
+/** Let HTTP (e.g. GET /rpod/status) run during CPU-bound screening / SGP4. */
+export function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
+/**
+ * Comparisons between event-loop yields in stage-1 screening. Starlink's
+ * ~53° band is thousands of objects; without yielding, minRaanDiffDeg over
+ * tens of millions of pairs blocks Node so Express never flushes a byte.
+ */
+export const SCREEN_YIELD_EVERY = 4_000;
+
+/** Wall-clock cap for one closeApproach (coarse + refine). Pathological
+ *  deep-space dspace steps from a shifted TLE epoch used to run for tens of
+ *  seconds on a single pair. */
+export const MAX_SGP4_PAIR_MS = 2_000;
+
 /**
  * Stage 1: cheap plane-matching screen over the whole catalog.
  * Buckets by inclination band to avoid the full N² comparison.
+ * Pass yieldEvery > 0 (SCREEN_YIELD_EVERY in the worker) so HTTP can run.
  */
-export function screenCandidatePairs(elsets: ScreenElset[], opts: ScreenOptions = DEFAULT_SCREEN): CandidatePair[] {
+export async function screenCandidatePairs(
+  elsets: ScreenElset[],
+  opts: ScreenOptions = DEFAULT_SCREEN,
+  yieldEvery: number = 0,
+): Promise<CandidatePair[]> {
   const bandSize = Math.max(opts.maxIncDiffDeg, 0.1);
   const bands = new Map<number, ScreenElset[]>();
   for (const e of elsets) {
@@ -145,10 +167,13 @@ export function screenCandidatePairs(elsets: ScreenElset[], opts: ScreenOptions 
   }
   const pairs: CandidatePair[] = [];
   const seen = new Set<string>();
+  let compared = 0;
   for (const arr of bands.values()) {
     for (let i = 0; i < arr.length; i++) {
       for (let j = i + 1; j < arr.length; j++) {
         const a = arr[i], b = arr[j];
+        compared++;
+        if (yieldEvery > 0 && compared % yieldEvery === 0) await yieldToEventLoop();
         if (a.norad === b.norad) continue;
         const key = a.norad < b.norad ? `${a.norad}:${b.norad}` : `${b.norad}:${a.norad}`;
         if (seen.has(key)) continue;
@@ -238,7 +263,12 @@ export function minPhaseDiffDeg(a: ScreenElset, b: ScreenElset, nowMs: number, w
  * within a few degrees at some point in the window. No convergence
  * logic — shadowers are already co-planar, not drifting in.
  */
-export function screenCoAlignedPairs(elsets: ScreenElset[], opts: CoAlignedOptions = DEFAULT_COALIGNED, nowMs: number = Date.now()): CandidatePair[] {
+export async function screenCoAlignedPairs(
+  elsets: ScreenElset[],
+  opts: CoAlignedOptions = DEFAULT_COALIGNED,
+  nowMs: number = Date.now(),
+  yieldEvery: number = 0,
+): Promise<CandidatePair[]> {
   const bandSize = Math.max(opts.maxIncDiffDeg, 0.1);
   const bands = new Map<number, ScreenElset[]>();
   for (const e of elsets) {
@@ -252,10 +282,13 @@ export function screenCoAlignedPairs(elsets: ScreenElset[], opts: CoAlignedOptio
   }
   const pairs: CandidatePair[] = [];
   const seen = new Set<string>();
+  let compared = 0;
   for (const arr of bands.values()) {
     for (let i = 0; i < arr.length; i++) {
       for (let j = i + 1; j < arr.length; j++) {
         const a = arr[i], b = arr[j];
+        compared++;
+        if (yieldEvery > 0 && compared % yieldEvery === 0) await yieldToEventLoop();
         if (a.norad === b.norad) continue;
         const key = a.norad < b.norad ? `${a.norad}:${b.norad}` : `${b.norad}:${a.norad}`;
         if (seen.has(key)) continue;
@@ -324,9 +357,11 @@ export function closeApproach(
     };
 
     const COARSE_MS = 60_000;
+    const t0 = Date.now();
     let bestT = -1;
     let bestD = Infinity;
     for (let t = startMs; t <= startMs + windowMs; t += COARSE_MS) {
+      if (Date.now() - t0 > MAX_SGP4_PAIR_MS) return null;
       const pa = posAt(recA, t);
       const pb = posAt(recB, t);
       // Skip unpropagable samples (decayed, bad TLE) rather than aborting the
@@ -341,6 +376,7 @@ export function closeApproach(
     let refT = bestT;
     let refD = bestD;
     for (let t = bestT - COARSE_MS; t <= bestT + COARSE_MS; t += 1000) {
+      if (Date.now() - t0 > MAX_SGP4_PAIR_MS) break;
       const pa = posAt(recA, t);
       const pb = posAt(recB, t);
       if (!pa || !pb) continue;

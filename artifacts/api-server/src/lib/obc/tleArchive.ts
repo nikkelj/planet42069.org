@@ -144,9 +144,19 @@ export async function withAdvisoryLock(key: number, label: string, fn: () => Pro
       logger.info(`${label}: another instance holds the lock, skipping run`);
       return;
     }
+    // The lock session sits idle while the RPOD scan does CPU-bound
+    // screening/SGP4 on other pool clients. Neon/PgBouncer idle timeouts
+    // drop that session (~60s), releasing the lock so a second instance
+    // starts a duplicate scan. Keep the session alive.
+    let heartbeat: ReturnType<typeof setInterval> | undefined;
     try {
+      heartbeat = setInterval(() => {
+        client.query("select 1").catch(() => undefined);
+      }, 20_000);
+      heartbeat.unref();
       await fn();
     } finally {
+      if (heartbeat) clearInterval(heartbeat);
       // If the connection died mid-run the lock is already gone with the
       // session; a failed unlock must not mask fn's outcome or crash callers.
       await client.query("select pg_advisory_unlock($1)", [key]).catch((err) => {
@@ -532,27 +542,111 @@ export interface ArchiveStatus {
   backfillComplete: boolean;
 }
 
+/**
+ * Live GET /api/rpod/status (2026-08-25) timed out at 25s / 0 bytes, and a
+ * retry took 59s, while GET /rpod/events returned in 0.26s. The status
+ * handler used one aggregate:
+ *   count(*), count(distinct norad), max(epoch), min(epoch)
+ * over obc_tle_history (~5.1M rows). Mixing count(distinct) with min/max
+ * forces a sequential scan and throws away the epoch-index min/max plan.
+ *
+ * Status must never seq-scan the archive: newest/oldest are LIMIT 1 index
+ * probes; row/object counts come from planner stats (pg_class / pg_stats).
+ * newestEpoch can still be days in the future — space-track publishes
+ * predicted epochs for multi-day objects. That is archive truth, not the
+ * scan window (getLatestElsets caps at now + ELSET_FUTURE_SLACK_MS).
+ */
+export const ARCHIVE_STATUS_CACHE_MS = 10_000;
+
+let archiveStatusCache: { at: number; value: ArchiveStatus } | null = null;
+
+export function clearArchiveStatusCache(): void {
+  archiveStatusCache = null;
+}
+
+/** Coerce a pg/js numeric (number | string | bigint) to a finite number. */
+export function asFiniteNumber(v: unknown): number | null {
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  if (typeof v === "bigint") {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  if (typeof v === "string" && v !== "") {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+/** pg_class.reltuples is -1 before ANALYZE; never return a negative count. */
+export function estimatePgCount(reltuples: number | null | undefined): number {
+  if (reltuples == null || !Number.isFinite(reltuples) || reltuples < 0) return 0;
+  return Math.round(reltuples);
+}
+
+/**
+ * Decode pg_stats.n_distinct: positive = count, negative = −(fraction of
+ * rows that are distinct). See PostgreSQL "Statistics Used by the Planner".
+ */
+export function estimatePgDistinct(nDistinct: number | null | undefined, reltuples: number): number {
+  const rows = estimatePgCount(reltuples);
+  if (nDistinct == null || !Number.isFinite(nDistinct) || nDistinct === 0) return 0;
+  if (nDistinct < 0) return Math.max(0, Math.round((-nDistinct) * rows));
+  return Math.max(0, Math.round(nDistinct));
+}
+
+function executeRows<T>(result: unknown): T[] {
+  if (Array.isArray(result)) return result as T[];
+  if (result && typeof result === "object" && "rows" in result) {
+    return ((result as { rows?: T[] }).rows) ?? [];
+  }
+  return [];
+}
+
 export async function getArchiveStatus(): Promise<ArchiveStatus> {
-  const [agg] = await db
-    .select({
-      totalRows: sql<number>`count(*)::int`,
-      objects: sql<number>`count(distinct ${obcTleHistory.norad})::int`,
-      newest: sql<string | null>`max(${obcTleHistory.epoch})`,
-      oldest: sql<string | null>`min(${obcTleHistory.epoch})`,
-    })
-    .from(obcTleHistory);
-  const [bf, wm, bo] = await Promise.all([
+  if (archiveStatusCache && Date.now() - archiveStatusCache.at < ARCHIVE_STATUS_CACHE_MS) {
+    return archiveStatusCache.value;
+  }
+  const value = await loadArchiveStatus();
+  archiveStatusCache = { at: Date.now(), value };
+  return value;
+}
+
+async function loadArchiveStatus(): Promise<ArchiveStatus> {
+  const [newestRows, oldestRows, estResult, bf, wm, bo] = await Promise.all([
+    db.select({ epoch: obcTleHistory.epoch }).from(obcTleHistory).orderBy(desc(obcTleHistory.epoch)).limit(1),
+    db.select({ epoch: obcTleHistory.epoch }).from(obcTleHistory).orderBy(asc(obcTleHistory.epoch)).limit(1),
+    db.execute(sql`
+      SELECT
+        c.reltuples AS total_rows,
+        s.n_distinct AS n_distinct
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      LEFT JOIN pg_stats s
+        ON s.schemaname = n.nspname
+       AND s.tablename = c.relname
+       AND s.attname = 'norad'
+      WHERE c.relname = 'obc_tle_history'
+        AND n.nspname = ANY (current_schemas(false))
+      LIMIT 1
+    `).catch((err: unknown) => {
+      logger.warn({ err }, "tle-archive: pg_class stats unavailable");
+      return null;
+    }),
     getWorkerState<{ cursorMs: number }>(STATE_BACKFILL),
     getWorkerState<{ epochMs: number }>(STATE_WATERMARK),
     getWorkerState<{ until: number }>(STATE_BACKOFF),
   ]);
+  const est = executeRows<{ total_rows: unknown; n_distinct: unknown }>(estResult)[0];
+  const totalRows = estimatePgCount(asFiniteNumber(est?.total_rows));
+  const objects = estimatePgDistinct(asFiniteNumber(est?.n_distinct), totalRows);
   const iso = (v: string | Date | null | undefined): string | null =>
     v == null ? null : new Date(v).toISOString();
   return {
-    totalRows: agg?.totalRows ?? 0,
-    objects: agg?.objects ?? 0,
-    newestEpoch: iso(agg?.newest ?? null),
-    oldestEpoch: iso(agg?.oldest ?? null),
+    totalRows,
+    objects,
+    newestEpoch: iso(newestRows[0]?.epoch ?? null),
+    oldestEpoch: iso(oldestRows[0]?.epoch ?? null),
     horizonDays: BACKFILL_HORIZON_DAYS,
     horizon: new Date(backfillHorizonMs()).toISOString(),
     coarseAfterDays: COARSE_AFTER_DAYS,
