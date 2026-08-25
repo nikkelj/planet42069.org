@@ -670,7 +670,8 @@ export const GetRpodStatusResponse = zod.object({
   "activeEvents": zod.number(),
   "lastScanAt": zod.string().nullish(),
   "lastScanStatus": zod.string().nullish(),
-  "lastScanEvents": zod.number().nullish()
+  "lastScanEvents": zod.number().nullish(),
+  "lastScanError": zod.string().nullish().describe('Short reason from the latest rpod-scan sync-log row (null when the scan stored none)')
 })
 
 

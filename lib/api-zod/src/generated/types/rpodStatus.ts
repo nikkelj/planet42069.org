@@ -13,4 +13,5 @@ export interface RpodStatus {
   lastScanAt?: string | null;
   lastScanStatus?: string | null;
   lastScanEvents?: number | null;
+  lastScanError?: string | null;
 }

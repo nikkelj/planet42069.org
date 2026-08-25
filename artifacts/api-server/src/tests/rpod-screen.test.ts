@@ -11,7 +11,8 @@
  */
 import {
   screenCandidatePairs, screenCoAlignedPairs, minRaanDiffDeg, minPhaseDiffDeg, raanRateDegPerDay, closeApproach, clusterPairs,
-  DEFAULT_SCREEN, DEFAULT_COALIGNED, hasUsableTleLines, tleEpochMs, tleEpochIsCurrent, type ScreenElset, type FlaggedPair,
+  DEFAULT_SCREEN, DEFAULT_COALIGNED, hasUsableTleLines, tleEpochMs, tleEpochIsCurrent, MAX_SGP4_PAIR_MS, SCREEN_YIELD_EVERY,
+  type ScreenElset, type FlaggedPair,
 } from "../lib/rpod/screen";
 import { selectEndedCoplanarIds, COPLANAR_END_AFTER_MS, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS } from "../lib/rpod/retire";
 
@@ -72,12 +73,33 @@ console.log("Stage 1: plane screen");
   const c = makeElset({ norad: 102, incDeg: 97.5, raanDeg: 200.0, mm: 15.1 }); // far RAAN
   const d = makeElset({ norad: 103, incDeg: 51.6, raanDeg: 120.0, mm: 15.1 }); // wrong inc
   const e = makeElset({ norad: 104, incDeg: 97.5, raanDeg: 120.1, mm: 14.2 }); // wrong orbit size
-  const pairs = screenCandidatePairs([a, b, c, d, e]);
+  const pairs = await screenCandidatePairs([a, b, c, d, e]);
   const keys = pairs.map((p) => [p.a.norad, p.b.norad].sort().join(":"));
   check("keeps the coplanar pair", keys.includes("100:101"), keys.join(","));
   check("drops far-RAAN pair", !keys.some((k) => k.includes("102")));
   check("drops different-inclination pair", !keys.some((k) => k.includes("103")));
   check("drops different-orbit-size pair", !keys.some((k) => k.includes("104")));
+}
+
+console.log("Stage 1: screening yields the event loop");
+{
+  const many = Array.from({ length: 80 }, (_, i) =>
+    makeElset({ norad: 5000 + i, incDeg: 97.5, raanDeg: 120 + (i % 3) * 0.05, mm: 15.1 + (i % 5) * 0.01 }),
+  );
+  const syncPairs = await screenCandidatePairs(many, DEFAULT_SCREEN, 0);
+  const yieldPairs = await screenCandidatePairs(many, DEFAULT_SCREEN, 50);
+  const keyOf = (p: { a: ScreenElset; b: ScreenElset }) => [p.a.norad, p.b.norad].sort().join(":");
+  check("yielding screen matches sync pairs",
+    syncPairs.length === yieldPairs.length
+    && syncPairs.map(keyOf).sort().join() === yieldPairs.map(keyOf).sort().join(),
+    `sync=${syncPairs.length} yield=${yieldPairs.length}`);
+  check("worker yield stride is set", SCREEN_YIELD_EVERY >= 100 && SCREEN_YIELD_EVERY <= 20_000, String(SCREEN_YIELD_EVERY));
+
+  let ticks = 0;
+  const id = setInterval(() => { ticks++; }, 1);
+  await screenCandidatePairs(many, DEFAULT_SCREEN, 20);
+  clearInterval(id);
+  check("yielding screen lets timers fire (event loop not blocked)", ticks > 0, `ticks=${ticks}`);
 }
 
 console.log("J2 RAAN convergence");
@@ -177,6 +199,8 @@ console.log("Stage 2: unusable / future / Alpha-5 TLEs must not throw");
   const caShifted = closeApproach(good, shifted, startMs, 48 * 3600_000);
   check("shifted 6-digit pair returns null (no SGP4)", caShifted == null);
   check("shifted 6-digit pair returns in <200ms", Date.now() - tHang < 200, `took ${Date.now() - tHang}ms`);
+  check("SGP4 pair wall-clock cap is tight enough to keep HTTP alive",
+    MAX_SGP4_PAIR_MS > 0 && MAX_SGP4_PAIR_MS <= 5_000, String(MAX_SGP4_PAIR_MS));
 }
 
 console.log("Stage 3: clustering");
@@ -237,7 +261,7 @@ console.log("Co-aligned (coplanar shadowing) screen");
   };
 
   const now = Date.parse("2026-07-31T12:00:00Z");
-  const co = screenCoAlignedPairs([jackal, puma, other, lowShell, farPhase], DEFAULT_COALIGNED, now);
+  const co = await screenCoAlignedPairs([jackal, puma, other, lowShell, farPhase], DEFAULT_COALIGNED, now);
   const keys = co.map((p) => [p.a.norad, p.b.norad].sort().join(":"));
   const norads = new Set(co.flatMap((p) => [p.a.norad, p.b.norad]));
   check("known shadowing pair surfaces", keys.includes("69012:69646"), keys.join(",") || "none");

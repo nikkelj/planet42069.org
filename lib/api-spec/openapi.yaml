@@ -793,6 +793,10 @@ components:
         lastScanEvents:
           type: integer
           nullable: true
+        lastScanError:
+          type: string
+          nullable: true
+          description: Short reason from the latest rpod-scan sync-log row (null when the scan stored none)
       required: [archive, activeEvents]
 
     ConstellationSeries:

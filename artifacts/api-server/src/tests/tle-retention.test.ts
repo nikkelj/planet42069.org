@@ -9,6 +9,7 @@
  */
 import {
   sampleRows, backfillHorizonMs, BACKFILL_HORIZON_DAYS, COARSE_AFTER_DAYS, ELSET_FUTURE_SLACK_MS,
+  estimatePgCount, estimatePgDistinct, asFiniteNumber,
 } from "../lib/obc/tleArchive";
 import type { InsertObcTleHistory } from "@workspace/db/schema";
 
@@ -86,6 +87,24 @@ console.log("RPOD latest-elset epoch window");
   const until = now + ELSET_FUTURE_SLACK_MS;
   const newestEpoch = Date.parse("2026-08-27T11:19:49.514Z");
   check("live newestEpoch is after the scan until bound", newestEpoch > until);
+  // Archive status still reports the raw max(epoch). A future newestEpoch is
+  // NOT evidence that getLatestElsets dropped its cap — status and scan use
+  // different queries.
+  check("archive newestEpoch is allowed to be in the future", newestEpoch > now);
+}
+
+console.log("Archive status count estimates (must not seq-scan 5M rows)");
+{
+  check("asFiniteNumber accepts pg bigint-as-string", asFiniteNumber("5149357") === 5149357);
+  check("asFiniteNumber rejects garbage", asFiniteNumber("nope") === null);
+  check("reltuples -1 (never ANALYZE) → 0, not a seq-scan fallback", estimatePgCount(-1) === 0);
+  check("reltuples 5.1M rounds", estimatePgCount(5149357.4) === 5149357);
+  // pg_stats: negative n_distinct is −(fraction distinct)
+  check("n_distinct −0.0064 of 5.1M ≈ 33k objects",
+    estimatePgDistinct(-0.0064, 5149357) > 30_000 && estimatePgDistinct(-0.0064, 5149357) < 40_000,
+    String(estimatePgDistinct(-0.0064, 5149357)));
+  check("n_distinct 32928 is used as-is", estimatePgDistinct(32928, 5149357) === 32928);
+  check("missing n_distinct → 0 objects rather than count(distinct)", estimatePgDistinct(null, 5149357) === 0);
 }
 
 if (failures > 0) {

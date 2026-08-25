@@ -4,6 +4,7 @@ import { rpodEvents, rpodEventMembers, obcTleHistory, obcSyncLog } from "@worksp
 import { eq, desc, asc, inArray, sql, and, type SQL } from "drizzle-orm";
 import { getSatcat } from "../lib/satcat";
 import { getArchiveStatus } from "../lib/obc/tleArchive";
+import { formatRpodScanStatus } from "../lib/rpod/scan";
 import { getTle } from "../lib/tle";
 
 const router: IRouter = Router();
@@ -310,7 +311,7 @@ router.get("/rpod/countries", async (_req, res): Promise<void> => {
 router.get("/rpod/status", async (_req, res): Promise<void> => {
   const [archive, [lastScan]] = await Promise.all([
     getArchiveStatus(),
-    db.select({ finishedAt: obcSyncLog.finishedAt, status: obcSyncLog.status, rowCount: obcSyncLog.rowCount })
+    db.select({ finishedAt: obcSyncLog.finishedAt, status: obcSyncLog.status, rowCount: obcSyncLog.rowCount, error: obcSyncLog.error })
       .from(obcSyncLog)
       .where(eq(obcSyncLog.source, "rpod-scan"))
       .orderBy(desc(obcSyncLog.finishedAt))
@@ -323,9 +324,7 @@ router.get("/rpod/status", async (_req, res): Promise<void> => {
   res.json({
     archive,
     activeEvents: active,
-    lastScanAt: lastScan ? lastScan.finishedAt.toISOString() : null,
-    lastScanStatus: lastScan?.status ?? null,
-    lastScanEvents: lastScan?.rowCount ?? null,
+    ...formatRpodScanStatus(lastScan),
   });
 });
 

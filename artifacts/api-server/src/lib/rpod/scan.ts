@@ -8,7 +8,7 @@ import {
   screenCandidatePairs, screenCoAlignedPairs, closeApproach, clusterPairs,
   DEFAULT_SCREEN, DEFAULT_COALIGNED, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S,
   COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, semiMajorAxisKm, minPhaseDiffDeg,
-  hasUsableTleLines, tleEpochIsCurrent,
+  hasUsableTleLines, tleEpochIsCurrent, yieldToEventLoop, SCREEN_YIELD_EVERY,
   type ScreenElset, type FlaggedPair, type ScreenOptions,
 } from "./screen";
 import { selectEndedCoplanarIds, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS } from "./retire";
@@ -149,10 +149,6 @@ function isSameFreshLaunch(a: number, b: number, meta: Map<number, CatalogMeta>,
 }
 
 /** Let HTTP (e.g. GET /rpod/status) run between sync SGP4 pair diffs. */
-function yieldToEventLoop(): Promise<void> {
-  return new Promise((resolve) => setImmediate(resolve));
-}
-
 async function sgp4FlagPairs(
   pairs: { a: ScreenElset; b: ScreenElset }[],
   nowMs: number,
@@ -162,9 +158,13 @@ async function sgp4FlagPairs(
   const flagged: FlaggedPair[] = [];
   for (let i = 0; i < pairs.length; i++) {
     const { a, b } = pairs[i];
-    const ca = closeApproach(a, b, nowMs, DEFAULT_SCREEN.windowMs);
-    if (ca && ca.minRangeKm <= maxRangeKm && ca.relVelKmS <= maxRelVelKmS) {
-      flagged.push({ a: a.norad, b: b.norad, minRangeKm: ca.minRangeKm, relVelKmS: ca.relVelKmS, tcaMs: ca.tcaMs });
+    try {
+      const ca = closeApproach(a, b, nowMs, DEFAULT_SCREEN.windowMs);
+      if (ca && ca.minRangeKm <= maxRangeKm && ca.relVelKmS <= maxRelVelKmS) {
+        flagged.push({ a: a.norad, b: b.norad, minRangeKm: ca.minRangeKm, relVelKmS: ca.relVelKmS, tcaMs: ca.tcaMs });
+      }
+    } catch (err) {
+      logger.warn({ err: String(err), a: a.norad, b: b.norad }, "rpod-scan: closeApproach skipped pair");
     }
     await yieldToEventLoop();
   }
@@ -195,7 +195,7 @@ async function doScan(): Promise<void> {
     const byNorad = new Map(elsets.map((e) => [e.norad, e]));
 
     // Stage 1
-    let candidates = screenCandidatePairs(elsets, DEFAULT_SCREEN)
+    let candidates = (await screenCandidatePairs(elsets, DEFAULT_SCREEN, SCREEN_YIELD_EVERY))
       .filter((p) => !isSameFreshLaunch(p.a.norad, p.b.norad, meta, nowMs));
     // Tightest planes first when over budget
     if (candidates.length > MAX_SGP4_PAIRS) {
@@ -213,7 +213,7 @@ async function doScan(): Promise<void> {
     // slowly drifting in phase. The 30 km bubble rarely closes for these, so
     // they're flagged on geometry with loose range/velocity caps instead.
     const flaggedKeys = new Set(flagged.map((f) => pairKey(f.a, f.b)));
-    let coCandidates = screenCoAlignedPairs(elsets, DEFAULT_COALIGNED, nowMs)
+    let coCandidates = (await screenCoAlignedPairs(elsets, DEFAULT_COALIGNED, nowMs, SCREEN_YIELD_EVERY))
       .filter((p) => isPayloadPair(p.a.norad, p.b.norad, meta))
       .filter((p) => !isSameLaunch(p.a.norad, p.b.norad, meta))
       .filter((p) => !isSameConstellation(p.a.norad, p.b.norad, meta))
@@ -253,7 +253,7 @@ async function doScan(): Promise<void> {
         });
       });
       const flaggedKeys = new Set(flagged.map((f) => pairKey(f.a, f.b)));
-      const widePairs = screenCandidatePairs(neighborhood, relaxed)
+      const widePairs = (await screenCandidatePairs(neighborhood, relaxed, SCREEN_YIELD_EVERY))
         .filter((p) => memberSet.has(p.a.norad) || memberSet.has(p.b.norad))
         .filter((p) => !isSameFreshLaunch(p.a.norad, p.b.norad, meta, nowMs))
         .filter((p) => !flaggedKeys.has(pairKey(p.a.norad, p.b.norad)))
@@ -268,6 +268,7 @@ async function doScan(): Promise<void> {
 
     const conjResult = await persistEvents(events, "conjunction");
     const coResult = await persistEvents(coEvents, "coplanar");
+    const warnings = [...conjResult.errors, ...coResult.errors];
     // Alert on genuinely NEW cases (never routine updates/reopens), plus
     // one follow-up when an ACTIVE case escalates (min range tightening
     // sharply). Failures are swallowed inside — posting must never fail
@@ -276,12 +277,31 @@ async function doScan(): Promise<void> {
       const m = meta.get(norad);
       return m ? { name: m.name, launchTag: m.launchTag } : undefined;
     };
-    await postNewRpodEventAlerts([...conjResult.inserted, ...coResult.inserted], metaFor);
-    await postEscalationAlerts([...conjResult.escalated, ...coResult.escalated], metaFor);
-    await reclassifyDockedEvents();
-    await markStaleEvents();
-    await retireDriftedCoplanarEvents();
-    await logScanRow("success", started, events.length + coEvents.length);
+    try {
+      await postNewRpodEventAlerts([...conjResult.inserted, ...coResult.inserted], metaFor);
+      await postEscalationAlerts([...conjResult.escalated, ...coResult.escalated], metaFor);
+    } catch (err) {
+      warnings.push(`alerts: ${String(err)}`.slice(0, 300));
+      logger.warn({ err }, "rpod-scan: alert posting failed");
+    }
+    for (const [label, fn] of [
+      ["reclassify", reclassifyDockedEvents],
+      ["markStale", markStaleEvents],
+      ["retireCoplanar", retireDriftedCoplanarEvents],
+    ] as const) {
+      try {
+        await fn();
+      } catch (err) {
+        warnings.push(`${label}: ${String(err)}`.slice(0, 300));
+        logger.warn({ err }, `rpod-scan: ${label} failed (scan otherwise ok)`);
+      }
+    }
+    await logScanRow(
+      "success",
+      started,
+      events.length + coEvents.length,
+      warnings.length ? warnings.join("; ").slice(0, 2000) : undefined,
+    );
     logger.info(
       {
         elsets: elsets.length,
@@ -334,12 +354,30 @@ export interface PersistResult {
   inserted: NewRpodEvent[];
   /** ACTIVE cases whose min range tightened sharply on this update. */
   escalated: EscalatedRpodEvent[];
+  /** Per-event persist failures; the rest of the scan still succeeded. */
+  errors: string[];
+}
+
+/** Shape GET /api/rpod/status uses for the latest rpod-scan sync-log row. */
+export function formatRpodScanStatus(row?: {
+  finishedAt: Date;
+  status: string;
+  rowCount: number | null;
+  error: string | null;
+} | null): { lastScanAt: string | null; lastScanStatus: string | null; lastScanEvents: number | null; lastScanError: string | null } {
+  return {
+    lastScanAt: row ? row.finishedAt.toISOString() : null,
+    lastScanStatus: row?.status ?? null,
+    lastScanEvents: row?.rowCount ?? null,
+    lastScanError: row?.error ?? null,
+  };
 }
 
 export async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "conjunction" | "coplanar"): Promise<PersistResult> {
   const newlyInserted: NewRpodEvent[] = [];
   const escalated: EscalatedRpodEvent[] = [];
-  if (events.length === 0) return { inserted: newlyInserted, escalated };
+  const errors: string[] = [];
+  if (events.length === 0) return { inserted: newlyInserted, escalated, errors };
   // Conjunction-track events may be stored as "conjunction" OR "docked" —
   // match across both so a stack flipping labels never spawns a duplicate case.
   const kinds = kind === "conjunction" ? ["conjunction", "docked"] : [kind];
@@ -424,6 +462,7 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
   for (const ev of events) {
     if (
       ev.members.length < 2 ||
+      !ev.members.every((n) => Number.isFinite(n)) ||
       !Number.isFinite(ev.tcaMs) ||
       !Number.isFinite(ev.minRangeKm) ||
       !Number.isFinite(ev.relVelKmS) ||
@@ -434,6 +473,7 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
       continue;
     }
 
+    try {
     const evSet = new Set(ev.members);
     const match = active.find((ex) => {
       const exSet = membersByEvent.get(ex.id);
@@ -542,8 +582,13 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
       endedWithMembers = endedWithMembers.filter((e) => e.id !== persisted.eventId);
       logger.info({ eventId: persisted.eventId, kind }, "rpod-scan: reopened lapsed case (same pair re-detected)");
     }
+    } catch (err) {
+      const msg = `members ${ev.members.join("+")}: ${err instanceof Error ? err.message : String(err)}`;
+      errors.push(msg.slice(0, 300));
+      logger.warn({ err, members: ev.members, kind }, "rpod-scan: persist skipped one event");
+    }
   }
-  return { inserted: newlyInserted, escalated };
+  return { inserted: newlyInserted, escalated, errors };
 }
 
 /**
