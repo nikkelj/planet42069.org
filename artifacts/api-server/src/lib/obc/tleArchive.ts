@@ -1,6 +1,7 @@
 import { db, pool } from "@workspace/db";
 import { obcTleHistory, obcWorkerState, obcSyncLog, type InsertObcTleHistory } from "@workspace/db/schema";
-import { sql, desc, asc, gt, lte, and, gte, eq } from "drizzle-orm";
+import { sql, desc, asc, and, gte, eq, type SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 import { logger } from "../logger";
 
 /**
@@ -477,31 +478,161 @@ export interface LatestElset {
  */
 export const ELSET_FUTURE_SLACK_MS = 6 * 3600_000;
 
+/**
+ * Walk drizzle / pg error cause chains. Drizzle wraps the driver error as
+ * `Failed query: <sql>\nparams: …` and puts the real Postgres message on
+ * `error.cause`. `String(err)` therefore dropped "canceling statement due to
+ * statement timeout" / "out of memory" from lastScanError — live 2026-08-26
+ * only stored the DISTINCT ON SQL.
+ */
+export function formatDbError(err: unknown, maxLen = 2000): string {
+  const parts: string[] = [];
+  const codes: string[] = [];
+  const seen = new Set<unknown>();
+  let current: unknown = err;
+  for (let i = 0; i < 6 && current != null && !seen.has(current); i++) {
+    seen.add(current);
+    if (typeof current === "object") {
+      const code = (current as { code?: unknown }).code;
+      if (typeof code === "string" && code.length > 0 && !codes.includes(code)) codes.push(code);
+    }
+    if (current instanceof Error) {
+      if (current.message) parts.push(current.message);
+      current = current.cause;
+    } else {
+      parts.push(String(current));
+      break;
+    }
+  }
+  const text = (codes.length ? `[${codes.join(",")}] ` : "") + parts.join(" <- ");
+  return text.slice(0, maxLen);
+}
+
+/**
+ * True when `sqlText` is a cheap "latest elset per norad in a window" plan.
+ *
+ * The live 2026-08-26 scan failed on drizzle `selectDistinctOn(norad)` over
+ * `obc_tle_history` (~5.1M rows) for a ~3-day epoch window while selecting
+ * TLE `line1`/`line2`. Indexes are unique(norad, epoch) and (epoch). The
+ * WHERE is an epoch range, so Postgres typically range-scans `epoch_idx`
+ * then SORTS the matching heap rows by (norad, epoch DESC) for DISTINCT ON.
+ * Those heap rows include two TEXT TLE lines — a few hundred thousand wide
+ * tuples blow work_mem, spill, or hit statement_timeout.
+ *
+ * Cheap plans aggregate only (norad, max(epoch)) then join back on the
+ * unique (norad, epoch) key, or use LATERAL … LIMIT 1 per norad. They must
+ * not DISTINCT ON the full TLE payload.
+ */
+export function latestElsetsSqlIsCheap(sqlText: string): boolean {
+  const s = sqlText.toLowerCase().replace(/\s+/g, " ");
+  const distinctOnWidePayload =
+    /distinct\s+on/.test(s) && /line1/.test(s) && /line2/.test(s) && !/\bjoin\b/.test(s);
+  if (distinctOnWidePayload) return false;
+  const maxJoin = /max\s*\(/.test(s) && /group\s+by/.test(s) && /\bjoin\b/.test(s);
+  const lateral = /\blateral\b/.test(s);
+  const narrowDistinctThenJoin = /distinct\s+on/.test(s) && /\bjoin\b/.test(s);
+  return maxJoin || lateral || narrowDistinctThenJoin;
+}
+
+/**
+ * Latest-per-norad in (`since`, `until`]: aggregate the unique (norad, epoch)
+ * key in the window, then join back for TLE lines. Equivalent to
+ * DISTINCT ON (norad) ORDER BY norad, epoch DESC on that unique key, without
+ * sorting TEXT columns.
+ */
+export function latestElsetsQuerySql(since: Date, until: Date) {
+  return sql`
+    SELECT
+      h.norad,
+      h.epoch,
+      h.line1,
+      h.line2,
+      h.inc_deg,
+      h.raan_deg,
+      h.eccentricity,
+      h.arg_perigee_deg,
+      h.mean_anomaly_deg,
+      h.mean_motion_rev_per_day
+    FROM obc_tle_history AS h
+    INNER JOIN (
+      SELECT norad, MAX(epoch) AS epoch
+      FROM obc_tle_history
+      WHERE epoch > ${since}
+        AND epoch <= ${until}
+      GROUP BY norad
+    ) AS latest
+      ON latest.norad = h.norad
+     AND latest.epoch = h.epoch
+  `;
+}
+
+const pgDialect = new PgDialect();
+
+/** SQL text drizzle will send (params as `$n`) — for plan-shape tests. */
+export function sqlTemplateText(query: unknown): string {
+  return pgDialect.sqlToQuery(query as SQL).sql;
+}
+
+type LatestElsetRow = {
+  norad: unknown;
+  epoch: unknown;
+  line1: unknown;
+  line2: unknown;
+  inc_deg?: unknown;
+  incDeg?: unknown;
+  raan_deg?: unknown;
+  raanDeg?: unknown;
+  eccentricity: unknown;
+  arg_perigee_deg?: unknown;
+  argPerigeeDeg?: unknown;
+  mean_anomaly_deg?: unknown;
+  meanAnomalyDeg?: unknown;
+  mean_motion_rev_per_day?: unknown;
+  meanMotionRevPerDay?: unknown;
+};
+
+export function mapLatestElsetRow(r: LatestElsetRow): LatestElset {
+  const epoch = r.epoch instanceof Date ? r.epoch : new Date(String(r.epoch));
+  return {
+    norad: Number(r.norad),
+    epoch,
+    line1: String(r.line1 ?? ""),
+    line2: String(r.line2 ?? ""),
+    incDeg: Number(r.inc_deg ?? r.incDeg),
+    raanDeg: Number(r.raan_deg ?? r.raanDeg),
+    eccentricity: Number(r.eccentricity),
+    argPerigeeDeg: Number(r.arg_perigee_deg ?? r.argPerigeeDeg),
+    meanAnomalyDeg: Number(r.mean_anomaly_deg ?? r.meanAnomalyDeg),
+    meanMotionRevPerDay: Number(r.mean_motion_rev_per_day ?? r.meanMotionRevPerDay),
+  };
+}
+
 /** Latest archived elset per object with epoch in (`sinceMs`, `untilMs`]. */
 export async function getLatestElsets(
   sinceMs: number,
   untilMs: number = Date.now() + ELSET_FUTURE_SLACK_MS,
 ): Promise<LatestElset[]> {
-  const rows = await db
-    .selectDistinctOn([obcTleHistory.norad], {
-      norad: obcTleHistory.norad,
-      epoch: obcTleHistory.epoch,
-      line1: obcTleHistory.line1,
-      line2: obcTleHistory.line2,
-      incDeg: obcTleHistory.incDeg,
-      raanDeg: obcTleHistory.raanDeg,
-      eccentricity: obcTleHistory.eccentricity,
-      argPerigeeDeg: obcTleHistory.argPerigeeDeg,
-      meanAnomalyDeg: obcTleHistory.meanAnomalyDeg,
-      meanMotionRevPerDay: obcTleHistory.meanMotionRevPerDay,
-    })
-    .from(obcTleHistory)
-    .where(and(
-      gt(obcTleHistory.epoch, new Date(sinceMs)),
-      lte(obcTleHistory.epoch, new Date(untilMs)),
-    ))
-    .orderBy(obcTleHistory.norad, desc(obcTleHistory.epoch));
-  return rows;
+  const result = await db.execute(latestElsetsQuerySql(new Date(sinceMs), new Date(untilMs)));
+  return executeRows<LatestElsetRow>(result).map(mapLatestElsetRow);
+}
+
+/**
+ * RPOD scan loader: never throw. A failed DISTINCT ON used to hit doScan's
+ * catch, write lastScanStatus=error, and skip the hour. Skip/log instead so
+ * a bad fetch cannot abort screening/persist for the rest of the objects.
+ */
+export async function getLatestElsetsOrSkip(
+  sinceMs: number,
+  untilMs: number = Date.now() + ELSET_FUTURE_SLACK_MS,
+  fetchFn: (sinceMs: number, untilMs: number) => Promise<LatestElset[]> = getLatestElsets,
+): Promise<{ rows: LatestElset[]; warning: string | null }> {
+  try {
+    return { rows: await fetchFn(sinceMs, untilMs), warning: null };
+  } catch (err) {
+    const warning = `latest-elset fetch skipped: ${formatDbError(err)}`;
+    logger.warn({ err: warning }, "tle-archive: latest-elset fetch failed");
+    return { rows: [], warning };
+  }
 }
 
 /** Recent samples for one object (for RAAN-trend checks and event plots). */

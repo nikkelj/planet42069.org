@@ -82,7 +82,7 @@ console.log("RPOD latest-elset epoch window");
   check("future slack is 6 hours", ELSET_FUTURE_SLACK_MS === 6 * HOUR);
   // space-track multi-day objects publish epochs days ahead (live newestEpoch
   // 2026-08-27 while now is 2026-08-23). Those must sit outside untilMs so
-  // DISTINCT ON (norad) ORDER BY epoch DESC cannot hide a current TLE.
+  // MAX(epoch) in the scan window cannot hide a current TLE.
   const now = Date.parse("2026-08-23T15:00:00Z");
   const until = now + ELSET_FUTURE_SLACK_MS;
   const newestEpoch = Date.parse("2026-08-27T11:19:49.514Z");
