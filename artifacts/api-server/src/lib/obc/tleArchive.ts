@@ -1,6 +1,7 @@
 import { db, pool } from "@workspace/db";
 import { obcTleHistory, obcWorkerState, obcSyncLog, type InsertObcTleHistory } from "@workspace/db/schema";
-import { sql, desc, asc, and, gte, eq } from "drizzle-orm";
+import { sql, desc, asc, and, gte, eq, type SQL } from "drizzle-orm";
+import { PgDialect } from "drizzle-orm/pg-core";
 import { logger } from "../logger";
 
 /**
@@ -565,11 +566,11 @@ export function latestElsetsQuerySql(since: Date, until: Date) {
   `;
 }
 
-/** Drizzle sql-template text with params as `?` — for plan-shape tests. */
+const pgDialect = new PgDialect();
+
+/** SQL text drizzle will send (params as `$n`) — for plan-shape tests. */
 export function sqlTemplateText(query: unknown): string {
-  const chunks = (query as { queryChunks?: unknown[] }).queryChunks;
-  if (!Array.isArray(chunks)) return String(query);
-  return chunks.map((c) => (typeof c === "string" ? c : "?")).join("");
+  return pgDialect.sqlToQuery(query as SQL).sql;
 }
 
 type LatestElsetRow = {
