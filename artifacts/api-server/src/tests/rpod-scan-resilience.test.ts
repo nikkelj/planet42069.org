@@ -1,21 +1,34 @@
 /**
- * Regression tests for the 2026-08-25 RPOD scan/status outage:
+ * Regression tests for the 2026-08-25 RPOD scan/status outage and the
+ * 2026-08-26 follow-on: the hourly scan itself still failed after status
+ * was made fast.
  *  - GET /api/rpod/status must not seq-scan obc_tle_history (live timed out
  *    at 25s / 0 bytes; a retry took 59s while /rpod/events was 0.26s)
  *  - lastScanError is returned so ops can see why lastScanStatus=error
  *    without logs (obc_sync_log.error was stored but never selected)
  *  - persistEvents continues after one event's transaction fails, instead
  *    of marking the whole hourly scan as error
+ *  - getLatestElsets must not DISTINCT ON the full TLE payload over a 3-day
+ *    window of ~5.1M-row obc_tle_history (live 2026-08-26 ~13:45Z Failed
+ *    query; String(err) hid the PG cause; doScan stamped status=error)
+ *  - a failed latest-elset fetch skips/logs instead of aborting doScan
  *
  * Run with: pnpm --filter @workspace/api-server run test:rpod
  */
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { db, pool } from "@workspace/db";
 import { rpodEvents, rpodEventMembers } from "@workspace/db/schema";
 import { inArray, eq } from "drizzle-orm";
 import type { Server } from "node:http";
 import app from "../app";
 import { persistEvents, formatRpodScanStatus } from "../lib/rpod/scan";
-import { getArchiveStatus, clearArchiveStatusCache } from "../lib/obc/tleArchive";
+import {
+  getArchiveStatus, clearArchiveStatusCache,
+  getLatestElsetsOrSkip, formatDbError, latestElsetsSqlIsCheap,
+  latestElsetsQuerySql, sqlTemplateText, mapLatestElsetRow,
+} from "../lib/obc/tleArchive";
 import type { ClusteredEvent } from "../lib/rpod/screen";
 
 let failures = 0;
@@ -73,6 +86,95 @@ async function main(): Promise<void> {
     });
     check("success status has null lastScanError", ok.lastScanError === null);
     check("missing row → all nulls", formatRpodScanStatus(null).lastScanStatus === null);
+  }
+
+  console.log("getLatestElsets must not DISTINCT ON the TLE payload (2026-08-26)");
+  {
+    // Verbatim from live lastScanError on GET /api/rpod/status ~15:04 UTC.
+    const liveFailedSql = `
+      select distinct on ("obc_tle_history"."norad") "norad", "epoch", "line1", "line2",
+      "inc_deg", "raan_deg", "eccentricity", "arg_perigee_deg", "mean_anomaly_deg",
+      "mean_motion_rev_per_day" from "obc_tle_history"
+      where ("obc_tle_history"."epoch" > $1 and "obc_tle_history"."epoch" <= $2)
+      order by "obc_tle_history"."norad", "obc_tle_history"."epoch" desc
+    `;
+    check(
+      "live DISTINCT ON (norad) selecting line1/line2 is NOT a cheap plan",
+      latestElsetsSqlIsCheap(liveFailedSql) === false,
+    );
+
+    const since = new Date("2026-08-23T13:44:31.178Z");
+    const until = new Date("2026-08-26T19:44:31.178Z");
+    const sqlText = sqlTemplateText(latestElsetsQuerySql(since, until));
+    check("current latest-elset SQL is a cheap MAX(epoch)+join plan", latestElsetsSqlIsCheap(sqlText), sqlText.slice(0, 240));
+    check("current SQL does not DISTINCT ON", !/distinct\s+on/i.test(sqlText), sqlText.slice(0, 160));
+    check("current SQL aggregates MAX(epoch) per norad", /max\s*\(\s*epoch\s*\)/i.test(sqlText));
+    check("current SQL GROUP BYs norad", /group\s+by\s+norad/i.test(sqlText));
+    check("current SQL joins back on (norad, epoch)", /inner\s+join/i.test(sqlText) && /latest\.norad\s*=\s*h\.norad/i.test(sqlText));
+    check("current SQL still selects TLE lines on the joined row", /h\.line1/.test(sqlText) && /h\.line2/.test(sqlText));
+
+    const mapped = mapLatestElsetRow({
+      norad: 25544,
+      epoch: since,
+      line1: "1 25544U",
+      line2: "2 25544",
+      inc_deg: 51.6,
+      raan_deg: 10,
+      eccentricity: 0.0001,
+      arg_perigee_deg: 90,
+      mean_anomaly_deg: 0,
+      mean_motion_rev_per_day: 15.5,
+    });
+    check("mapLatestElsetRow promotes snake_case heap columns", mapped.incDeg === 51.6 && mapped.norad === 25544);
+  }
+
+  console.log("Failed query cause is preserved; fetch skip does not abort doScan");
+  {
+    const liveQuery =
+      `Failed query: select distinct on ("obc_tle_history"."norad") "norad", "epoch", "line1", "line2" from "obc_tle_history" where ("obc_tle_history"."epoch" > $1 and "obc_tle_history"."epoch" <= $2) order by "obc_tle_history"."norad", "obc_tle_history"."epoch" desc\nparams: 2026-08-23T13:44:31.178Z,2026-08-26T19:44:31.178Z`;
+    const drizzleErr = new Error(liveQuery);
+    const timeout = new Error("canceling statement due to statement timeout");
+    (timeout as Error & { code: string }).code = "57014";
+    drizzleErr.cause = timeout;
+    const formatted = formatDbError(drizzleErr);
+    check("String(err) is only the Failed query wrapper (what live lastScanError stored)", !String(drizzleErr).includes("statement timeout"));
+    check("formatDbError includes the PG cause", formatted.includes("statement timeout"), formatted);
+    check("formatDbError includes SQLSTATE 57014", formatted.includes("57014"), formatted);
+
+    let threw = false;
+    let loaded: Awaited<ReturnType<typeof getLatestElsetsOrSkip>> | null = null;
+    try {
+      loaded = await getLatestElsetsOrSkip(0, 1, async () => { throw drizzleErr; });
+    } catch (err) {
+      threw = true;
+      check("getLatestElsetsOrSkip did not throw", false, String(err));
+    }
+    check("getLatestElsetsOrSkip did not throw", !threw);
+    check("failed fetch returns no rows", loaded?.rows.length === 0);
+    check("failed fetch returns a skip warning", typeof loaded?.warning === "string" && (loaded?.warning ?? "").includes("latest-elset fetch skipped"));
+    check("skip warning includes the PG cause", (loaded?.warning ?? "").includes("statement timeout"));
+
+    // doScan writes this shape instead of status=error / rowCount=null.
+    const skipStatus = formatRpodScanStatus({
+      finishedAt: new Date("2026-08-26T13:45:02.964Z"),
+      status: "success",
+      rowCount: 0,
+      error: loaded?.warning ?? "missing",
+    });
+    check("elset-fetch skip is lastScanStatus=success, not error", skipStatus.lastScanStatus === "success");
+    check("elset-fetch skip keeps lastScanError for ops", typeof skipStatus.lastScanError === "string" && skipStatus.lastScanError.includes("fetch skipped"));
+    check("live 13:45Z error row would still map as error (old path)", formatRpodScanStatus({
+      finishedAt: new Date("2026-08-26T13:45:02.964Z"),
+      status: "error",
+      rowCount: null,
+      error: liveQuery,
+    }).lastScanStatus === "error");
+
+    const scanSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../lib/rpod/scan.ts"), "utf8");
+    check("doScan loads elsets via getLatestElsetsOrSkip", scanSrc.includes("getLatestElsetsOrSkip("));
+    check("doScan does not call throwing getLatestElsets(", !/\bgetLatestElsets\(/.test(scanSrc));
+    check("doScan logs success (not error) when the fetch is skipped",
+      /if \(loaded\.warning\)[\s\S]{0,500}logScanRow\(\s*"success"/.test(scanSrc));
   }
 
   if (!(await dbReachable())) {

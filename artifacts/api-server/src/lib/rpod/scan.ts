@@ -2,7 +2,7 @@ import { db } from "@workspace/db";
 import { rpodEvents, rpodEventMembers, obcSyncLog } from "@workspace/db/schema";
 import { sql, eq, and, inArray, lt } from "drizzle-orm";
 import { logger } from "../logger";
-import { getLatestElsets, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, type LatestElset } from "../obc/tleArchive";
+import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, type LatestElset } from "../obc/tleArchive";
 import { getSatcatFromStore } from "../obc/store";
 import {
   screenCandidatePairs, screenCoAlignedPairs, closeApproach, clusterPairs,
@@ -175,10 +175,19 @@ async function doScan(): Promise<void> {
   const started = new Date();
   const nowMs = Date.now();
   try {
-    const [latest, meta] = await Promise.all([
-      getLatestElsets(nowMs - ELSET_MAX_AGE_MS, nowMs + ELSET_FUTURE_SLACK_MS),
+    const [loaded, meta] = await Promise.all([
+      getLatestElsetsOrSkip(nowMs - ELSET_MAX_AGE_MS, nowMs + ELSET_FUTURE_SLACK_MS),
       loadCatalogMeta(),
     ]);
+    if (loaded.warning) {
+      // Do not stamp lastScanStatus=error — a bad TLE fetch must not abort
+      // the hour (same idea as persist skipping one bad event). Record a
+      // success row with the reason so lastScanError is visible.
+      await logScanRow("success", started, 0, loaded.warning);
+      logger.warn({ warning: loaded.warning }, "rpod-scan: skipping hour after elset fetch failure");
+      return;
+    }
+    const latest = loaded.rows;
     if (latest.length < 2) {
       logger.info({ elsets: latest.length }, "rpod-scan: not enough archived elsets yet, skipping");
       return;
@@ -314,7 +323,7 @@ async function doScan(): Promise<void> {
       "rpod-scan: complete",
     );
   } catch (err) {
-    await logScanRow("error", started, null, String(err));
+    await logScanRow("error", started, null, formatDbError(err));
     logger.error({ err }, "rpod-scan: failed");
     throw err; // propagate so the scheduler can schedule a short retry
   }
