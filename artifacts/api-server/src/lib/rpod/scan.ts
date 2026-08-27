@@ -13,6 +13,13 @@ import {
 } from "./screen";
 import { selectEndedCoplanarIds, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS } from "./retire";
 import { postNewRpodEventAlerts, postEscalationAlerts, isEscalation, type NewRpodEvent, type EscalatedRpodEvent } from "./alert";
+import {
+  DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry,
+  isProvenSamePair, prioritizeSgp4Pairs, selectInterestingEvents,
+  type InterestCatalogMeta,
+} from "./interest";
+
+export { DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry };
 
 /**
  * RPOD scan orchestrator: pulls the latest archived elsets, runs the
@@ -22,8 +29,10 @@ import { postNewRpodEventAlerts, postEscalationAlerts, isEscalation, type NewRpo
  *  - only elsets fresher than ELSET_MAX_AGE feed the scan
  *  - same-launch pairs younger than DEPLOY_QUIET_DAYS are skipped
  *    (deployment dispersion is not proximity OPERATIONS)
- *  - SGP4 differencing is capped at MAX_SGP4_PAIRS per run, tightest
- *    screening margins first
+ *  - SGP4 differencing is capped at MAX_SGP4_PAIRS per run; mixed-force
+ *    pairs take the budget first, then tightest same-operator planes
+ *  - persist only "interesting" events (mixed-operator, non-docked
+ *    clusters, ultra-close same-operator near-misses) — see interest.ts
  */
 
 const ELSET_MAX_AGE_MS = 3 * 86400_000;
@@ -37,19 +46,6 @@ const MEMBER_CAP = 5;
 /** Events whose window ended this long ago get marked stale. */
 const STALE_AFTER_MS = 3 * 86400_000;
 
-/**
- * Docked-stack classification: pairs at essentially zero range AND zero
- * relative velocity are physically joined (station modules, docked visiting
- * vehicles), not proximity operations in progress. Labeled "docked" so the
- * desk doesn't cry conjunction over the ISS stack.
- */
-export const DOCKED_MAX_RANGE_KM = 0.5;
-export const DOCKED_MAX_RELVEL_KM_S = 0.01;
-
-export function isDockedGeometry(minRangeKm: number, relVelKmS: number): boolean {
-  return minRangeKm <= DOCKED_MAX_RANGE_KM && relVelKmS <= DOCKED_MAX_RELVEL_KM_S;
-}
-
 let scanInFlight: Promise<void> | null = null;
 
 export function runRpodScan(): Promise<void> {
@@ -58,44 +54,9 @@ export function runRpodScan(): Promise<void> {
   return scanInFlight;
 }
 
-interface CatalogMeta {
+interface CatalogMeta extends InterestCatalogMeta {
   launchTag: string | null;
   ldate: string | null;
-  name: string | null;
-  objectClass: string | null;
-}
-
-/**
- * Mega-constellation families whose sibling pairs are routine station-keeping
- * neighbors, not proximity operations. Deliberately NOT a generic name-prefix
- * rule: catch-all names like "Kosmos-NNNN" cover genuinely interesting
- * inspector pairs and must never be filtered.
- */
-const CONSTELLATION_PATTERNS: [string, RegExp][] = [
-  ["starlink", /^starlink\b/],
-  ["oneweb", /^oneweb\b/],
-  ["iridium", /^iridium\b/],
-  ["globalstar", /^globalstar\b/],
-  ["orbcomm", /^orbcomm\b/],
-  ["flock", /^flock\b/],
-  ["lemur", /^lemur\b/],
-  ["spacebee", /^spacebee\b/],
-  ["kuiper", /^kuiper\b/],
-  ["qianfan", /^(qianfan|g60)\b/],
-  ["guowang", /^(guowang|gw[- ])/],
-];
-
-function constellationTag(name: string | null | undefined): string | null {
-  if (!name) return null;
-  const n = name.trim().toLowerCase();
-  for (const [tag, re] of CONSTELLATION_PATTERNS) if (re.test(n)) return tag;
-  return null;
-}
-
-/** Both objects belong to the same mega-constellation family. */
-function isSameConstellation(a: number, b: number, meta: Map<number, CatalogMeta>): boolean {
-  const ta = constellationTag(meta.get(a)?.name);
-  return ta != null && ta === constellationTag(meta.get(b)?.name);
 }
 
 /** Both objects are active payloads (shadowing needs two spacecraft, not debris/stages). */
@@ -115,7 +76,18 @@ async function loadCatalogMeta(): Promise<Map<number, CatalogMeta>> {
   try {
     const entries = await getSatcatFromStore();
     for (const e of entries) {
-      if (e.satno != null) map.set(e.satno, { launchTag: e.launchTag ?? null, ldate: e.ldate, name: e.name ?? e.plName ?? null, objectClass: e.objectClass ?? null });
+      if (e.satno != null) {
+        map.set(e.satno, {
+          launchTag: e.launchTag ?? null,
+          ldate: e.ldate,
+          name: e.name ?? e.plName ?? null,
+          objectClass: e.objectClass ?? null,
+          owner: e.owner ?? null,
+          state: e.state ?? null,
+          gunterOperator: e.gunterOperator ?? null,
+          gunterNation: e.gunterNation ?? null,
+        });
+      }
     }
   } catch (err) {
     logger.warn({ err }, "rpod-scan: catalog meta unavailable, proceeding without launch filtering");
@@ -204,15 +176,14 @@ async function doScan(): Promise<void> {
     const byNorad = new Map(elsets.map((e) => [e.norad, e]));
 
     // Stage 1
+    const planeScore = (p: { a: ScreenElset; b: ScreenElset }) =>
+      Math.abs(p.a.incDeg - p.b.incDeg) + Math.abs(p.a.meanMotionRevPerDay - p.b.meanMotionRevPerDay) * 4;
     let candidates = (await screenCandidatePairs(elsets, DEFAULT_SCREEN, SCREEN_YIELD_EVERY))
       .filter((p) => !isSameFreshLaunch(p.a.norad, p.b.norad, meta, nowMs));
-    // Tightest planes first when over budget
+    // Mixed-force pairs take the SGP4 budget first so Starlink housekeeping
+    // cannot crowd red-vs-blue approaches off the hour.
     if (candidates.length > MAX_SGP4_PAIRS) {
-      candidates = candidates
-        .map((p) => ({ p, score: Math.abs(p.a.incDeg - p.b.incDeg) + Math.abs(p.a.meanMotionRevPerDay - p.b.meanMotionRevPerDay) * 4 }))
-        .sort((x, y) => x.score - y.score)
-        .slice(0, MAX_SGP4_PAIRS)
-        .map((x) => x.p);
+      candidates = prioritizeSgp4Pairs(candidates, meta, MAX_SGP4_PAIRS, planeScore);
     }
 
     // Stage 2 — yield between pairs so GET /api/rpod/status can still flush.
@@ -225,7 +196,7 @@ async function doScan(): Promise<void> {
     let coCandidates = (await screenCoAlignedPairs(elsets, DEFAULT_COALIGNED, nowMs, SCREEN_YIELD_EVERY))
       .filter((p) => isPayloadPair(p.a.norad, p.b.norad, meta))
       .filter((p) => !isSameLaunch(p.a.norad, p.b.norad, meta))
-      .filter((p) => !isSameConstellation(p.a.norad, p.b.norad, meta))
+      .filter((p) => !isProvenSamePair(p.a.norad, p.b.norad, meta))
       .filter((p) => !flaggedKeys.has(pairKey(p.a.norad, p.b.norad)));
     if (coCandidates.length > MAX_COALIGNED_SGP4_PAIRS) {
       // Tightest co-alignment first: plane deltas + shell separation + in-track phase.
@@ -275,8 +246,17 @@ async function doScan(): Promise<void> {
 
     const coEvents = clusterPairs(coFlagged, MEMBER_CAP, COALIGNED_MERGE_WINDOW_MS);
 
-    const conjResult = await persistEvents(events, "conjunction");
-    const coResult = await persistEvents(coEvents, "coplanar");
+    // Persist only interesting encounters. Boring same-operator routine
+    // RPOD must not land in rpod_events or on the public board.
+    const conjKept = selectInterestingEvents(events, meta);
+    const coKept = selectInterestingEvents(coEvents, meta);
+    const interestStats = {
+      conjunction: conjKept.stats,
+      coplanar: coKept.stats,
+    };
+
+    const conjResult = await persistEvents(conjKept.kept, "conjunction");
+    const coResult = await persistEvents(coKept.kept, "coplanar");
     const warnings = [...conjResult.errors, ...coResult.errors];
     // Alert on genuinely NEW cases (never routine updates/reopens), plus
     // one follow-up when an ACTIVE case escalates (min range tightening
@@ -308,7 +288,7 @@ async function doScan(): Promise<void> {
     await logScanRow(
       "success",
       started,
-      events.length + coEvents.length,
+      conjKept.kept.length + coKept.kept.length,
       warnings.length ? warnings.join("; ").slice(0, 2000) : undefined,
     );
     logger.info(
@@ -317,8 +297,11 @@ async function doScan(): Promise<void> {
         candidates: candidates.length,
         flaggedPairs: flagged.length,
         events: events.length,
+        interestingEvents: conjKept.kept.length,
         coCandidates: coCandidates.length,
         coplanarEvents: coEvents.length,
+        interestingCoplanar: coKept.kept.length,
+        interest: interestStats,
       },
       "rpod-scan: complete",
     );
