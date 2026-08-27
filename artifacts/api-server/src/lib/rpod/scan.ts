@@ -31,8 +31,8 @@ export { DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry };
  *    (deployment dispersion is not proximity OPERATIONS)
  *  - SGP4 differencing is capped at MAX_SGP4_PAIRS per run; mixed-force
  *    pairs take the budget first, then tightest same-operator planes
- *  - persist only "interesting" events (mixed-operator, non-docked
- *    clusters, ultra-close same-operator near-misses) — see interest.ts
+ *  - persist only "interesting" events (mixed-operator, crossing-track
+ *    same-operator, messy clusters, ultra-close near-misses) — see interest.ts
  */
 
 const ELSET_MAX_AGE_MS = 3 * 86400_000;
@@ -196,6 +196,8 @@ async function doScan(): Promise<void> {
     let coCandidates = (await screenCoAlignedPairs(elsets, DEFAULT_COALIGNED, nowMs, SCREEN_YIELD_EVERY))
       .filter((p) => isPayloadPair(p.a.norad, p.b.norad, meta))
       .filter((p) => !isSameLaunch(p.a.norad, p.b.norad, meta))
+      // Slow same-plane neighbor screen only. Same-constellation still
+      // goes through the conjunction path for crossing / near-miss / cluster.
       .filter((p) => !isProvenSamePair(p.a.norad, p.b.norad, meta))
       .filter((p) => !flaggedKeys.has(pairKey(p.a.norad, p.b.norad)));
     if (coCandidates.length > MAX_COALIGNED_SGP4_PAIRS) {

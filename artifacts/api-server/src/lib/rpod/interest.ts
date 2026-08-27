@@ -7,15 +7,22 @@ import { RPOD_MAX_RANGE_KM, type ClusteredEvent, type FlaggedPair } from "./scre
  * The hourly scan still finds every close approach inside the conjunction
  * bubble. This module decides which clustered events are worth persisting.
  * Filtering here (not in the UI) keeps the events table and the public
- * desk from filling with Starlink-on-Starlink station-keeping.
+ * desk from filling with routine same-plane station-keeping.
  *
- * Three interesting classes, in this order:
+ * Same-constellation is NOT a hard ban. Starlink-on-Starlink (and other
+ * same-operator pairs) is an allowed interesting class when the geometry
+ * is unusual — see classes 2–4. Typical same-plane, kilometer-scale
+ * housekeeping is still dropped.
+ *
+ * Interesting classes, in this order:
  *   1. Mixed-operator / mixed-owner / mixed-force (red vs blue). Default.
- *   2. Cluster: several independently flying (non-attached) bodies in the
- *      same small volume. A docked ISS/Tiangong stack is one attached body,
- *      not a cluster.
- *   3. Same-operator near-miss: miss distance so tight it looks like a
- *      fuckup, not planned RPO or mega-constellation relative motion.
+ *   2. Same-operator ultra-close near-miss (≤200 m, not docked).
+ *   3. Same-operator crossing-track / high relative velocity — not the
+ *      slow coplanar neighbor flyby.
+ *   4. Messy cluster of many independently flying (non-attached) bodies.
+ *      Three Starlinks in a dense-shell 30 km bubble is just density;
+ *      a real mess is many free-flyers. Docked ISS/Tiangong stacks are
+ *      one attached body, not a cluster.
  *
  * Everything else is boring and must not be stored.
  */
@@ -30,28 +37,42 @@ import { RPOD_MAX_RANGE_KM, type ClusteredEvent, type FlaggedPair } from "./scre
 export const MIXED_OPERATOR_MAX_RANGE_KM = RPOD_MAX_RANGE_KM; // 30 km
 
 /**
- * Same-operator / same-constellation "they fucked up" bar. Routine
- * Starlink-on-Starlink, OneWeb-on-OneWeb, and planned same-owner RPO live
- * at kilometers. A near-miss that looks like someone actually messed up
- * is inside 200 m AND not docked (relative velocity too high to be
- * physically joined). ~150× tighter than the mixed-operator 30 km bubble.
+ * Same-operator / same-constellation "they fucked up" bar. Planned
+ * same-owner RPO and same-plane station-keeping live at kilometers. A
+ * near-miss that looks like someone actually messed up is inside 200 m
+ * AND not docked (relative velocity too high to be physically joined).
+ * ~150× tighter than the mixed-operator 30 km bubble.
  *
  * Docked geometry (≤0.5 km AND ≤1 cm/s) is attached hardware, not a
- * fuckup — same-operator docked stacks stay boring.
+ * fuckup — same-operator docked stacks stay boring. Ultra-close
+ * Starlink-on-Starlink that is NOT docked still qualifies.
  */
 export const SAME_OPERATOR_NEAR_MISS_KM = 0.2;
 
 /**
- * "Same small volume" for cluster detection. Matches the conjunction
- * bubble so a 175 km coplanar trio is not a cluster.
+ * Same-operator crossing-track bar. Slow coplanar neighbors (Starlink
+ * station-keeping in one shell) close at tens of m/s. Crossing-track
+ * conjunctions that still pass the plane screen close at a few hundred
+ * m/s. 0.3 km/s sits above neighbor flybys and inside the 1.5 km/s
+ * conjunction cap. Must also be inside CLUSTER_MAX_RANGE_KM so a 175 km
+ * coplanar shadower never qualifies on velocity alone.
+ */
+export const SAME_OPERATOR_CROSSING_RELVEL_KM_S = 0.3;
+
+/**
+ * "Same small volume" for cluster and crossing-track detection. Matches
+ * the conjunction bubble so a 175 km coplanar trio is not a cluster.
  */
 export const CLUSTER_MAX_RANGE_KM = RPOD_MAX_RANGE_KM; // 30 km
 
 /**
- * Minimum independently flying (non-attached) bodies in that volume.
- * Two is a pair. Three or more is a messy cluster.
+ * Minimum independently flying (non-attached) bodies for a same-operator
+ * messy cluster. Two is a pair. Three Starlinks in a 30 km bubble of a
+ * dense shell is expected density, not a mess. A real mess is many
+ * free-flyers. Mixed-operator events keep at two members (class 1) and
+ * do not use this bar.
  */
-export const CLUSTER_MIN_FREE_BODIES = 3;
+export const CLUSTER_MIN_FREE_BODIES = 6;
 
 /**
  * Docked-stack geometry: near-zero range AND near-zero relative velocity
@@ -66,6 +87,13 @@ export function isDockedGeometry(minRangeKm: number, relVelKmS: number): boolean
   return minRangeKm <= DOCKED_MAX_RANGE_KM && relVelKmS <= DOCKED_MAX_RELVEL_KM_S;
 }
 
+/** Crossing-track / high-relvel flyby inside the conjunction bubble, not attached. */
+export function isCrossingTrackGeometry(minRangeKm: number, relVelKmS: number): boolean {
+  return minRangeKm <= CLUSTER_MAX_RANGE_KM
+    && relVelKmS >= SAME_OPERATOR_CROSSING_RELVEL_KM_S
+    && !isDockedGeometry(minRangeKm, relVelKmS);
+}
+
 // ── catalog affiliation ────────────────────────────────────────────────────
 
 export interface InterestCatalogMeta {
@@ -78,10 +106,12 @@ export interface InterestCatalogMeta {
 }
 
 /**
- * Mega-constellation families whose sibling pairs are routine
- * station-keeping, not proximity operations. Deliberately NOT a generic
- * name-prefix rule: catch-all names like "Kosmos-NNNN" cover inspector
- * pairs and must never be lumped into one constellation.
+ * Mega-constellation families. Used to recognize same-constellation
+ * siblings so the tighter same-operator gates apply — NOT a hard ban.
+ * Starlink-on-Starlink still surfaces for near-miss, crossing-track, or
+ * a messy cluster. Deliberately NOT a generic name-prefix rule:
+ * catch-all names like "Kosmos-NNNN" cover inspector pairs and must
+ * never be lumped into one constellation.
  */
 export const CONSTELLATION_PATTERNS: [string, RegExp][] = [
   ["starlink", /^starlink\b/],
@@ -197,11 +227,13 @@ export function isProvenMixedAffiliation(a: Affiliation, b: Affiliation): boolea
  *  - "mixed": different operators / nations / constellations, OR clearly
  *    mixed names when ownership is missing (COSMOS vs USA, STARLINK vs
  *    ONEWEB). Never drop these as a bland self-on-self guess.
- *  - "same": proven same constellation, owner, or operator. Starlink-
- *    on-Starlink, OneWeb-on-OneWeb, planned same-owner RPO.
+ *  - "same": proven same constellation, owner, or operator. Still an
+ *    allowed interesting class when geometry is unusual (near-miss,
+ *    crossing-track, messy cluster); only the slow same-plane km-scale
+ *    case is boring.
  *  - "unknown": not enough metadata to prove mixed, and names are not
- *    clearly different. Fail closed: treat as boring self-on-self unless
- *    the geometry is an ultra-close near-miss or a messy cluster.
+ *    clearly different. Fail closed: treat as bland self-on-self unless
+ *    the geometry is unusual (near-miss, crossing-track, messy cluster).
  */
 export type PairClass = "mixed" | "same" | "unknown";
 
@@ -231,9 +263,11 @@ export function isMixedPair(
 }
 
 /**
- * True when we can prove the pair is same-operator or same-constellation
- * (used to skip boring coplanar SGP4 work). Unknown is NOT proven same —
- * a clearly mixed-name pair with missing owners must still be screened.
+ * True when we can prove the pair is same-operator or same-constellation.
+ * Used to skip the *coplanar* (slow-neighbor) SGP4 path — that screen is
+ * definitionally the boring same-plane flyby. Same-constellation pairs
+ * still go through the conjunction screen and persist when they are a
+ * near-miss, crossing-track, or messy cluster.
  */
 export function isProvenSamePair(
   a: number,
@@ -249,6 +283,7 @@ export type InterestReason =
   | "mixed-operator"
   | "cluster"
   | "same-operator-near-miss"
+  | "same-operator-crossing"
   | "boring";
 
 export interface InterestDecision {
@@ -299,7 +334,10 @@ function eventIsDockedNearMiss(ev: Pick<ClusteredEvent, "minRangeKm" | "relVelKm
  * Classify a clustered RPOD event. Pure — no DB, no Space-Track.
  *
  * Mixed-operator wins even for docked stacks (ISS + Dragon is mixed-force
- * visiting-vehicle traffic). Same-operator docked stacks do not.
+ * visiting-vehicle traffic). Same-operator / same-constellation is kept
+ * when the geometry is a near-miss, a crossing-track conjunction, or a
+ * messy cluster of many free-flyers — not when it is a slow same-plane
+ * neighbor at kilometers.
  */
 export function classifyEvent(
   ev: Pick<ClusteredEvent, "members" | "pairs" | "minRangeKm" | "relVelKmS">,
@@ -308,14 +346,17 @@ export function classifyEvent(
   if (ev.members.length >= 2 && eventIsMixed(ev.members, meta)) {
     return { keep: true, reason: "mixed-operator" };
   }
-  if (countFreeBodies(ev) >= CLUSTER_MIN_FREE_BODIES) {
-    return { keep: true, reason: "cluster" };
-  }
   if (
     ev.minRangeKm <= SAME_OPERATOR_NEAR_MISS_KM
     && !eventIsDockedNearMiss(ev)
   ) {
     return { keep: true, reason: "same-operator-near-miss" };
+  }
+  if (isCrossingTrackGeometry(ev.minRangeKm, ev.relVelKmS)) {
+    return { keep: true, reason: "same-operator-crossing" };
+  }
+  if (countFreeBodies(ev) >= CLUSTER_MIN_FREE_BODIES) {
+    return { keep: true, reason: "cluster" };
   }
   return { keep: false, reason: "boring" };
 }
@@ -326,6 +367,7 @@ export interface InterestFilterStats {
   mixed: number;
   cluster: number;
   nearMiss: number;
+  crossing: number;
 }
 
 /** Drop boring events before persist so they never reach the events table. */
@@ -334,7 +376,7 @@ export function selectInterestingEvents<T extends Pick<ClusteredEvent, "members"
   meta: CatalogLookup,
 ): { kept: T[]; stats: InterestFilterStats } {
   const kept: T[] = [];
-  const stats: InterestFilterStats = { kept: 0, dropped: 0, mixed: 0, cluster: 0, nearMiss: 0 };
+  const stats: InterestFilterStats = { kept: 0, dropped: 0, mixed: 0, cluster: 0, nearMiss: 0, crossing: 0 };
   for (const ev of events) {
     const d = classifyEvent(ev, meta);
     if (!d.keep) {
@@ -346,15 +388,18 @@ export function selectInterestingEvents<T extends Pick<ClusteredEvent, "members"
     if (d.reason === "mixed-operator") stats.mixed++;
     else if (d.reason === "cluster") stats.cluster++;
     else if (d.reason === "same-operator-near-miss") stats.nearMiss++;
+    else if (d.reason === "same-operator-crossing") stats.crossing++;
   }
   return { kept, stats };
 }
 
 /**
- * Spend the SGP4 budget on mixed-force pairs first so Starlink-on-Starlink
- * housekeeping cannot crowd red-vs-blue approaches off the hour. Remaining
- * slots go to same/unknown pairs, tightest planes first (those are the
- * ones that can still be a near-miss or a messy cluster).
+ * Spend the SGP4 budget on mixed-force pairs first so routine same-plane
+ * housekeeping cannot crowd red-vs-blue approaches off the hour.
+ *
+ * Remaining slots are split: tightest same-operator planes (in-shell
+ * clusters / near-misses) and loosest planes still inside the screen
+ * (crossing-track). Same-constellation is not excluded from the budget.
  */
 export function prioritizeSgp4Pairs<T extends { a: { norad: number }; b: { norad: number } }>(
   pairs: T[],
@@ -371,6 +416,15 @@ export function prioritizeSgp4Pairs<T extends { a: { norad: number }; b: { norad
   const byPlane = (arr: T[]) => [...arr].sort((x, y) => planeScore(x) - planeScore(y));
   const mixedTake = byPlane(mixed).slice(0, budget);
   const remaining = budget - mixedTake.length;
-  const restTake = remaining > 0 ? byPlane(rest).slice(0, remaining) : [];
-  return [...mixedTake, ...restTake];
+  if (remaining <= 0) return mixedTake;
+  const restSorted = byPlane(rest);
+  const tightN = Math.min(restSorted.length, Math.ceil(remaining / 2));
+  const tight = restSorted.slice(0, tightN);
+  const taken = new Set(tight);
+  const loose: T[] = [];
+  for (let i = restSorted.length - 1; i >= 0 && tight.length + loose.length < remaining; i--) {
+    const p = restSorted[i];
+    if (!taken.has(p)) loose.push(p);
+  }
+  return [...mixedTake, ...tight, ...loose];
 }
