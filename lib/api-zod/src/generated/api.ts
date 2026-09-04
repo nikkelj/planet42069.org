@@ -211,8 +211,9 @@ export const GetSatcatSummaryResponse = zod.object({
   "gcatSyncedAt": zod.string().nullable(),
   "spacetrackSyncedAt": zod.string().nullable(),
   "mergeSyncedAt": zod.string().nullable(),
-  "gunterSyncedAt": zod.string().nullable()
-}).describe('Last successful sync per upstream source (ISO timestamps, null if never)')
+  "gunterSyncedAt": zod.string().nullable(),
+  "gcatLastError": zod.string().nullable().describe('Latest GCAT sync-log error (null if the most recent GCAT attempt succeeded or never ran). Admin-safe; no secrets.')
+}).describe('Last successful sync per upstream source (ISO timestamps, null if never), plus the latest GCAT error when the most recent GCAT attempt failed')
 })
 
 

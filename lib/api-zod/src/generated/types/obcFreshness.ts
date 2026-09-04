@@ -7,11 +7,13 @@
  */
 
 /**
- * Last successful sync per upstream source (ISO timestamps, null if never)
+ * Last successful sync per upstream source (ISO timestamps, null if never), plus the latest GCAT error when the most recent GCAT attempt failed
  */
 export interface ObcFreshness {
   gcatSyncedAt: string | null;
   spacetrackSyncedAt: string | null;
   mergeSyncedAt: string | null;
   gunterSyncedAt: string | null;
+  /** Latest GCAT sync-log error (null if the most recent GCAT attempt succeeded or never ran). Admin-safe; no secrets. */
+  gcatLastError: string | null;
 }
