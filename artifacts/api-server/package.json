@@ -9,7 +9,7 @@
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "pnpm run test:upsert && pnpm run test:dedupe && pnpm run test:gunter && pnpm run test:passes && pnpm run test:gcat-sync",
-    "test:gcat-sync": "tsx ./src/tests/gcat-sync-recovery.test.ts",
+    "test:gcat-sync": "LOG_LEVEL=silent tsx ./src/tests/gcat-sync-recovery.test.ts",
     "test:passes": "tsx ./src/tests/pass-accuracy.test.ts",
     "test:upsert": "tsx ./src/tests/upsert-precedence.test.ts",
     "test:dedupe": "tsx ./src/tests/dedupe-reconcile.test.ts",
