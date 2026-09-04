@@ -1154,7 +1154,7 @@ components:
 
     ObcFreshness:
       type: object
-      description: Last successful sync per upstream source (ISO timestamps, null if never)
+      description: Last successful sync per upstream source (ISO timestamps, null if never), plus the latest GCAT error when the most recent GCAT attempt failed
       properties:
         gcatSyncedAt:
           type: string
@@ -1168,11 +1168,16 @@ components:
         gunterSyncedAt:
           type: string
           nullable: true
+        gcatLastError:
+          type: string
+          nullable: true
+          description: Latest GCAT sync-log error (null if the most recent GCAT attempt succeeded or never ran). Admin-safe; no secrets.
       required:
         - gcatSyncedAt
         - spacetrackSyncedAt
         - mergeSyncedAt
         - gunterSyncedAt
+        - gcatLastError
 
     SatcatStats:
       type: object

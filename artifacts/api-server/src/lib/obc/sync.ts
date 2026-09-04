@@ -2,7 +2,7 @@ import { db } from "@workspace/db";
 import { obcObjects, obcLaunches, obcSyncLog, type InsertObcObject } from "@workspace/db/schema";
 import { sql } from "drizzle-orm";
 import { logger } from "../logger";
-import { fetchGcatSatcatTsv, fetchGcatLaunchTsv } from "./gcat";
+import { fetchGcatCatalog } from "./gcat";
 import { fetchSpacetrackSatcat, type SpacetrackRow } from "./spacetrack";
 import { parseTsv, type SatcatRawEntry } from "../satcat";
 import { parseLaunchTsv, type LaunchEntry } from "../launch";
@@ -151,7 +151,9 @@ async function doSync(): Promise<void> {
   {
     const started = new Date();
     try {
-      const [satTsv, launchTsv] = await Promise.all([fetchGcatSatcatTsv(), fetchGcatLaunchTsv()]);
+      // Sequential dual-TSV pull — see fetchGcatCatalog. Parallel downloads
+      // on Replit autoscale stall/abort while Space-Track still succeeds.
+      const { satTsv, launchTsv } = await fetchGcatCatalog();
       launchMap = parseLaunchTsv(launchTsv);
       gcatEntries = parseTsv(satTsv);
       // Enrich lv/site from launch map

@@ -2,10 +2,13 @@ import { logger } from "../logger";
 import { runObcSync } from "./sync";
 import { runGunterSync } from "./gunter";
 import { getFreshness, primeCache } from "./store";
+import { catalogNeedsSync, CATALOG_SYNC_INTERVAL_MS } from "./catalogPolicy";
 import { runRecentElsetWatch, runTleBackfill } from "./tleArchive";
 import { runRpodScan } from "../rpod/scan";
 
-const SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000; // daily
+export { catalogNeedsSync, CATALOG_SYNC_INTERVAL_MS };
+
+const SYNC_INTERVAL_MS = CATALOG_SYNC_INTERVAL_MS;
 const CHECK_INTERVAL_MS = 60 * 60 * 1000;     // hourly staleness check
 const TLE_RECENT_INTERVAL_MS = 20 * 60 * 1000;   // recent-elsets watch cadence
 const TLE_BACKFILL_INTERVAL_MS = 30 * 60 * 1000; // backfill step cadence
@@ -17,17 +20,29 @@ const RPOD_SCAN_INTERVAL_MS = 60 * 60 * 1000;    // full RPOD screen cadence
  */
 const SYNC_RETRY_DELAYS_MS = [5 * 60_000, 10 * 60_000]; // 5 min, then 10 min
 
+function ageHours(iso: string | null, nowMs: number): number | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return null;
+  return Math.round((nowMs - t) / 3_600_000 * 10) / 10;
+}
+
 async function syncIfStale(): Promise<void> {
   // ── catalog sync (with retry) ──────────────────────────────────────────
   for (let attempt = 0; ; attempt++) {
     try {
       const f = await getFreshness();
-      const last = f.mergeSyncedAt ? new Date(f.mergeSyncedAt).getTime() : 0;
-      const ageMs = Date.now() - last;
-      if (ageMs < SYNC_INTERVAL_MS) {
-        logger.info({ ageHours: Math.round(ageMs / 3600000 * 10) / 10 }, "obc-scheduler: catalog fresh, skipping sync");
+      const nowMs = Date.now();
+      if (!catalogNeedsSync(f, nowMs)) {
+        logger.info(
+          { mergeAgeHours: ageHours(f.mergeSyncedAt, nowMs), gcatAgeHours: ageHours(f.gcatSyncedAt, nowMs) },
+          "obc-scheduler: catalog fresh, skipping sync",
+        );
       } else {
-        logger.info("obc-scheduler: catalog stale, running sync");
+        logger.info(
+          { mergeAgeHours: ageHours(f.mergeSyncedAt, nowMs), gcatAgeHours: ageHours(f.gcatSyncedAt, nowMs) },
+          "obc-scheduler: catalog stale, running sync",
+        );
         await runObcSync();
       }
       break; // success

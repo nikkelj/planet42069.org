@@ -4,6 +4,7 @@ import { desc, eq, and } from "drizzle-orm";
 import { logger } from "../logger";
 import type { SatcatEntry } from "../satcat";
 import type { LaunchEntry } from "../launch";
+import { formatGcatLastError } from "./catalogPolicy";
 
 const CACHE_TTL_MS = 10 * 60 * 1000; // in-memory catalog cache
 
@@ -207,9 +208,13 @@ export interface ObcFreshness {
   spacetrackSyncedAt: string | null;
   mergeSyncedAt: string | null;
   gunterSyncedAt: string | null;
+  /** Latest GCAT sync-log error; null if the most recent GCAT attempt succeeded or never ran. */
+  gcatLastError: string | null;
 }
 
-/** Latest successful sync per source, ISO timestamps. */
+export { formatGcatLastError };
+
+/** Latest successful sync per source, ISO timestamps, plus the latest GCAT error. */
 export async function getFreshness(): Promise<ObcFreshness> {
   const latest = async (source: string): Promise<string | null> => {
     const rows = await db
@@ -220,8 +225,20 @@ export async function getFreshness(): Promise<ObcFreshness> {
       .limit(1);
     return rows[0]?.finishedAt?.toISOString() ?? null;
   };
-  const [gcat, spacetrack, merge, gunter] = await Promise.all([
+  const [gcat, spacetrack, merge, gunter, latestGcatAny] = await Promise.all([
     latest("gcat"), latest("spacetrack"), latest("merge"), latest("gunter"),
+    db
+      .select({ status: obcSyncLog.status, error: obcSyncLog.error })
+      .from(obcSyncLog)
+      .where(eq(obcSyncLog.source, "gcat"))
+      .orderBy(desc(obcSyncLog.finishedAt))
+      .limit(1),
   ]);
-  return { gcatSyncedAt: gcat, spacetrackSyncedAt: spacetrack, mergeSyncedAt: merge, gunterSyncedAt: gunter };
+  return {
+    gcatSyncedAt: gcat,
+    spacetrackSyncedAt: spacetrack,
+    mergeSyncedAt: merge,
+    gunterSyncedAt: gunter,
+    gcatLastError: formatGcatLastError(latestGcatAny[0]),
+  };
 }
