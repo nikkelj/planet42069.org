@@ -1,9 +1,10 @@
 import { db } from "@workspace/db";
 import { rpodEvents, rpodEventMembers, obcSyncLog } from "@workspace/db/schema";
-import { sql, eq, and, inArray, lt } from "drizzle-orm";
+import { sql, eq, and, inArray, lt, desc } from "drizzle-orm";
 import { logger } from "../logger";
 import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, type LatestElset } from "../obc/tleArchive";
 import { getSatcatFromStore } from "../obc/store";
+import { MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline } from "./scanPolicy";
 import {
   screenCandidatePairs, screenCoAlignedPairs, closeApproach, clusterPairs,
   DEFAULT_SCREEN, DEFAULT_COALIGNED, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S,
@@ -19,6 +20,10 @@ import {
   type InterestCatalogMeta,
 } from "./interest";
 
+export {
+  rpodScanIsDue, RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_CHECK_INTERVAL_MS, RPOD_SCAN_BOOT_DELAY_MS,
+  MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline,
+} from "./scanPolicy";
 export { DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry };
 
 /**
@@ -50,9 +55,38 @@ let scanInFlight: Promise<void> | null = null;
 
 export function runRpodScan(): Promise<void> {
   if (scanInFlight) return scanInFlight;
-  scanInFlight = withAdvisoryLock(LOCK_RPOD_SCAN, "rpod-scan", doScan).finally(() => { scanInFlight = null; });
+  scanInFlight = withAdvisoryLock(LOCK_RPOD_SCAN, "rpod-scan", async () => {
+    const deadlineMs = Date.now() + MAX_RPOD_SCAN_MS;
+    const abort = { cancelled: false };
+    try {
+      await withDeadline(doScan(deadlineMs, abort), MAX_RPOD_SCAN_MS, "rpod-scan");
+    } catch (err) {
+      // Stop a timed-out doScan from writing a late sync-log row after the
+      // lock is released (withDeadline does not cancel the inner promise).
+      abort.cancelled = true;
+      throw err;
+    }
+  }).finally(() => { scanInFlight = null; });
   return scanInFlight;
 }
+
+/** Latest rpod-scan sync-log finishedAt, or null if none. Cheap LIMIT 1. */
+export async function latestRpodScanFinishedAtMs(): Promise<number | null> {
+  const [row] = await db
+    .select({ finishedAt: obcSyncLog.finishedAt })
+    .from(obcSyncLog)
+    .where(eq(obcSyncLog.source, "rpod-scan"))
+    .orderBy(desc(obcSyncLog.finishedAt))
+    .limit(1);
+  const t = row?.finishedAt?.getTime();
+  return t != null && Number.isFinite(t) ? t : null;
+}
+
+function throwIfScanDeadline(deadlineMs: number, where: string): void {
+  if (Date.now() > deadlineMs) throw new Error(`rpod-scan timed out ${where}`);
+}
+
+type ScanAbort = { cancelled: boolean };
 
 interface CatalogMeta extends InterestCatalogMeta {
   launchTag: string | null;
@@ -126,9 +160,11 @@ async function sgp4FlagPairs(
   nowMs: number,
   maxRangeKm: number,
   maxRelVelKmS: number,
+  deadlineMs: number,
 ): Promise<FlaggedPair[]> {
   const flagged: FlaggedPair[] = [];
   for (let i = 0; i < pairs.length; i++) {
+    throwIfScanDeadline(deadlineMs, "during SGP4");
     const { a, b } = pairs[i];
     try {
       const ca = closeApproach(a, b, nowMs, DEFAULT_SCREEN.windowMs);
@@ -143,10 +179,11 @@ async function sgp4FlagPairs(
   return flagged;
 }
 
-async function doScan(): Promise<void> {
+async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
   const started = new Date();
   const nowMs = Date.now();
   try {
+    throwIfScanDeadline(deadlineMs, "before elset fetch");
     const [loaded, meta] = await Promise.all([
       getLatestElsetsOrSkip(nowMs - ELSET_MAX_AGE_MS, nowMs + ELSET_FUTURE_SLACK_MS),
       loadCatalogMeta(),
@@ -155,12 +192,15 @@ async function doScan(): Promise<void> {
       // Do not stamp lastScanStatus=error — a bad TLE fetch must not abort
       // the hour (same idea as persist skipping one bad event). Record a
       // success row with the reason so lastScanError is visible.
-      await logScanRow("success", started, 0, loaded.warning);
+      await logScanRow("success", started, 0, loaded.warning, abort);
       logger.warn({ warning: loaded.warning }, "rpod-scan: skipping hour after elset fetch failure");
       return;
     }
     const latest = loaded.rows;
     if (latest.length < 2) {
+      // Must write a sync-log row: a skip with no row leaves lastScanAt on
+      // the previous success, which looks like a stuck scanner.
+      await logScanRow("success", started, 0, `not enough archived elsets yet (${latest.length})`, abort);
       logger.info({ elsets: latest.length }, "rpod-scan: not enough archived elsets yet, skipping");
       return;
     }
@@ -170,15 +210,17 @@ async function doScan(): Promise<void> {
       && tleEpochIsCurrent(e.line1, nowMs),
     );
     if (elsets.length < 2) {
+      await logScanRow("success", started, 0, `not enough usable elsets (${elsets.length} of ${latest.length} fetched)`, abort);
       logger.info({ fetched: latest.length, usable: elsets.length }, "rpod-scan: not enough usable elsets, skipping");
       return;
     }
     const byNorad = new Map(elsets.map((e) => [e.norad, e]));
 
+    throwIfScanDeadline(deadlineMs, "before stage-1 screen");
     // Stage 1
     const planeScore = (p: { a: ScreenElset; b: ScreenElset }) =>
       Math.abs(p.a.incDeg - p.b.incDeg) + Math.abs(p.a.meanMotionRevPerDay - p.b.meanMotionRevPerDay) * 4;
-    let candidates = (await screenCandidatePairs(elsets, DEFAULT_SCREEN, SCREEN_YIELD_EVERY))
+    let candidates = (await screenCandidatePairs(elsets, DEFAULT_SCREEN, SCREEN_YIELD_EVERY, deadlineMs))
       .filter((p) => !isSameFreshLaunch(p.a.norad, p.b.norad, meta, nowMs));
     // Mixed-force pairs take the SGP4 budget first so Starlink housekeeping
     // cannot crowd red-vs-blue approaches off the hour.
@@ -187,13 +229,14 @@ async function doScan(): Promise<void> {
     }
 
     // Stage 2 — yield between pairs so GET /api/rpod/status can still flush.
-    const flagged = await sgp4FlagPairs(candidates, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S);
+    const flagged = await sgp4FlagPairs(candidates, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S, deadlineMs);
 
     // Co-aligned (coplanar shadowing) screen: same plane + same radial shell,
     // slowly drifting in phase. The 30 km bubble rarely closes for these, so
     // they're flagged on geometry with loose range/velocity caps instead.
+    throwIfScanDeadline(deadlineMs, "before co-aligned screen");
     const flaggedKeys = new Set(flagged.map((f) => pairKey(f.a, f.b)));
-    let coCandidates = (await screenCoAlignedPairs(elsets, DEFAULT_COALIGNED, nowMs, SCREEN_YIELD_EVERY))
+    let coCandidates = (await screenCoAlignedPairs(elsets, DEFAULT_COALIGNED, nowMs, SCREEN_YIELD_EVERY, deadlineMs))
       .filter((p) => isPayloadPair(p.a.norad, p.b.norad, meta))
       .filter((p) => !isSameLaunch(p.a.norad, p.b.norad, meta))
       // Slow same-plane neighbor screen only. Same-constellation still
@@ -215,7 +258,7 @@ async function doScan(): Promise<void> {
         .slice(0, MAX_COALIGNED_SGP4_PAIRS)
         .map((x) => x.p);
     }
-    const coFlagged = await sgp4FlagPairs(coCandidates, nowMs, COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S);
+    const coFlagged = await sgp4FlagPairs(coCandidates, nowMs, COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, deadlineMs);
 
     // Stage 3 + widened scan for capped clusters
     let events = clusterPairs(flagged, MEMBER_CAP);
@@ -235,12 +278,12 @@ async function doScan(): Promise<void> {
         });
       });
       const flaggedKeys = new Set(flagged.map((f) => pairKey(f.a, f.b)));
-      const widePairs = (await screenCandidatePairs(neighborhood, relaxed, SCREEN_YIELD_EVERY))
+      const widePairs = (await screenCandidatePairs(neighborhood, relaxed, SCREEN_YIELD_EVERY, deadlineMs))
         .filter((p) => memberSet.has(p.a.norad) || memberSet.has(p.b.norad))
         .filter((p) => !isSameFreshLaunch(p.a.norad, p.b.norad, meta, nowMs))
         .filter((p) => !flaggedKeys.has(pairKey(p.a.norad, p.b.norad)))
         .slice(0, 400);
-      flagged.push(...await sgp4FlagPairs(widePairs, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S));
+      flagged.push(...await sgp4FlagPairs(widePairs, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S, deadlineMs));
       // Re-cluster once after all widened pairs are in.
       events = clusterPairs(flagged, MEMBER_CAP);
       break;
@@ -269,8 +312,14 @@ async function doScan(): Promise<void> {
       return m ? { name: m.name, launchTag: m.launchTag } : undefined;
     };
     try {
-      await postNewRpodEventAlerts([...conjResult.inserted, ...coResult.inserted], metaFor);
-      await postEscalationAlerts([...conjResult.escalated, ...coResult.escalated], metaFor);
+      await withDeadline(
+        (async () => {
+          await postNewRpodEventAlerts([...conjResult.inserted, ...coResult.inserted], metaFor);
+          await postEscalationAlerts([...conjResult.escalated, ...coResult.escalated], metaFor);
+        })(),
+        RPOD_ALERT_TIMEOUT_MS,
+        "rpod-alert",
+      );
     } catch (err) {
       warnings.push(`alerts: ${String(err)}`.slice(0, 300));
       logger.warn({ err }, "rpod-scan: alert posting failed");
@@ -292,6 +341,7 @@ async function doScan(): Promise<void> {
       started,
       conjKept.kept.length + coKept.kept.length,
       warnings.length ? warnings.join("; ").slice(0, 2000) : undefined,
+      abort,
     );
     logger.info(
       {
@@ -308,13 +358,14 @@ async function doScan(): Promise<void> {
       "rpod-scan: complete",
     );
   } catch (err) {
-    await logScanRow("error", started, null, formatDbError(err));
+    await logScanRow("error", started, null, formatDbError(err), abort);
     logger.error({ err }, "rpod-scan: failed");
     throw err; // propagate so the scheduler can schedule a short retry
   }
 }
 
-async function logScanRow(status: "success" | "error", startedAt: Date, rowCount: number | null, error?: string) {
+async function logScanRow(status: "success" | "error", startedAt: Date, rowCount: number | null, error?: string, abort?: ScanAbort) {
+  if (abort?.cancelled) return;
   try {
     await db.insert(obcSyncLog).values({ source: "rpod-scan", status, rowCount, error: error?.slice(0, 2000) ?? null, startedAt });
   } catch (err) {
