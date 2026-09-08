@@ -100,6 +100,14 @@ console.log("Stage 1: screening yields the event loop");
   await screenCandidatePairs(many, DEFAULT_SCREEN, 20);
   clearInterval(id);
   check("yielding screen lets timers fire (event loop not blocked)", ticks > 0, `ticks=${ticks}`);
+
+  let timedOut = false;
+  try {
+    await screenCandidatePairs(many, DEFAULT_SCREEN, 20, Date.now() - 1);
+  } catch (err) {
+    timedOut = String(err).includes("timed out");
+  }
+  check("expired screening deadline throws", timedOut);
 }
 
 console.log("J2 RAAN convergence");

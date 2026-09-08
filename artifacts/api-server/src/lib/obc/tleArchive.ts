@@ -607,12 +607,20 @@ export function mapLatestElsetRow(r: LatestElsetRow): LatestElset {
   };
 }
 
+export const LATEST_ELSETS_STATEMENT_TIMEOUT_MS = 90_000;
+
 /** Latest archived elset per object with epoch in (`sinceMs`, `untilMs`]. */
 export async function getLatestElsets(
   sinceMs: number,
   untilMs: number = Date.now() + ELSET_FUTURE_SLACK_MS,
 ): Promise<LatestElset[]> {
-  const result = await db.execute(latestElsetsQuerySql(new Date(sinceMs), new Date(untilMs)));
+  // SET LOCAL is transaction-scoped so it cannot leak onto a pooled client.
+  // A hung latest-elset read used to pin the RPOD advisory lock (heartbeat
+  // keeps the session alive) with no lastScanAt update.
+  const result = await db.transaction(async (tx) => {
+    await tx.execute(sql.raw(`SET LOCAL statement_timeout = ${LATEST_ELSETS_STATEMENT_TIMEOUT_MS}`));
+    return tx.execute(latestElsetsQuerySql(new Date(sinceMs), new Date(untilMs)));
+  });
   return executeRows<LatestElsetRow>(result).map(mapLatestElsetRow);
 }
 

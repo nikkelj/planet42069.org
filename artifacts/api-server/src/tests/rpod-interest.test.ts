@@ -347,7 +347,7 @@ console.log("doScan wires the filter in front of persist (scanner health path in
   check("PR#7: elset-fetch skip still logs success, not error",
     /if \(loaded\.warning\)[\s\S]{0,500}logScanRow\(\s*"success"/.test(scanSrc));
   check("PR#7: lastScanEvents can be 0 on skip (rowCount 0)",
-    /logScanRow\("success", started, 0, loaded\.warning\)/.test(scanSrc));
+    /logScanRow\("success", started, 0, loaded\.warning/.test(scanSrc));
 
   const statusSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../routes/rpod.ts"), "utf8");
   check("PR#6: /rpod/status still LIMIT 1 on the latest scan-log row",

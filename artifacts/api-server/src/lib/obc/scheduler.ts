@@ -1,18 +1,20 @@
 import { logger } from "../logger";
 import { runObcSync } from "./sync";
 import { runGunterSync } from "./gunter";
-import { getFreshness, primeCache } from "./store";
+import { getFreshness, primeCache, CatalogLoadingError, getSatcatFromStore } from "./store";
 import { catalogNeedsSync, CATALOG_SYNC_INTERVAL_MS } from "./catalogPolicy";
 import { runRecentElsetWatch, runTleBackfill } from "./tleArchive";
-import { runRpodScan } from "../rpod/scan";
+import {
+  runRpodScan, latestRpodScanFinishedAtMs, rpodScanIsDue,
+  RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_CHECK_INTERVAL_MS, RPOD_SCAN_BOOT_DELAY_MS,
+} from "../rpod/scan";
 
-export { catalogNeedsSync, CATALOG_SYNC_INTERVAL_MS };
+export { catalogNeedsSync, CATALOG_SYNC_INTERVAL_MS, RPOD_SCAN_INTERVAL_MS, rpodScanIsDue };
 
 const SYNC_INTERVAL_MS = CATALOG_SYNC_INTERVAL_MS;
 const CHECK_INTERVAL_MS = 60 * 60 * 1000;     // hourly staleness check
 const TLE_RECENT_INTERVAL_MS = 20 * 60 * 1000;   // recent-elsets watch cadence
 const TLE_BACKFILL_INTERVAL_MS = 30 * 60 * 1000; // backfill step cadence
-const RPOD_SCAN_INTERVAL_MS = 60 * 60 * 1000;    // full RPOD screen cadence
 
 /**
  * Retry delays for a failed catalog-sync tick. Shorter than the hourly
@@ -168,9 +170,39 @@ async function runTleBackfillWithRetry(): Promise<void> {
 }
 
 /**
+ * Run the RPOD scan when lastScanAt is older than RPOD_SCAN_INTERVAL_MS.
+ * Checked on a short cadence so autoscale cold boots and a missed hourly
+ * tick still recover — matching catalogNeedsSync, not a fire-and-forget
+ * 60-minute setInterval from this process's boot.
+ *
+ * Space-Track backoff does not apply: the scan is local (DB + CPU).
+ * If the in-memory catalog is still loading, defer to the next check so
+ * interesting-only filtering has owner/operator metadata.
+ */
+async function runRpodScanIfDue(): Promise<void> {
+  const last = await latestRpodScanFinishedAtMs();
+  if (!rpodScanIsDue(last, Date.now())) {
+    logger.info(
+      { ageMin: last != null ? Math.round((Date.now() - last) / 60_000) : null },
+      "obc-scheduler: rpod-scan fresh, skipping",
+    );
+    return;
+  }
+  try {
+    await getSatcatFromStore();
+  } catch (err) {
+    if (err instanceof CatalogLoadingError) {
+      logger.info("obc-scheduler: rpod-scan deferred, catalog still loading");
+      return;
+    }
+  }
+  await runRpodScanWithRetry();
+}
+
+/**
  * Run the RPOD scan. On failure, retry up to RPOD_RETRY_DELAYS_MS.length
- * times with increasing delays before giving up until the next hourly tick.
- * doScan() now re-throws after logging so the retries here actually fire.
+ * times with increasing delays before giving up until the next due-check.
+ * doScan() re-throws after logging so the retries here actually fire.
  */
 async function runRpodScanWithRetry(): Promise<void> {
   for (let attempt = 0; ; attempt++) {
@@ -209,13 +241,15 @@ export function startObcScheduler(): void {
   // TLE archive workers. The recent watcher runs first and often (it is the
   // tip-off feed); the backfill is deliberately offset so the two never
   // contend for the shared request queue at the same instant. The RPOD scan
-  // is purely local (DB + CPU) and runs hourly after fresh elsets land.
+  // is purely local (DB + CPU). It re-checks lastScanAt every few minutes
+  // so a stale board recovers on the next tick instead of waiting for a
+  // 60-minute timer that started at this process's boot.
   setTimeout(() => safeTick("tle-recent", runRecentElsetWatchWithRetry), 10_000);
   setInterval(() => safeTick("tle-recent", runRecentElsetWatchWithRetry), TLE_RECENT_INTERVAL_MS).unref();
 
   setTimeout(() => safeTick("tle-backfill", runTleBackfillWithRetry), 3 * 60_000);
   setInterval(() => safeTick("tle-backfill", runTleBackfillWithRetry), TLE_BACKFILL_INTERVAL_MS).unref();
 
-  setTimeout(() => safeTick("rpod-scan", runRpodScanWithRetry), 5 * 60_000);
-  setInterval(() => safeTick("rpod-scan", runRpodScanWithRetry), RPOD_SCAN_INTERVAL_MS).unref();
+  setTimeout(() => safeTick("rpod-scan", runRpodScanIfDue), RPOD_SCAN_BOOT_DELAY_MS);
+  setInterval(() => safeTick("rpod-scan", runRpodScanIfDue), RPOD_SCAN_CHECK_INTERVAL_MS).unref();
 }

@@ -153,6 +153,7 @@ export async function screenCandidatePairs(
   elsets: ScreenElset[],
   opts: ScreenOptions = DEFAULT_SCREEN,
   yieldEvery: number = 0,
+  deadlineMs?: number,
 ): Promise<CandidatePair[]> {
   const bandSize = Math.max(opts.maxIncDiffDeg, 0.1);
   const bands = new Map<number, ScreenElset[]>();
@@ -173,7 +174,10 @@ export async function screenCandidatePairs(
       for (let j = i + 1; j < arr.length; j++) {
         const a = arr[i], b = arr[j];
         compared++;
-        if (yieldEvery > 0 && compared % yieldEvery === 0) await yieldToEventLoop();
+        if (yieldEvery > 0 && compared % yieldEvery === 0) {
+          if (deadlineMs != null && Date.now() > deadlineMs) throw new Error("rpod-scan timed out during screening");
+          await yieldToEventLoop();
+        }
         if (a.norad === b.norad) continue;
         const key = a.norad < b.norad ? `${a.norad}:${b.norad}` : `${b.norad}:${a.norad}`;
         if (seen.has(key)) continue;
@@ -268,6 +272,7 @@ export async function screenCoAlignedPairs(
   opts: CoAlignedOptions = DEFAULT_COALIGNED,
   nowMs: number = Date.now(),
   yieldEvery: number = 0,
+  deadlineMs?: number,
 ): Promise<CandidatePair[]> {
   const bandSize = Math.max(opts.maxIncDiffDeg, 0.1);
   const bands = new Map<number, ScreenElset[]>();
@@ -288,7 +293,10 @@ export async function screenCoAlignedPairs(
       for (let j = i + 1; j < arr.length; j++) {
         const a = arr[i], b = arr[j];
         compared++;
-        if (yieldEvery > 0 && compared % yieldEvery === 0) await yieldToEventLoop();
+        if (yieldEvery > 0 && compared % yieldEvery === 0) {
+          if (deadlineMs != null && Date.now() > deadlineMs) throw new Error("rpod-scan timed out during co-aligned screen");
+          await yieldToEventLoop();
+        }
         if (a.norad === b.norad) continue;
         const key = a.norad < b.norad ? `${a.norad}:${b.norad}` : `${b.norad}:${a.norad}`;
         if (seen.has(key)) continue;
