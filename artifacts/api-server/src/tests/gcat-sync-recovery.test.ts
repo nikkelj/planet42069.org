@@ -1,8 +1,8 @@
 /**
  * Regression tests for GCAT catalog-sync recovery (2026-09 stuck sync).
  *
- *  1. Scheduler must retry GCAT when merge is still fresh (the live failure
- *     mode: Space-Track+merge succeed, GCAT is swallowed, hourly ticks skip).
+ *  1. Scheduler must retry when any isolated source is stale while others
+ *     stay fresh (GCAT stuck behind merge; Space-Track stuck behind GCAT+merge).
  *  2. Dual TSV pull is sequential, times out above the old 60s bar, and keeps
  *     the minimum-size sanity check — all without live network.
  *  3. Summary freshness surfaces the latest GCAT sync-log error.
@@ -16,6 +16,7 @@ import {
   catalogNeedsSync,
   CATALOG_SYNC_INTERVAL_MS,
   formatGcatLastError,
+  formatSpacetrackLastError,
 } from "../lib/obc/catalogPolicy";
 import {
   fetchGcatCatalog,
@@ -39,38 +40,61 @@ const NOW = Date.parse("2026-09-04T16:00:00.000Z");
 const hoursAgo = (h: number): string => new Date(NOW - h * 3_600_000).toISOString();
 
 function testCatalogNeedsSync(): void {
-  console.log("\n[1] Scheduler: GCAT-stale + merge-fresh must still attempt GCAT");
+  console.log("\n[1] Scheduler: any stale source (GCAT / Space-Track / merge) must still attempt sync");
+
+  const fresh = (h: number) => ({
+    mergeSyncedAt: hoursAgo(h),
+    gcatSyncedAt: hoursAgo(h),
+    spacetrackSyncedAt: hoursAgo(h),
+  });
 
   check(
-    "merge fresh (22h) + gcat stale (7.5d) → needs sync",
-    catalogNeedsSync({ mergeSyncedAt: hoursAgo(22), gcatSyncedAt: hoursAgo(24 * 7.5) }, NOW) === true,
+    "merge fresh (22h) + gcat stale (7.5d) + st fresh → needs sync",
+    catalogNeedsSync({
+      mergeSyncedAt: hoursAgo(22),
+      gcatSyncedAt: hoursAgo(24 * 7.5),
+      spacetrackSyncedAt: hoursAgo(22),
+    }, NOW) === true,
   );
   check(
-    "both fresh (22h) → skip",
-    catalogNeedsSync({ mergeSyncedAt: hoursAgo(22), gcatSyncedAt: hoursAgo(22) }, NOW) === false,
+    "merge+gcat fresh (17h) + spacetrack stale (42h) → needs sync",
+    catalogNeedsSync({
+      mergeSyncedAt: hoursAgo(17),
+      gcatSyncedAt: hoursAgo(17),
+      spacetrackSyncedAt: hoursAgo(42),
+    }, NOW) === true,
   );
   check(
-    "merge stale (25h) + gcat fresh (1h) → needs sync",
-    catalogNeedsSync({ mergeSyncedAt: hoursAgo(25), gcatSyncedAt: hoursAgo(1) }, NOW) === true,
+    "all three fresh (22h) → skip",
+    catalogNeedsSync(fresh(22), NOW) === false,
+  );
+  check(
+    "merge stale (25h) + gcat/st fresh → needs sync",
+    catalogNeedsSync({
+      mergeSyncedAt: hoursAgo(25),
+      gcatSyncedAt: hoursAgo(1),
+      spacetrackSyncedAt: hoursAgo(1),
+    }, NOW) === true,
   );
   check(
     "never synced (nulls) → needs sync",
-    catalogNeedsSync({ mergeSyncedAt: null, gcatSyncedAt: null }, NOW) === true,
+    catalogNeedsSync({ mergeSyncedAt: null, gcatSyncedAt: null, spacetrackSyncedAt: null }, NOW) === true,
   );
   check(
-    "gcat never synced, merge fresh → needs sync",
-    catalogNeedsSync({ mergeSyncedAt: hoursAgo(1), gcatSyncedAt: null }, NOW) === true,
+    "spacetrack never synced, merge+gcat fresh → needs sync",
+    catalogNeedsSync({
+      mergeSyncedAt: hoursAgo(1),
+      gcatSyncedAt: hoursAgo(1),
+      spacetrackSyncedAt: null,
+    }, NOW) === true,
   );
   check(
     "exactly at the interval → needs sync",
-    catalogNeedsSync({ mergeSyncedAt: hoursAgo(24), gcatSyncedAt: hoursAgo(24) }, NOW) === true,
+    catalogNeedsSync(fresh(24), NOW) === true,
   );
   check(
     "just under the interval → skip",
-    catalogNeedsSync(
-      { mergeSyncedAt: hoursAgo(23.9), gcatSyncedAt: hoursAgo(23.9) },
-      NOW,
-    ) === false,
+    catalogNeedsSync(fresh(23.9), NOW) === false,
   );
   check(
     "catalog interval is daily",
@@ -175,7 +199,7 @@ async function testFetchHardening(): Promise<void> {
 }
 
 function testGcatLastError(): void {
-  console.log("\n[4] Freshness: latest GCAT error is admin-safe and diagnosable");
+  console.log("\n[4] Freshness: latest GCAT/Space-Track errors are admin-safe and diagnosable");
 
   check("no row → null", formatGcatLastError(undefined) === null);
   check("success row → null", formatGcatLastError({ status: "success", error: null }) === null);
@@ -191,6 +215,15 @@ function testGcatLastError(): void {
   check(
     "error row with null message → generic",
     formatGcatLastError({ status: "error", error: null }) === "gcat sync failed",
+  );
+  check(
+    "spacetrack error row with message → message",
+    formatSpacetrackLastError({ status: "error", error: "space-track satcat fetch failed: 401" })
+      === "space-track satcat fetch failed: 401",
+  );
+  check(
+    "spacetrack error row with null message → generic",
+    formatSpacetrackLastError({ status: "error", error: null }) === "spacetrack sync failed",
   );
 }
 
@@ -210,6 +243,14 @@ function testSourceContracts(): void {
   check(
     "catalogNeedsSync considers gcatSyncedAt",
     /isStale\(freshness\.gcatSyncedAt/.test(policySrc),
+  );
+  check(
+    "catalogNeedsSync considers spacetrackSyncedAt",
+    /isStale\(freshness\.spacetrackSyncedAt/.test(policySrc),
+  );
+  check(
+    "getFreshness exposes spacetrackLastError from the latest spacetrack log row",
+    storeSrc.includes("spacetrackLastError: formatSpacetrackLastError(latestStAny[0])"),
   );
   check(
     "doSync no longer Promise.all's the two GCAT TSVs",
