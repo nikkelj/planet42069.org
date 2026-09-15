@@ -37,12 +37,20 @@ async function syncIfStale(): Promise<void> {
       const nowMs = Date.now();
       if (!catalogNeedsSync(f, nowMs)) {
         logger.info(
-          { mergeAgeHours: ageHours(f.mergeSyncedAt, nowMs), gcatAgeHours: ageHours(f.gcatSyncedAt, nowMs) },
+          {
+            mergeAgeHours: ageHours(f.mergeSyncedAt, nowMs),
+            gcatAgeHours: ageHours(f.gcatSyncedAt, nowMs),
+            spacetrackAgeHours: ageHours(f.spacetrackSyncedAt, nowMs),
+          },
           "obc-scheduler: catalog fresh, skipping sync",
         );
       } else {
         logger.info(
-          { mergeAgeHours: ageHours(f.mergeSyncedAt, nowMs), gcatAgeHours: ageHours(f.gcatSyncedAt, nowMs) },
+          {
+            mergeAgeHours: ageHours(f.mergeSyncedAt, nowMs),
+            gcatAgeHours: ageHours(f.gcatSyncedAt, nowMs),
+            spacetrackAgeHours: ageHours(f.spacetrackSyncedAt, nowMs),
+          },
           "obc-scheduler: catalog stale, running sync",
         );
         await runObcSync();
