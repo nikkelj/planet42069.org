@@ -22,6 +22,7 @@ import { fileURLToPath } from "node:url";
 import {
   rpodScanIsDue, withDeadline, RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_CHECK_INTERVAL_MS,
   RPOD_SCAN_BOOT_DELAY_MS, MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS,
+  cancelScanAttempt, markScanLogged,
 } from "../lib/rpod/scanPolicy";
 
 let failures = 0;
@@ -79,6 +80,22 @@ console.log("withDeadline rejects hung work so lastScanAt can move");
   check("withDeadline returns the inner value when it wins", value === 7);
 }
 
+console.log("a scan deadline still leaves a sync-log row");
+{
+  const fresh = { cancelled: false, logged: false };
+  check("deadline before any log must write a row", cancelScanAttempt(fresh) === true);
+  check("deadline marks the attempt cancelled", fresh.cancelled === true);
+  check("deadline does not pretend a row was written", fresh.logged === false);
+
+  const already = { cancelled: false, logged: false };
+  markScanLogged(already);
+  check("deadline after doScan started its insert must not write a second row",
+    cancelScanAttempt(already) === false && already.cancelled === true && already.logged === true);
+
+  const late = { cancelled: false, logged: true };
+  check("a row already flagged logged is not written again", cancelScanAttempt(late) === false);
+}
+
 console.log("scheduler + scan source: staleness checks, skip logging, timeouts");
 {
   const here = dirname(fileURLToPath(import.meta.url));
@@ -104,8 +121,12 @@ console.log("scheduler + scan source: staleness checks, skip logging, timeouts")
   const scanSrc = readFileSync(join(here, "../lib/rpod/scan.ts"), "utf8");
   check("doScan takes a deadline and checks it",
     /async function doScan\(deadlineMs: number, abort: ScanAbort\)/.test(scanSrc) && scanSrc.includes("throwIfScanDeadline("));
-  check("timed-out scan sets abort.cancelled so a late log row is dropped",
-    scanSrc.includes("abort.cancelled = true"));
+  check("timed-out scan cancels the attempt and writes a sync-log row when doScan has not",
+    /if \(cancelScanAttempt\(abort\)\)[\s\S]{0,180}logScanRow\(\s*"error"/.test(scanSrc));
+  check("deadline and lock-checkout failures each write a sync-log row",
+    scanSrc.split("cancelScanAttempt(abort)").length >= 3);
+  check("doScan does not write a late row after the deadline cancelled it",
+    /if \(abort\.cancelled\) return;/.test(scanSrc));
   check("empty-elset skip writes a success sync-log row",
     /if \(latest\.length < 2\)[\s\S]{0,250}logScanRow\("success"/.test(scanSrc));
   check("unusable-elset skip writes a success sync-log row",
@@ -120,7 +141,12 @@ console.log("scheduler + scan source: staleness checks, skip logging, timeouts")
   const tleSrc = readFileSync(join(here, "../lib/obc/tleArchive.ts"), "utf8");
   check("latest-elset fetch sets a local statement_timeout",
     /SET LOCAL statement_timeout = \$\{LATEST_ELSETS_STATEMENT_TIMEOUT_MS\}/.test(tleSrc)
-    && /LATEST_ELSETS_STATEMENT_TIMEOUT_MS = 90_000/.test(tleSrc));
+    && /LATEST_ELSETS_STATEMENT_TIMEOUT_MS = 120_000/.test(tleSrc));
+  check("latest-elset fetch arms a client socket deadline under the scan cap",
+    tleSrc.includes("attachLatestElsetClientDeadline(client, LATEST_ELSETS_CLIENT_TIMEOUT_MS)")
+    && /LATEST_ELSETS_CLIENT_TIMEOUT_MS = 150_000/.test(tleSrc));
+  check("client deadline destroys the pg socket",
+    /stream\?\.destroy\(err\)/.test(tleSrc));
 }
 
 if (failures > 0) {

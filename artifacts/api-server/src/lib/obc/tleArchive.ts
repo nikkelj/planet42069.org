@@ -519,26 +519,43 @@ export function formatDbError(err: unknown, maxLen = 2000): string {
  * Those heap rows include two TEXT TLE lines — a few hundred thousand wide
  * tuples blow work_mem, spill, or hit statement_timeout.
  *
- * Cheap plans aggregate only (norad, max(epoch)) then join back on the
- * unique (norad, epoch) key, or use LATERAL … LIMIT 1 per norad. They must
- * not DISTINCT ON the full TLE payload.
+ * The Aug follow-up (MAX(epoch) GROUP BY norad, then join back) avoids
+ * sorting TEXT, but the epoch index does not include norad, so the aggregate
+ * still heap-fetches every row in the window. Live 2026-09-28 (~19.1M rows)
+ * died on that plan with "Connection terminated due to connection timeout".
+ *
+ * Cheap at this size is LATERAL … ORDER BY epoch DESC LIMIT 1 keyed by
+ * norad, which is an index seek on unique(norad, epoch). A wide DISTINCT ON,
+ * or a window-wide MAX(epoch) aggregate, is not.
  */
 export function latestElsetsSqlIsCheap(sqlText: string): boolean {
-  const s = sqlText.toLowerCase().replace(/\s+/g, " ");
+  const s = sqlText.toLowerCase().replace(/["`]/g, "").replace(/\s+/g, " ");
   const distinctOnWidePayload =
-    /distinct\s+on/.test(s) && /line1/.test(s) && /line2/.test(s) && !/\bjoin\b/.test(s);
+    /distinct\s+on/.test(s) && /line1/.test(s) && /line2/.test(s) && !/\blateral\b/.test(s);
   if (distinctOnWidePayload) return false;
-  const maxJoin = /max\s*\(/.test(s) && /group\s+by/.test(s) && /\bjoin\b/.test(s);
-  const lateral = /\blateral\b/.test(s);
-  const narrowDistinctThenJoin = /distinct\s+on/.test(s) && /\bjoin\b/.test(s);
-  return maxJoin || lateral || narrowDistinctThenJoin;
+  // The Sep 28 stall. Kept explicit so a regression to MAX+join fails the test
+  // even if someone also pastes LATERAL somewhere in a comment.
+  if (/max\s*\(\s*epoch\s*\)/.test(s) && /group\s+by\s+norad/.test(s)) return false;
+  const lateralLimit =
+    /\blateral\b/.test(s)
+    && /\blimit\s+1\b/.test(s)
+    && /order\s+by\s+[\w.]*epoch\s+desc/.test(s)
+    && /norad\s*=\s*[\w.]*norad/.test(s);
+  return lateralLimit;
 }
 
 /**
- * Latest-per-norad in (`since`, `until`]: aggregate the unique (norad, epoch)
- * key in the window, then join back for TLE lines. Equivalent to
- * DISTINCT ON (norad) ORDER BY norad, epoch DESC on that unique key, without
- * sorting TEXT columns.
+ * Latest-per-norad in (`since`, `until`] for every catalogued norad.
+ *
+ * Equivalent to MAX(epoch) per norad on the unique (norad, epoch) key, then
+ * joining back for TLE lines — but driven from `obc_objects` (~70k norads)
+ * so each object is one index seek + LIMIT 1. Empty ranges (no elset in the
+ * window) drop out, matching the old inner join.
+ *
+ * Norads archived before they have an `obc_objects` row are omitted until
+ * the next catalog merge. A window aggregate over `obc_tle_history` would
+ * include them and is the plan that stalled at ~19M rows. New launches land
+ * in `obc_objects` as space-track-only keys once that sync runs.
  */
 export function latestElsetsQuerySql(since: Date, until: Date) {
   return sql`
@@ -553,16 +570,30 @@ export function latestElsetsQuerySql(since: Date, until: Date) {
       h.arg_perigee_deg,
       h.mean_anomaly_deg,
       h.mean_motion_rev_per_day
-    FROM obc_tle_history AS h
-    INNER JOIN (
-      SELECT norad, MAX(epoch) AS epoch
+    FROM (
+      SELECT DISTINCT norad
+      FROM obc_objects
+      WHERE norad IS NOT NULL
+    ) AS ids
+    CROSS JOIN LATERAL (
+      SELECT
+        norad,
+        epoch,
+        line1,
+        line2,
+        inc_deg,
+        raan_deg,
+        eccentricity,
+        arg_perigee_deg,
+        mean_anomaly_deg,
+        mean_motion_rev_per_day
       FROM obc_tle_history
-      WHERE epoch > ${since}
+      WHERE norad = ids.norad
+        AND epoch > ${since}
         AND epoch <= ${until}
-      GROUP BY norad
-    ) AS latest
-      ON latest.norad = h.norad
-     AND latest.epoch = h.epoch
+      ORDER BY epoch DESC
+      LIMIT 1
+    ) AS h
   `;
 }
 
@@ -607,21 +638,111 @@ export function mapLatestElsetRow(r: LatestElsetRow): LatestElset {
   };
 }
 
-export const LATEST_ELSETS_STATEMENT_TIMEOUT_MS = 90_000;
+export const LATEST_ELSETS_STATEMENT_TIMEOUT_MS = 120_000;
 
-/** Latest archived elset per object with epoch in (`sinceMs`, `untilMs`]. */
+/**
+ * Socket backstop, shortly after statement_timeout. SET LOCAL
+ * statement_timeout never arrives when the pooler drops the TCP session
+ * without a reply — node-pg then waits until the 25-minute scan deadline,
+ * and that deadline used to discard the sync-log write. Destroying the
+ * socket rejects the query so the skip/error row is written in a couple of
+ * minutes instead.
+ */
+export const LATEST_ELSETS_CLIENT_TIMEOUT_MS = 150_000;
+
+/**
+ * When `ms` elapses, destroy the driver's socket and reject `promise`.
+ * `cancel` disarms the timer (call it when the query finishes) and makes a
+ * later fire a no-op so a successful read is not killed while being released.
+ *
+ * `client` is the node-pg PoolClient. Its public type hides `connection`;
+ * the socket is still there at runtime.
+ */
+export function attachLatestElsetClientDeadline(
+  client: object,
+  ms: number,
+): { promise: Promise<never>; cancel: () => void } {
+  let settled = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let rejectPromise: (err: Error) => void = () => undefined;
+  const promise = new Promise<never>((_, reject) => {
+    rejectPromise = reject;
+    timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      const err = new Error(`latest-elset fetch exceeded ${ms}ms client deadline`);
+      // Reject before destroy so Promise.race reports the deadline, not the
+      // socket error that destroy raises a moment later.
+      reject(err);
+      try {
+        const stream = (client as { connection?: { stream?: { destroy: (e?: Error) => void } } }).connection?.stream;
+        stream?.destroy(err);
+      } catch {
+        // Socket already gone.
+      }
+    }, ms);
+    timer.unref?.();
+  });
+  // Handled by Promise.race when the fetch uses it. Also covers cancel()
+  // settling the loser so a pending deadline is not retained, and covers
+  // unit tests that only observe the socket destroy.
+  void promise.catch(() => undefined);
+  return {
+    promise,
+    cancel: () => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      rejectPromise(new Error("latest-elset client deadline cancelled"));
+    },
+  };
+}
+
+/** Drop the pooled client when the socket is dead; keep it after a clean statement timeout. */
+export function latestElsetClientIsDead(err: unknown): boolean {
+  const text = formatDbError(err);
+  return /terminated|ECONN|socket|client deadline|timeout exceeded when trying to connect/i.test(text);
+}
+
+/** Latest archived elset per catalogued object with epoch in (`sinceMs`, `untilMs`]. */
 export async function getLatestElsets(
   sinceMs: number,
   untilMs: number = Date.now() + ELSET_FUTURE_SLACK_MS,
 ): Promise<LatestElset[]> {
-  // SET LOCAL is transaction-scoped so it cannot leak onto a pooled client.
-  // A hung latest-elset read used to pin the RPOD advisory lock (heartbeat
-  // keeps the session alive) with no lastScanAt update.
-  const result = await db.transaction(async (tx) => {
-    await tx.execute(sql.raw(`SET LOCAL statement_timeout = ${LATEST_ELSETS_STATEMENT_TIMEOUT_MS}`));
-    return tx.execute(latestElsetsQuerySql(new Date(sinceMs), new Date(untilMs)));
-  });
-  return executeRows<LatestElsetRow>(result).map(mapLatestElsetRow);
+  const client = await pool.connect();
+  const deadline = attachLatestElsetClientDeadline(client, LATEST_ELSETS_CLIENT_TIMEOUT_MS);
+  const work = (async (): Promise<LatestElset[]> => {
+    const q = pgDialect.sqlToQuery(latestElsetsQuerySql(new Date(sinceMs), new Date(untilMs)));
+    const params = q.params ?? [];
+    // SET LOCAL is transaction-scoped so it cannot leak onto a pooled client.
+    // enable_seqscan=off stops a misestimate from walking ~19M heap rows; the
+    // LATERAL seek on unique(norad, epoch) does not need a sequential scan.
+    await client.query("BEGIN");
+    await client.query(`SET LOCAL statement_timeout = ${LATEST_ELSETS_STATEMENT_TIMEOUT_MS}`);
+    await client.query("SET LOCAL enable_seqscan = off");
+    const result = await client.query<LatestElsetRow>(q.sql, params);
+    await client.query("COMMIT");
+    return result.rows.map((r) => mapLatestElsetRow(r));
+  })();
+  // If the deadline wins, the query rejection must not surface as unhandled.
+  void work.catch(() => undefined);
+  let releaseErr: Error | undefined;
+  try {
+    return await Promise.race([work, deadline.promise]);
+  } catch (err) {
+    const wrapped = err instanceof Error ? err : new Error(String(err));
+    if (latestElsetClientIsDead(wrapped)) releaseErr = wrapped;
+    await client.query("ROLLBACK").catch(() => undefined);
+    throw wrapped;
+  } finally {
+    deadline.cancel();
+    try {
+      if (releaseErr) client.release(releaseErr);
+      else client.release();
+    } catch (releaseFailure) {
+      logger.warn({ err: String(releaseFailure) }, "tle-archive: latest-elset client release failed");
+    }
+  }
 }
 
 /**

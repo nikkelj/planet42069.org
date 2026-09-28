@@ -4,7 +4,7 @@ import { sql, eq, and, inArray, lt, desc } from "drizzle-orm";
 import { logger } from "../logger";
 import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, type LatestElset } from "../obc/tleArchive";
 import { getSatcatFromStore } from "../obc/store";
-import { MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline } from "./scanPolicy";
+import { MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline, cancelScanAttempt, markScanLogged } from "./scanPolicy";
 import {
   screenCandidatePairs, screenCoAlignedPairs, closeApproach, clusterPairs,
   DEFAULT_SCREEN, DEFAULT_COALIGNED, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S,
@@ -22,7 +22,7 @@ import {
 
 export {
   rpodScanIsDue, RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_CHECK_INTERVAL_MS, RPOD_SCAN_BOOT_DELAY_MS,
-  MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline,
+  MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline, cancelScanAttempt, markScanLogged,
 } from "./scanPolicy";
 export { DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry };
 
@@ -55,18 +55,33 @@ let scanInFlight: Promise<void> | null = null;
 
 export function runRpodScan(): Promise<void> {
   if (scanInFlight) return scanInFlight;
-  scanInFlight = withAdvisoryLock(LOCK_RPOD_SCAN, "rpod-scan", async () => {
-    const deadlineMs = Date.now() + MAX_RPOD_SCAN_MS;
-    const abort = { cancelled: false };
+  const started = new Date();
+  const abort: ScanAbort = { cancelled: false, logged: false };
+  scanInFlight = (async () => {
     try {
-      await withDeadline(doScan(deadlineMs, abort), MAX_RPOD_SCAN_MS, "rpod-scan");
+      await withAdvisoryLock(LOCK_RPOD_SCAN, "rpod-scan", async () => {
+        const deadlineMs = Date.now() + MAX_RPOD_SCAN_MS;
+        try {
+          await withDeadline(doScan(deadlineMs, abort), MAX_RPOD_SCAN_MS, "rpod-scan");
+        } catch (err) {
+          // withDeadline does not cancel doScan. Set cancelled so a late inner
+          // return cannot insert a second row after the lock is released — but
+          // still write one row here, or lastScanAt stays on the previous success.
+          if (cancelScanAttempt(abort)) {
+            await logScanRow("error", started, null, formatDbError(err), abort, true);
+          }
+          throw err;
+        }
+      });
     } catch (err) {
-      // Stop a timed-out doScan from writing a late sync-log row after the
-      // lock is released (withDeadline does not cancel the inner promise).
-      abort.cancelled = true;
+      // Lock checkout can fail before doScan (pool connect). That attempt
+      // started; leave a row so lastScanAt cannot sit on the previous success.
+      if (cancelScanAttempt(abort)) {
+        await logScanRow("error", started, null, formatDbError(err), abort, true);
+      }
       throw err;
     }
-  }).finally(() => { scanInFlight = null; });
+  })().finally(() => { scanInFlight = null; });
   return scanInFlight;
 }
 
@@ -82,11 +97,12 @@ export async function latestRpodScanFinishedAtMs(): Promise<number | null> {
   return t != null && Number.isFinite(t) ? t : null;
 }
 
-function throwIfScanDeadline(deadlineMs: number, where: string): void {
+function throwIfScanDeadline(deadlineMs: number, where: string, abort?: ScanAbort): void {
+  if (abort?.cancelled) throw new Error(`rpod-scan cancelled ${where}`);
   if (Date.now() > deadlineMs) throw new Error(`rpod-scan timed out ${where}`);
 }
 
-type ScanAbort = { cancelled: boolean };
+type ScanAbort = { cancelled: boolean; logged: boolean };
 
 interface CatalogMeta extends InterestCatalogMeta {
   launchTag: string | null;
@@ -161,10 +177,11 @@ async function sgp4FlagPairs(
   maxRangeKm: number,
   maxRelVelKmS: number,
   deadlineMs: number,
+  abort?: ScanAbort,
 ): Promise<FlaggedPair[]> {
   const flagged: FlaggedPair[] = [];
   for (let i = 0; i < pairs.length; i++) {
-    throwIfScanDeadline(deadlineMs, "during SGP4");
+    throwIfScanDeadline(deadlineMs, "during SGP4", abort);
     const { a, b } = pairs[i];
     try {
       const ca = closeApproach(a, b, nowMs, DEFAULT_SCREEN.windowMs);
@@ -183,7 +200,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
   const started = new Date();
   const nowMs = Date.now();
   try {
-    throwIfScanDeadline(deadlineMs, "before elset fetch");
+    throwIfScanDeadline(deadlineMs, "before elset fetch", abort);
     const [loaded, meta] = await Promise.all([
       getLatestElsetsOrSkip(nowMs - ELSET_MAX_AGE_MS, nowMs + ELSET_FUTURE_SLACK_MS),
       loadCatalogMeta(),
@@ -216,7 +233,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     }
     const byNorad = new Map(elsets.map((e) => [e.norad, e]));
 
-    throwIfScanDeadline(deadlineMs, "before stage-1 screen");
+    throwIfScanDeadline(deadlineMs, "before stage-1 screen", abort);
     // Stage 1
     const planeScore = (p: { a: ScreenElset; b: ScreenElset }) =>
       Math.abs(p.a.incDeg - p.b.incDeg) + Math.abs(p.a.meanMotionRevPerDay - p.b.meanMotionRevPerDay) * 4;
@@ -229,12 +246,12 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     }
 
     // Stage 2 — yield between pairs so GET /api/rpod/status can still flush.
-    const flagged = await sgp4FlagPairs(candidates, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S, deadlineMs);
+    const flagged = await sgp4FlagPairs(candidates, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S, deadlineMs, abort);
 
     // Co-aligned (coplanar shadowing) screen: same plane + same radial shell,
     // slowly drifting in phase. The 30 km bubble rarely closes for these, so
     // they're flagged on geometry with loose range/velocity caps instead.
-    throwIfScanDeadline(deadlineMs, "before co-aligned screen");
+    throwIfScanDeadline(deadlineMs, "before co-aligned screen", abort);
     const flaggedKeys = new Set(flagged.map((f) => pairKey(f.a, f.b)));
     let coCandidates = (await screenCoAlignedPairs(elsets, DEFAULT_COALIGNED, nowMs, SCREEN_YIELD_EVERY, deadlineMs))
       .filter((p) => isPayloadPair(p.a.norad, p.b.norad, meta))
@@ -258,7 +275,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
         .slice(0, MAX_COALIGNED_SGP4_PAIRS)
         .map((x) => x.p);
     }
-    const coFlagged = await sgp4FlagPairs(coCandidates, nowMs, COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, deadlineMs);
+    const coFlagged = await sgp4FlagPairs(coCandidates, nowMs, COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, deadlineMs, abort);
 
     // Stage 3 + widened scan for capped clusters
     let events = clusterPairs(flagged, MEMBER_CAP);
@@ -283,7 +300,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
         .filter((p) => !isSameFreshLaunch(p.a.norad, p.b.norad, meta, nowMs))
         .filter((p) => !flaggedKeys.has(pairKey(p.a.norad, p.b.norad)))
         .slice(0, 400);
-      flagged.push(...await sgp4FlagPairs(widePairs, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S, deadlineMs));
+      flagged.push(...await sgp4FlagPairs(widePairs, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S, deadlineMs, abort));
       // Re-cluster once after all widened pairs are in.
       events = clusterPairs(flagged, MEMBER_CAP);
       break;
@@ -300,6 +317,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       coplanar: coKept.stats,
     };
 
+    throwIfScanDeadline(deadlineMs, "before persist", abort);
     const conjResult = await persistEvents(conjKept.kept, "conjunction");
     const coResult = await persistEvents(coKept.kept, "coplanar");
     const warnings = [...conjResult.errors, ...coResult.errors];
@@ -358,14 +376,27 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       "rpod-scan: complete",
     );
   } catch (err) {
+    // Deadline already logged and released the lock. Returning (instead of
+    // rethrowing) keeps the orphaned doScan promise from becoming an
+    // unhandled rejection, and skips a second sync-log row.
+    if (abort.cancelled) return;
     await logScanRow("error", started, null, formatDbError(err), abort);
     logger.error({ err }, "rpod-scan: failed");
     throw err; // propagate so the scheduler can schedule a short retry
   }
 }
 
-async function logScanRow(status: "success" | "error", startedAt: Date, rowCount: number | null, error?: string, abort?: ScanAbort) {
-  if (abort?.cancelled) return;
+async function logScanRow(
+  status: "success" | "error",
+  startedAt: Date,
+  rowCount: number | null,
+  error?: string,
+  abort?: ScanAbort,
+  force = false,
+) {
+  if (abort?.cancelled && !force) return;
+  // Set before the insert so a deadline firing mid-write does not add another row.
+  if (abort) markScanLogged(abort);
   try {
     await db.insert(obcSyncLog).values({ source: "rpod-scan", status, rowCount, error: error?.slice(0, 2000) ?? null, startedAt });
   } catch (err) {
