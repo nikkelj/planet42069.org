@@ -51,3 +51,29 @@ export function withDeadline<T>(promise: Promise<T>, ms: number, label: string):
     if (timer) clearTimeout(timer);
   });
 }
+
+/**
+ * Flags for one scan attempt. `logged` is set synchronously before the
+ * sync-log insert so a deadline that fires mid-insert does not add a second
+ * row. `cancelled` stops the inner doScan from writing a late row after the
+ * advisory lock is released.
+ */
+export interface ScanAttemptFlag {
+  cancelled: boolean;
+  logged: boolean;
+}
+
+export function markScanLogged(flag: ScanAttemptFlag): void {
+  flag.logged = true;
+}
+
+/**
+ * The wall-clock deadline won (or the inner attempt threw after the deadline
+ * already logged). Returns true when this caller must insert the sync-log
+ * row — a deadline used to set `cancelled` and return without a row, so
+ * lastScanAt stayed on the previous success for hours.
+ */
+export function cancelScanAttempt(flag: ScanAttemptFlag): boolean {
+  flag.cancelled = true;
+  return !flag.logged;
+}

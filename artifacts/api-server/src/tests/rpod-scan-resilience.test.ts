@@ -11,6 +11,9 @@
  *  - getLatestElsets must not DISTINCT ON the full TLE payload over a 3-day
  *    window of ~5.1M-row obc_tle_history (live 2026-08-26 ~13:45Z Failed
  *    query; String(err) hid the PG cause; doScan stamped status=error)
+ *  - the Aug MAX(epoch)+join follow-up is also not cheap at ~19M rows
+ *    (live 2026-09-28 connection timeout). Latest-per-norad must be a
+ *    LATERAL index seek (ORDER BY epoch DESC LIMIT 1) keyed by norad.
  *  - a failed latest-elset fetch skips/logs instead of aborting doScan
  *
  * Run with: pnpm --filter @workspace/api-server run test:rpod
@@ -24,10 +27,13 @@ import { inArray, eq } from "drizzle-orm";
 import type { Server } from "node:http";
 import app from "../app";
 import { persistEvents, formatRpodScanStatus } from "../lib/rpod/scan";
+import { MAX_RPOD_SCAN_MS } from "../lib/rpod/scanPolicy";
 import {
   getArchiveStatus, clearArchiveStatusCache,
   getLatestElsetsOrSkip, formatDbError, latestElsetsSqlIsCheap,
   latestElsetsQuerySql, sqlTemplateText, mapLatestElsetRow,
+  attachLatestElsetClientDeadline, latestElsetClientIsDead,
+  LATEST_ELSETS_STATEMENT_TIMEOUT_MS, LATEST_ELSETS_CLIENT_TIMEOUT_MS,
 } from "../lib/obc/tleArchive";
 import type { ClusteredEvent } from "../lib/rpod/screen";
 
@@ -103,15 +109,35 @@ async function main(): Promise<void> {
       latestElsetsSqlIsCheap(liveFailedSql) === false,
     );
 
+    // Verbatim shape from live lastScanError on 2026-09-28 ~15:16Z. The
+    // MAX(epoch) aggregate over the epoch index heap-fetches the whole window.
+    const liveMaxJoinSql = `
+      SELECT h.norad, h.epoch, h.line1, h.line2
+      FROM obc_tle_history AS h
+      INNER JOIN (
+        SELECT norad, MAX(epoch) AS epoch
+        FROM obc_tle_history
+        WHERE epoch > $1 AND epoch <= $2
+        GROUP BY norad
+      ) AS latest
+        ON latest.norad = h.norad AND latest.epoch = h.epoch
+    `;
+    check(
+      "live MAX(epoch)+join over obc_tle_history is NOT a cheap plan",
+      latestElsetsSqlIsCheap(liveMaxJoinSql) === false,
+    );
+
     const since = new Date("2026-08-23T13:44:31.178Z");
     const until = new Date("2026-08-26T19:44:31.178Z");
     const sqlText = sqlTemplateText(latestElsetsQuerySql(since, until));
-    check("current latest-elset SQL is a cheap MAX(epoch)+join plan", latestElsetsSqlIsCheap(sqlText), sqlText.slice(0, 240));
+    check("current latest-elset SQL is a LATERAL LIMIT 1 seek per norad", latestElsetsSqlIsCheap(sqlText), sqlText.slice(0, 400));
     check("current SQL does not DISTINCT ON", !/distinct\s+on/i.test(sqlText), sqlText.slice(0, 160));
-    check("current SQL aggregates MAX(epoch) per norad", /max\s*\(\s*epoch\s*\)/i.test(sqlText));
-    check("current SQL GROUP BYs norad", /group\s+by\s+norad/i.test(sqlText));
-    check("current SQL joins back on (norad, epoch)", /inner\s+join/i.test(sqlText) && /latest\.norad\s*=\s*h\.norad/i.test(sqlText));
-    check("current SQL still selects TLE lines on the joined row", /h\.line1/.test(sqlText) && /h\.line2/.test(sqlText));
+    check("current SQL does not aggregate MAX(epoch) over the archive", !/max\s*\(\s*epoch\s*\)/i.test(sqlText), sqlText.slice(0, 240));
+    check("current SQL drives from catalog norads", /obc_objects/i.test(sqlText) && /distinct\s+norad/i.test(sqlText));
+    check("current SQL seeks norad = ids.norad", /norad\s*=\s*ids\.norad/i.test(sqlText), sqlText.slice(0, 400));
+    check("current SQL keeps the epoch window", /epoch\s*>/i.test(sqlText) && /epoch\s*<=/i.test(sqlText));
+    check("current SQL ORDER BY epoch DESC LIMIT 1", /order\s+by\s+epoch\s+desc/i.test(sqlText) && /limit\s+1/i.test(sqlText), sqlText.slice(0, 400));
+    check("current SQL still selects TLE lines on the lateral row", /h\.line1/.test(sqlText) && /h\.line2/.test(sqlText));
 
     const mapped = mapLatestElsetRow({
       norad: 25544,
@@ -175,6 +201,51 @@ async function main(): Promise<void> {
     check("doScan does not call throwing getLatestElsets(", !/\bgetLatestElsets\(/.test(scanSrc));
     check("doScan logs success (not error) when the fetch is skipped",
       /if \(loaded\.warning\)[\s\S]{0,500}logScanRow\(\s*"success"/.test(scanSrc));
+  }
+
+  console.log("latest-elset client deadline destroys a hung socket");
+  {
+    check(
+      "statement_timeout is at least a minute and at most three",
+      LATEST_ELSETS_STATEMENT_TIMEOUT_MS >= 60_000 && LATEST_ELSETS_STATEMENT_TIMEOUT_MS <= 180_000,
+      String(LATEST_ELSETS_STATEMENT_TIMEOUT_MS),
+    );
+    check(
+      "client deadline is after statement_timeout so a live server can cancel cleanly",
+      LATEST_ELSETS_CLIENT_TIMEOUT_MS > LATEST_ELSETS_STATEMENT_TIMEOUT_MS,
+      String(LATEST_ELSETS_CLIENT_TIMEOUT_MS),
+    );
+    check(
+      "client deadline is well under the 25m scan cap",
+      LATEST_ELSETS_CLIENT_TIMEOUT_MS * 5 < MAX_RPOD_SCAN_MS,
+      `client ${LATEST_ELSETS_CLIENT_TIMEOUT_MS} scan ${MAX_RPOD_SCAN_MS}`,
+    );
+    check(
+      "connect-timeout and socket-death errors discard the pooled client",
+      latestElsetClientIsDead(new Error("Connection terminated due to connection timeout"))
+        && latestElsetClientIsDead(new Error("Connection terminated unexpectedly"))
+        && latestElsetClientIsDead(new Error("latest-elset fetch exceeded 150000ms client deadline")),
+    );
+    check(
+      "a clean statement timeout keeps the pooled client",
+      latestElsetClientIsDead(new Error("canceling statement due to statement timeout")) === false,
+    );
+
+    let destroyed: Error | undefined;
+    const hung = attachLatestElsetClientDeadline({
+      connection: { stream: { destroy: (err?: Error) => { destroyed = err; } } },
+    }, 40);
+    await new Promise((r) => setTimeout(r, 80));
+    check("deadline destroys the socket", destroyed instanceof Error && /client deadline/.test(destroyed.message), String(destroyed));
+    check("deadline promise rejects", await hung.promise.then(() => false, () => true));
+
+    let destroyedLate = false;
+    const armed = attachLatestElsetClientDeadline({
+      connection: { stream: { destroy: () => { destroyedLate = true; } } },
+    }, 40);
+    armed.cancel();
+    await new Promise((r) => setTimeout(r, 80));
+    check("cancel disarms the socket destroy", destroyedLate === false);
   }
 
   if (!(await dbReachable())) {
