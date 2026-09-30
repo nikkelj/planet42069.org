@@ -160,6 +160,19 @@ export const obcTleHistory = pgTable(
 );
 
 /** Small key/value state store for background workers (cursors, watermarks). */
+/**
+ * Latest SpaceX public ephemeris pointer per satellite.
+ * The manifest is indexed here; the file body is fetched only when
+ * someone asks for visibilities, and only the newest file for that sat.
+ */
+export const obcStarlinkEphem = pgTable("obc_starlink_ephem", {
+  name: text("name").primaryKey(),
+  filename: text("filename").notNull(),
+  seq: integer("seq").notNull(),
+  recency: integer("recency").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const obcWorkerState = pgTable("obc_worker_state", {
   key: text("key").primaryKey(),
   value: jsonb("value").$type<Record<string, unknown>>().notNull(),

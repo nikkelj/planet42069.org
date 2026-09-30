@@ -67,7 +67,7 @@ export default function PassFinder({ norad, name, observer, onObserverChange, da
   const [geoBusy, setGeoBusy] = useState(false);
   const [inputError, setInputError] = useState<string | null>(null);
 
-  const params = observer ? { norad, lat: observer.lat, lon: observer.lon, days: Number(days) } : undefined;
+  const params = observer ? { norad, name, lat: observer.lat, lon: observer.lon, days: Number(days) } : undefined;
   const { data, isLoading, isError, error } = useGetSatcatPasses(
     params ?? { norad, lat: 0, lon: 0 },
     {
@@ -150,6 +150,11 @@ export default function PassFinder({ norad, name, observer, onObserverChange, da
         <Crosshair className="w-3.5 h-3.5" />
         Pass Finder — when can I see {name || `object ${norad}`}?
       </div>
+      {data?.source === "starlink-ephemeris" && (
+        <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground/70">
+          SpaceX public ephemeris{data.coverageEnd ? `, through ${data.coverageEnd.slice(0, 16).replace("T", " ")} UTC` : ""}
+        </p>
+      )}
 
       <form onSubmit={submit} noValidate className="flex flex-wrap items-center gap-2">
         <Input

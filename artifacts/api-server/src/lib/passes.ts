@@ -1,13 +1,16 @@
 import * as satellite from "satellite.js";
 import type { TleData } from "./tle";
+import { interpolateState, type EphemSample } from "./obc/starlinkEphem";
 
 /**
- * SGP4 pass prediction over an observer location.
+ * Pass prediction over an observer location.
  *
  * A "pass" is a contiguous window where the satellite is above the horizon.
  * `visible` is true when, at some point during the pass, the satellite is
  * above 10° elevation, sunlit (outside Earth's shadow), and the observer's
  * sky is dark (Sun below -6° civil twilight).
+ *
+ * Positions come from SGP4 (a TLE) or from a SpaceX public ephemeris.
  */
 
 export interface SatPass {
@@ -28,13 +31,12 @@ const AU_KM = 149_597_870.7;
 
 /** Low-precision solar position in ECI (km), good to ~0.01 AU direction. */
 function sunEci(date: Date): { x: number; y: number; z: number } {
-  // Julian centuries from J2000
   const jd = date.getTime() / 86400000 + 2440587.5;
   const t = (jd - 2451545.0) / 36525;
-  const L = (280.46 + 36000.771 * t) % 360; // mean longitude, deg
-  const M = ((357.5291 + 35999.0503 * t) % 360) * DEG; // mean anomaly
-  const lambda = (L + 1.914666 * Math.sin(M) + 0.019994 * Math.sin(2 * M)) * DEG; // ecliptic lon
-  const eps = (23.43929 - 0.0130042 * t) * DEG; // obliquity
+  const L = (280.46 + 36000.771 * t) % 360;
+  const M = ((357.5291 + 35999.0503 * t) % 360) * DEG;
+  const lambda = (L + 1.914666 * Math.sin(M) + 0.019994 * Math.sin(2 * M)) * DEG;
+  const eps = (23.43929 - 0.0130042 * t) * DEG;
   const r = (1.000140612 - 0.016708617 * Math.cos(M) - 0.000139589 * Math.cos(2 * M)) * AU_KM;
   return {
     x: r * Math.cos(lambda),
@@ -43,17 +45,15 @@ function sunEci(date: Date): { x: number; y: number; z: number } {
   };
 }
 
-/** Is the satellite (ECI position, km) inside Earth's cylindrical shadow? */
 function inEarthShadow(sat: { x: number; y: number; z: number }, sun: { x: number; y: number; z: number }): boolean {
   const sunMag = Math.hypot(sun.x, sun.y, sun.z);
   const ux = sun.x / sunMag, uy = sun.y / sunMag, uz = sun.z / sunMag;
   const dot = sat.x * ux + sat.y * uy + sat.z * uz;
-  if (dot >= 0) return false; // on the sunlit side
+  if (dot >= 0) return false;
   const perp = Math.hypot(sat.x - dot * ux, sat.y - dot * uy, sat.z - dot * uz);
   return perp < EARTH_R_KM;
 }
 
-/** Sun elevation at the observer, degrees. */
 function sunElevationDeg(
   date: Date,
   observerGd: { latitude: number; longitude: number; height: number },
@@ -65,48 +65,36 @@ function sunElevationDeg(
   return look.elevation / DEG;
 }
 
-export function predictPasses(
-  tle: TleData,
-  latDeg: number,
-  lonDeg: number,
-  days: number,
-  start = new Date(),
-): SatPass[] {
-  const satrec = satellite.twoline2satrec(tle.line1, tle.line2);
-  const observerGd = {
-    latitude: latDeg * DEG,
-    longitude: lonDeg * DEG,
-    height: 0,
-  };
+type Sample = { t: number; elev: number; az: number; visible: boolean };
+type SampleFn = (t: number, needVisibility: boolean) => Sample | null;
 
+function lookSample(
+  t: number,
+  needVisibility: boolean,
+  eci: { x: number; y: number; z: number } | null | false,
+  observerGd: { latitude: number; longitude: number; height: number },
+): Sample | null {
+  if (!eci) return null;
+  const date = new Date(t);
+  const gmst = satellite.gstime(date);
+  const ecf = satellite.eciToEcf(eci, gmst);
+  const look = satellite.ecfToLookAngles(observerGd, ecf);
+  const elev = look.elevation / DEG;
+  let visible = false;
+  if (needVisibility && elev > 10) {
+    const sun = sunEci(date);
+    visible = !inEarthShadow(eci, sun) && sunElevationDeg(date, observerGd) < -6;
+  }
+  return { t, elev, az: ((look.azimuth / DEG) % 360 + 360) % 360, visible };
+}
+
+function collectPasses(sample: SampleFn, start: Date, days: number): SatPass[] {
   const endMs = start.getTime() + days * 86400_000;
   const passes: SatPass[] = [];
 
-  type Sample = { t: number; elev: number; az: number; visible: boolean };
-  const sample = (t: number, needVisibility: boolean): Sample | null => {
-    const date = new Date(t);
-    const pv = satellite.propagate(satrec, date);
-    if (!pv || !pv.position || typeof pv.position === "boolean") return null;
-    const gmst = satellite.gstime(date);
-    const ecf = satellite.eciToEcf(pv.position, gmst);
-    const look = satellite.ecfToLookAngles(observerGd, ecf);
-    const elev = look.elevation / DEG;
-    let visible = false;
-    if (needVisibility && elev > 10) {
-      const sun = sunEci(date);
-      visible = !inEarthShadow(pv.position, sun) && sunElevationDeg(date, observerGd) < -6;
-    }
-    return { t, elev, az: ((look.azimuth / DEG) % 360 + 360) % 360, visible };
-  };
-
-  /**
-   * Bisect the horizon crossing between a below-horizon time and an
-   * above-horizon time down to ≤1 s, returning the sample at the crossing.
-   * `belowT` and `aboveT` may be in either chronological order (rise vs set).
-   */
   const refineCrossing = (belowT: number, aboveT: number): Sample | null => {
-    let lo = belowT; // elev <= 0
-    let hi = aboveT; // elev > 0
+    let lo = belowT;
+    let hi = aboveT;
     let best: Sample | null = null;
     while (Math.abs(hi - lo) > 1000) {
       const mid = (lo + hi) / 2;
@@ -119,20 +107,10 @@ export function predictPasses(
         lo = mid;
       }
     }
-    // report the instant at the crossing itself (rounded to the second)
     const t = Math.round(((lo + hi) / 2) / 1000) * 1000;
     return sample(t, false) ?? best;
   };
 
-  /**
-   * Refine the peak around the best coarse sample with a 1 s fine scan over
-   * the full ±STEP_MS bracket. The continuous maximum of a unimodal pass is
-   * guaranteed to lie within one coarse step of the best coarse sample, so
-   * scanning the whole bracket pins the true peak to 1 s. (A narrower scan
-   * seeded by a parabolic fit was tried, but the elevation curve is skewed
-   * on near-overhead passes and the fitted vertex could miss the peak by
-   * ~10 s / ~1° of elevation.)
-   */
   const refinePeak = (coarseMax: Sample): Sample => {
     let best = coarseMax;
     const from = Math.round((coarseMax.t - STEP_MS) / 1000) * 1000;
@@ -152,13 +130,9 @@ export function predictPasses(
 
   for (let t = start.getTime(); t <= endMs; t += STEP_MS) {
     const s = sample(t, inPass);
-    if (!s) {
-      // propagation failed (decayed / bad elset) — bail out with what we have
-      break;
-    }
+    if (!s) break;
     if (!inPass && s.elev > 0) {
       inPass = true;
-      // refine the rise time by bisection when we saw a below-horizon sample
       startSample =
         prevSample && prevSample.elev <= 0
           ? refineCrossing(prevSample.t, s.t) ?? s
@@ -197,4 +171,56 @@ export function predictPasses(
   }
 
   return passes;
+}
+
+export function predictPasses(
+  tle: TleData,
+  latDeg: number,
+  lonDeg: number,
+  days: number,
+  start = new Date(),
+): SatPass[] {
+  const satrec = satellite.twoline2satrec(tle.line1, tle.line2);
+  const observerGd = {
+    latitude: latDeg * DEG,
+    longitude: lonDeg * DEG,
+    height: 0,
+  };
+  const sample: SampleFn = (t, needVisibility) => {
+    const pv = satellite.propagate(satrec, new Date(t));
+    if (!pv || !pv.position || typeof pv.position === "boolean") return null;
+    return lookSample(t, needVisibility, pv.position, observerGd);
+  };
+  return collectPasses(sample, start, days);
+}
+
+/**
+ * Passes from one SpaceX ephemeris. The scan is clipped to the file span
+ * so we never invent a position past the last state vector.
+ */
+export function predictPassesFromEphemeris(
+  samples: EphemSample[],
+  latDeg: number,
+  lonDeg: number,
+  days: number,
+  start = new Date(),
+): SatPass[] {
+  if (samples.length < 2) return [];
+  const observerGd = {
+    latitude: latDeg * DEG,
+    longitude: lonDeg * DEG,
+    height: 0,
+  };
+  const spanStart = samples[0].t;
+  const spanStop = samples[samples.length - 1].t;
+  const from = new Date(Math.max(start.getTime(), spanStart));
+  const windowEnd = start.getTime() + days * 86400_000;
+  const coveredMs = Math.min(windowEnd, spanStop) - from.getTime();
+  if (coveredMs <= 0) return [];
+  const coveredDays = coveredMs / 86400_000;
+  const sample: SampleFn = (t, needVisibility) => {
+    const eci = interpolateState(samples, t);
+    return lookSample(t, needVisibility, eci, observerGd);
+  };
+  return collectPasses(sample, from, coveredDays);
 }

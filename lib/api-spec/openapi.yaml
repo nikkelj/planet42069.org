@@ -134,13 +134,23 @@ paths:
       operationId: getSatcatPasses
       tags: [satcat]
       summary: Upcoming passes over an observer location
-      description: Predicted passes (SGP4-propagated) for the next N days over the given lat/lon
+      description: >
+        Predicted passes for the next N days over the given lat/lon.
+        When the satellite has a SpaceX public ephemeris, the newest file
+        for that name is used. Otherwise the element set is propagated with SGP4.
       parameters:
         - name: norad
           in: query
-          required: true
+          required: false
           schema:
             type: integer
+          description: NORAD catalog number. Optional when name is set.
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Satellite name, used to pick the newest Starlink public ephemeris.
         - name: lat
           in: query
           required: true
@@ -1085,7 +1095,15 @@ components:
           type: integer
         epoch:
           type: string
-          description: Element-set epoch used for propagation (ISO 8601)
+          description: Element-set epoch, or the start of the ephemeris file (ISO 8601)
+        coverageEnd:
+          type: string
+          description: End of the ephemeris file when source is starlink-ephemeris (ISO 8601)
+        source:
+          type: string
+          description: starlink-ephemeris or tle
+        name:
+          type: string
         passes:
           type: array
           items:

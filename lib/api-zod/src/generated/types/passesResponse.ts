@@ -12,7 +12,12 @@ export interface PassesResponse {
   lat: number;
   lon: number;
   days: number;
-  /** Element-set epoch used for propagation (ISO 8601) */
+  /** Element-set epoch, or the start of the ephemeris file (ISO 8601) */
   epoch: string;
+  /** End of the ephemeris file when source is starlink-ephemeris */
+  coverageEnd?: string;
+  /** starlink-ephemeris or tle */
+  source?: string;
+  name?: string;
   passes: SatPass[];
 }

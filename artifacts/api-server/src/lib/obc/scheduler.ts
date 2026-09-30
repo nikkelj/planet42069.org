@@ -4,6 +4,7 @@ import { runGunterSync } from "./gunter";
 import { getFreshness, primeCache, CatalogLoadingError, getSatcatFromStore } from "./store";
 import { catalogNeedsSync, CATALOG_SYNC_INTERVAL_MS } from "./catalogPolicy";
 import { runRecentElsetWatch, runTleBackfill } from "./tleArchive";
+import { syncStarlinkManifest } from "./starlinkEphem";
 import {
   runRpodScan, latestRpodScanFinishedAtMs, rpodScanIsDue,
   RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_CHECK_INTERVAL_MS, RPOD_SCAN_BOOT_DELAY_MS,
@@ -260,4 +261,9 @@ export function startObcScheduler(): void {
 
   setTimeout(() => safeTick("rpod-scan", runRpodScanIfDue), RPOD_SCAN_BOOT_DELAY_MS);
   setInterval(() => safeTick("rpod-scan", runRpodScanIfDue), RPOD_SCAN_CHECK_INTERVAL_MS).unref();
+
+  // Starlink public manifest. Names only — file bodies stay on demand.
+  // Hourly so a new bird shows up in the catalog without waiting on space-track.
+  setTimeout(() => safeTick("starlink-ephem", () => syncStarlinkManifest().then(() => undefined)), 20_000);
+  setInterval(() => safeTick("starlink-ephem", () => syncStarlinkManifest().then(() => undefined)), CHECK_INTERVAL_MS).unref();
 }
