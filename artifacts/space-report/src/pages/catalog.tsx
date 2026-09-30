@@ -40,10 +40,11 @@ function TrackingPanel({ satno, apogeeKm, perigeeKm, incDeg, name }: {
   incDeg?: number | null;
   name?: string;
 }) {
-  const enabled = satno != null && satno > 0;
+  const hasNorad = satno != null && satno > 0;
+  const enabled = hasNorad || Boolean(name);
   const { data: tle } = useGetSatcatTle(satno ?? 0, {
     query: {
-      enabled,
+      enabled: hasNorad,
       queryKey: getGetSatcatTleQueryKey(satno ?? 0),
       staleTime: 30 * 60_000,
       retry: false,
@@ -136,7 +137,7 @@ function TrackingPanel({ satno, apogeeKm, perigeeKm, incDeg, name }: {
       {enabled && (
         <Suspense fallback={null}>
           <PassFinder
-            norad={satno!}
+            norad={satno ?? 0}
             name={name}
             observer={observer}
             onObserverChange={onObserverChange}

@@ -9,6 +9,10 @@
 export type GetSatcatPassesParams = {
 norad: number;
 /**
+ * Satellite name. When set, the newest Starlink public ephemeris for this name is preferred.
+ */
+name?: string;
+/**
  * Observer latitude in degrees (-90..90)
  */
 lat: number;
