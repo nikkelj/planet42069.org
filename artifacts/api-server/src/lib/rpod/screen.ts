@@ -109,17 +109,84 @@ function angDiffDeg(a: number, b: number): number {
  * Minimum |ΔRAAN| between two objects at any point in [0, windowMs],
  * assuming linear J2 drift. Captures both "already coplanar" and
  * "planes converging within the window".
+ *
+ * `rateA` / `rateB` are `raanRateDegPerDay` for the two elsets. Callers that
+ * screen a whole shell precompute those once; doing it per pair is four
+ * cbrt/trig evaluations and dominated the hourly scan.
  */
-export function minRaanDiffDeg(a: ScreenElset, b: ScreenElset, windowMs: number): number {
+export function minRaanDiffDeg(
+  a: Pick<ScreenElset, "raanDeg" | "incDeg" | "eccentricity" | "meanMotionRevPerDay">,
+  b: Pick<ScreenElset, "raanDeg" | "incDeg" | "eccentricity" | "meanMotionRevPerDay">,
+  windowMs: number,
+  rateA: number = raanRateDegPerDay(a),
+  rateB: number = raanRateDegPerDay(b),
+): number {
   const d0 = angDiffDeg(a.raanDeg, b.raanDeg);
-  const rateDiff = raanRateDegPerDay(a) - raanRateDegPerDay(b); // deg/day
+  const rateDiff = rateA - rateB; // deg/day
   const days = windowMs / 86400_000;
-  const d1 = angDiffDeg(a.raanDeg + raanRateDegPerDay(a) * days, b.raanDeg + raanRateDegPerDay(b) * days);
+  const d1 = angDiffDeg(a.raanDeg + rateA * days, b.raanDeg + rateB * days);
   // If the signed difference crosses zero inside the window the true min is 0-ish.
   const s0 = ((a.raanDeg - b.raanDeg + 540) % 360) - 180;
   const s1 = s0 + rateDiff * days;
   if (Math.sign(s0) !== Math.sign(s1) && Math.abs(s0) < 30 && Math.abs(s1) < 30) return 0;
   return Math.min(d0, d1);
+}
+
+/** RAAN in [0, 360). Screening windows are circular; catalog values sometimes aren't. */
+function normRaanDeg(deg: number): number {
+  const x = deg % 360;
+  return x < 0 ? x + 360 : x;
+}
+
+/**
+ * Extra degrees added to a RAAN search window so float error cannot drop a
+ * pair that sits exactly on the drift bound. The numeric gates still run
+ * after the window, so a slightly wide window never creates a false hit.
+ */
+const RAAN_WINDOW_SLACK_DEG = 1e-3;
+
+function usableScreenElset(e: ScreenElset): boolean {
+  return Number.isFinite(e.incDeg)
+    && Number.isFinite(e.raanDeg)
+    && Number.isFinite(e.eccentricity)
+    && Number.isFinite(e.meanMotionRevPerDay)
+    && e.meanMotionRevPerDay >= 0.5
+    && e.meanMotionRevPerDay <= 20;
+}
+
+/**
+ * Visit index pairs whose normalized RAAN separation along the short arc
+ * might be <= `windowDeg`. `windowDeg` >= 180 visits every pair.
+ * Each unordered pair is visited once.
+ */
+async function visitRaanWindow(
+  raanDeg: number[],
+  idxs: number[],
+  windowDeg: number,
+  visit: (i: number, j: number) => Promise<void> | void,
+): Promise<void> {
+  const n = idxs.length;
+  if (n < 2) return;
+  const order = idxs.slice().sort((i, j) => raanDeg[i] - raanDeg[j] || i - j);
+  if (!(windowDeg < 180)) {
+    for (let a = 0; a < n; a++) {
+      for (let b = a + 1; b < n; b++) await visit(order[a], order[b]);
+    }
+    return;
+  }
+  for (let left = 0; left < n; left++) {
+    const ra = raanDeg[order[left]];
+    for (let k = left + 1; k < n; k++) {
+      if (raanDeg[order[k]] - ra > windowDeg) break;
+      await visit(order[left], order[k]);
+    }
+    const wrapLimit = ra + windowDeg - 360;
+    if (wrapLimit < 0) continue;
+    for (let k = 0; k < left; k++) {
+      if (raanDeg[order[k]] > wrapLimit) break;
+      await visit(order[left], order[k]);
+    }
+  }
 }
 
 export interface CandidatePair {
@@ -133,9 +200,9 @@ export function yieldToEventLoop(): Promise<void> {
 }
 
 /**
- * Comparisons between event-loop yields in stage-1 screening. Starlink's
- * ~53° band is thousands of objects; without yielding, minRaanDiffDeg over
- * tens of millions of pairs blocks Node so Express never flushes a byte.
+ * Comparisons between event-loop yields in stage-1 screening.
+ * Neighbor windows cut the Starlink shell down a lot, but a slow autoscale
+ * box still needs to yield so GET /api/rpod/status can flush.
  */
 export const SCREEN_YIELD_EVERY = 4_000;
 
@@ -146,7 +213,20 @@ export const MAX_SGP4_PAIR_MS = 2_000;
 
 /**
  * Stage 1: cheap plane-matching screen over the whole catalog.
- * Buckets by inclination band to avoid the full N² comparison.
+ * Buckets by inclination, then by mean motion, then only walks RAAN
+ * neighbors that J2 drift could still bring inside the gate.
+ *
+ * A full pair walk of one Starlink shell (~5k sats at 53.2°, all inside
+ * one 0.6° inclination band and one 0.35 rev/day mean-motion bin) is
+ * ~1.3e7 pairs, and each object is also copied into the adjacent band.
+ * On the live catalog that was ~5.2e7 pair-key allocations before the
+ * RAAN test. That fits in a few seconds on a roomy box and blows the
+ * 25-minute scan cap on the autoscale instance (GC of the pair keys plus
+ * four raan-rate evaluations per pair). Relative nodal drift inside a
+ * mean-motion bin is well under a degree over the 48h window, so the
+ * RAAN window drops the shell to a thin neighbor strip without changing
+ * which pairs pass the numeric gates.
+ *
  * Pass yieldEvery > 0 (SCREEN_YIELD_EVERY in the worker) so HTTP can run.
  */
 export async function screenCandidatePairs(
@@ -158,7 +238,7 @@ export async function screenCandidatePairs(
   const bandSize = Math.max(opts.maxIncDiffDeg, 0.1);
   const bands = new Map<number, ScreenElset[]>();
   for (const e of elsets) {
-    if (!Number.isFinite(e.meanMotionRevPerDay) || e.meanMotionRevPerDay < 0.5 || e.meanMotionRevPerDay > 20) continue;
+    if (!usableScreenElset(e)) continue;
     const band = Math.floor(e.incDeg / bandSize);
     for (const bIdx of [band, band + 1]) {
       const arr = bands.get(bIdx) ?? [];
@@ -169,24 +249,62 @@ export async function screenCandidatePairs(
   const pairs: CandidatePair[] = [];
   const seen = new Set<string>();
   let compared = 0;
+  const bump = async (): Promise<void> => {
+    compared++;
+    if (yieldEvery > 0 && compared % yieldEvery === 0) {
+      if (deadlineMs != null && Date.now() > deadlineMs) throw new Error("rpod-scan timed out during screening");
+      await yieldToEventLoop();
+    }
+  };
+
+  const days = opts.windowMs / 86400_000;
+  const mmBin = opts.maxMeanMotionDiff;
   for (const arr of bands.values()) {
-    for (let i = 0; i < arr.length; i++) {
-      for (let j = i + 1; j < arr.length; j++) {
-        const a = arr[i], b = arr[j];
-        compared++;
-        if (yieldEvery > 0 && compared % yieldEvery === 0) {
-          if (deadlineMs != null && Date.now() > deadlineMs) throw new Error("rpod-scan timed out during screening");
-          await yieldToEventLoop();
-        }
-        if (a.norad === b.norad) continue;
+    const n = arr.length;
+    if (n < 2) continue;
+    const rates = new Array<number>(n);
+    const raan = new Array<number>(n);
+    for (let i = 0; i < n; i++) {
+      rates[i] = raanRateDegPerDay(arr[i]);
+      raan[i] = normRaanDeg(arr[i].raanDeg);
+    }
+    const groups = new Map<number, number[]>();
+    for (let i = 0; i < n; i++) {
+      const b = mmBin > 0 ? Math.floor(arr[i].meanMotionRevPerDay / mmBin) : 0;
+      const slots = mmBin > 0 ? [b, b + 1] : [0];
+      for (const id of slots) {
+        const g = groups.get(id);
+        if (g) g.push(i);
+        else groups.set(id, [i]);
+      }
+    }
+    for (const idxs of groups.values()) {
+      if (idxs.length < 2) continue;
+      let rMin = Infinity;
+      let rMax = -Infinity;
+      for (const i of idxs) {
+        const r = rates[i];
+        if (r < rMin) rMin = r;
+        if (r > rMax) rMax = r;
+      }
+      const drift = Number.isFinite(rMin) && Number.isFinite(rMax) ? (rMax - rMin) * days : 180;
+      // Linear drift of at most `drift` degrees cannot close a larger gap
+      // than maxRaan + drift (the 30° zero-cross rule is inside that, because
+      // a crossing needs |drift| >= |ΔRAAN|). Slack covers float error.
+      const window = opts.maxRaanDiffDeg + drift + RAAN_WINDOW_SLACK_DEG;
+      await visitRaanWindow(raan, idxs, window, async (i, j) => {
+        await bump();
+        const a = arr[i];
+        const b = arr[j];
+        if (a.norad === b.norad) return;
+        if (Math.abs(a.incDeg - b.incDeg) > opts.maxIncDiffDeg) return;
+        if (Math.abs(a.meanMotionRevPerDay - b.meanMotionRevPerDay) > opts.maxMeanMotionDiff) return;
+        if (minRaanDiffDeg(a, b, opts.windowMs, rates[i], rates[j]) > opts.maxRaanDiffDeg) return;
         const key = a.norad < b.norad ? `${a.norad}:${b.norad}` : `${b.norad}:${a.norad}`;
-        if (seen.has(key)) continue;
-        if (Math.abs(a.incDeg - b.incDeg) > opts.maxIncDiffDeg) continue;
-        if (Math.abs(a.meanMotionRevPerDay - b.meanMotionRevPerDay) > opts.maxMeanMotionDiff) continue;
-        if (minRaanDiffDeg(a, b, opts.windowMs) > opts.maxRaanDiffDeg) continue;
+        if (seen.has(key)) return;
         seen.add(key);
         pairs.push({ a, b });
-      }
+      });
     }
   }
   return pairs;
@@ -277,7 +395,7 @@ export async function screenCoAlignedPairs(
   const bandSize = Math.max(opts.maxIncDiffDeg, 0.1);
   const bands = new Map<number, ScreenElset[]>();
   for (const e of elsets) {
-    if (!Number.isFinite(e.meanMotionRevPerDay) || e.meanMotionRevPerDay < 0.5 || e.meanMotionRevPerDay > 20) continue;
+    if (!usableScreenElset(e)) continue;
     const band = Math.floor(e.incDeg / bandSize);
     for (const bIdx of [band, band + 1]) {
       const arr = bands.get(bIdx) ?? [];
@@ -288,32 +406,45 @@ export async function screenCoAlignedPairs(
   const pairs: CandidatePair[] = [];
   const seen = new Set<string>();
   let compared = 0;
-  for (const arr of bands.values()) {
-    for (let i = 0; i < arr.length; i++) {
-      for (let j = i + 1; j < arr.length; j++) {
-        const a = arr[i], b = arr[j];
-        compared++;
-        if (yieldEvery > 0 && compared % yieldEvery === 0) {
-          if (deadlineMs != null && Date.now() > deadlineMs) throw new Error("rpod-scan timed out during co-aligned screen");
-          await yieldToEventLoop();
-        }
-        if (a.norad === b.norad) continue;
-        const key = a.norad < b.norad ? `${a.norad}:${b.norad}` : `${b.norad}:${a.norad}`;
-        if (seen.has(key)) continue;
-        if (Math.abs(a.incDeg - b.incDeg) > opts.maxIncDiffDeg) continue;
-        if (angDiffDeg(a.raanDeg, b.raanDeg) > opts.maxRaanDiffDeg) continue;
-        const aa = semiMajorAxisKm(a.meanMotionRevPerDay);
-        const ab = semiMajorAxisKm(b.meanMotionRevPerDay);
-        const loA = aa * (1 - a.eccentricity) - opts.radialMarginKm;
-        const hiA = aa * (1 + a.eccentricity) + opts.radialMarginKm;
-        const loB = ab * (1 - b.eccentricity) - opts.radialMarginKm;
-        const hiB = ab * (1 + b.eccentricity) + opts.radialMarginKm;
-        if (loA > hiB || loB > hiA) continue;
-        if (minPhaseDiffDeg(a, b, nowMs, opts.windowMs) > opts.maxPhaseDiffDeg) continue;
-        seen.add(key);
-        pairs.push({ a, b });
-      }
+  const bump = async (): Promise<void> => {
+    compared++;
+    if (yieldEvery > 0 && compared % yieldEvery === 0) {
+      if (deadlineMs != null && Date.now() > deadlineMs) throw new Error("rpod-scan timed out during co-aligned screen");
+      await yieldToEventLoop();
     }
+  };
+  // No convergence term: shadowers are already co-planar. The RAAN gate is
+  // the current separation, so the neighbor window is that gate plus slack.
+  const window = opts.maxRaanDiffDeg + RAAN_WINDOW_SLACK_DEG;
+  for (const arr of bands.values()) {
+    const n = arr.length;
+    if (n < 2) continue;
+    const raan = new Array<number>(n);
+    const idxs = new Array<number>(n);
+    for (let i = 0; i < n; i++) {
+      raan[i] = normRaanDeg(arr[i].raanDeg);
+      idxs[i] = i;
+    }
+    await visitRaanWindow(raan, idxs, window, async (i, j) => {
+      await bump();
+      const a = arr[i];
+      const b = arr[j];
+      if (a.norad === b.norad) return;
+      if (Math.abs(a.incDeg - b.incDeg) > opts.maxIncDiffDeg) return;
+      if (angDiffDeg(a.raanDeg, b.raanDeg) > opts.maxRaanDiffDeg) return;
+      const aa = semiMajorAxisKm(a.meanMotionRevPerDay);
+      const ab = semiMajorAxisKm(b.meanMotionRevPerDay);
+      const loA = aa * (1 - a.eccentricity) - opts.radialMarginKm;
+      const hiA = aa * (1 + a.eccentricity) + opts.radialMarginKm;
+      const loB = ab * (1 - b.eccentricity) - opts.radialMarginKm;
+      const hiB = ab * (1 + b.eccentricity) + opts.radialMarginKm;
+      if (loA > hiB || loB > hiA) return;
+      if (minPhaseDiffDeg(a, b, nowMs, opts.windowMs) > opts.maxPhaseDiffDeg) return;
+      const key = a.norad < b.norad ? `${a.norad}:${b.norad}` : `${b.norad}:${a.norad}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      pairs.push({ a, b });
+    });
   }
   return pairs;
 }

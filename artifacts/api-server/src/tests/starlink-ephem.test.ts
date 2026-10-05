@@ -8,6 +8,7 @@ import {
   parseMeme,
   parseMemeEpoch,
   stubKey,
+  catalogNameKey,
 } from "../lib/obc/starlinkEphem";
 import { predictPassesFromEphemeris } from "../lib/passes";
 
@@ -31,6 +32,11 @@ check("one row per name", entries.length === 2, String(entries.length));
 check("higher recency wins", byName["STARLINK-38128"]?.filename.startsWith("MEME_100050_"));
 check("seq breaks a recency tie", byName["STARLINK-1"]?.seq === 100011);
 check("stub key", stubKey("STARLINK-38128") === "SX:STARLINK-38128");
+check(
+  "manifest name matches GCAT spelling",
+  catalogNameKey("STARLINK-38128") === catalogNameKey("Starlink 38128")
+    && catalogNameKey("STARLINK-38128") === "STARLINK38128",
+);
 
 const epoch = parseMemeEpoch("2026273084942.000");
 check("epoch parses", epoch === Date.parse("2026-09-30T08:49:42.000Z"), String(new Date(epoch ?? 0).toISOString()));
