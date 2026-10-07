@@ -12,6 +12,7 @@
 import {
   screenCandidatePairs, screenCoAlignedPairs, minRaanDiffDeg, minPhaseDiffDeg, raanRateDegPerDay, closeApproach, clusterPairs,
   DEFAULT_SCREEN, DEFAULT_COALIGNED, hasUsableTleLines, tleEpochMs, tleEpochIsCurrent, MAX_SGP4_PAIR_MS, SCREEN_YIELD_EVERY,
+  semiMajorAxisKm,
   type ScreenElset, type FlaggedPair,
 } from "../lib/rpod/screen";
 import { selectEndedCoplanarIds, COPLANAR_END_AFTER_MS, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS } from "../lib/rpod/retire";
@@ -345,6 +346,127 @@ console.log("Co-aligned (coplanar shadowing) screen");
   check("disjoint membership → new case",
     selectReopenCandidate(ended, [900, 901], now) === null);
   check("no ended cases → new case", selectReopenCandidate([], [111, 222], now) === null);
+}
+
+console.log("Stage 1: RAAN window matches a full pair walk");
+{
+  function brute(elsets: ScreenElset[], opts = DEFAULT_SCREEN) {
+    const out: string[] = [];
+    for (let i = 0; i < elsets.length; i++) {
+      for (let j = i + 1; j < elsets.length; j++) {
+        const a = elsets[i], b = elsets[j];
+        if (!Number.isFinite(a.meanMotionRevPerDay) || a.meanMotionRevPerDay < 0.5 || a.meanMotionRevPerDay > 20) continue;
+        if (!Number.isFinite(b.meanMotionRevPerDay) || b.meanMotionRevPerDay < 0.5 || b.meanMotionRevPerDay > 20) continue;
+        if (!Number.isFinite(a.incDeg) || !Number.isFinite(b.incDeg)) continue;
+        if (Math.abs(a.incDeg - b.incDeg) > opts.maxIncDiffDeg) continue;
+        if (Math.abs(a.meanMotionRevPerDay - b.meanMotionRevPerDay) > opts.maxMeanMotionDiff) continue;
+        if (minRaanDiffDeg(a, b, opts.windowMs) > opts.maxRaanDiffDeg) continue;
+        out.push([a.norad, b.norad].sort((x, y) => x - y).join(":"));
+      }
+    }
+    return out.sort();
+  }
+  // Deterministic LCG so the oracle is stable.
+  let seed = 20261005;
+  const rnd = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  const cloud: ScreenElset[] = [];
+  for (let i = 0; i < 160; i++) {
+    const shell = i % 5;
+    const inc = [53.16, 53.55, 43.02, 97.4, 70.1][shell] + (rnd() - 0.5) * 0.4;
+    const mm = [15.34, 15.05, 15.28, 15.33, 14.98][shell] + (rnd() - 0.5) * 0.5;
+    const ecc = rnd() < 0.08 ? 0.15 + rnd() * 0.5 : 0.0001 + rnd() * 0.01;
+    cloud.push(makeElset({
+      norad: 80000 + i,
+      incDeg: inc,
+      raanDeg: rnd() * 360,
+      ecc,
+      mm,
+    }));
+  }
+  // Explicit 0/360 wrap pair that must survive the circular window.
+  cloud.push(makeElset({ norad: 90001, incDeg: 53.2, raanDeg: 0.2, mm: 15.34, ecc: 0.0002 }));
+  cloud.push(makeElset({ norad: 90002, incDeg: 53.22, raanDeg: 359.7, mm: 15.345, ecc: 0.0002 }));
+  // High-eccentricity neighbor whose nodal rate differs; the window has to
+  // be wide enough that drift still finds it if the numeric gate would.
+  cloud.push(makeElset({ norad: 90003, incDeg: 53.2, raanDeg: 40, mm: 15.2, ecc: 0.55 }));
+  cloud.push(makeElset({ norad: 90004, incDeg: 53.4, raanDeg: 42, mm: 15.35, ecc: 0.001 }));
+  const got = (await screenCandidatePairs(cloud)).map((p) => [p.a.norad, p.b.norad].sort((x, y) => x - y).join(":")).sort();
+  const expect = brute(cloud);
+  check("windowed stage-1 pairs equal the full walk", got.join() === expect.join(), `got ${got.length} brute ${expect.length}`);
+  check("0/360 RAAN pair is kept", got.includes("90001:90002"));
+
+  const nan = makeElset({ norad: 91000, incDeg: Number.NaN, raanDeg: 10, mm: 15.3 });
+  const finite = makeElset({ norad: 91001, incDeg: 53.2, raanDeg: 10, mm: 15.3 });
+  const withNan = await screenCandidatePairs([nan, finite, makeElset({ norad: 91002, incDeg: 53.2, raanDeg: 10.2, mm: 15.3 })]);
+  check("non-finite inclination is not screened", withNan.every((p) => p.a.norad !== 91000 && p.b.norad !== 91000));
+}
+
+console.log("Stage 1: Starlink-sized shell finishes inside the scan budget");
+{
+  const shell = Array.from({ length: 5000 }, (_, i) =>
+    makeElset({
+      norad: 200000 + i,
+      incDeg: 53.16 + (i % 7) * 0.008,
+      raanDeg: (i * 137.507) % 360,
+      mm: 15.30 + (i % 50) * 0.002,
+      ecc: 0.00015,
+    }),
+  );
+  const t0 = Date.now();
+  const pairs = await screenCandidatePairs(shell, DEFAULT_SCREEN, SCREEN_YIELD_EVERY);
+  const ms = Date.now() - t0;
+  check("5000-sat shell screens in under 2s", ms < 2000, `${ms}ms pairs=${pairs.length}`);
+  check("shell still reports neighbor pairs", pairs.length > 0, String(pairs.length));
+}
+
+console.log("Co-aligned: RAAN window matches a full pair walk");
+{
+  let seed = 42;
+  const rnd = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  const cloud: ScreenElset[] = [];
+  for (let i = 0; i < 120; i++) {
+    cloud.push(makeElset({
+      norad: 300000 + i,
+      incDeg: 53.15 + rnd() * 0.2,
+      raanDeg: rnd() * 360,
+      mm: 15.2 + rnd() * 0.3,
+      ecc: 0.0002,
+      argp: rnd() * 360,
+      ma: rnd() * 360,
+    }));
+  }
+  cloud.push(makeElset({ norad: 310001, incDeg: 53.2, raanDeg: 0.05, mm: 15.34, argp: 10, ma: 20 }));
+  cloud.push(makeElset({ norad: 310002, incDeg: 53.2, raanDeg: 359.95, mm: 15.341, argp: 12, ma: 18 }));
+  const now = Date.parse("2026-10-05T23:15:00Z");
+  const got = (await screenCoAlignedPairs(cloud, DEFAULT_COALIGNED, now))
+    .map((p) => [p.a.norad, p.b.norad].sort((x, y) => x - y).join(":")).sort();
+  const expect: string[] = [];
+  for (let i = 0; i < cloud.length; i++) {
+    for (let j = i + 1; j < cloud.length; j++) {
+      const a = cloud[i], b = cloud[j];
+      if (Math.abs(a.incDeg - b.incDeg) > DEFAULT_COALIGNED.maxIncDiffDeg) continue;
+      let d = Math.abs(a.raanDeg - b.raanDeg) % 360;
+      if (d > 180) d = 360 - d;
+      if (d > DEFAULT_COALIGNED.maxRaanDiffDeg) continue;
+      if (minPhaseDiffDeg(a, b, now, DEFAULT_COALIGNED.windowMs) > DEFAULT_COALIGNED.maxPhaseDiffDeg) continue;
+      const aa = semiMajorAxisKm(a.meanMotionRevPerDay);
+      const ab = semiMajorAxisKm(b.meanMotionRevPerDay);
+      const loA = aa * (1 - a.eccentricity) - DEFAULT_COALIGNED.radialMarginKm;
+      const hiA = aa * (1 + a.eccentricity) + DEFAULT_COALIGNED.radialMarginKm;
+      const loB = ab * (1 - b.eccentricity) - DEFAULT_COALIGNED.radialMarginKm;
+      const hiB = ab * (1 + b.eccentricity) + DEFAULT_COALIGNED.radialMarginKm;
+      if (loA > hiB || loB > hiA) continue;
+      expect.push([a.norad, b.norad].sort((x, y) => x - y).join(":"));
+    }
+  }
+  expect.sort();
+  check("windowed co-aligned pairs equal the full walk", got.join() === expect.join(), `got ${got.length} brute ${expect.length}`);
 }
 
 if (failures > 0) {

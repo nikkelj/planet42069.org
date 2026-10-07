@@ -43,6 +43,23 @@ export function stubKey(name: string): string {
   return `SX:${name}`;
 }
 
+/**
+ * Identity key for "is this the same catalog name?".
+ * Manifest names are `STARLINK-38128`; GCAT spells that `Starlink 38128`.
+ * Exact string match inserted a second operational payload per satellite
+ * (SX: stubs, norad null) — about 10k extra rows — because hyphen vs space
+ * never compared equal.
+ */
+export function catalogNameKey(name: string): string {
+  return name.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+/**
+ * SQL twin of `catalogNameKey`. Keep the two in lockstep: uppercased,
+ * non-alphanumerics removed. Used so `STARLINK-38128` matches `Starlink 38128`.
+ */
+const SQL_NAME_KEY = (col: string) => `regexp_replace(upper(${col}), '[^A-Z0-9]', '', 'g')`;
+
 /** One row per satellite name. Higher recency wins; seq breaks ties. */
 export function parseManifest(text: string): ManifestEntry[] {
   const best = new Map<string, ManifestEntry>();
@@ -222,16 +239,23 @@ async function doSync(): Promise<{ indexed: number; stubs: number }> {
     }
 
     // A real catalog row (GCAT or space-track) supersedes the stub.
-    await db.execute(sql`
+    // Names are compared with punctuation/spacing stripped: the manifest
+    // says STARLINK-38128 and GCAT says "Starlink 38128". Exact match left
+    // every published satellite as a second operational payload.
+    const stubKeySql = SQL_NAME_KEY("a.name");
+    const otherKeySql = SQL_NAME_KEY("b.name");
+    const objKeySql = SQL_NAME_KEY("o.name");
+    const ephemKeySql = SQL_NAME_KEY("e.name");
+    await db.execute(sql.raw(`
       DELETE FROM obc_objects a
       WHERE a.key LIKE 'SX:%'
         AND EXISTS (
           SELECT 1 FROM obc_objects b
-          WHERE b.key <> a.key AND upper(b.name) = upper(a.name)
+          WHERE b.key <> a.key AND ${otherKeySql} = ${stubKeySql}
         )
-    `);
+    `));
 
-    const inserted = await db.execute(sql`
+    const inserted = await db.execute(sql.raw(`
       INSERT INTO obc_objects (
         key, name, owner, state, object_class, obj_type, op_orbit, sat_state,
         in_gcat, in_spacetrack, mass_estimated, updated_at
@@ -241,9 +265,9 @@ async function doSync(): Promise<{ indexed: number; stubs: number }> {
         false, false, false, now()
       FROM obc_starlink_ephem e
       WHERE NOT EXISTS (
-        SELECT 1 FROM obc_objects o WHERE upper(o.name) = upper(e.name)
+        SELECT 1 FROM obc_objects o WHERE ${objKeySql} = ${ephemKeySql}
       )
-    `);
+    `));
 
     const stubs = inserted.rowCount ?? 0;
     invalidateStore();
