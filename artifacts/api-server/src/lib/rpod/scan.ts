@@ -12,6 +12,7 @@ import {
   hasUsableTleLines, tleEpochIsCurrent, yieldToEventLoop, SCREEN_YIELD_EVERY,
   type ScreenElset, type FlaggedPair, type ScreenOptions,
 } from "./screen";
+import { screenWatchCrossings, parseWatchNorads, crossingPairIsReportable, DEFAULT_CROSSING } from "./crossing";
 import { selectEndedCoplanarIds, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS } from "./retire";
 import { postNewRpodEventAlerts, postEscalationAlerts, isEscalation, type NewRpodEvent, type EscalatedRpodEvent } from "./alert";
 import {
@@ -50,6 +51,8 @@ const COALIGNED_MERGE_WINDOW_MS = 24 * 3600_000;
 const MEMBER_CAP = 5;
 /** Events whose window ended this long ago get marked stale. */
 const STALE_AFTER_MS = 3 * 86400_000;
+/** Fewer usable elsets than this is reported in lastScanError (the live catalog is ~15k+). */
+const LOW_ELSET_WARN = 5_000;
 
 let scanInFlight: Promise<void> | null = null;
 
@@ -308,19 +311,45 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
 
     const coEvents = clusterPairs(coFlagged, MEMBER_CAP, COALIGNED_MERGE_WINDOW_MS);
 
+    // Crossing-track watch screen: watched inspectors vs everything, with no
+    // plane / relative-velocity gate (stage 1+2 above can never see these).
+    // One event per pair — clustering on the shared inspector would fuse
+    // unrelated passes into one mega-case.
+    throwIfScanDeadline(deadlineMs, "before crossing screen", abort);
+    const conjKeys = new Set(flagged.map((f) => pairKey(f.a, f.b)));
+    const crossingPairs = (await screenWatchCrossings(
+      parseWatchNorads(process.env.RPOD_WATCH_NORADS),
+      elsets,
+      nowMs,
+      { ...DEFAULT_CROSSING, deadlineMs },
+    ))
+      .filter((p) => !conjKeys.has(pairKey(p.a, p.b)))
+      .filter((p) => !isSameLaunch(p.a, p.b, meta))
+      .filter((p) => crossingPairIsReportable(p, process.env.RPOD_CROSSING_MAX_KM));
+    const crossingEvents = crossingPairs.map((p) => clusterPairs([p], MEMBER_CAP)[0]);
+
     // Persist only interesting encounters. Boring same-operator routine
     // RPOD must not land in rpod_events or on the public board.
     const conjKept = selectInterestingEvents(events, meta);
     const coKept = selectInterestingEvents(coEvents, meta);
+    const crossKept = selectInterestingEvents(crossingEvents, meta);
     const interestStats = {
       conjunction: conjKept.stats,
       coplanar: coKept.stats,
+      crossing: crossKept.stats,
     };
 
     throwIfScanDeadline(deadlineMs, "before persist", abort);
     const conjResult = await persistEvents(conjKept.kept, "conjunction");
     const coResult = await persistEvents(coKept.kept, "coplanar");
-    const warnings = [...conjResult.errors, ...coResult.errors];
+    // Crossing passes are tracked on the board but do not post X alerts
+    // (they would eat the daily cap); set RPOD_CROSSING_ALERTS=1 to opt in.
+    const crossResult = await persistEvents(crossKept.kept, "conjunction");
+    const crossAlerts = process.env.RPOD_CROSSING_ALERTS === "1";
+    const warnings = [...conjResult.errors, ...coResult.errors, ...crossResult.errors];
+    if (elsets.length < LOW_ELSET_WARN) {
+      warnings.unshift(`only ${elsets.length} usable elsets of ${latest.length} fetched (expected ${LOW_ELSET_WARN}+)`);
+    }
     // Alert on genuinely NEW cases (never routine updates/reopens), plus
     // one follow-up when an ACTIVE case escalates (min range tightening
     // sharply). Failures are swallowed inside — posting must never fail
@@ -332,8 +361,8 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     try {
       await withDeadline(
         (async () => {
-          await postNewRpodEventAlerts([...conjResult.inserted, ...coResult.inserted], metaFor);
-          await postEscalationAlerts([...conjResult.escalated, ...coResult.escalated], metaFor);
+          await postNewRpodEventAlerts([...conjResult.inserted, ...coResult.inserted, ...(crossAlerts ? crossResult.inserted : [])], metaFor);
+          await postEscalationAlerts([...conjResult.escalated, ...coResult.escalated, ...(crossAlerts ? crossResult.escalated : [])], metaFor);
         })(),
         RPOD_ALERT_TIMEOUT_MS,
         "rpod-alert",
@@ -357,7 +386,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     await logScanRow(
       "success",
       started,
-      conjKept.kept.length + coKept.kept.length,
+      conjKept.kept.length + coKept.kept.length + crossKept.kept.length,
       warnings.length ? warnings.join("; ").slice(0, 2000) : undefined,
       abort,
     );
@@ -371,6 +400,8 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
         coCandidates: coCandidates.length,
         coplanarEvents: coEvents.length,
         interestingCoplanar: coKept.kept.length,
+        crossingPairs: crossingPairs.length,
+        interestingCrossing: crossKept.kept.length,
         interest: interestStats,
       },
       "rpod-scan: complete",
