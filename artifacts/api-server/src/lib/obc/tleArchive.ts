@@ -8,7 +8,7 @@ import { logger } from "../logger";
  * TLE history archive — samples space-track's public elset history into
  * Postgres so huge time ranges can be queried instantly.
  *
- *  - Recent watcher: polls the gp class for elsets with EPOCH newer than a
+ *  - Recent watcher: polls the gp class for elsets PUBLISHED (CREATION_DATE) after a
  *    persisted watermark. This is the "recent elsets" tip-off feed — newly
  *    published objects (fresh launches, uncatalogued birds, maneuvers) show
  *    up here first.
@@ -52,7 +52,14 @@ const BACKFILL_CHUNK_HOURS = 6;
 const BACKFILL_REQUESTS_PER_RUN = 4;
 const GP_HISTORY_ROW_LIMIT = 60_000;
 
-const STATE_WATERMARK = "tle_recent_watermark";
+/**
+ * Recent-watch cursor on space-track CREATION_DATE (publish time). The old
+ * "tle_recent_watermark" tracked EPOCH and is no longer read: see
+ * nextRecentWatermarkMs for why an EPOCH cursor loses nearly every elset.
+ */
+const STATE_WATERMARK = "tle_recent_created_watermark";
+/** First run (or a fresh key) re-reads this much publish history so the RPOD scan's 3-day window refills. */
+export const RECENT_INITIAL_LOOKBACK_MS = 4 * 86_400_000;
 const STATE_BACKFILL = "tle_backfill_cursor";
 const STATE_BACKOFF = "tle_backoff";
 
@@ -60,6 +67,7 @@ export interface GpRow {
   NORAD_CAT_ID: string;
   OBJECT_NAME?: string | null;
   EPOCH: string;
+  CREATION_DATE?: string | null;
   INCLINATION: string;
   RA_OF_ASC_NODE: string;
   ARG_OF_PERICENTER: string;
@@ -306,25 +314,48 @@ export async function runRecentElsetWatch(): Promise<void> {
   return withAdvisoryLock(LOCK_TLE_RECENT, "tle-recent", doRecentElsetWatch);
 }
 
+function parseStUtc(v: string | null | undefined): number {
+  if (!v) return NaN;
+  return Date.parse(v.endsWith("Z") ? v : v + "Z");
+}
+
+/**
+ * Next recent-watch cursor from the CREATION_DATEs we just received.
+ *
+ * The cursor used to be the max EPOCH seen, clamped to now. EPOCH is when
+ * the object was observed, normally hours BEFORE space-track publishes the
+ * elset, and the gp class also carries future-dated epochs (days ahead).
+ * One future-dated row pinned the cursor to "now − 5 min" every run, and
+ * since that row keeps matching EPOCH > cursor it stayed pinned. Every
+ * elset published afterwards had an epoch below the cursor and was never
+ * fetched, so obc_tle_history stopped growing on 2026-10-06 and the RPOD
+ * scan ran out of in-window elsets on 2026-10-09.
+ * CREATION_DATE is the publish time: monotonic, never in the future.
+ */
+export function nextRecentWatermarkMs(sinceMs: number, creationDates: (string | null | undefined)[], nowMs: number = Date.now()): number {
+  let max = sinceMs;
+  for (const c of creationDates) {
+    const t = parseStUtc(c);
+    if (Number.isFinite(t) && t > max) max = t;
+  }
+  // 5 min overlap for rows committed late at the boundary; the unique
+  // (norad, epoch) index absorbs the duplicates.
+  return Math.max(sinceMs, Math.min(max, nowMs) - 5 * 60_000);
+}
+
 async function doRecentElsetWatch(): Promise<void> {
   const started = new Date();
   try {
     const s = await getWorkerState<{ epochMs: number }>(STATE_WATERMARK);
-    // First run: start 6h back — the backfill owns the deep past.
-    const sinceMs = s?.epochMs ?? Date.now() - 6 * 3600_000;
+    const sinceMs = s?.epochMs ?? Date.now() - RECENT_INITIAL_LOOKBACK_MS;
     const path =
-      `/basicspacedata/query/class/gp/EPOCH/%3E${stFmt(sinceMs)}` +
-      `/orderby/EPOCH%20asc/limit/${GP_HISTORY_ROW_LIMIT}/format/json`;
+      `/basicspacedata/query/class/gp/CREATION_DATE/%3E${stFmt(sinceMs)}` +
+      `/orderby/CREATION_DATE%20asc/limit/${GP_HISTORY_ROW_LIMIT}/format/json`;
     const raw = await fetchJson<GpRow[]>(path);
     const rows = raw.map((r) => toRow(r, "recent")).filter((r): r is InsertObcTleHistory => r != null);
     const sampled = sampleRows(rows);
     const written = await upsertTleHistory(sampled);
-    const maxEpoch = rows.reduce((m, r) => Math.max(m, new Date(r.epoch as Date).getTime()), sinceMs);
-    // Step the watermark back 5 min to tolerate late-arriving elsets at the
-    // boundary, and NEVER advance it past "now": space-track occasionally
-    // publishes future-dated epochs, and letting one of those set the
-    // watermark would silently skip every elset published in between.
-    await setWorkerState(STATE_WATERMARK, { epochMs: Math.max(sinceMs, Math.min(maxEpoch, Date.now()) - 5 * 60_000) });
+    await setWorkerState(STATE_WATERMARK, { epochMs: nextRecentWatermarkMs(sinceMs, raw.map((r) => r.CREATION_DATE)) });
     await clearFailure();
     await logSync("tle-recent", "success", started, written);
     logger.info({ fetched: raw.length, sampled: sampled.length, written }, "tle-archive: recent watch ok");
