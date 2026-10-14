@@ -15,6 +15,10 @@
  *    (live 2026-09-28 connection timeout). Latest-per-norad must be a
  *    LATERAL index seek (ORDER BY epoch DESC LIMIT 1) keyed by norad.
  *  - a failed latest-elset fetch skips/logs instead of aborting doScan
+ *  - a pg-pool handshake abort ("Connection terminated due to connection
+ *    timeout <- Connection terminated unexpectedly", live 2026-10-14) is
+ *    retried once on lock checkout and on idempotent reads, and is not a
+ *    statement-timeout retry
  *
  * Run with: pnpm --filter @workspace/api-server run test:rpod
  */
@@ -34,6 +38,7 @@ import {
   latestElsetsQuerySql, sqlTemplateText, mapLatestElsetRow,
   attachLatestElsetClientDeadline, latestElsetClientIsDead,
   LATEST_ELSETS_STATEMENT_TIMEOUT_MS, LATEST_ELSETS_CLIENT_TIMEOUT_MS,
+  isTransientConnectionError, retryOnceOnTransient, DB_CONNECT_RETRY_DELAY_MS,
 } from "../lib/obc/tleArchive";
 import type { ClusteredEvent } from "../lib/rpod/screen";
 
@@ -169,13 +174,18 @@ async function main(): Promise<void> {
 
     let threw = false;
     let loaded: Awaited<ReturnType<typeof getLatestElsetsOrSkip>> | null = null;
+    let statementCalls = 0;
     try {
-      loaded = await getLatestElsetsOrSkip(0, 1, async () => { throw drizzleErr; });
+      loaded = await getLatestElsetsOrSkip(0, 1, async () => {
+        statementCalls++;
+        throw drizzleErr;
+      });
     } catch (err) {
       threw = true;
       check("getLatestElsetsOrSkip did not throw", false, String(err));
     }
     check("getLatestElsetsOrSkip did not throw", !threw);
+    check("statement timeout is not retried before the skip", statementCalls === 1, String(statementCalls));
     check("failed fetch returns no rows", loaded?.rows.length === 0);
     check("failed fetch returns a skip warning", typeof loaded?.warning === "string" && (loaded?.warning ?? "").includes("latest-elset fetch skipped"));
     check("skip warning includes the PG cause", (loaded?.warning ?? "").includes("statement timeout"));
@@ -201,6 +211,103 @@ async function main(): Promise<void> {
     check("doScan does not call throwing getLatestElsets(", !/\bgetLatestElsets\(/.test(scanSrc));
     check("doScan logs success (not error) when the fetch is skipped",
       /if \(loaded\.warning\)[\s\S]{0,500}logScanRow\(\s*"success"/.test(scanSrc));
+  }
+
+  console.log("pg-pool handshake abort is retried once (live 2026-10-14)");
+  {
+    // Verbatim lastScanError from GET /api/rpod/status ~15:10Z. pg-pool 3.13
+    // Pool.newClient wraps the socket-end error only when connectionTimeoutMillis
+    // destroys a handshake that never became a query — so Drizzle never prefixes
+    // "Failed query:".
+    const cause = new Error("Connection terminated unexpectedly");
+    const live = new Error("Connection terminated due to connection timeout", { cause });
+    const formatted = formatDbError(live);
+    check(
+      "formatDbError reproduces the live lastScanError string",
+      formatted === "Connection terminated due to connection timeout <- Connection terminated unexpectedly",
+      formatted,
+    );
+    check("live handshake abort is a transient connection error", isTransientConnectionError(live));
+    check(
+      "pool-full checkout timeout is transient",
+      isTransientConnectionError(new Error("timeout exceeded when trying to connect")),
+    );
+    const statement = new Error("canceling statement due to statement timeout");
+    (statement as Error & { code: string }).code = "57014";
+    check("statement timeout is not a transient connection error", isTransientConnectionError(statement) === false);
+    check(
+      "scan deadline is not a transient connection error",
+      isTransientConnectionError(new Error("rpod-scan timed out after 1500000ms")) === false,
+    );
+    check(
+      "retry delay is one second (one extra handshake, not another hour)",
+      DB_CONNECT_RETRY_DELAY_MS === 1_000,
+    );
+
+    let calls = 0;
+    const recovered = await retryOnceOnTransient("test", async () => {
+      calls++;
+      if (calls === 1) throw live;
+      return "ok";
+    }, 0);
+    check("one transient failure then success returns the value", recovered === "ok" && calls === 2, String(calls));
+
+    let hardCalls = 0;
+    let hardThrew = false;
+    try {
+      await retryOnceOnTransient("test", async () => {
+        hardCalls++;
+        throw statement;
+      }, 0);
+    } catch (err) {
+      hardThrew = err === statement;
+    }
+    check("statement timeout is not retried", hardThrew && hardCalls === 1, String(hardCalls));
+
+    let bothCalls = 0;
+    let bothThrew = false;
+    try {
+      await retryOnceOnTransient("test", async () => {
+        bothCalls++;
+        throw live;
+      }, 0);
+    } catch (err) {
+      bothThrew = err === live;
+    }
+    check("a second handshake abort still throws", bothThrew && bothCalls === 2, String(bothCalls));
+
+    let fetchCalls = 0;
+    const retried = await getLatestElsetsOrSkip(0, 1, async () => {
+      fetchCalls++;
+      if (fetchCalls === 1) throw live;
+      return [];
+    });
+    check("latest-elset fetch retries a handshake abort once", fetchCalls === 2, String(fetchCalls));
+    check("recovered latest-elset fetch is not a skip warning", retried.warning === null && retried.rows.length === 0);
+
+    const tleSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../lib/obc/tleArchive.ts"), "utf8");
+    const scanSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../lib/rpod/scan.ts"), "utf8");
+    const storeSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../lib/obc/store.ts"), "utf8");
+    check(
+      "advisory-lock checkout retries pool.connect once",
+      /retryOnceOnTransient\(`\$\{label\} connect`, \(\) => pool\.connect\(\)\)/.test(tleSrc),
+    );
+    check(
+      "latest-elset loader retries the fetch once before skipping",
+      /retryOnceOnTransient\("latest-elset fetch"/.test(tleSrc),
+    );
+    check(
+      "persist retries the active-events read",
+      scanSrc.includes('retryOnceOnTransient("rpod active events"'),
+    );
+    check(
+      "persist does not retry the per-event write transaction",
+      !/retryOnceOnTransient\([\s\S]{0,80}db\.transaction/.test(scanSrc),
+    );
+    check(
+      "satcat metadata load retries the catalog read",
+      storeSrc.includes('retryOnceOnTransient("satcat metadata"'),
+    );
   }
 
   console.log("latest-elset client deadline destroys a hung socket");

@@ -146,7 +146,14 @@ async function fetchJson<T>(path: string): Promise<T> {
  * deployment). When another instance holds the lock, this run is skipped.
  */
 export async function withAdvisoryLock(key: number, label: string, fn: () => Promise<void>): Promise<void> {
-  const client = await pool.connect();
+  // pg-pool 3.13 (pg 8.20) is the only place that builds
+  // "Connection terminated due to connection timeout" with cause
+  // "Connection terminated unexpectedly": Pool.newClient destroys the
+  // socket when a *new* handshake exceeds connectionTimeoutMillis (10s).
+  // That rejection is not a Drizzle "Failed query", so runRpodScan's
+  // lock-checkout catch stores it verbatim as lastScanStatus=error.
+  // One retry: the scan has not started, and a second dial usually lands.
+  const client = await retryOnceOnTransient(`${label} connect`, () => pool.connect());
   try {
     const res = await client.query<{ locked: boolean }>("select pg_try_advisory_lock($1) as locked", [key]);
     if (!res.rows[0]?.locked) {
@@ -540,6 +547,48 @@ export function formatDbError(err: unknown, maxLen = 2000): string {
 }
 
 /**
+ * Pause before the single reconnect attempt. Short enough that a dead
+ * database still fails the attempt quickly; long enough to let a pooler
+ * slot free after the 10s handshake abort.
+ */
+export const DB_CONNECT_RETRY_DELAY_MS = 1_000;
+
+/**
+ * True for a dropped or never-established Postgres socket.
+ *
+ * Matches the live 2026-10-14 lastScanError
+ * ("Connection terminated due to connection timeout <- Connection terminated unexpectedly")
+ * and the pool-full checkout error ("timeout exceeded when trying to connect").
+ * A statement_timeout cancel is a slow plan, not a dead socket — retrying it
+ * repeats the same query.
+ */
+export function isTransientConnectionError(err: unknown): boolean {
+  const text = formatDbError(err);
+  if (/statement timeout/i.test(text)) return false;
+  return /connection terminated|timeout exceeded when trying to connect|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EPIPE|socket disconnected before secure TLS|Client has encountered a connection error/i.test(text);
+}
+
+/**
+ * Run an idempotent read (or a pool.connect that has not started work) once
+ * more after a transient socket/handshake failure. The second failure
+ * propagates unchanged so callers still log or skip it.
+ */
+export async function retryOnceOnTransient<T>(
+  label: string,
+  fn: () => Promise<T>,
+  delayMs: number = DB_CONNECT_RETRY_DELAY_MS,
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (!isTransientConnectionError(err)) throw err;
+    logger.warn({ err: formatDbError(err), label }, "db: transient connection error, retrying once");
+    if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
+    return await fn();
+  }
+}
+
+/**
  * True when `sqlText` is a cheap "latest elset per norad in a window" plan.
  *
  * The live 2026-08-26 scan failed on drizzle `selectDistinctOn(norad)` over
@@ -787,7 +836,8 @@ export async function getLatestElsetsOrSkip(
   fetchFn: (sinceMs: number, untilMs: number) => Promise<LatestElset[]> = getLatestElsets,
 ): Promise<{ rows: LatestElset[]; warning: string | null }> {
   try {
-    return { rows: await fetchFn(sinceMs, untilMs), warning: null };
+    const rows = await retryOnceOnTransient("latest-elset fetch", () => fetchFn(sinceMs, untilMs));
+    return { rows, warning: null };
   } catch (err) {
     const warning = `latest-elset fetch skipped: ${formatDbError(err)}`;
     logger.warn({ err: warning }, "tle-archive: latest-elset fetch failed");

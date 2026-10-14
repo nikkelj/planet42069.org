@@ -5,6 +5,7 @@ import { logger } from "../logger";
 import type { SatcatEntry } from "../satcat";
 import type { LaunchEntry } from "../launch";
 import { formatGcatLastError, formatSpacetrackLastError } from "./catalogPolicy";
+import { retryOnceOnTransient } from "./tleArchive";
 
 const CACHE_TTL_MS = 10 * 60 * 1000; // in-memory catalog cache
 
@@ -39,19 +40,23 @@ async function loadCatalog(): Promise<CatalogCache> {
   // initial sync (chunked upserts), so gate on a completed merge instead of
   // merely non-empty tables. After the first successful merge this check
   // always passes, because syncs upsert and never delete.
-  const merged = await db
-    .select({ id: obcSyncLog.id })
-    .from(obcSyncLog)
-    .where(and(eq(obcSyncLog.source, "merge"), eq(obcSyncLog.status, "success")))
-    .limit(1);
+  const merged = await retryOnceOnTransient("satcat merge check", () =>
+    db
+      .select({ id: obcSyncLog.id })
+      .from(obcSyncLog)
+      .where(and(eq(obcSyncLog.source, "merge"), eq(obcSyncLog.status, "success")))
+      .limit(1),
+  );
   if (merged.length === 0) {
     throw new Error("OBC catalogue not ready — initial sync has not completed yet");
   }
 
-  const [objects, launches] = await Promise.all([
-    db.select().from(obcObjects),
-    db.select().from(obcLaunches),
-  ]);
+  const [objects, launches] = await retryOnceOnTransient("satcat metadata", () =>
+    Promise.all([
+      db.select().from(obcObjects),
+      db.select().from(obcLaunches),
+    ]),
+  );
 
   const entries: SatcatEntry[] = objects.map((o) => ({
     jcat: o.jcat ?? o.key,

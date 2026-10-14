@@ -2,7 +2,7 @@ import { db } from "@workspace/db";
 import { rpodEvents, rpodEventMembers, obcSyncLog } from "@workspace/db/schema";
 import { sql, eq, and, inArray, lt, desc } from "drizzle-orm";
 import { logger } from "../logger";
-import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, type LatestElset } from "../obc/tleArchive";
+import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, retryOnceOnTransient, type LatestElset } from "../obc/tleArchive";
 import { getSatcatFromStore } from "../obc/store";
 import { MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline, cancelScanAttempt, markScanLogged } from "./scanPolicy";
 import {
@@ -457,9 +457,15 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
   // Conjunction-track events may be stored as "conjunction" OR "docked" —
   // match across both so a stack flipping labels never spawns a duplicate case.
   const kinds = kind === "conjunction" ? ["conjunction", "docked"] : [kind];
-  const active = await db.select().from(rpodEvents).where(and(eq(rpodEvents.status, "active"), inArray(rpodEvents.kind, kinds)));
+  // These selects run before any write. A handshake abort here used to
+  // escape persistEvents and stamp the whole hour lastScanStatus=error.
+  const active = await retryOnceOnTransient("rpod active events", () =>
+    db.select().from(rpodEvents).where(and(eq(rpodEvents.status, "active"), inArray(rpodEvents.kind, kinds))),
+  );
   const activeMembers = active.length
-    ? await db.select().from(rpodEventMembers).where(inArray(rpodEventMembers.eventId, active.map((e) => e.id)))
+    ? await retryOnceOnTransient("rpod active members", () =>
+        db.select().from(rpodEventMembers).where(inArray(rpodEventMembers.eventId, active.map((e) => e.id))),
+      )
     : [];
   const membersByEvent = new Map<number, Set<number>>();
   for (const m of activeMembers) {
@@ -477,20 +483,24 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
     closedSpells: { start: string; lastSeenAt: string; endedAt: string }[];
   }[] = [];
   if (kind === "coplanar") {
-    const ended = await db
-      .select({
-        id: rpodEvents.id, endedAt: rpodEvents.endedAt, reopenCount: rpodEvents.reopenCount,
-        firstDetectedAt: rpodEvents.firstDetectedAt, lastSeenAt: rpodEvents.lastSeenAt,
-        lastReopenedAt: rpodEvents.lastReopenedAt, closedSpells: rpodEvents.closedSpells,
-      })
-      .from(rpodEvents)
-      .where(and(
-        eq(rpodEvents.status, "ended"),
-        eq(rpodEvents.kind, "coplanar"),
-        sql`${rpodEvents.endedAt} > now() - make_interval(secs => ${COPLANAR_REOPEN_WINDOW_MS / 1000})`,
-      ));
+    const ended = await retryOnceOnTransient("rpod ended coplanar", () =>
+      db
+        .select({
+          id: rpodEvents.id, endedAt: rpodEvents.endedAt, reopenCount: rpodEvents.reopenCount,
+          firstDetectedAt: rpodEvents.firstDetectedAt, lastSeenAt: rpodEvents.lastSeenAt,
+          lastReopenedAt: rpodEvents.lastReopenedAt, closedSpells: rpodEvents.closedSpells,
+        })
+        .from(rpodEvents)
+        .where(and(
+          eq(rpodEvents.status, "ended"),
+          eq(rpodEvents.kind, "coplanar"),
+          sql`${rpodEvents.endedAt} > now() - make_interval(secs => ${COPLANAR_REOPEN_WINDOW_MS / 1000})`,
+        )),
+    );
     const endedMembers = ended.length
-      ? await db.select().from(rpodEventMembers).where(inArray(rpodEventMembers.eventId, ended.map((e) => e.id)))
+      ? await retryOnceOnTransient("rpod ended coplanar members", () =>
+          db.select().from(rpodEventMembers).where(inArray(rpodEventMembers.eventId, ended.map((e) => e.id))),
+        )
       : [];
     const byId = new Map<number, number[]>();
     for (const m of endedMembers) {
@@ -507,20 +517,24 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
     // Stale conjunction-track cases (window lapsed >3d ago). They carry no
     // endedAt, so lastSeenAt — the last scan that re-detected the pair —
     // stands in as the end of the lapsed spell.
-    const stale = await db
-      .select({
-        id: rpodEvents.id, reopenCount: rpodEvents.reopenCount,
-        firstDetectedAt: rpodEvents.firstDetectedAt, lastSeenAt: rpodEvents.lastSeenAt,
-        lastReopenedAt: rpodEvents.lastReopenedAt, closedSpells: rpodEvents.closedSpells,
-      })
-      .from(rpodEvents)
-      .where(and(
-        eq(rpodEvents.status, "stale"),
-        inArray(rpodEvents.kind, kinds),
-        sql`${rpodEvents.lastSeenAt} > now() - make_interval(secs => ${CONJUNCTION_REOPEN_WINDOW_MS / 1000})`,
-      ));
+    const stale = await retryOnceOnTransient("rpod stale conjunction", () =>
+      db
+        .select({
+          id: rpodEvents.id, reopenCount: rpodEvents.reopenCount,
+          firstDetectedAt: rpodEvents.firstDetectedAt, lastSeenAt: rpodEvents.lastSeenAt,
+          lastReopenedAt: rpodEvents.lastReopenedAt, closedSpells: rpodEvents.closedSpells,
+        })
+        .from(rpodEvents)
+        .where(and(
+          eq(rpodEvents.status, "stale"),
+          inArray(rpodEvents.kind, kinds),
+          sql`${rpodEvents.lastSeenAt} > now() - make_interval(secs => ${CONJUNCTION_REOPEN_WINDOW_MS / 1000})`,
+        )),
+    );
     const staleMembers = stale.length
-      ? await db.select().from(rpodEventMembers).where(inArray(rpodEventMembers.eventId, stale.map((e) => e.id)))
+      ? await retryOnceOnTransient("rpod stale conjunction members", () =>
+          db.select().from(rpodEventMembers).where(inArray(rpodEventMembers.eventId, stale.map((e) => e.id))),
+        )
       : [];
     const byId = new Map<number, number[]>();
     for (const m of staleMembers) {
