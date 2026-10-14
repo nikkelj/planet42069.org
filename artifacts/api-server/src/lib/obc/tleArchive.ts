@@ -3,6 +3,7 @@ import { obcTleHistory, obcWorkerState, obcSyncLog, type InsertObcTleHistory } f
 import { sql, desc, asc, and, gte, eq, type SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { logger } from "../logger";
+import { runLockedSession } from "./advisorySession";
 
 /**
  * TLE history archive — samples space-track's public elset history into
@@ -154,34 +155,10 @@ export async function withAdvisoryLock(key: number, label: string, fn: () => Pro
   // lock-checkout catch stores it verbatim as lastScanStatus=error.
   // One retry: the scan has not started, and a second dial usually lands.
   const client = await retryOnceOnTransient(`${label} connect`, () => pool.connect());
-  try {
-    const res = await client.query<{ locked: boolean }>("select pg_try_advisory_lock($1) as locked", [key]);
-    if (!res.rows[0]?.locked) {
-      logger.info(`${label}: another instance holds the lock, skipping run`);
-      return;
-    }
-    // The lock session sits idle while the RPOD scan does CPU-bound
-    // screening/SGP4 on other pool clients. Neon/PgBouncer idle timeouts
-    // drop that session (~60s), releasing the lock so a second instance
-    // starts a duplicate scan. Keep the session alive.
-    let heartbeat: ReturnType<typeof setInterval> | undefined;
-    try {
-      heartbeat = setInterval(() => {
-        client.query("select 1").catch(() => undefined);
-      }, 20_000);
-      heartbeat.unref();
-      await fn();
-    } finally {
-      if (heartbeat) clearInterval(heartbeat);
-      // If the connection died mid-run the lock is already gone with the
-      // session; a failed unlock must not mask fn's outcome or crash callers.
-      await client.query("select pg_advisory_unlock($1)", [key]).catch((err) => {
-        logger.warn({ err: String(err), label }, "advisory unlock failed (session likely dropped)");
-      });
-    }
-  } finally {
-    client.release();
-  }
+  const ran = await runLockedSession(client, key, fn, (err) => {
+    logger.error({ err: String(err), label }, "db: advisory lock session lost; discarding connection");
+  });
+  if (!ran) logger.info(`${label}: another instance holds the lock, skipping run`);
 }
 
 export const LOCK_TLE_RECENT = 421070;
@@ -620,7 +597,18 @@ export async function retryOnceOnTransient<T>(
   fn: () => Promise<T>,
   delayMs: number = DB_CONNECT_RETRY_DELAY_MS,
 ): Promise<T> {
-  return retryTransientConnection(label, fn, 2, [delayMs]);
+  const startedAt = Date.now();
+  try {
+    return await fn();
+  } catch (err) {
+    if (!isTransientConnectionError(err)) throw err;
+    logger.warn({
+      err: formatDbError(err), label, elapsedMs: Date.now() - startedAt,
+      poolTotal: pool.totalCount, poolIdle: pool.idleCount, poolWaiting: pool.waitingCount,
+    }, "db: transient connection error, retrying once");
+    if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
+    return await fn();
+  }
 }
 
 /**

@@ -14,3 +14,9 @@ Production SQL inspection uses a read replica, not the application's primary con
 **Why:** a successful replica query, its connection count, or its recent postmaster start cannot establish primary availability, primary pool pressure, or a primary restart.
 
 **How to apply:** label replica observations explicitly and avoid diagnosing the primary from replica-only statistics.
+
+Do not increase pool size as the first response to these incidents.
+
+**Why:** primary pool exhaustion has not been demonstrated; adding connections during session termination or slow queries can increase load rather than restore reliability.
+
+**How to apply:** use application-side pool pressure and checkout-duration diagnostics to distinguish busy-pool waits from failed new connections before tuning limits.

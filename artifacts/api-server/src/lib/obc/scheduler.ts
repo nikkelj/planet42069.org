@@ -5,6 +5,8 @@ import { getFreshness, primeCache, CatalogLoadingError, getSatcatFromStore } fro
 import { catalogNeedsSync, CATALOG_SYNC_INTERVAL_MS } from "./catalogPolicy";
 import { runRecentElsetWatch, runTleBackfill } from "./tleArchive";
 import { syncStarlinkManifest } from "./starlinkEphem";
+import { createWorkerGuard } from "./workerGuard";
+import { startDbDiagnostics } from "../dbDiagnostics";
 import {
   runRpodScan, latestRpodScanFinishedAtMs, rpodScanIsDue,
   RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_CHECK_INTERVAL_MS, RPOD_SCAN_BOOT_DELAY_MS,
@@ -109,8 +111,12 @@ async function syncIfStale(): Promise<void> {
  * unhandled rejections and kill the process on a transient DB disconnect.
  * A failed tick logs and waits for the next interval instead.
  */
+const guardWorker = createWorkerGuard();
+
 function safeTick(label: string, fn: () => Promise<void>): void {
-  fn().catch((err) => {
+  guardWorker(label, fn).then((ran) => {
+    if (!ran) logger.info({ label }, "obc-scheduler: tick already active (including retries), skipping");
+  }).catch((err) => {
     logger.error({ err: String(err) }, `obc-scheduler: ${label} tick failed (will retry next interval)`);
   });
 }
@@ -238,6 +244,7 @@ async function runRpodScanWithRetry(): Promise<void> {
 /** Boot-time staleness check + hourly re-check. Safe for autoscale: also
  *  fires on cold boot, so long-idle instances catch up immediately. */
 export function startObcScheduler(): void {
+  startDbDiagnostics();
   // Start loading the in-memory catalog in the background immediately so
   // the server is ready to accept requests without waiting for the full
   // ~70 k-row DB query to complete (which can take several minutes cold).
