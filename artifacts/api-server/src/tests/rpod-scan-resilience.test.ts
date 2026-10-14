@@ -19,6 +19,9 @@
  *    timeout <- Connection terminated unexpectedly", live 2026-10-14) is
  *    retried once on lock checkout and on idempotent reads, and is not a
  *    statement-timeout retry
+ *  - the rpod-scan sync-log insert and the freshness read retry that same
+ *    class (and SQLSTATE 57P01) enough times to ride out a brief flap, then
+ *    throw the original error once those attempts are exhausted
  *
  * Run with: pnpm --filter @workspace/api-server run test:rpod
  */
@@ -30,15 +33,16 @@ import { rpodEvents, rpodEventMembers } from "@workspace/db/schema";
 import { inArray, eq } from "drizzle-orm";
 import type { Server } from "node:http";
 import app from "../app";
-import { persistEvents, formatRpodScanStatus } from "../lib/rpod/scan";
-import { MAX_RPOD_SCAN_MS } from "../lib/rpod/scanPolicy";
+import { persistEvents, formatRpodScanStatus, insertRpodScanSyncLog, latestRpodScanFinishedAtMs } from "../lib/rpod/scan";
+import { MAX_RPOD_SCAN_MS, RPOD_SCAN_CHECK_INTERVAL_MS } from "../lib/rpod/scanPolicy";
 import {
   getArchiveStatus, clearArchiveStatusCache,
   getLatestElsetsOrSkip, formatDbError, latestElsetsSqlIsCheap,
   latestElsetsQuerySql, sqlTemplateText, mapLatestElsetRow,
   attachLatestElsetClientDeadline, latestElsetClientIsDead,
   LATEST_ELSETS_STATEMENT_TIMEOUT_MS, LATEST_ELSETS_CLIENT_TIMEOUT_MS,
-  isTransientConnectionError, retryOnceOnTransient, DB_CONNECT_RETRY_DELAY_MS,
+  isTransientConnectionError, retryOnceOnTransient, retryTransientConnection, DB_CONNECT_RETRY_DELAY_MS,
+  DB_CONNECT_RETRY_ATTEMPTS, DB_CONNECT_RETRY_DELAYS_MS,
 } from "../lib/obc/tleArchive";
 import type { ClusteredEvent } from "../lib/rpod/screen";
 
@@ -307,6 +311,225 @@ async function main(): Promise<void> {
     check(
       "satcat metadata load retries the catalog read",
       storeSrc.includes('retryOnceOnTransient("satcat metadata"'),
+    );
+  }
+
+  console.log("sync-log insert and freshness read survive a connect flap, then surface a hard error");
+  {
+    const NO_DELAY = [0, 0, 0, 0] as const;
+    const startedAt = new Date("2026-10-14T16:40:00.000Z");
+    // Verbatim lastScanError class. Drizzle wraps the driver error, so the
+    // insert/select path must follow `cause` — err.message alone is "Failed query".
+    const cause = new Error("Connection terminated unexpectedly");
+    const live = new Error("Connection terminated due to connection timeout", { cause });
+    const wrapped = new Error(
+      'Failed query: insert into "obc_sync_log" ("source", "status", "row_count", "error", "started_at") values ($1, $2, $3, $4, $5)',
+    );
+    wrapped.cause = live;
+    check(
+      "drizzle-wrapped handshake abort still formats as the live lastScanError class",
+      formatDbError(wrapped).includes("Connection terminated due to connection timeout <- Connection terminated unexpectedly"),
+      formatDbError(wrapped),
+    );
+    check("drizzle-wrapped handshake abort is transient", isTransientConnectionError(wrapped));
+
+    const admin = new Error("terminating connection due to administrator command");
+    (admin as Error & { code: string }).code = "57P01";
+    const wrappedAdmin = new Error('Failed query: select "finished_at" from "obc_sync_log"');
+    wrappedAdmin.cause = admin;
+    check("SQLSTATE 57P01 admin shutdown is a transient connection error", isTransientConnectionError(admin));
+    check("drizzle-wrapped 57P01 is a transient connection error", isTransientConnectionError(wrappedAdmin));
+    const statement = new Error("canceling statement due to statement timeout");
+    (statement as Error & { code: string }).code = "57014";
+    check("statement timeout stays non-transient under the multi-attempt helper", isTransientConnectionError(statement) === false);
+
+    const backoffMs = DB_CONNECT_RETRY_DELAYS_MS.reduce((sum, delay) => sum + delay, 0);
+    const worstCaseMs = DB_CONNECT_RETRY_ATTEMPTS * 10_000 + backoffMs;
+    check(
+      "sync-log retries are more than the one-shot 1s gap",
+      DB_CONNECT_RETRY_ATTEMPTS >= 4 && backoffMs > DB_CONNECT_RETRY_DELAY_MS,
+      `attempts=${DB_CONNECT_RETRY_ATTEMPTS} backoff=${backoffMs}`,
+    );
+    check(
+      "exhausted connect retries still finish inside one freshness check",
+      DB_CONNECT_RETRY_ATTEMPTS <= 6 && worstCaseMs < RPOD_SCAN_CHECK_INTERVAL_MS,
+      `worst=${worstCaseMs} check=${RPOD_SCAN_CHECK_INTERVAL_MS}`,
+    );
+    check(
+      "one delay slot per retry after the first attempt",
+      DB_CONNECT_RETRY_DELAYS_MS.length === DB_CONNECT_RETRY_ATTEMPTS - 1,
+    );
+
+    let insertCalls = 0;
+    let stored: { source?: string; status?: string; error?: string | null; rowCount?: number | null } | undefined;
+    await insertRpodScanSyncLog(
+      { status: "error", startedAt, rowCount: null, error: formatDbError(live) },
+      async (values) => {
+        insertCalls++;
+        stored = values;
+        if (insertCalls < DB_CONNECT_RETRY_ATTEMPTS) throw wrapped;
+      },
+      NO_DELAY,
+    );
+    check(
+      "error sync-log insert retries the live handshake abort then writes",
+      insertCalls === DB_CONNECT_RETRY_ATTEMPTS && stored?.source === "rpod-scan" && stored?.status === "error",
+      `calls=${insertCalls} row=${JSON.stringify(stored)}`,
+    );
+    check(
+      "sync-log insert keeps the live error string",
+      stored?.error === "Connection terminated due to connection timeout <- Connection terminated unexpectedly",
+      stored?.error ?? "",
+    );
+
+    const longError = "e".repeat(2500);
+    let sliced: string | null = "unset";
+    await insertRpodScanSyncLog(
+      { status: "success", startedAt, rowCount: 4, error: longError },
+      async (values) => { sliced = values.error; },
+      NO_DELAY,
+    );
+    check("success sync-log insert still caps error at 2000 chars", sliced?.length === 2000, String(sliced?.length));
+
+    let exhaustCalls = 0;
+    let exhausted: unknown;
+    try {
+      await insertRpodScanSyncLog(
+        { status: "success", startedAt, rowCount: 4, error: null },
+        async () => {
+          exhaustCalls++;
+          throw wrapped;
+        },
+        NO_DELAY,
+      );
+    } catch (err) {
+      exhausted = err;
+    }
+    check(
+      "success sync-log insert throws the live handshake abort after retries are exhausted",
+      exhausted === wrapped && exhaustCalls === DB_CONNECT_RETRY_ATTEMPTS,
+      `calls=${exhaustCalls} err=${String(exhausted)}`,
+    );
+
+    let hardCalls = 0;
+    let hardErr: unknown;
+    try {
+      await insertRpodScanSyncLog(
+        { status: "error", startedAt, rowCount: null, error: "plan" },
+        async () => {
+          hardCalls++;
+          throw statement;
+        },
+        NO_DELAY,
+      );
+    } catch (err) {
+      hardErr = err;
+    }
+    check("sync-log insert does not retry a statement timeout", hardErr === statement && hardCalls === 1, String(hardCalls));
+
+    const finished = new Date("2026-10-14T16:41:02.000Z");
+    let readCalls = 0;
+    const recoveredMs = await latestRpodScanFinishedAtMs(async () => {
+      readCalls++;
+      if (readCalls < 3) throw wrapped;
+      return [{ finishedAt: finished }];
+    }, NO_DELAY);
+    check(
+      "freshness read retries the live handshake abort then returns finishedAt",
+      recoveredMs === finished.getTime() && readCalls === 3,
+      `calls=${readCalls} ms=${recoveredMs}`,
+    );
+
+    let adminCalls = 0;
+    const adminMs = await latestRpodScanFinishedAtMs(async () => {
+      adminCalls++;
+      if (adminCalls === 1) throw wrappedAdmin;
+      return [{ finishedAt: finished }];
+    }, NO_DELAY);
+    check(
+      "freshness read retries SQLSTATE 57P01 once the socket is dropped",
+      adminMs === finished.getTime() && adminCalls === 2,
+      `calls=${adminCalls}`,
+    );
+
+    let freshExhaust = 0;
+    let freshErr: unknown;
+    try {
+      await latestRpodScanFinishedAtMs(async () => {
+        freshExhaust++;
+        throw wrapped;
+      }, NO_DELAY);
+    } catch (err) {
+      freshErr = err;
+    }
+    check(
+      "freshness read throws the live handshake abort after retries are exhausted",
+      freshErr === wrapped && freshExhaust === DB_CONNECT_RETRY_ATTEMPTS,
+      `calls=${freshExhaust}`,
+    );
+
+    let emptyCalls = 0;
+    const missing = await latestRpodScanFinishedAtMs(async () => {
+      emptyCalls++;
+      return [];
+    }, NO_DELAY);
+    check("freshness read treats no row as null without retrying", missing === null && emptyCalls === 1, String(emptyCalls));
+
+    let stmtCalls = 0;
+    let stmtErr: unknown;
+    try {
+      await latestRpodScanFinishedAtMs(async () => {
+        stmtCalls++;
+        throw statement;
+      }, NO_DELAY);
+    } catch (err) {
+      stmtErr = err;
+    }
+    check("freshness read does not retry a statement timeout", stmtErr === statement && stmtCalls === 1, String(stmtCalls));
+
+    let backoffCalls = 0;
+    const backoffStarted = Date.now();
+    await retryTransientConnection("backoff", async () => {
+      backoffCalls++;
+      if (backoffCalls < 3) throw live;
+      return "ok";
+    }, 3, [25, 25]);
+    check(
+      "transient retries actually wait out the backoff",
+      backoffCalls === 3 && Date.now() - backoffStarted >= 40,
+      `calls=${backoffCalls} elapsed=${Date.now() - backoffStarted}`,
+    );
+
+    const here = dirname(fileURLToPath(import.meta.url));
+    const scanSrc = readFileSync(join(here, "../lib/rpod/scan.ts"), "utf8");
+    const schedSrc = readFileSync(join(here, "../lib/obc/scheduler.ts"), "utf8");
+    const statusSrc = readFileSync(join(here, "../routes/rpod.ts"), "utf8");
+    const dbSrc = readFileSync(join(here, "../../../../lib/db/src/index.ts"), "utf8");
+    const logStart = scanSrc.indexOf("async function logScanRow");
+    const logEnd = scanSrc.indexOf("export interface PersistResult");
+    const logBody = logStart >= 0 && logEnd > logStart ? scanSrc.slice(logStart, logEnd) : "";
+    check("logScanRow writes through the retrying sync-log insert", logBody.includes("insertRpodScanSyncLog("));
+    check("logScanRow does not swallow the insert error", !/\bcatch\b/.test(logBody), logBody.slice(0, 240));
+    check(
+      "logScanRow keeps the production backoff (no zero-delay override)",
+      /insertRpodScanSyncLog\(\{ status, startedAt, rowCount, error: error \?\? null \}\)/.test(logBody),
+    );
+    const dueStart = schedSrc.indexOf("async function runRpodScanIfDue");
+    const dueEnd = schedSrc.indexOf("async function runRpodScanWithRetry");
+    const dueBody = dueStart >= 0 && dueEnd > dueStart ? schedSrc.slice(dueStart, dueEnd) : "";
+    check(
+      "runRpodScanIfDue reads freshness without swallowing a hard error",
+      /const last = await latestRpodScanFinishedAtMs\(\);/.test(dueBody)
+        && !/latestRpodScanFinishedAtMs\(\)\.catch/.test(dueBody)
+        && !/try\s*\{[^}]*latestRpodScanFinishedAtMs/.test(dueBody),
+    );
+    check(
+      "GET /rpod/status retries the scan-log read",
+      /retryTransientConnection\(\s*"rpod status"/.test(statusSrc),
+    );
+    check(
+      "pool connectionTimeoutMillis stays a 10s handshake cap",
+      /connectionTimeoutMillis:\s*10_000/.test(dbSrc),
     );
   }
 

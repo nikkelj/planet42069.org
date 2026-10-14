@@ -19,6 +19,10 @@ export const pool = new Pool({
   idleTimeoutMillis: 60_000,
   // Fail fast if the DB is temporarily unreachable rather than hanging an
   // entire worker tick waiting for a connection that will never arrive.
+  // Left at 10s after the 2026-10-14 flaps: those handshakes died at the
+  // timeout twice in a row, so a longer checkout would only stall every
+  // worker on a database that is actually down. Cheap sync-log writes and
+  // freshness reads retry instead (retryTransientConnection).
   connectionTimeoutMillis: 10_000,
 });
 

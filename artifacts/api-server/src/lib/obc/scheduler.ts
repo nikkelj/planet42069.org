@@ -189,6 +189,8 @@ async function runTleBackfillWithRetry(): Promise<void> {
  * interesting-only filtering has owner/operator metadata.
  */
 async function runRpodScanIfDue(): Promise<void> {
+  // Retries transient connect errors internally. After those retries a hard
+  // failure rejects this tick; safeTick logs it and the interval continues.
   const last = await latestRpodScanFinishedAtMs();
   if (!rpodScanIsDue(last, Date.now())) {
     logger.info(
