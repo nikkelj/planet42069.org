@@ -557,15 +557,57 @@ export const DB_CONNECT_RETRY_DELAY_MS = 1_000;
  * True for a dropped or never-established Postgres socket.
  *
  * Matches the live 2026-10-14 lastScanError
- * ("Connection terminated due to connection timeout <- Connection terminated unexpectedly")
- * and the pool-full checkout error ("timeout exceeded when trying to connect").
+ * ("Connection terminated due to connection timeout <- Connection terminated unexpectedly"),
+ * the pool-full checkout error ("timeout exceeded when trying to connect"),
+ * and SQLSTATE 57P01 ("terminating connection due to administrator command")
+ * which the same Replit Postgres emits when it drops a live socket.
  * A statement_timeout cancel is a slow plan, not a dead socket — retrying it
  * repeats the same query.
  */
 export function isTransientConnectionError(err: unknown): boolean {
   const text = formatDbError(err);
   if (/statement timeout/i.test(text)) return false;
-  return /connection terminated|timeout exceeded when trying to connect|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EPIPE|socket disconnected before secure TLS|Client has encountered a connection error/i.test(text);
+  return /connection terminated|terminating connection due to administrator command|\b57P01\b|timeout exceeded when trying to connect|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EPIPE|socket disconnected before secure TLS|Client has encountered a connection error/i.test(text);
+}
+
+/**
+ * Attempts for a cheap idempotent sync-log write or freshness read, including
+ * the first try. The sleeps below (1s + 2s + 4s + 8s) plus five 10s
+ * handshakes span ~65s: longer than the one-shot retry that still lost the
+ * 2026-10-14 flap, and shorter than the 2-minute rpod-scan check, so a real
+ * outage still fails the tick instead of retrying for hours.
+ */
+export const DB_CONNECT_RETRY_ATTEMPTS = 5;
+export const DB_CONNECT_RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000] as const;
+
+/**
+ * Retry an idempotent Postgres call across a brief connect flap.
+ * `attempts` includes the first try. A non-transient error throws immediately.
+ * The last transient failure is rethrown unchanged so a real outage stays visible.
+ */
+export async function retryTransientConnection<T>(
+  label: string,
+  fn: () => Promise<T>,
+  attempts: number = DB_CONNECT_RETRY_ATTEMPTS,
+  delaysMs: readonly number[] = DB_CONNECT_RETRY_DELAYS_MS,
+): Promise<T> {
+  if (attempts < 1) throw new Error("retryTransientConnection attempts must be >= 1");
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt >= attempts || !isTransientConnectionError(err)) throw err;
+      const delayMs = delaysMs.length === 0 ? 0 : delaysMs[Math.min(attempt - 1, delaysMs.length - 1)] ?? 0;
+      logger.warn(
+        { err: formatDbError(err), label, attempt, attempts, retryInMs: delayMs },
+        attempts === 2
+          ? "db: transient connection error, retrying once"
+          : "db: transient connection error, retrying",
+      );
+      if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw new Error("retryTransientConnection exhausted without a result");
 }
 
 /**
@@ -578,14 +620,7 @@ export async function retryOnceOnTransient<T>(
   fn: () => Promise<T>,
   delayMs: number = DB_CONNECT_RETRY_DELAY_MS,
 ): Promise<T> {
-  try {
-    return await fn();
-  } catch (err) {
-    if (!isTransientConnectionError(err)) throw err;
-    logger.warn({ err: formatDbError(err), label }, "db: transient connection error, retrying once");
-    if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
-    return await fn();
-  }
+  return retryTransientConnection(label, fn, 2, [delayMs]);
 }
 
 /**

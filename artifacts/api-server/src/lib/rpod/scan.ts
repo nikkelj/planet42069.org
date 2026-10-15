@@ -2,7 +2,7 @@ import { db } from "@workspace/db";
 import { rpodEvents, rpodEventMembers, obcSyncLog } from "@workspace/db/schema";
 import { sql, eq, and, inArray, lt, desc } from "drizzle-orm";
 import { logger } from "../logger";
-import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, retryOnceOnTransient, type LatestElset } from "../obc/tleArchive";
+import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, retryOnceOnTransient, retryTransientConnection, DB_CONNECT_RETRY_ATTEMPTS, DB_CONNECT_RETRY_DELAYS_MS, type LatestElset } from "../obc/tleArchive";
 import { getSatcatFromStore } from "../obc/store";
 import { MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline, cancelScanAttempt, markScanLogged } from "./scanPolicy";
 import {
@@ -68,7 +68,9 @@ export function runRpodScan(): Promise<void> {
           // return cannot insert a second row after the lock is released — but
           // still write one row here, or lastScanAt stays on the previous success.
           if (cancelScanAttempt(abort)) {
-            await logScanRow("error", started, null, formatDbError(err), abort, true);
+            await logScanRow("error", started, null, formatDbError(err), abort, true).catch((logErr) => {
+              logger.error({ err: logErr }, "rpod-scan: failed to write sync log");
+            });
           }
           throw err;
         }
@@ -77,7 +79,9 @@ export function runRpodScan(): Promise<void> {
       // Lock checkout can fail before doScan (pool connect). That attempt
       // started; leave a row so lastScanAt cannot sit on the previous success.
       if (cancelScanAttempt(abort)) {
-        await logScanRow("error", started, null, formatDbError(err), abort, true);
+        await logScanRow("error", started, null, formatDbError(err), abort, true).catch((logErr) => {
+          logger.error({ err: logErr }, "rpod-scan: failed to write sync log");
+        });
       }
       throw err;
     }
@@ -85,14 +89,56 @@ export function runRpodScan(): Promise<void> {
   return scanInFlight;
 }
 
-/** Latest rpod-scan sync-log finishedAt, or null if none. Cheap LIMIT 1. */
-export async function latestRpodScanFinishedAtMs(): Promise<number | null> {
-  const [row] = await db
-    .select({ finishedAt: obcSyncLog.finishedAt })
-    .from(obcSyncLog)
-    .where(eq(obcSyncLog.source, "rpod-scan"))
-    .orderBy(desc(obcSyncLog.finishedAt))
-    .limit(1);
+export interface RpodScanSyncLogRow {
+  status: "success" | "error";
+  startedAt: Date;
+  rowCount: number | null;
+  error: string | null;
+}
+
+/**
+ * Insert one rpod-scan sync-log row, retrying the live handshake-abort class.
+ * The final failure throws — a brief flap must not look like a successful write,
+ * or lastScanAt stays on the previous row for hours. A commit whose response
+ * was lost can leave a second adjacent row; status reads the newest finishedAt.
+ */
+export async function insertRpodScanSyncLog(
+  row: RpodScanSyncLogRow,
+  insert: (values: RpodScanSyncLogRow & { source: "rpod-scan" }) => Promise<unknown> = async (values) => {
+    await db.insert(obcSyncLog).values(values);
+  },
+  delaysMs: readonly number[] = DB_CONNECT_RETRY_DELAYS_MS,
+): Promise<void> {
+  const error = row.error == null ? null : row.error.slice(0, 2000);
+  await retryTransientConnection(
+    "rpod-scan sync log",
+    () => insert({ ...row, source: "rpod-scan", error }),
+    DB_CONNECT_RETRY_ATTEMPTS,
+    delaysMs,
+  );
+}
+
+/**
+ * Latest rpod-scan sync-log finishedAt, or null if none. Cheap LIMIT 1.
+ * Transient connect errors are retried; a hard failure after that still throws
+ * so the scheduler tick can log it and try again next interval.
+ */
+export async function latestRpodScanFinishedAtMs(
+  read: () => Promise<Array<{ finishedAt: Date | null }>> = async () =>
+    db
+      .select({ finishedAt: obcSyncLog.finishedAt })
+      .from(obcSyncLog)
+      .where(eq(obcSyncLog.source, "rpod-scan"))
+      .orderBy(desc(obcSyncLog.finishedAt))
+      .limit(1),
+  delaysMs: readonly number[] = DB_CONNECT_RETRY_DELAYS_MS,
+): Promise<number | null> {
+  const [row] = await retryTransientConnection(
+    "rpod-scan freshness",
+    read,
+    DB_CONNECT_RETRY_ATTEMPTS,
+    delaysMs,
+  );
   const t = row?.finishedAt?.getTime();
   return t != null && Number.isFinite(t) ? t : null;
 }
@@ -380,7 +426,9 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     // rethrowing) keeps the orphaned doScan promise from becoming an
     // unhandled rejection, and skips a second sync-log row.
     if (abort.cancelled) return;
-    await logScanRow("error", started, null, formatDbError(err), abort);
+    await logScanRow("error", started, null, formatDbError(err), abort).catch((logErr) => {
+      logger.error({ err: logErr }, "rpod-scan: failed to write sync log");
+    });
     logger.error({ err }, "rpod-scan: failed");
     throw err; // propagate so the scheduler can schedule a short retry
   }
@@ -394,14 +442,13 @@ async function logScanRow(
   abort?: ScanAbort,
   force = false,
 ) {
+  // Already claimed: the in-flight insert is retrying, or it already finished.
+  // A second insert would duplicate the row or burn another flap's worth of dials.
+  if (abort?.logged) return;
   if (abort?.cancelled && !force) return;
   // Set before the insert so a deadline firing mid-write does not add another row.
   if (abort) markScanLogged(abort);
-  try {
-    await db.insert(obcSyncLog).values({ source: "rpod-scan", status, rowCount, error: error?.slice(0, 2000) ?? null, startedAt });
-  } catch (err) {
-    logger.error({ err }, "rpod-scan: failed to write sync log");
-  }
+  await insertRpodScanSyncLog({ status, startedAt, rowCount, error: error ?? null });
 }
 
 /**
