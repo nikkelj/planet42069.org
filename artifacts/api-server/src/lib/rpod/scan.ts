@@ -4,12 +4,13 @@ import { sql, eq, and, inArray, lt, desc } from "drizzle-orm";
 import { logger } from "../logger";
 import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, retryOnceOnTransient, retryTransientConnection, DB_CONNECT_RETRY_ATTEMPTS, DB_CONNECT_RETRY_DELAYS_MS, type LatestElset } from "../obc/tleArchive";
 import { getSatcatFromStore } from "../obc/store";
-import { MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline, cancelScanAttempt, markScanLogged } from "./scanPolicy";
+import { MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline, cancelScanAttempt, markScanLogged, sgp4ShouldStop } from "./scanPolicy";
 import {
   screenCandidatePairs, screenCoAlignedPairs, closeApproach, clusterPairs,
   DEFAULT_SCREEN, DEFAULT_COALIGNED, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S,
   COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, semiMajorAxisKm, minPhaseDiffDeg,
   hasUsableTleLines, tleEpochIsCurrent, yieldToEventLoop, SCREEN_YIELD_EVERY,
+  alongTrackRulesOutRange,
   type ScreenElset, type FlaggedPair, type ScreenOptions,
 } from "./screen";
 import { selectEndedCoplanarIds, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS } from "./retire";
@@ -22,7 +23,8 @@ import {
 
 export {
   rpodScanIsDue, RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_CHECK_INTERVAL_MS, RPOD_SCAN_BOOT_DELAY_MS,
-  MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline, cancelScanAttempt, markScanLogged,
+  MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, RPOD_POST_SGP4_RESERVE_MS, sgp4ShouldStop,
+  withDeadline, cancelScanAttempt, markScanLogged,
 } from "./scanPolicy";
 export { DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry };
 
@@ -36,6 +38,11 @@ export { DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry };
  *    (deployment dispersion is not proximity OPERATIONS)
  *  - SGP4 differencing is capped at MAX_SGP4_PAIRS per run; mixed-force
  *    pairs take the budget first, then tightest same-operator planes
+ *  - same-plane pairs whose along-track phase cannot enter the range
+ *    bubble are dropped before that budget (a Starlink plane otherwise
+ *    fills it with approaches that are still thousands of km apart)
+ *  - stage-2 stops RPOD_POST_SGP4_RESERVE_MS before the hard cap so a
+ *    long hour still persists what it found instead of logging a timeout
  *  - persist only "interesting" events (mixed-operator, crossing-track
  *    same-operator, messy clusters, ultra-close near-misses) — see interest.ts
  */
@@ -224,10 +231,18 @@ async function sgp4FlagPairs(
   maxRelVelKmS: number,
   deadlineMs: number,
   abort?: ScanAbort,
+  truncated?: { current: boolean },
 ): Promise<FlaggedPair[]> {
   const flagged: FlaggedPair[] = [];
   for (let i = 0; i < pairs.length; i++) {
     throwIfScanDeadline(deadlineMs, "during SGP4", abort);
+    // Leave the reserve for cluster / persist / alerts / retire. Stopping
+    // here keeps pairs already flagged; the hard cap would discard them.
+    if (sgp4ShouldStop(Date.now(), deadlineMs)) {
+      if (truncated) truncated.current = true;
+      logger.warn({ done: i, total: pairs.length }, "rpod-scan: stopping SGP4 to leave time for persist");
+      break;
+    }
     const { a, b } = pairs[i];
     try {
       const ca = closeApproach(a, b, nowMs, DEFAULT_SCREEN.windowMs);
@@ -241,6 +256,9 @@ async function sgp4FlagPairs(
   }
   return flagged;
 }
+
+const CONJ_PHASE_SLACK_DEG = DEFAULT_SCREEN.maxRaanDiffDeg + DEFAULT_SCREEN.maxIncDiffDeg;
+const COALIGNED_PHASE_SLACK_DEG = DEFAULT_COALIGNED.maxRaanDiffDeg + DEFAULT_COALIGNED.maxIncDiffDeg;
 
 async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
   const started = new Date();
@@ -283,8 +301,14 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     // Stage 1
     const planeScore = (p: { a: ScreenElset; b: ScreenElset }) =>
       Math.abs(p.a.incDeg - p.b.incDeg) + Math.abs(p.a.meanMotionRevPerDay - p.b.meanMotionRevPerDay) * 4;
+    const sgp4Truncated = { current: false };
     let candidates = (await screenCandidatePairs(elsets, DEFAULT_SCREEN, SCREEN_YIELD_EVERY, deadlineMs))
-      .filter((p) => !isSameFreshLaunch(p.a.norad, p.b.norad, meta, nowMs));
+      .filter((p) => !isSameFreshLaunch(p.a.norad, p.b.norad, meta, nowMs))
+      // Same-plane housekeeping never enters the 30 km bubble. Drop it
+      // before the SGP4 cap so the budget is spent on pairs that can.
+      .filter((p) => !alongTrackRulesOutRange(
+        p.a, p.b, nowMs, DEFAULT_SCREEN.windowMs, RPOD_MAX_RANGE_KM, CONJ_PHASE_SLACK_DEG,
+      ));
     // Mixed-force pairs take the SGP4 budget first so Starlink housekeeping
     // cannot crowd red-vs-blue approaches off the hour.
     if (candidates.length > MAX_SGP4_PAIRS) {
@@ -292,7 +316,9 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     }
 
     // Stage 2 — yield between pairs so GET /api/rpod/status can still flush.
-    const flagged = await sgp4FlagPairs(candidates, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S, deadlineMs, abort);
+    const flagged = await sgp4FlagPairs(
+      candidates, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S, deadlineMs, abort, sgp4Truncated,
+    );
 
     // Co-aligned (coplanar shadowing) screen: same plane + same radial shell,
     // slowly drifting in phase. The 30 km bubble rarely closes for these, so
@@ -305,7 +331,10 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       // Slow same-plane neighbor screen only. Same-constellation still
       // goes through the conjunction path for crossing / near-miss / cluster.
       .filter((p) => !isProvenSamePair(p.a.norad, p.b.norad, meta))
-      .filter((p) => !flaggedKeys.has(pairKey(p.a.norad, p.b.norad)));
+      .filter((p) => !flaggedKeys.has(pairKey(p.a.norad, p.b.norad)))
+      .filter((p) => !alongTrackRulesOutRange(
+        p.a, p.b, nowMs, DEFAULT_COALIGNED.windowMs, COALIGNED_MAX_RANGE_KM, COALIGNED_PHASE_SLACK_DEG,
+      ));
     if (coCandidates.length > MAX_COALIGNED_SGP4_PAIRS) {
       // Tightest co-alignment first: plane deltas + shell separation + in-track phase.
       coCandidates = coCandidates
@@ -321,7 +350,9 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
         .slice(0, MAX_COALIGNED_SGP4_PAIRS)
         .map((x) => x.p);
     }
-    const coFlagged = await sgp4FlagPairs(coCandidates, nowMs, COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, deadlineMs, abort);
+    const coFlagged = await sgp4FlagPairs(
+      coCandidates, nowMs, COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, deadlineMs, abort, sgp4Truncated,
+    );
 
     // Stage 3 + widened scan for capped clusters
     let events = clusterPairs(flagged, MEMBER_CAP);
@@ -341,12 +372,20 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
         });
       });
       const flaggedKeys = new Set(flagged.map((f) => pairKey(f.a, f.b)));
-      const widePairs = (await screenCandidatePairs(neighborhood, relaxed, SCREEN_YIELD_EVERY, deadlineMs))
+      const wideSlack = relaxed.maxRaanDiffDeg + relaxed.maxIncDiffDeg;
+      // Anchor on the event members. Screening the whole neighborhood
+      // all-pairs the shell (and any high-e elset in it) for a 5-craft cluster.
+      const widePairs = (await screenCandidatePairs(neighborhood, relaxed, SCREEN_YIELD_EVERY, deadlineMs, memberSet))
         .filter((p) => memberSet.has(p.a.norad) || memberSet.has(p.b.norad))
         .filter((p) => !isSameFreshLaunch(p.a.norad, p.b.norad, meta, nowMs))
         .filter((p) => !flaggedKeys.has(pairKey(p.a.norad, p.b.norad)))
+        .filter((p) => !alongTrackRulesOutRange(
+          p.a, p.b, nowMs, relaxed.windowMs, RPOD_MAX_RANGE_KM, wideSlack,
+        ))
         .slice(0, 400);
-      flagged.push(...await sgp4FlagPairs(widePairs, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S, deadlineMs, abort));
+      flagged.push(...await sgp4FlagPairs(
+        widePairs, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S, deadlineMs, abort, sgp4Truncated,
+      ));
       // Re-cluster once after all widened pairs are in.
       events = clusterPairs(flagged, MEMBER_CAP);
       break;
@@ -367,6 +406,9 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     const conjResult = await persistEvents(conjKept.kept, "conjunction");
     const coResult = await persistEvents(coKept.kept, "coplanar");
     const warnings = [...conjResult.errors, ...coResult.errors];
+    if (sgp4Truncated.current) {
+      warnings.push("sgp4 stopped early to stay inside the scan deadline");
+    }
     // Alert on genuinely NEW cases (never routine updates/reopens), plus
     // one follow-up when an ACTIVE case escalates (min range tightening
     // sharply). Failures are swallowed inside — posting must never fail
@@ -391,13 +433,25 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     for (const [label, fn] of [
       ["reclassify", reclassifyDockedEvents],
       ["markStale", markStaleEvents],
-      ["retireCoplanar", retireDriftedCoplanarEvents],
     ] as const) {
       try {
         await fn();
       } catch (err) {
         warnings.push(`${label}: ${String(err)}`.slice(0, 300));
         logger.warn({ err }, `rpod-scan: ${label} failed (scan otherwise ok)`);
+      }
+    }
+    // A partial SGP4 pass did not re-see every coplanar pair. Retire uses
+    // lastSeenAt, so ending cases off a truncated hour would drop shadowers
+    // the scan simply did not get to.
+    if (sgp4Truncated.current) {
+      warnings.push("skipped coplanar retire after partial sgp4");
+    } else {
+      try {
+        await retireDriftedCoplanarEvents();
+      } catch (err) {
+        warnings.push(`retireCoplanar: ${String(err)}`.slice(0, 300));
+        logger.warn({ err }, "rpod-scan: retireCoplanar failed (scan otherwise ok)");
       }
     }
     await logScanRow(
