@@ -12,7 +12,7 @@
 import {
   screenCandidatePairs, screenCoAlignedPairs, minRaanDiffDeg, minPhaseDiffDeg, raanRateDegPerDay, closeApproach, clusterPairs,
   DEFAULT_SCREEN, DEFAULT_COALIGNED, hasUsableTleLines, tleEpochMs, tleEpochIsCurrent, MAX_SGP4_PAIR_MS, SCREEN_YIELD_EVERY,
-  semiMajorAxisKm,
+  semiMajorAxisKm, alongTrackRulesOutRange, COALIGNED_MAX_RANGE_KM, RPOD_MAX_RANGE_KM,
   type ScreenElset, type FlaggedPair,
 } from "../lib/rpod/screen";
 import { selectEndedCoplanarIds, COPLANAR_END_AFTER_MS, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS } from "../lib/rpod/retire";
@@ -274,6 +274,9 @@ console.log("Co-aligned (coplanar shadowing) screen");
   const keys = co.map((p) => [p.a.norad, p.b.norad].sort().join(":"));
   const norads = new Set(co.flatMap((p) => [p.a.norad, p.b.norad]));
   check("known shadowing pair surfaces", keys.includes("69012:69646"), keys.join(",") || "none");
+  const coSlack = DEFAULT_COALIGNED.maxRaanDiffDeg + DEFAULT_COALIGNED.maxIncDiffDeg;
+  check("shadowing pair is not phase-blocked before coplanar SGP4",
+    !alongTrackRulesOutRange(jackal, puma, now, DEFAULT_COALIGNED.windowMs, COALIGNED_MAX_RANGE_KM, coSlack));
   check("different plane excluded", !norads.has(900));
   check("different shell excluded", !norads.has(901));
   check("far-side phase excluded", !norads.has(902));
@@ -467,6 +470,159 @@ console.log("Co-aligned: RAAN window matches a full pair walk");
   }
   expect.sort();
   check("windowed co-aligned pairs equal the full walk", got.join() === expect.join(), `got ${got.length} brute ${expect.length}`);
+}
+
+console.log("Stage 1: one high-e elset must not reopen the shell walk");
+{
+  // Live failure mode after the neighbor-window fix: the RAAN window was the
+  // whole mean-motion bin's nodal-rate span. One e≈0.9 elset in the 53°
+  // shell pushes that span past 180° and the visit becomes the full pair
+  // walk (the same walk that used to hit the 25-minute cap on autoscale).
+  const shell = (withOutlier: boolean): ScreenElset[] => {
+    const arr = Array.from({ length: 2500 }, (_, i) =>
+      makeElset({
+        norad: 200000 + i,
+        incDeg: 53.16 + (i % 7) * 0.008,
+        raanDeg: (Math.floor(i / 25) * (360 / 100) + (i % 5) * 0.02) % 360,
+        mm: 15.30 + (i % 20) * 0.004,
+        ecc: 0.00015,
+        ma: (i % 25) * (360 / 25),
+      }),
+    );
+    if (withOutlier) {
+      arr.push(makeElset({ norad: 299999, incDeg: 53.2, raanDeg: 12, mm: 15.34, ecc: 0.9, ma: 10 }));
+    }
+    return arr;
+  };
+  const tClean = Date.now();
+  const clean = await screenCandidatePairs(shell(false), DEFAULT_SCREEN, 0);
+  const cleanMs = Date.now() - tClean;
+  const tDirty = Date.now();
+  const dirty = await screenCandidatePairs(shell(true), DEFAULT_SCREEN, 0);
+  const dirtyMs = Date.now() - tDirty;
+  check("clean shell still returns neighbor pairs", clean.length > 0, String(clean.length));
+  check("high-e outlier does not multiply the shell runtime",
+    dirtyMs < cleanMs * 4 + 1000,
+    `clean ${cleanMs}ms (${clean.length} pairs) dirty ${dirtyMs}ms (${dirty.length} pairs)`);
+
+  // Equality vs a full numeric walk, including an object whose nodal rate
+  // is nowhere near the shell. Small n so the brute force stays cheap.
+  const cloud: ScreenElset[] = [];
+  for (let i = 0; i < 80; i++) {
+    cloud.push(makeElset({
+      norad: 70000 + i,
+      incDeg: 53.1 + (i % 4) * 0.05,
+      raanDeg: (i * 9) % 360,
+      mm: 15.2 + (i % 6) * 0.02,
+      ecc: 0.0002,
+    }));
+  }
+  cloud.push(makeElset({ norad: 70999, incDeg: 53.15, raanDeg: 3, mm: 15.22, ecc: 0.85 }));
+  cloud.push(makeElset({ norad: 70998, incDeg: 53.4, raanDeg: 200, mm: 15.5, ecc: 0.6 }));
+  const got = (await screenCandidatePairs(cloud)).map((p) => [p.a.norad, p.b.norad].sort((x, y) => x - y).join(":")).sort();
+  const brute: string[] = [];
+  for (let i = 0; i < cloud.length; i++) {
+    for (let j = i + 1; j < cloud.length; j++) {
+      const a = cloud[i], b = cloud[j];
+      if (Math.abs(a.incDeg - b.incDeg) > DEFAULT_SCREEN.maxIncDiffDeg) continue;
+      if (Math.abs(a.meanMotionRevPerDay - b.meanMotionRevPerDay) > DEFAULT_SCREEN.maxMeanMotionDiff) continue;
+      if (minRaanDiffDeg(a, b, DEFAULT_SCREEN.windowMs) > DEFAULT_SCREEN.maxRaanDiffDeg) continue;
+      brute.push([a.norad, b.norad].sort((x, y) => x - y).join(":"));
+    }
+  }
+  brute.sort();
+  check("core/outlier RAAN windows match the full numeric walk", got.join() === brute.join(), `got ${got.length} brute ${brute.length}`);
+}
+
+console.log("Stage 1: widened rescreen stays anchored on event members");
+{
+  const plane = Array.from({ length: 60 }, (_, i) =>
+    makeElset({
+      norad: 80000 + i,
+      incDeg: 53.2,
+      raanDeg: (i % 6) * 0.05,
+      mm: 15.2,
+      ma: i * 6,
+    }),
+  );
+  plane.push(makeElset({ norad: 80999, incDeg: 53.2, raanDeg: 1, mm: 15.22, ecc: 0.9 }));
+  const full = await screenCandidatePairs(plane, DEFAULT_SCREEN, 0);
+  const anchors = new Set([80000, 80001]);
+  const focused = await screenCandidatePairs(plane, DEFAULT_SCREEN, 0, undefined, anchors);
+  const keyOf = (p: { a: ScreenElset; b: ScreenElset }) => [p.a.norad, p.b.norad].sort((x, y) => x - y).join(":");
+  const expect = full.filter((p) => anchors.has(p.a.norad) || anchors.has(p.b.norad)).map(keyOf).sort();
+  const got = focused.map(keyOf).sort();
+  check("anchored pairs are exactly the full walk's pairs that touch a member",
+    got.join() === expect.join(), `got ${got.length} full-touching ${expect.length}`);
+  check("anchor walk does not emit pairs between non-members",
+    focused.every((p) => anchors.has(p.a.norad) || anchors.has(p.b.norad)));
+}
+
+console.log("Stage 2 budget: same-plane phase that cannot enter 30 km skips SGP4");
+{
+  const now = Date.parse("2026-07-30T00:00:00Z");
+  const slack = DEFAULT_SCREEN.maxRaanDiffDeg + DEFAULT_SCREEN.maxIncDiffDeg;
+  // Evenly spaced plane, identical mean motion: stage-1 keeps every pair
+  // (shared RAAN) but none of them close inside the conjunction bubble.
+  const plane = Array.from({ length: 30 }, (_, i) =>
+    makeElset({ norad: 60000 + i, incDeg: 53.16, raanDeg: 20, mm: 15.2, ma: i * (360 / 30), argp: 40 }),
+  );
+  const raw = await screenCandidatePairs(plane, DEFAULT_SCREEN, 0);
+  const sgp4 = raw.filter((p) => !alongTrackRulesOutRange(
+    p.a, p.b, now, DEFAULT_SCREEN.windowMs, RPOD_MAX_RANGE_KM, slack,
+  ));
+  check("stage-1 still emits the whole plane", raw.length > 100, String(raw.length));
+  check("evenly spaced plane is not sent to SGP4", sgp4.length === 0, String(sgp4.length));
+
+  const lead = makeElset({ norad: 61000, incDeg: 53.16, raanDeg: 20, mm: 15.2, ma: 12, argp: 40 });
+  const near = makeElset({ norad: 61001, incDeg: 53.16, raanDeg: 20.05, mm: 15.2, ma: 12.05, argp: 40 });
+  const far = makeElset({ norad: 61002, incDeg: 53.16, raanDeg: 20.05, mm: 15.2, ma: 192, argp: 40 });
+  // Trailing object with a higher mean motion laps the 12° gap inside 48h.
+  const catchup = makeElset({ norad: 61003, incDeg: 53.16, raanDeg: 20.2, mm: 15.25, ma: 0, argp: 40 });
+  check("sub-degree phase pair stays in the SGP4 budget",
+    !alongTrackRulesOutRange(lead, near, now, DEFAULT_SCREEN.windowMs, RPOD_MAX_RANGE_KM, slack));
+  check("opposite-side same-plane pair is phase-blocked",
+    alongTrackRulesOutRange(lead, far, now, DEFAULT_SCREEN.windowMs, RPOD_MAX_RANGE_KM, slack));
+  check("pair that laps into phase over the window is kept",
+    !alongTrackRulesOutRange(lead, catchup, now, DEFAULT_SCREEN.windowMs, RPOD_MAX_RANGE_KM, slack));
+
+  const caNear = closeApproach(lead, near, now, 6 * 3600_000);
+  const caFar = closeApproach(lead, far, now, DEFAULT_SCREEN.windowMs);
+  check("phase-kept pair actually propagates inside the bubble",
+    caNear != null && caNear.minRangeKm <= RPOD_MAX_RANGE_KM,
+    caNear ? `${caNear.minRangeKm.toFixed(2)} km` : "null");
+  check("phase-blocked pair stays far under SGP4",
+    caFar != null && caFar.minRangeKm > 1000,
+    caFar ? `${caFar.minRangeKm.toFixed(1)} km` : "null");
+
+  // Safety: whatever SGP4 calls a ≤30 km approach, the gate must not drop.
+  let droppedClose = 0;
+  let sawClose = 0;
+  for (let i = 0; i < 12; i++) {
+    const a = makeElset({
+      norad: 62000 + i * 2,
+      incDeg: 53 + (i % 3) * 0.1,
+      raanDeg: 30 + i,
+      mm: 15.1 + (i % 4) * 0.02,
+      ma: i * 3,
+      argp: 20 + i,
+      ecc: 0.0003,
+    });
+    const bb = makeElset({
+      norad: 62001 + i * 2,
+      incDeg: a.incDeg + 0.05,
+      raanDeg: a.raanDeg + (i % 2 === 0 ? 0.15 : 1.0),
+      mm: a.meanMotionRevPerDay + (i % 3 === 0 ? 0.04 : 0.005),
+      ma: i % 2 === 0 ? 0.2 : 8,
+      argp: 20 + i,
+      ecc: 0.0004,
+    });
+    const ca = closeApproach(a, bb, now, DEFAULT_SCREEN.windowMs);
+    if (!ca || ca.minRangeKm > RPOD_MAX_RANGE_KM) continue;
+    sawClose++;
+    if (alongTrackRulesOutRange(a, bb, now, DEFAULT_SCREEN.windowMs, RPOD_MAX_RANGE_KM, slack)) droppedClose++;
+  }
+  check("gate does not drop an SGP4 approach inside 30 km", droppedClose === 0, `dropped ${droppedClose} of ${sawClose}`);
 }
 
 if (failures > 0) {

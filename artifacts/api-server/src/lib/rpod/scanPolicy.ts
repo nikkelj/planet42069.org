@@ -32,6 +32,24 @@ export const MAX_RPOD_SCAN_MS = 25 * 60 * 1000;
 /** X citation posting must not hold the scan lock / delay lastScanAt. */
 export const RPOD_ALERT_TIMEOUT_MS = 45 * 1000;
 
+/**
+ * Stop stage-2 SGP4 this long before the hard cap so cluster, persist,
+ * alerts, and retire still run. The outer deadline used to win while SGP4
+ * was in a pair, log "rpod-scan timed out after 1500000ms", and drop the
+ * hour (lastScanEvents null) even when pairs were already flagged.
+ * Must outlast alert posting plus a short persist/retire tail.
+ */
+export const RPOD_POST_SGP4_RESERVE_MS = 3 * 60 * 1000;
+
+/** True when stage-2 should stop so the rest of the scan can finish. */
+export function sgp4ShouldStop(
+  nowMs: number,
+  deadlineMs: number,
+  reserveMs: number = RPOD_POST_SGP4_RESERVE_MS,
+): boolean {
+  return nowMs > deadlineMs - reserveMs;
+}
+
 export function rpodScanIsDue(
   lastFinishedAtMs: number | null | undefined,
   nowMs: number,
