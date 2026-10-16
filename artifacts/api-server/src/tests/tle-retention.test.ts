@@ -10,7 +10,10 @@
 import {
   sampleRows, backfillHorizonMs, BACKFILL_HORIZON_DAYS, COARSE_AFTER_DAYS, ELSET_FUTURE_SLACK_MS,
   estimatePgCount, estimatePgDistinct, asFiniteNumber,
+  utcDayStartMs, newestCoarseDayStartMs, coerceCoarsePruneCursor, advanceCoarsePruneCursor,
+  coarseDayThinSql, sqlTemplateText,
 } from "../lib/obc/tleArchive";
+import { pickNewestElsets, latestElsetBackfillNeedsWork } from "../lib/obc/latestElset";
 import type { InsertObcTleHistory } from "@workspace/db/schema";
 
 let failures = 0;
@@ -91,6 +94,57 @@ console.log("RPOD latest-elset epoch window");
   // NOT evidence that getLatestElsets dropped its cap — status and scan use
   // different queries.
   check("archive newestEpoch is allowed to be in the future", newestEpoch > now);
+}
+
+console.log("Coarse prune walks one UTC day, not the whole horizon");
+{
+  const coarseBefore = NOW - COARSE_AFTER_DAYS * DAY;
+  const horizon = NOW - BACKFILL_HORIZON_DAYS * DAY;
+  const leading = newestCoarseDayStartMs(coarseBefore);
+  check("leading coarse day is the UTC day before the boundary", leading === utcDayStartMs(coarseBefore - 1));
+  check("exact midnight boundary belongs to the previous day",
+    newestCoarseDayStartMs(Date.parse("2026-09-16T00:00:00Z")) === Date.parse("2026-09-15T00:00:00Z"));
+  const cursor = coerceCoarsePruneCursor(null, horizon, coarseBefore);
+  check("missing cursor starts the day behind the leading edge", cursor === leading - DAY);
+  check("cursor sitting on the leading edge is pushed behind it",
+    coerceCoarsePruneCursor(leading, horizon, coarseBefore) === leading - DAY);
+  check("a full budget keeps the backlog on the same day",
+    advanceCoarsePruneCursor(cursor, 20_000, 20_000, horizon, coarseBefore) === cursor);
+  check("a finished day steps one UTC day backward",
+    advanceCoarsePruneCursor(cursor, 0, 20_000, horizon, coarseBefore) === cursor - DAY);
+  const floor = utcDayStartMs(horizon);
+  check("walking off the horizon wraps behind the leading edge",
+    advanceCoarsePruneCursor(floor, 0, 20_000, horizon, coarseBefore) === leading - DAY);
+  const thin = sqlTemplateText(coarseDayThinSql(
+    new Date(cursor), new Date(cursor + DAY), new Date(horizon), new Date(coarseBefore), 20_000,
+  ));
+  check("thin SQL bounds the delete to one day", /epoch\s*>=/.test(thin) && /epoch\s*</.test(thin), thin.slice(0, 300));
+  check("thin SQL still keeps the newest epoch per norad",
+    /row_number\(\)/i.test(thin) && /order by epoch desc, id desc/i.test(thin), thin.slice(0, 400));
+  check("thin SQL does not partition the whole coarse span in one window",
+    !/date_trunc\(\s*'day'/i.test(thin), thin.slice(0, 200));
+}
+
+console.log("Latest-elset pointer keeps the newest epoch per norad");
+{
+  const older = row(7, NOW - DAY);
+  const newer = row(7, NOW);
+  const other = row(8, NOW - 2 * DAY);
+  const picked = pickNewestElsets([older, other, newer]);
+  check("one row per norad", picked.length === 2);
+  const kept = picked.find((r) => r.norad === 7);
+  check("later epoch wins", kept != null && new Date(kept.epoch as Date).getTime() === NOW);
+  check("backfill is unfinished until done", latestElsetBackfillNeedsWork(null, null) === true);
+  check("backfill is unfinished while the catalog merge is unseen",
+    latestElsetBackfillNeedsWork(
+      { cursor: 10, done: true, catalogSeen: null, sweepCursor: -1, sweepFor: null },
+      "2026-10-16T00:00:00.000Z",
+    ));
+  check("backfill is finished once the seen merge matches",
+    latestElsetBackfillNeedsWork(
+      { cursor: 10, done: true, catalogSeen: "2026-10-16T00:00:00.000Z", sweepCursor: -1, sweepFor: null },
+      "2026-10-16T00:00:00.000Z",
+    ) === false);
 }
 
 console.log("Archive status count estimates (must not seq-scan 5M rows)");
