@@ -157,20 +157,90 @@ function usableScreenElset(e: ScreenElset): boolean {
 /**
  * Visit index pairs whose normalized RAAN separation along the short arc
  * might be <= `windowDeg`. `windowDeg` >= 180 visits every pair.
- * Each unordered pair is visited once.
+ *
+ * The visitor is synchronous. `onTick` runs every `yieldEvery` comparisons
+ * so HTTP can flush, without allocating a promise per pair. A full walk of
+ * one Starlink shell is tens of millions of visits; an async visitor per
+ * visit is the GC pattern that blew the 25-minute scan cap.
+ *
+ * `seeds`, when set, only visits pairs that include one of those indexes
+ * (widened rescreen around an event). Otherwise each unordered pair is
+ * visited once.
  */
-async function visitRaanWindow(
+async function visitRaanPairs(
   raanDeg: number[],
   idxs: number[],
   windowDeg: number,
-  visit: (i: number, j: number) => Promise<void> | void,
+  visit: (i: number, j: number) => void,
+  yieldEvery: number,
+  onTick: () => void | Promise<void>,
+  seeds?: number[],
 ): Promise<void> {
   const n = idxs.length;
   if (n < 2) return;
   const order = idxs.slice().sort((i, j) => raanDeg[i] - raanDeg[j] || i - j);
+  const pos = new Map<number, number>();
+  for (let p = 0; p < n; p++) pos.set(order[p], p);
+
+  let compared = 0;
+  // Sync hit + await only on the yield stride. An async wrapper here would
+  // allocate a promise per comparison.
+  const hit = (i: number, j: number): boolean => {
+    if (i === j) return false;
+    visit(i, j);
+    compared++;
+    return yieldEvery > 0 && compared % yieldEvery === 0;
+  };
+
+  if (seeds) {
+    if (seeds.length === 0) return;
+    const seedSet = new Set(seeds);
+    if (!(windowDeg < 180)) {
+      for (const i of seeds) {
+        if (!pos.has(i)) continue;
+        for (const j of idxs) {
+          if (j === i) continue;
+          if (seedSet.has(j) && j < i) continue;
+          if (hit(i, j)) await onTick();
+        }
+      }
+      return;
+    }
+    for (const i of seeds) {
+      const p = pos.get(i);
+      if (p == null) continue;
+      const ra = raanDeg[i];
+      for (let k = p + 1; k < n; k++) {
+        if (raanDeg[order[k]] - ra > windowDeg) break;
+        if (hit(i, order[k])) await onTick();
+      }
+      for (let k = p - 1; k >= 0; k--) {
+        if (ra - raanDeg[order[k]] > windowDeg) break;
+        if (hit(i, order[k])) await onTick();
+      }
+      const wrapHi = ra + windowDeg - 360;
+      if (wrapHi >= 0) {
+        for (let k = 0; k < p; k++) {
+          if (raanDeg[order[k]] > wrapHi) break;
+          if (hit(i, order[k])) await onTick();
+        }
+      }
+      if (ra - windowDeg < 0) {
+        const wrapLo = ra - windowDeg + 360;
+        for (let k = n - 1; k > p; k--) {
+          if (raanDeg[order[k]] < wrapLo) break;
+          if (hit(i, order[k])) await onTick();
+        }
+      }
+    }
+    return;
+  }
+
   if (!(windowDeg < 180)) {
     for (let a = 0; a < n; a++) {
-      for (let b = a + 1; b < n; b++) await visit(order[a], order[b]);
+      for (let b = a + 1; b < n; b++) {
+        if (hit(order[a], order[b])) await onTick();
+      }
     }
     return;
   }
@@ -178,15 +248,22 @@ async function visitRaanWindow(
     const ra = raanDeg[order[left]];
     for (let k = left + 1; k < n; k++) {
       if (raanDeg[order[k]] - ra > windowDeg) break;
-      await visit(order[left], order[k]);
+      if (hit(order[left], order[k])) await onTick();
     }
     const wrapLimit = ra + windowDeg - 360;
     if (wrapLimit < 0) continue;
     for (let k = 0; k < left; k++) {
       if (raanDeg[order[k]] > wrapLimit) break;
-      await visit(order[left], order[k]);
+      if (hit(order[left], order[k])) await onTick();
     }
   }
+}
+
+function medianNumber(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = values.slice().sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
 export interface CandidatePair {
@@ -206,6 +283,15 @@ export function yieldToEventLoop(): Promise<void> {
  */
 export const SCREEN_YIELD_EVERY = 4_000;
 
+/**
+ * Objects whose nodal rates over the screen window stay inside this many
+ * degrees of the bin median are one family and use a thin RAAN window.
+ * A single high-eccentricity elset in an otherwise tight mean-motion bin
+ * used to set the window from the whole bin's rate span (tens to hundreds
+ * of degrees) and reopen the full Starlink pair walk.
+ */
+export const MAX_CORE_RATE_SPAN_DEG = 2;
+
 /** Wall-clock cap for one closeApproach (coarse + refine). Pathological
  *  deep-space dspace steps from a shifted TLE epoch used to run for tens of
  *  seconds on a single pair. */
@@ -223,17 +309,25 @@ export const MAX_SGP4_PAIR_MS = 2_000;
  * RAAN test. That fits in a few seconds on a roomy box and blows the
  * 25-minute scan cap on the autoscale instance (GC of the pair keys plus
  * four raan-rate evaluations per pair). Relative nodal drift inside a
- * mean-motion bin is well under a degree over the 48h window, so the
- * RAAN window drops the shell to a thin neighbor strip without changing
- * which pairs pass the numeric gates.
+ * healthy mean-motion bin is well under a degree over the 48h window, so
+ * the RAAN window drops the shell to a thin neighbor strip without
+ * changing which pairs pass the numeric gates. The window is the core
+ * family's rate span, not the whole bin: one high-eccentricity elset
+ * (e≈0.9 at Starlink mean motion is ~60°+ of drift) would otherwise
+ * reopen that full walk for the hour.
  *
  * Pass yieldEvery > 0 (SCREEN_YIELD_EVERY in the worker) so HTTP can run.
+ *
+ * `anchorNorads`, when set, only visits pairs that include one of those
+ * catalog numbers. The widened cluster rescreen uses this so a 5-member
+ * event does not all-pairs the surrounding shell.
  */
 export async function screenCandidatePairs(
   elsets: ScreenElset[],
   opts: ScreenOptions = DEFAULT_SCREEN,
   yieldEvery: number = 0,
   deadlineMs?: number,
+  anchorNorads?: ReadonlySet<number>,
 ): Promise<CandidatePair[]> {
   const bandSize = Math.max(opts.maxIncDiffDeg, 0.1);
   const bands = new Map<number, ScreenElset[]>();
@@ -248,17 +342,26 @@ export async function screenCandidatePairs(
   }
   const pairs: CandidatePair[] = [];
   const seen = new Set<string>();
-  let compared = 0;
-  const bump = async (): Promise<void> => {
-    compared++;
-    if (yieldEvery > 0 && compared % yieldEvery === 0) {
-      if (deadlineMs != null && Date.now() > deadlineMs) throw new Error("rpod-scan timed out during screening");
-      await yieldToEventLoop();
-    }
+  const onTick = async (): Promise<void> => {
+    if (deadlineMs != null && Date.now() > deadlineMs) throw new Error("rpod-scan timed out during screening");
+    await yieldToEventLoop();
+  };
+  const accept = (arr: ScreenElset[], rates: number[], i: number, j: number): void => {
+    const a = arr[i];
+    const b = arr[j];
+    if (a.norad === b.norad) return;
+    if (Math.abs(a.incDeg - b.incDeg) > opts.maxIncDiffDeg) return;
+    if (Math.abs(a.meanMotionRevPerDay - b.meanMotionRevPerDay) > opts.maxMeanMotionDiff) return;
+    if (minRaanDiffDeg(a, b, opts.windowMs, rates[i], rates[j]) > opts.maxRaanDiffDeg) return;
+    const key = a.norad < b.norad ? `${a.norad}:${b.norad}` : `${b.norad}:${a.norad}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    pairs.push({ a, b });
   };
 
   const days = opts.windowMs / 86400_000;
   const mmBin = opts.maxMeanMotionDiff;
+  const halfCore = MAX_CORE_RATE_SPAN_DEG / 2;
   for (const arr of bands.values()) {
     const n = arr.length;
     if (n < 2) continue;
@@ -287,24 +390,50 @@ export async function screenCandidatePairs(
         if (r < rMin) rMin = r;
         if (r > rMax) rMax = r;
       }
-      const drift = Number.isFinite(rMin) && Number.isFinite(rMax) ? (rMax - rMin) * days : 180;
+      const rateDriftDeg = (rate: number): number => {
+        if (!Number.isFinite(rMin) || !Number.isFinite(rMax) || !Number.isFinite(rate)) return 180;
+        return Math.max(Math.abs(rate - rMin), Math.abs(rate - rMax)) * days;
+      };
       // Linear drift of at most `drift` degrees cannot close a larger gap
       // than maxRaan + drift (the 30° zero-cross rule is inside that, because
       // a crossing needs |drift| >= |ΔRAAN|). Slack covers float error.
-      const window = opts.maxRaanDiffDeg + drift + RAAN_WINDOW_SLACK_DEG;
-      await visitRaanWindow(raan, idxs, window, async (i, j) => {
-        await bump();
-        const a = arr[i];
-        const b = arr[j];
-        if (a.norad === b.norad) return;
-        if (Math.abs(a.incDeg - b.incDeg) > opts.maxIncDiffDeg) return;
-        if (Math.abs(a.meanMotionRevPerDay - b.meanMotionRevPerDay) > opts.maxMeanMotionDiff) return;
-        if (minRaanDiffDeg(a, b, opts.windowMs, rates[i], rates[j]) > opts.maxRaanDiffDeg) return;
-        const key = a.norad < b.norad ? `${a.norad}:${b.norad}` : `${b.norad}:${a.norad}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-        pairs.push({ a, b });
-      });
+      const windowFor = (drift: number) => opts.maxRaanDiffDeg + drift + RAAN_WINDOW_SLACK_DEG;
+      const visit = (i: number, j: number) => accept(arr, rates, i, j);
+
+      if (anchorNorads) {
+        const seeds = idxs.filter((i) => anchorNorads.has(arr[i].norad));
+        if (seeds.length === 0) continue;
+        let drift = 0;
+        for (const i of seeds) {
+          const d = rateDriftDeg(rates[i]);
+          if (d > drift) drift = d;
+        }
+        await visitRaanPairs(raan, idxs, windowFor(drift), visit, yieldEvery, onTick, seeds);
+        continue;
+      }
+
+      const med = medianNumber(idxs.map((i) => rates[i]));
+      const core: number[] = [];
+      const outliers: number[] = [];
+      for (const i of idxs) {
+        const span = Math.abs(rates[i] - med) * days;
+        if (Number.isFinite(span) && span <= halfCore) core.push(i);
+        else outliers.push(i);
+      }
+      if (core.length >= 2) {
+        let cMin = Infinity;
+        let cMax = -Infinity;
+        for (const i of core) {
+          const r = rates[i];
+          if (r < cMin) cMin = r;
+          if (r > cMax) cMax = r;
+        }
+        const coreDrift = Number.isFinite(cMin) && Number.isFinite(cMax) ? (cMax - cMin) * days : 0;
+        await visitRaanPairs(raan, core, windowFor(coreDrift), visit, yieldEvery, onTick);
+      }
+      for (const i of outliers) {
+        await visitRaanPairs(raan, idxs, windowFor(rateDriftDeg(rates[i])), visit, yieldEvery, onTick, [i]);
+      }
     }
   }
   return pairs;
@@ -380,6 +509,52 @@ export function minPhaseDiffDeg(a: ScreenElset, b: ScreenElset, nowMs: number, w
 }
 
 /**
+ * Extra degrees of mean-argument slack for differential apsidal drift and
+ * the gap between argument-of-latitude and inertial along-track. Kept
+ * loose on purpose: a wrong skip drops a real close approach, a loose
+ * gate only sends a few more pairs to SGP4.
+ */
+export const PHASE_MODEL_SLACK_DEG = 2;
+
+/**
+ * True when along-track phase stays too wide for the pair to enter
+ * `maxRangeKm` during the window, so stage-2 SGP4 can skip it.
+ *
+ * Stage-1 matches planes only. Every pair inside a Starlink plane survives
+ * it (RAAN is shared), and the 1,200-pair SGP4 cap then propagates objects
+ * that are still thousands of km apart. Range is at least the along-track
+ * separation, so a pair whose mean arguments never get close cannot be a
+ * conjunction, a near-miss, or a cluster.
+ *
+ * Fail open (return false → keep the pair) when the linear phase model is
+ * not trustworthy: unparsable mean argument, equatorial orbits (the node
+ * is ill-conditioned), or a non-finite semi-major axis. `planeSlackDeg`
+ * is the screened plane gate (ΔRAAN + Δinc); planes that still differ by
+ * that much can be inside the bubble at a slightly larger phase offset.
+ */
+export function alongTrackRulesOutRange(
+  a: ScreenElset,
+  b: ScreenElset,
+  nowMs: number,
+  windowMs: number,
+  maxRangeKm: number,
+  planeSlackDeg: number,
+): boolean {
+  if (a.incDeg < 5 || b.incDeg < 5 || a.incDeg > 175 || b.incDeg > 175) return false;
+  const phase = minPhaseDiffDeg(a, b, nowMs, windowMs);
+  if (!Number.isFinite(phase)) return false;
+  const aKm = Math.min(
+    semiMajorAxisKm(a.meanMotionRevPerDay),
+    semiMajorAxisKm(b.meanMotionRevPerDay),
+  );
+  if (!Number.isFinite(aKm) || aKm < 100) return false;
+  const rangeDeg = (maxRangeKm / aKm) * (180 / Math.PI);
+  const eccDeg = 2 * (Math.abs(a.eccentricity) + Math.abs(b.eccentricity)) * (180 / Math.PI);
+  const limit = rangeDeg + eccDeg + Math.max(0, planeSlackDeg) + PHASE_MODEL_SLACK_DEG;
+  return phase > limit;
+}
+
+/**
  * Cheap co-aligned screen: Δinc and current ΔRAAN within tight plane bounds,
  * radial shells [a(1-e), a(1+e)] ± margin overlapping, AND along-track phase
  * within a few degrees at some point in the window. No convergence
@@ -405,13 +580,9 @@ export async function screenCoAlignedPairs(
   }
   const pairs: CandidatePair[] = [];
   const seen = new Set<string>();
-  let compared = 0;
-  const bump = async (): Promise<void> => {
-    compared++;
-    if (yieldEvery > 0 && compared % yieldEvery === 0) {
-      if (deadlineMs != null && Date.now() > deadlineMs) throw new Error("rpod-scan timed out during co-aligned screen");
-      await yieldToEventLoop();
-    }
+  const onTick = async (): Promise<void> => {
+    if (deadlineMs != null && Date.now() > deadlineMs) throw new Error("rpod-scan timed out during co-aligned screen");
+    await yieldToEventLoop();
   };
   // No convergence term: shadowers are already co-planar. The RAAN gate is
   // the current separation, so the neighbor window is that gate plus slack.
@@ -425,8 +596,7 @@ export async function screenCoAlignedPairs(
       raan[i] = normRaanDeg(arr[i].raanDeg);
       idxs[i] = i;
     }
-    await visitRaanWindow(raan, idxs, window, async (i, j) => {
-      await bump();
+    await visitRaanPairs(raan, idxs, window, (i, j) => {
       const a = arr[i];
       const b = arr[j];
       if (a.norad === b.norad) return;
@@ -444,7 +614,7 @@ export async function screenCoAlignedPairs(
       if (seen.has(key)) return;
       seen.add(key);
       pairs.push({ a, b });
-    });
+    }, yieldEvery, onTick);
   }
   return pairs;
 }
