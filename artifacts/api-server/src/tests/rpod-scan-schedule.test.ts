@@ -140,7 +140,7 @@ console.log("scheduler + scan source: staleness checks, skip logging, timeouts")
   check("unusable-elset skip writes a success sync-log row",
     /if \(elsets\.length < 2\)[\s\S]{0,250}logScanRow\("success"/.test(scanSrc));
   check("alerts are wrapped in withDeadline",
-    /withDeadline\([\s\S]{0,200}postNewRpodEventAlerts/.test(scanSrc));
+    /withDeadline\([\s\S]{0,200}deliverPolicyAlerts/.test(scanSrc));
   check("interesting-only filter is still in front of persist",
     scanSrc.includes("selectInterestingEvents(")
     && /persistEvents\(conjKept\.kept/.test(scanSrc)

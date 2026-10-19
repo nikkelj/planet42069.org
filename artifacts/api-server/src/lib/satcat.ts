@@ -38,6 +38,8 @@ export interface SatcatEntry {
   gunterTitle: string | null;     // dossier title, for Krebs-format citations
   gunterRetrievedAt: string | null; // ISO date the dossier was retrieved
   launchTag: string | null;         // GCAT Launch_Tag (or derived from intl des)
+  /** GCAT Piece column ("A", "F", "AA"). Combined with launchTag into the COSPAR id. */
+  piece?: string | null;
 }
 
 /** Parser output — historical alias, launchTag is now on SatcatEntry itself. */
@@ -123,6 +125,7 @@ export function parseTsv(raw: string): SatcatRawEntry[] {
     jcat:       idx("jcat"),
     satcat:     idx("satcat"),
     launch_tag: idx("launch_tag"),
+    piece:      idx("piece"),
     type:       idx("type"),
     name:       idx("name"),
     plname:     idx("plname"),
@@ -165,6 +168,7 @@ export function parseTsv(raw: string): SatcatRawEntry[] {
       plName: parseStr(get(C.plname)),
       ldate: parseLDate(get(C.ldate)),
       launchTag: parseStr(get(C.launch_tag)),
+      piece: parseStr(get(C.piece)),
       lv: null,       // enriched from launch map during sync
       lvFamily: null,
       site: null,
