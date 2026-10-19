@@ -1,23 +1,27 @@
 import { db } from "@workspace/db";
-import { obcSyncLog } from "@workspace/db/schema";
+import { obcSyncLog, rpodAlertQueue } from "@workspace/db/schema";
 import { sql, and, eq, gt } from "drizzle-orm";
 import { logger } from "../logger";
+import { rpodAlertMode } from "./alertMode";
+import { provisionalAlertScore } from "./alertScore";
 
 /**
  * X (Twitter) alerts for genuinely NEW RPOD events.
  *
- * Two milestones can post per case: the freshly INSERTED opening (reported
- * by persistEvents) and at most one escalation follow-up when an ACTIVE
- * case's min range tightens sharply. Routine updates and reopened lapsed
- * cases never post. On top of that:
- *  - "docked" geometry (station stacks, visiting vehicles) never posts
- *  - co-launched formations (all members share one launch tag) never post
- *  - a per-event dedupe ledger (obc_sync_log, source "rpod-alert") means an
- *    event id can only ever post once, even across restarts or kind flips
+ * Two milestones can be cited per case: the freshly INSERTED opening
+ * (reported by persistEvents) and at most one escalation follow-up when an
+ * ACTIVE case's min range tightens sharply. Routine updates and reopened
+ * lapsed cases never cite. On top of that:
+ *  - "docked" geometry (station stacks, visiting vehicles) never cites
+ *  - co-launched formations (all members share one launch tag) never cite
+ *  - a per-milestone ledger means an event id can only ever cite once
  *  - a daily cap keeps a noisy scan from flooding the timeline
  *
- * Posting is enabled in production only (or with RPOD_ALERTS_FORCE=1 for a
- * one-off manual verification) so the dev server can't double-post.
+ * Default mode is review: each would-be citation is inserted into
+ * rpod_alert_queue (status pending) and nothing is posted. Set
+ * RPOD_ALERT_MODE=auto to restore direct posting. Direct posts still only
+ * run in production (or with RPOD_ALERTS_FORCE=1). An admin approve of a
+ * queued row posts regardless of mode.
  */
 
 export const DAILY_ALERT_CAP = 5;
@@ -282,10 +286,86 @@ async function tryRenderCaseCard(
 
 interface PostItem {
   ev: NewRpodEvent;
-  /** obc_sync_log rowCount: +eventId for new cases, -eventId for escalations. */
+  /** obc_sync_log rowCount / queue ledger: +eventId for new cases, -eventId for escalations. */
   ledgerKey: number;
   text: string;
   what: string; // for logs: "new event" | "escalation"
+  score?: number;
+}
+
+export type AlertQueueStatus = "pending" | "approved" | "rejected" | "posted";
+
+/**
+ * Insert a pending queue row. A milestone that is already queued (any
+ * status) is left alone — rejecting or posting it sticks.
+ */
+export async function enqueueRpodAlert(item: PostItem): Promise<"queued" | "duplicate"> {
+  const inserted = await db
+    .insert(rpodAlertQueue)
+    .values({
+      eventId: item.ev.eventId,
+      objects: [...item.ev.members].sort((a, b) => a - b),
+      text: item.text,
+      score: item.score ?? provisionalAlertScore(item.ev),
+      status: "pending",
+      ledgerKey: item.ledgerKey,
+    })
+    .onConflictDoNothing({ target: rpodAlertQueue.ledgerKey })
+    .returning({ id: rpodAlertQueue.id });
+  return inserted.length > 0 ? "queued" : "duplicate";
+}
+
+export type ApproveResult =
+  | { ok: true; status: "posted"; tweetId: string }
+  | { ok: false; status: AlertQueueStatus | "missing"; error: string };
+
+/**
+ * Mark a queued citation approved and post it. A failed post leaves the
+ * row approved so the same call can be retried. Already-posted rows are
+ * not posted again.
+ */
+export async function approveQueuedAlert(id: number): Promise<ApproveResult> {
+  const [row] = await db.select().from(rpodAlertQueue).where(eq(rpodAlertQueue.id, id)).limit(1);
+  if (!row) return { ok: false, status: "missing", error: "queue row not found" };
+  if (row.status === "posted") return { ok: false, status: "posted", error: "already posted" };
+  if (row.status === "rejected") return { ok: false, status: "rejected", error: "row was rejected" };
+  await db.update(rpodAlertQueue).set({ status: "approved" }).where(eq(rpodAlertQueue.id, id));
+  if (!credsAvailable()) {
+    return { ok: false, status: "approved", error: "X credentials missing; row left approved" };
+  }
+  const started = new Date();
+  try {
+    const tweetId = await postToX(row.text);
+    await db.update(rpodAlertQueue).set({
+      status: "posted",
+      postedAt: new Date(),
+      tweetId,
+    }).where(eq(rpodAlertQueue.id, id));
+    await db.insert(obcSyncLog).values({
+      source: ALERT_LOG_SOURCE, status: "success", rowCount: row.ledgerKey,
+      error: null, startedAt: started,
+    }).catch(() => {});
+    logger.info({ id, eventId: row.eventId, tweetId }, "rpod-alert: posted approved queue row");
+    return { ok: true, status: "posted", tweetId };
+  } catch (err) {
+    const error = String(err).slice(0, 500);
+    await db.insert(obcSyncLog).values({
+      source: ALERT_LOG_SOURCE, status: "error", rowCount: row.ledgerKey,
+      error: error.slice(0, 2000), startedAt: started,
+    }).catch(() => {});
+    logger.error({ err, id, eventId: row.eventId }, "rpod-alert: approved row failed to post");
+    return { ok: false, status: "approved", error };
+  }
+}
+
+/** pending or approved → rejected. Posted rows stay posted. */
+export async function rejectQueuedAlert(id: number): Promise<{ ok: boolean; status: AlertQueueStatus | "missing"; error?: string }> {
+  const [row] = await db.select().from(rpodAlertQueue).where(eq(rpodAlertQueue.id, id)).limit(1);
+  if (!row) return { ok: false, status: "missing", error: "queue row not found" };
+  if (row.status === "posted") return { ok: false, status: "posted", error: "already posted" };
+  if (row.status === "rejected") return { ok: true, status: "rejected" };
+  await db.update(rpodAlertQueue).set({ status: "rejected" }).where(eq(rpodAlertQueue.id, id));
+  return { ok: true, status: "rejected" };
 }
 
 /**
@@ -297,6 +377,22 @@ async function postAlertItems(
   metaFor: (norad: number) => AlertMeta | undefined,
 ): Promise<void> {
   if (items.length === 0) return;
+  if (rpodAlertMode() !== "auto") {
+    try {
+      let queued = 0;
+      for (const item of items) {
+        const result = await enqueueRpodAlert(item);
+        if (result === "queued") queued++;
+      }
+      logger.info(
+        { queued, skipped: items.length - queued, events: items.map((i) => i.ledgerKey) },
+        "rpod-alert: review mode, queued citations instead of posting",
+      );
+    } catch (err) {
+      logger.error({ err }, "rpod-alert: failed to queue citations");
+    }
+    return;
+  }
   if (!postingEnabled()) {
     logger.info({ events: items.map((i) => i.ledgerKey) }, "rpod-alert: posting disabled outside production, skipping");
     return;
@@ -322,6 +418,16 @@ async function postAlertItems(
           source: ALERT_LOG_SOURCE, status: "success", rowCount: item.ledgerKey,
           error: null, startedAt: started,
         });
+        await db.insert(rpodAlertQueue).values({
+          eventId: ev.eventId,
+          objects: [...ev.members].sort((a, b) => a - b),
+          text: item.text,
+          score: item.score ?? provisionalAlertScore(ev),
+          status: "posted",
+          ledgerKey: item.ledgerKey,
+          postedAt: new Date(),
+          tweetId,
+        }).onConflictDoNothing({ target: rpodAlertQueue.ledgerKey }).catch(() => {});
         remaining--;
         logger.info({ eventId: ev.eventId, tweetId }, `rpod-alert: posted citation for ${item.what}`);
       } catch (err) {

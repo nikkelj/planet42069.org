@@ -243,6 +243,37 @@ export const rpodEventMembers = pgTable(
   ],
 );
 
+/**
+ * Would-be RPOD X citations waiting on a human (or already posted).
+ * The scan writes one row per milestone (new case or escalation) instead of
+ * posting. Status moves pending → approved → posted, or pending → rejected.
+ * `ledgerKey` is +eventId for the opening citation and -eventId for the
+ * one escalation follow-up, so a milestone is queued at most once.
+ */
+export const rpodAlertQueue = pgTable(
+  "rpod_alert_queue",
+  {
+    id: serial("id").primaryKey(),
+    eventId: integer("event_id").notNull(),
+    /** NORAD catalog numbers cited, ascending. */
+    objects: jsonb("objects").$type<number[]>().notNull(),
+    text: text("text").notNull(),
+    score: real("score").notNull().default(0),
+    /** "pending" | "approved" | "rejected" | "posted" */
+    status: text("status").notNull().default("pending"),
+    ledgerKey: integer("ledger_key").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    postedAt: timestamp("posted_at"),
+    tweetId: text("tweet_id"),
+  },
+  (t) => [
+    uniqueIndex("rpod_alert_queue_ledger_uq").on(t.ledgerKey),
+    index("rpod_alert_queue_status_idx").on(t.status, t.createdAt),
+  ],
+);
+
+export type RpodAlertQueueRow = typeof rpodAlertQueue.$inferSelect;
+
 export type ObcTleHistoryRow = typeof obcTleHistory.$inferSelect;
 export type InsertObcTleHistory = typeof obcTleHistory.$inferInsert;
 export type RpodEventRow = typeof rpodEvents.$inferSelect;

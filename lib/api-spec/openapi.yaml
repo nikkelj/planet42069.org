@@ -539,6 +539,98 @@ paths:
                     items:
                       type: string
 
+  /rpod/alert-queue:
+    get:
+      operationId: getRpodAlertQueue
+      tags: [rpod]
+      summary: Queued RPOD citations
+      description: >
+        Read-only list of would-be X citations. Default scan mode writes rows
+        here instead of posting. status is pending, approved, rejected, or posted.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, approved, rejected, posted]
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Queue page, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  total:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RpodAlertQueueRow"
+
+  /rpod/alert-queue/{id}/approve:
+    post:
+      operationId: approveRpodAlert
+      tags: [rpod]
+      summary: Approve and post a queued citation
+      description: >
+        Requires Authorization Bearer or X-RPOD-Admin-Token matching
+        RPOD_ADMIN_TOKEN. Sets the row to approved and posts it to X.
+        A failed post leaves the row approved so the call can be retried.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Posted
+        "401":
+          description: Missing or wrong admin token
+        "404":
+          description: Queue row not found
+        "409":
+          description: Already posted or rejected
+        "502":
+          description: Approved but X post failed
+        "503":
+          description: RPOD_ADMIN_TOKEN is not configured
+
+  /rpod/alert-queue/{id}/reject:
+    post:
+      operationId: rejectRpodAlert
+      tags: [rpod]
+      summary: Reject a queued citation
+      description: Same admin token as approve. Posted rows cannot be rejected.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Rejected
+        "401":
+          description: Missing or wrong admin token
+        "404":
+          description: Queue row not found
+        "409":
+          description: Already posted
+        "503":
+          description: RPOD_ADMIN_TOKEN is not configured
+
   /rpod/status:
     get:
       operationId: getRpodStatus
@@ -555,6 +647,36 @@ paths:
 
 components:
   schemas:
+    RpodAlertQueueRow:
+      type: object
+      required: [id, eventId, objects, text, score, status, createdAt]
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        objects:
+          type: array
+          items:
+            type: integer
+        text:
+          type: string
+        score:
+          type: number
+        status:
+          type: string
+          enum: [pending, approved, rejected, posted]
+        createdAt:
+          type: string
+          format: date-time
+        postedAt:
+          type: string
+          format: date-time
+          nullable: true
+        tweetId:
+          type: string
+          nullable: true
+
     RpodMember:
       type: object
       properties:

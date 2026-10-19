@@ -1,11 +1,13 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { rpodEvents, rpodEventMembers, obcTleHistory, obcSyncLog } from "@workspace/db/schema";
+import { rpodEvents, rpodEventMembers, obcTleHistory, obcSyncLog, rpodAlertQueue } from "@workspace/db/schema";
 import { eq, desc, asc, inArray, sql, and, type SQL } from "drizzle-orm";
 import { getSatcat } from "../lib/satcat";
 import { getArchiveStatus, retryTransientConnection } from "../lib/obc/tleArchive";
 import { formatRpodScanStatus } from "../lib/rpod/scan";
 import { getTle } from "../lib/tle";
+import { approveQueuedAlert, rejectQueuedAlert } from "../lib/rpod/alert";
+import { adminTokenMatches, presentedAdminToken } from "../lib/rpod/alertMode";
 
 const router: IRouter = Router();
 
@@ -305,6 +307,74 @@ router.get("/rpod/countries", async (_req, res): Promise<void> => {
       .filter((s): s is string => s != null && s !== ""),
   )].sort();
   res.json({ countries });
+});
+
+const QUEUE_STATUSES = new Set(["pending", "approved", "rejected", "posted"]);
+
+function queueJson(row: typeof rpodAlertQueue.$inferSelect) {
+  return {
+    id: row.id,
+    eventId: row.eventId,
+    objects: row.objects,
+    text: row.text,
+    score: row.score,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
+    postedAt: row.postedAt ? row.postedAt.toISOString() : null,
+    tweetId: row.tweetId,
+  };
+}
+
+/** True when the response has already been sent (401/503). */
+function requireRpodAdmin(req: Request, res: Response): boolean {
+  if (!process.env.RPOD_ADMIN_TOKEN) {
+    res.status(503).json({ error: "RPOD_ADMIN_TOKEN is not configured" });
+    return false;
+  }
+  const presented = presentedAdminToken(
+    req.header("authorization"),
+    req.header("x-rpod-admin-token"),
+  );
+  if (!adminTokenMatches(presented)) {
+    res.status(401).json({ error: "unauthorized" });
+    return false;
+  }
+  return true;
+}
+
+// ── alert queue (review mode; read-only) ───────────────────────────────────
+router.get("/rpod/alert-queue", async (req, res): Promise<void> => {
+  const statusRaw = req.query.status ? String(req.query.status) : "";
+  const status = QUEUE_STATUSES.has(statusRaw) ? statusRaw : undefined;
+  const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit ?? "50"), 10) || 50));
+  const where = status ? eq(rpodAlertQueue.status, status) : undefined;
+  const [rows, [{ total }]] = await Promise.all([
+    db.select().from(rpodAlertQueue).where(where).orderBy(desc(rpodAlertQueue.createdAt), desc(rpodAlertQueue.id)).limit(limit),
+    db.select({ total: sql<number>`count(*)::int` }).from(rpodAlertQueue).where(where),
+  ]);
+  res.json({ data: rows.map(queueJson), total });
+});
+
+router.post("/rpod/alert-queue/:id/approve", async (req, res): Promise<void> => {
+  if (!requireRpodAdmin(req, res)) return;
+  const id = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(id)) { res.status(400).json({ error: "invalid queue id" }); return; }
+  const result = await approveQueuedAlert(id);
+  if (result.status === "missing") { res.status(404).json({ error: result.error }); return; }
+  if (!result.ok && result.status === "posted") { res.status(409).json({ error: result.error }); return; }
+  if (!result.ok && result.status === "rejected") { res.status(409).json({ error: result.error }); return; }
+  if (!result.ok) { res.status(502).json({ error: result.error, status: result.status }); return; }
+  res.json({ id, status: "posted", tweetId: result.tweetId });
+});
+
+router.post("/rpod/alert-queue/:id/reject", async (req, res): Promise<void> => {
+  if (!requireRpodAdmin(req, res)) return;
+  const id = parseInt(String(req.params.id), 10);
+  if (!Number.isFinite(id)) { res.status(400).json({ error: "invalid queue id" }); return; }
+  const result = await rejectQueuedAlert(id);
+  if (result.status === "missing") { res.status(404).json({ error: result.error }); return; }
+  if (!result.ok) { res.status(409).json({ error: result.error }); return; }
+  res.json({ id, status: "rejected" });
 });
 
 // ── archive status ─────────────────────────────────────────────────────────
