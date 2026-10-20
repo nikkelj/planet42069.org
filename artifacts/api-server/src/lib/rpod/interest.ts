@@ -1,4 +1,9 @@
 import { RPOD_MAX_RANGE_KM, type ClusteredEvent, type FlaggedPair } from "./screen";
+import {
+  exerciseCovers, MAX_ALERT_RELVEL_KM_S, PERSIST_RELVEL_KM_S,
+  type ExerciseFlag,
+} from "./alertPolicy";
+import { forceOf, forcesWarrantAlert, type ForceObject } from "./force";
 
 /**
  * RPOD "is this interesting?" policy — the single place Space Police retunes
@@ -15,14 +20,20 @@ import { RPOD_MAX_RANGE_KM, type ClusteredEvent, type FlaggedPair } from "./scre
  * housekeeping is still dropped.
  *
  * Interesting classes, in this order:
- *   1. Mixed-operator / mixed-owner / mixed-force (red vs blue). Default.
- *   2. Same-operator ultra-close near-miss (≤200 m, not docked).
- *   3. Same-operator crossing-track / high relative velocity — not the
- *      slow coplanar neighbor flyby.
- *   4. Messy cluster of many independently flying (non-attached) bodies.
+ *   1. Red paired with blue or neutral. Red-red is the same force
+ *      (SU and RU included) and is not interesting. Blue-on-blue at low
+ *      speed is not interesting unless the object or pair is on an
+ *      active exercise flag.
+ *   2. Same-operator ultra-close near-miss (≤200 m, not docked, and not
+ *      a fast crossing).
+ *   3. Messy cluster of many independently flying (non-attached) bodies.
  *      Three Starlinks in a dense-shell 30 km bubble is just density;
  *      a real mess is many free-flyers. Docked ISS/Tiangong stacks are
  *      one attached body, not a cluster.
+ *
+ * Fast crossings (relative velocity above ~100 m/s) are out of scope.
+ * The old "any catalog field differs" mixed-operator rule and the
+ * same-operator crossing-track class are not used.
  *
  * Everything else is boring and must not be stored.
  */
@@ -103,6 +114,8 @@ export interface InterestCatalogMeta {
   gunterOperator: string | null;
   gunterNation: string | null;
   objectClass: string | null;
+  /** State of the launch this unnamed piece rode, when its own code is blank. */
+  launchState?: string | null;
 }
 
 /**
@@ -207,18 +220,19 @@ export function isProvenSameAffiliation(a: Affiliation, b: Affiliation): boolean
   return false;
 }
 
+function forceInputFromAffiliation(a: Affiliation, name: string | null = null): ForceObject {
+  return { name, state: a.state, owner: a.owner, gunterNation: a.nation };
+}
+
 /**
- * Proven MIXED: any catalog field we trust disagrees. Different owners,
- * operators, nations, or constellation families → red vs blue.
+ * Red vs blue/neutral. Differing catalog strings that are the same force
+ * (a US military owner vs Starlink, or SU vs RU) are not mixed.
  */
 export function isProvenMixedAffiliation(a: Affiliation, b: Affiliation): boolean {
-  const keys = ["constellation", "owner", "operator", "state", "nation"] as const;
-  for (const key of keys) {
-    const va = a[key];
-    const vb = b[key];
-    if (va && vb && va !== vb) return true;
-  }
-  return false;
+  return forcesWarrantAlert([
+    forceOf(forceInputFromAffiliation(a)),
+    forceOf(forceInputFromAffiliation(b)),
+  ]);
 }
 
 /**
@@ -240,7 +254,9 @@ export type PairClass = "mixed" | "same" | "unknown";
 export function classifyPair(a: Affiliation, b: Affiliation): PairClass {
   if (isProvenMixedAffiliation(a, b)) return "mixed";
   if (isProvenSameAffiliation(a, b)) return "same";
-  if (a.nameFamily && b.nameFamily && a.nameFamily !== b.nameFamily) return "mixed";
+  const fa = forceOf(forceInputFromAffiliation(a));
+  const fb = forceOf(forceInputFromAffiliation(b));
+  if (fa !== "neutral" && fa === fb) return "same";
   if (a.nameFamily && b.nameFamily && a.nameFamily === b.nameFamily) return "same";
   return "unknown";
 }
@@ -253,13 +269,25 @@ export function classifyPairByNorad(
   return classifyPair(affiliationOf(meta.get(a)), affiliationOf(meta.get(b)));
 }
 
-/** True when the pair is mixed-force / mixed-operator / mixed-name. */
+/** True when the pair is red vs blue/neutral. */
+export function isRedBluePair(
+  a: number,
+  b: number,
+  meta: CatalogLookup,
+): boolean {
+  return forcesWarrantAlert([
+    forceOf(forceInputFromMeta(meta.get(a))),
+    forceOf(forceInputFromMeta(meta.get(b))),
+  ]);
+}
+
+/** True when the pair is red vs blue/neutral. */
 export function isMixedPair(
   a: number,
   b: number,
   meta: CatalogLookup,
 ): boolean {
-  return classifyPairByNorad(a, b, meta) === "mixed";
+  return isRedBluePair(a, b, meta);
 }
 
 /**
@@ -280,11 +308,29 @@ export function isProvenSamePair(
 // ── event-level decision ───────────────────────────────────────────────────
 
 export type InterestReason =
+  | "red-blue"
   | "mixed-operator"
   | "cluster"
   | "same-operator-near-miss"
   | "same-operator-crossing"
+  | "exercise"
   | "boring";
+
+export interface InterestContext {
+  exerciseFlags?: ExerciseFlag[];
+  nowMs?: number;
+}
+
+function forceInputFromMeta(meta: InterestCatalogMeta | undefined): ForceObject {
+  return {
+    name: meta?.name,
+    owner: meta?.owner,
+    state: meta?.state,
+    gunterNation: meta?.gunterNation,
+    objectClass: meta?.objectClass,
+    launchState: meta?.launchState,
+  };
+}
 
 export interface InterestDecision {
   keep: boolean;
@@ -316,14 +362,9 @@ export function countFreeBodies(ev: Pick<ClusteredEvent, "pairs">): number {
   return free;
 }
 
-function eventIsMixed(members: number[], meta: CatalogLookup): boolean {
-  const affs = members.map((n) => affiliationOf(meta.get(n)));
-  for (let i = 0; i < affs.length; i++) {
-    for (let j = i + 1; j < affs.length; j++) {
-      if (classifyPair(affs[i], affs[j]) === "mixed") return true;
-    }
-  }
-  return false;
+function eventIsRedBlue(members: number[], meta: CatalogLookup): boolean {
+  const forces = members.map((n) => forceOf(forceInputFromMeta(meta.get(n))));
+  return forcesWarrantAlert(forces);
 }
 
 function eventIsDockedNearMiss(ev: Pick<ClusteredEvent, "minRangeKm" | "relVelKmS">): boolean {
@@ -333,30 +374,40 @@ function eventIsDockedNearMiss(ev: Pick<ClusteredEvent, "minRangeKm" | "relVelKm
 /**
  * Classify a clustered RPOD event. Pure — no DB, no Space-Track.
  *
- * Mixed-operator wins even for docked stacks (ISS + Dragon is mixed-force
- * visiting-vehicle traffic). Same-operator / same-constellation is kept
- * when the geometry is a near-miss, a crossing-track conjunction, or a
- * messy cluster of many free-flyers — not when it is a slow same-plane
- * neighbor at kilometers.
+ * Red-vs-blue/neutral is the default. Red-red is dropped. Blue-on-blue
+ * at low speed is dropped unless an exercise flag covers the object or
+ * the pair. Same-operator traffic is kept only for a ≤200 m non-docked
+ * miss or a messy free-flyer cluster. Anything faster than ~100 m/s is
+ * out of scope, including the old crossing-track class.
  */
 export function classifyEvent(
   ev: Pick<ClusteredEvent, "members" | "pairs" | "minRangeKm" | "relVelKmS">,
   meta: CatalogLookup,
+  ctx: InterestContext = {},
 ): InterestDecision {
-  if (ev.members.length >= 2 && eventIsMixed(ev.members, meta)) {
-    return { keep: true, reason: "mixed-operator" };
+  const tooFast = ev.relVelKmS > MAX_ALERT_RELVEL_KM_S;
+  if (!tooFast && ev.members.length >= 2 && eventIsRedBlue(ev.members, meta)) {
+    return { keep: true, reason: "red-blue" };
   }
   if (
-    ev.minRangeKm <= SAME_OPERATOR_NEAR_MISS_KM
+    !tooFast
+    && ev.minRangeKm <= SAME_OPERATOR_NEAR_MISS_KM
     && !eventIsDockedNearMiss(ev)
   ) {
     return { keep: true, reason: "same-operator-near-miss" };
   }
-  if (isCrossingTrackGeometry(ev.minRangeKm, ev.relVelKmS)) {
-    return { keep: true, reason: "same-operator-crossing" };
-  }
-  if (countFreeBodies(ev) >= CLUSTER_MIN_FREE_BODIES) {
+  if (!tooFast && countFreeBodies(ev) >= CLUSTER_MIN_FREE_BODIES) {
     return { keep: true, reason: "cluster" };
+  }
+  const forces = ev.members.map((n) => forceOf(forceInputFromMeta(meta.get(n))));
+  if (
+    !tooFast
+    && ev.relVelKmS <= PERSIST_RELVEL_KM_S
+    && forces.length >= 2
+    && forces.every((f) => f === "blue")
+    && exerciseCovers(ev.members, ctx.exerciseFlags ?? [], ctx.nowMs ?? Date.now())
+  ) {
+    return { keep: true, reason: "exercise" };
   }
   return { keep: false, reason: "boring" };
 }
@@ -374,21 +425,22 @@ export interface InterestFilterStats {
 export function selectInterestingEvents<T extends Pick<ClusteredEvent, "members" | "pairs" | "minRangeKm" | "relVelKmS">>(
   events: T[],
   meta: CatalogLookup,
+  ctx: InterestContext = {},
 ): { kept: T[]; stats: InterestFilterStats } {
   const kept: T[] = [];
   const stats: InterestFilterStats = { kept: 0, dropped: 0, mixed: 0, cluster: 0, nearMiss: 0, crossing: 0 };
   for (const ev of events) {
-    const d = classifyEvent(ev, meta);
+    const d = classifyEvent(ev, meta, ctx);
     if (!d.keep) {
       stats.dropped++;
       continue;
     }
     kept.push(ev);
     stats.kept++;
-    if (d.reason === "mixed-operator") stats.mixed++;
+    if (d.reason === "red-blue" || d.reason === "mixed-operator") stats.mixed++;
     else if (d.reason === "cluster") stats.cluster++;
     else if (d.reason === "same-operator-near-miss") stats.nearMiss++;
-    else if (d.reason === "same-operator-crossing") stats.crossing++;
+    else if (d.reason === "exercise") stats.mixed++;
   }
   return { kept, stats };
 }
@@ -410,7 +462,7 @@ export function prioritizeSgp4Pairs<T extends { a: { norad: number }; b: { norad
   const mixed: T[] = [];
   const rest: T[] = [];
   for (const p of pairs) {
-    if (isMixedPair(p.a.norad, p.b.norad, meta)) mixed.push(p);
+    if (isRedBluePair(p.a.norad, p.b.norad, meta)) mixed.push(p);
     else rest.push(p);
   }
   const byPlane = (arr: T[]) => [...arr].sort((x, y) => planeScore(x) - planeScore(y));

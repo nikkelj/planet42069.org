@@ -10,6 +10,22 @@
 export const COPLANAR_END_AFTER_MS = 48 * 3600_000;
 
 /**
+ * Conjunction (and elset-docked) cases that no scan has re-seen for a day
+ * are retired. A discrete approach that isn't refreshed is not still happening.
+ */
+export const CONJUNCTION_UNSEEN_MS = 24 * 3600_000;
+
+export function selectUnseenConjunctionIds(
+  events: { id: number; kind: string; lastSeenAt: Date }[],
+  nowMs: number,
+): number[] {
+  return events
+    .filter((e) => (e.kind === "conjunction" || e.kind === "docked")
+      && nowMs - e.lastSeenAt.getTime() > CONJUNCTION_UNSEEN_MS)
+    .map((e) => e.id);
+}
+
+/**
  * Given the currently ACTIVE coplanar events, return the ids whose
  * lastSeenAt (last scan that re-detected them) is older than the retirement
  * threshold at `nowMs`.

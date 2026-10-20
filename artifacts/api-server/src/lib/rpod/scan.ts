@@ -13,8 +13,13 @@ import {
   alongTrackRulesOutRange,
   type ScreenElset, type FlaggedPair, type ScreenOptions,
 } from "./screen";
-import { selectEndedCoplanarIds, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS } from "./retire";
-import { postNewRpodEventAlerts, postEscalationAlerts, isEscalation, type NewRpodEvent, type EscalatedRpodEvent } from "./alert";
+import { selectEndedCoplanarIds, selectReopenCandidate, selectUnseenConjunctionIds, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS } from "./retire";
+import { isEscalation, type NewRpodEvent, type EscalatedRpodEvent } from "./alert";
+import { deliverPolicyAlerts, type TrackedRpodEvent } from "./alertDispatch";
+import { designatorFromTleLine1 } from "../obc/designator";
+import { forceOf, type Force } from "./force";
+import { mayLabelDocked } from "./alertPolicy";
+import { isSuspectedCrossTag, type ElsetSnap } from "./maneuver";
 import {
   DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry,
   isProvenSamePair, prioritizeSgp4Pairs, selectInterestingEvents,
@@ -43,8 +48,9 @@ export { DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry };
  *    fills it with approaches that are still thousands of km apart)
  *  - stage-2 stops RPOD_POST_SGP4_RESERVE_MS before the hard cap so a
  *    long hour still persists what it found instead of logging a timeout
- *  - persist only "interesting" events (mixed-operator, crossing-track
- *    same-operator, messy clusters, ultra-close near-misses) — see interest.ts
+ *  - persist only interesting events (red paired with blue or neutral,
+ *    exercise-flagged blue-on-blue, messy clusters, ultra-close
+ *    near-misses) — see interest.ts
  */
 
 const ELSET_MAX_AGE_MS = 3 * 86400_000;
@@ -160,6 +166,7 @@ type ScanAbort = { cancelled: boolean; logged: boolean };
 interface CatalogMeta extends InterestCatalogMeta {
   launchTag: string | null;
   ldate: string | null;
+  opOrbit: string | null;
 }
 
 /** Both objects are active payloads (shadowing needs two spacecraft, not debris/stages). */
@@ -178,17 +185,24 @@ async function loadCatalogMeta(): Promise<Map<number, CatalogMeta>> {
   const map = new Map<number, CatalogMeta>();
   try {
     const entries = await getSatcatFromStore();
+    const launchStateByTag = new Map<string, string>();
+    for (const e of entries) {
+      if (!e.launchTag || !e.state || e.objectClass !== "P") continue;
+      if (!launchStateByTag.has(e.launchTag)) launchStateByTag.set(e.launchTag, e.state);
+    }
     for (const e of entries) {
       if (e.satno != null) {
         map.set(e.satno, {
           launchTag: e.launchTag ?? null,
           ldate: e.ldate,
+          opOrbit: e.opOrbit ?? null,
           name: e.name ?? e.plName ?? null,
           objectClass: e.objectClass ?? null,
           owner: e.owner ?? null,
           state: e.state ?? null,
           gunterOperator: e.gunterOperator ?? null,
           gunterNation: e.gunterNation ?? null,
+          launchState: e.launchTag ? launchStateByTag.get(e.launchTag) ?? null : null,
         });
       }
     }
@@ -296,6 +310,18 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       return;
     }
     const byNorad = new Map(elsets.map((e) => [e.norad, e]));
+    // Catalog intl_des is often null until the GCAT piece backfill. The TLE
+    // line carries the same designator, which is what co-launch filtering needs.
+    for (const e of elsets) {
+      const tag = designatorFromTleLine1(e.line1)?.launchTag ?? null;
+      if (!tag) continue;
+      const m = meta.get(e.norad);
+      if (m) { if (!m.launchTag) m.launchTag = tag; }
+      else meta.set(e.norad, {
+        launchTag: tag, ldate: null, opOrbit: null, name: null, objectClass: null,
+        owner: null, state: null, gunterOperator: null, gunterNation: null, launchState: null,
+      });
+    }
 
     throwIfScanDeadline(deadlineMs, "before stage-1 screen", abort);
     // Stage 1
@@ -403,8 +429,25 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     };
 
     throwIfScanDeadline(deadlineMs, "before persist", abort);
-    const conjResult = await persistEvents(conjKept.kept, "conjunction");
-    const coResult = await persistEvents(coKept.kept, "coplanar");
+    const crossTagPairs = new Set<string>();
+    for (const p of [...flagged, ...coFlagged]) {
+      const a = byNorad.get(p.a);
+      const b = byNorad.get(p.b);
+      if (a && b && isSuspectedCrossTag(a, b)) crossTagPairs.add(pairKey(p.a, p.b));
+    }
+    const elsetEpochs = new Map<number, number>(elsets.map((e) => [e.norad, e.epochMs]));
+    const forceOfNorad = (norad: number): Force => {
+      const m = meta.get(norad);
+      return forceOf({
+        name: m?.name, owner: m?.owner, state: m?.state, gunterNation: m?.gunterNation,
+        objectClass: m?.objectClass, launchState: m?.launchState,
+      });
+    };
+    const forceByNorad = new Map<number, Force>();
+    for (const norad of meta.keys()) forceByNorad.set(norad, forceOfNorad(norad));
+    const persistOpts = { crossTagPairs, elsetEpochs, forceOfNorad };
+    const conjResult = await persistEvents(conjKept.kept, "conjunction", persistOpts);
+    const coResult = await persistEvents(coKept.kept, "coplanar", persistOpts);
     const warnings = [...conjResult.errors, ...coResult.errors];
     if (sgp4Truncated.current) {
       warnings.push("sgp4 stopped early to stay inside the scan deadline");
@@ -413,16 +456,16 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     // one follow-up when an ACTIVE case escalates (min range tightening
     // sharply). Failures are swallowed inside — posting must never fail
     // the scan.
-    const metaFor = (norad: number) => {
-      const m = meta.get(norad);
-      return m ? { name: m.name, launchTag: m.launchTag } : undefined;
-    };
+    const elsetSnaps = new Map<number, ElsetSnap>(elsets.map((e) => [e.norad, e]));
     try {
       await withDeadline(
-        (async () => {
-          await postNewRpodEventAlerts([...conjResult.inserted, ...coResult.inserted], metaFor);
-          await postEscalationAlerts([...conjResult.escalated, ...coResult.escalated], metaFor);
-        })(),
+        deliverPolicyAlerts({
+          tracked: [...conjResult.tracked, ...coResult.tracked],
+          escalated: [...conjResult.escalated, ...coResult.escalated],
+          meta,
+          elsets: elsetSnaps,
+          nowMs,
+        }),
         RPOD_ALERT_TIMEOUT_MS,
         "rpod-alert",
       );
@@ -431,7 +474,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       logger.warn({ err }, "rpod-scan: alert posting failed");
     }
     for (const [label, fn] of [
-      ["reclassify", reclassifyDockedEvents],
+      ["reclassify", () => reclassifyDockedEvents(forceByNorad)],
       ["markStale", markStaleEvents],
     ] as const) {
       try {
@@ -452,6 +495,12 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       } catch (err) {
         warnings.push(`retireCoplanar: ${String(err)}`.slice(0, 300));
         logger.warn({ err }, "rpod-scan: retireCoplanar failed (scan otherwise ok)");
+      }
+      try {
+        await retireUnseenConjunctions();
+      } catch (err) {
+        warnings.push(`retireConjunction: ${String(err)}`.slice(0, 300));
+        logger.warn({ err }, "rpod-scan: retireConjunction failed (scan otherwise ok)");
       }
     }
     await logScanRow(
@@ -526,10 +575,18 @@ async function logScanRow(
  * by definition days past its window, so membership alone identifies the
  * continuing pair.
  */
+export interface PersistOptions {
+  crossTagPairs?: Set<string>;
+  elsetEpochs?: Map<number, number>;
+  forceOfNorad?: (norad: number) => Force;
+}
+
 export interface PersistResult {
   /** Freshly INSERTED cases (candidates for the new-case citation). */
   inserted: NewRpodEvent[];
-  /** ACTIVE cases whose min range tightened sharply on this update. */
+  /** Every case written this pass, inserts and updates, for the alert policy. */
+  tracked: TrackedRpodEvent[];
+  /** ACTIVE cases whose min range tightened sharply against the case's first/max range. */
   escalated: EscalatedRpodEvent[];
   /** Per-event persist failures; the rest of the scan still succeeded. */
   errors: string[];
@@ -550,18 +607,25 @@ export function formatRpodScanStatus(row?: {
   };
 }
 
-export async function persistEvents(events: ReturnType<typeof clusterPairs>, kind: "conjunction" | "coplanar"): Promise<PersistResult> {
+export async function persistEvents(
+  events: ReturnType<typeof clusterPairs>,
+  kind: "conjunction" | "coplanar",
+  opts: PersistOptions = {},
+): Promise<PersistResult> {
   const newlyInserted: NewRpodEvent[] = [];
+  const tracked: TrackedRpodEvent[] = [];
   const escalated: EscalatedRpodEvent[] = [];
   const errors: string[] = [];
-  if (events.length === 0) return { inserted: newlyInserted, escalated, errors };
+  if (events.length === 0) return { inserted: newlyInserted, tracked, escalated, errors };
   // Conjunction-track events may be stored as "conjunction" OR "docked" —
   // match across both so a stack flipping labels never spawns a duplicate case.
   const kinds = kind === "conjunction" ? ["conjunction", "docked"] : [kind];
   // These selects run before any write. A handshake abort here used to
   // escape persistEvents and stamp the whole hour lastScanStatus=error.
+  // One case per pair, across conjunction / coplanar / docked. A shadowing
+  // file and a later conjunction of the same objects stay on the same id.
   const active = await retryOnceOnTransient("rpod active events", () =>
-    db.select().from(rpodEvents).where(and(eq(rpodEvents.status, "active"), inArray(rpodEvents.kind, kinds))),
+    db.select().from(rpodEvents).where(eq(rpodEvents.status, "active")),
   );
   const activeMembers = active.length
     ? await retryOnceOnTransient("rpod active members", () =>
@@ -666,22 +730,43 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
 
     try {
     const evSet = new Set(ev.members);
-    const match = active.find((ex) => {
+    let match: (typeof active)[number] | undefined;
+    let matchScore = -1;
+    for (const ex of active) {
       const exSet = membersByEvent.get(ex.id);
-      if (!exSet) return false;
+      if (!exSet) continue;
       let shared = 0;
       for (const n of evSet) if (exSet.has(n)) shared++;
-      if (shared < 2) return false;
-      return kind === "coplanar" || Math.abs(new Date(ex.tca).getTime() - ev.tcaMs) < 24 * 3600_000;
-    });
+      if (shared < 2) continue;
+      const exact = shared === evSet.size && exSet.size === evSet.size;
+      const score = (exact ? 1000 : 0) + shared;
+      if (!match || score > matchScore || (score === matchScore && ex.id < match.id)) {
+        match = ex;
+        matchScore = score;
+      }
+    }
+
+    const cross = ev.members.length >= 2 && (opts.crossTagPairs?.has(pairKey(ev.members[0], ev.members[1])) ?? false);
+    const forces = ev.members.map((n) => opts.forceOfNorad?.(n) ?? "neutral");
+    const geometryDocked = kind === "conjunction" && isDockedGeometry(ev.minRangeKm, ev.relVelKmS);
+    const labelDocked = geometryDocked && !cross && mayLabelDocked(ev.members, forces);
+    let storedKind: "conjunction" | "coplanar" | "docked" =
+      kind === "coplanar" ? "coplanar" : (labelDocked ? "docked" : "conjunction");
+    // One file per pair. A coplanar shadow stays coplanar when a later
+    // conjunction of the same objects is all this hour re-detected.
+    if (match?.kind === "coplanar" && storedKind === "conjunction") storedKind = "coplanar";
+    // A cross-tag, or a red-vs-blue "dock" invented from elsets, reports ~0 km.
+    // Don't let that overwrite a real range already on the case.
+    const keepPriorRange = match != null && match.minRangeKm > 1 && ev.minRangeKm < 1
+      && !labelDocked && (cross || geometryDocked);
 
     const base = {
-      kind: kind === "conjunction" && isDockedGeometry(ev.minRangeKm, ev.relVelKmS) ? "docked" : kind,
+      kind: storedKind,
       windowStart: new Date(ev.windowStartMs),
       windowEnd: new Date(ev.windowEndMs),
       tca: new Date(ev.tcaMs),
-      minRangeKm: Math.round(ev.minRangeKm * 1000) / 1000,
-      relVelKmS: Math.round(ev.relVelKmS * 10000) / 10000,
+      minRangeKm: Math.round((keepPriorRange ? match!.minRangeKm : ev.minRangeKm) * 1000) / 1000,
+      relVelKmS: Math.round((keepPriorRange ? match!.relVelKmS : ev.relVelKmS) * 10000) / 10000,
       memberCount: ev.members.length,
       widenedScan: ev.hitCap,
       screeningMeta: { pairs: ev.pairs.length },
@@ -707,9 +792,23 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
       let reopened = false;
       let escalation: EscalatedRpodEvent | null = null;
       if (match) {
-        await tx.update(rpodEvents).set({ ...base, updatedAt: sql`now()` }).where(eq(rpodEvents.id, match.id));
+        const reference = Math.max(
+          match.firstMinRangeKm ?? match.minRangeKm,
+          match.maxRangeKm ?? match.minRangeKm,
+        );
+        const nextMax = Math.max(reference, base.minRangeKm);
+        const epochs = epochRecord(ev.members, opts.elsetEpochs);
+        await tx.update(rpodEvents).set({
+          ...base,
+          scanCount: sql`${rpodEvents.scanCount} + 1`,
+          firstMinRangeKm: match.firstMinRangeKm ?? match.minRangeKm,
+          maxRangeKm: nextMax,
+          lastElsetEpochs: epochs,
+          suspectedCrossTag: cross,
+          updatedAt: sql`now()`,
+        }).where(eq(rpodEvents.id, match.id));
         eventId = match.id;
-        if (base.kind !== "docked" && isEscalation(match.minRangeKm, base.minRangeKm)) {
+        if (base.kind !== "docked" && !cross && isEscalation(reference, base.minRangeKm)) {
           escalation = {
             eventId,
             kind: base.kind,
@@ -717,7 +816,7 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
             minRangeKm: base.minRangeKm,
             relVelKmS: base.relVelKmS,
             tcaMs: ev.tcaMs,
-            prevMinRangeKm: match.minRangeKm,
+            prevMinRangeKm: reference,
           };
         }
         await tx.delete(rpodEventMembers).where(eq(rpodEventMembers.eventId, eventId));
@@ -742,6 +841,11 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
               reopenCount: sql`${rpodEvents.reopenCount} + 1`,
               lastReopenedAt: sql`now()`,
               closedSpells,
+              scanCount: 1,
+              firstMinRangeKm: base.minRangeKm,
+              maxRangeKm: base.minRangeKm,
+              lastElsetEpochs: epochRecord(ev.members, opts.elsetEpochs),
+              suspectedCrossTag: cross,
               updatedAt: sql`now()`,
             })
             .where(eq(rpodEvents.id, reopenId));
@@ -749,7 +853,14 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
           reopened = true;
           await tx.delete(rpodEventMembers).where(eq(rpodEventMembers.eventId, eventId));
         } else {
-          const [row] = await tx.insert(rpodEvents).values(base).returning({ id: rpodEvents.id });
+          const [row] = await tx.insert(rpodEvents).values({
+            ...base,
+            scanCount: 1,
+            firstMinRangeKm: base.minRangeKm,
+            maxRangeKm: base.minRangeKm,
+            lastElsetEpochs: epochRecord(ev.members, opts.elsetEpochs),
+            suspectedCrossTag: cross,
+          }).returning({ id: rpodEvents.id });
           eventId = row.id;
           inserted = true;
         }
@@ -758,15 +869,27 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
       return { eventId, inserted, reopened, escalation };
     });
 
+    const trackedEvent: TrackedRpodEvent = {
+      eventId: persisted.eventId,
+      kind: base.kind,
+      members: ev.members,
+      minRangeKm: base.minRangeKm,
+      relVelKmS: base.relVelKmS,
+      tcaMs: ev.tcaMs,
+      firstDetectedAtMs: match ? match.firstDetectedAt.getTime() : Date.now(),
+      lastSeenAtMs: Date.now(),
+      scanCount: match ? (match.scanCount ?? 1) + 1 : 1,
+      firstRangeKm: match ? (match.firstMinRangeKm ?? match.minRangeKm) : base.minRangeKm,
+      maxRangeKm: match
+        ? Math.max(match.firstMinRangeKm ?? match.minRangeKm, match.maxRangeKm ?? match.minRangeKm, base.minRangeKm)
+        : base.minRangeKm,
+      previousElsetEpochs: match?.lastElsetEpochs ?? null,
+      suspectedCrossTag: cross,
+      pairs: ev.pairs.map((p) => ({ a: p.a, b: p.b, minRangeKm: p.minRangeKm, relVelKmS: p.relVelKmS })),
+    };
+    tracked.push(trackedEvent);
     if (persisted.inserted) {
-      newlyInserted.push({
-        eventId: persisted.eventId,
-        kind: base.kind,
-        members: ev.members,
-        minRangeKm: base.minRangeKm,
-        relVelKmS: base.relVelKmS,
-        tcaMs: ev.tcaMs,
-      });
+      newlyInserted.push(trackedEvent);
     }
     if (persisted.escalation) escalated.push(persisted.escalation);
     if (persisted.reopened) {
@@ -779,33 +902,81 @@ export async function persistEvents(events: ReturnType<typeof clusterPairs>, kin
       logger.warn({ err, members: ev.members, kind }, "rpod-scan: persist skipped one event");
     }
   }
-  return { inserted: newlyInserted, escalated, errors };
+  return { inserted: newlyInserted, tracked, escalated, errors };
+}
+
+function epochRecord(members: number[], epochs: Map<number, number> | undefined): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!epochs) return out;
+  for (const n of members) {
+    const e = epochs.get(n);
+    if (e != null && Number.isFinite(e)) out[String(n)] = e;
+  }
+  return out;
 }
 
 /**
- * Sweep existing conjunction-track rows so historical cases (including ones
- * created before docked labeling existed, or no longer re-detected) carry the
- * right label: near-zero range + near-zero relative velocity ⇒ "docked",
- * and back to "conjunction" if the stats no longer qualify.
+ * Sweep conjunction-track rows so the label matches the policy, not just
+ * the range reading. Near-zero range and relative velocity is "docked" only
+ * for a known station/stack or a same-force pair. A red object next to a
+ * blue or neutral one is never docked from elsets (event 1638). Geometry
+ * that no longer qualifies flips back to "conjunction".
+ *
+ * `knownForces` is the scan's catalog map. Omitted, the sweep loads the
+ * catalog itself (the flip test, and a manual re-run). A NORAD with no
+ * row is neutral, so an uncatalogued pair still follows geometry.
  */
-export async function reclassifyDockedEvents(): Promise<void> {
-  const toDocked = await db
-    .update(rpodEvents)
-    .set({ kind: "docked", updatedAt: sql`now()` })
-    .where(and(
-      eq(rpodEvents.kind, "conjunction"),
-      sql`${rpodEvents.minRangeKm} <= ${DOCKED_MAX_RANGE_KM}`,
-      sql`${rpodEvents.relVelKmS} <= ${DOCKED_MAX_RELVEL_KM_S}`,
-    ))
-    .returning({ id: rpodEvents.id });
-  const toConjunction = await db
-    .update(rpodEvents)
-    .set({ kind: "conjunction", updatedAt: sql`now()` })
-    .where(and(
-      eq(rpodEvents.kind, "docked"),
-      sql`(${rpodEvents.minRangeKm} > ${DOCKED_MAX_RANGE_KM} or ${rpodEvents.relVelKmS} > ${DOCKED_MAX_RELVEL_KM_S})`,
-    ))
-    .returning({ id: rpodEvents.id });
+export async function reclassifyDockedEvents(knownForces?: Map<number, Force>): Promise<void> {
+  const rows = await db
+    .select({
+      id: rpodEvents.id,
+      kind: rpodEvents.kind,
+      minRangeKm: rpodEvents.minRangeKm,
+      relVelKmS: rpodEvents.relVelKmS,
+    })
+    .from(rpodEvents)
+    .where(inArray(rpodEvents.kind, ["conjunction", "docked"]));
+  if (rows.length === 0) return;
+
+  const memberRows = await db
+    .select({ eventId: rpodEventMembers.eventId, norad: rpodEventMembers.norad })
+    .from(rpodEventMembers)
+    .where(inArray(rpodEventMembers.eventId, rows.map((r) => r.id)));
+  const membersByEvent = new Map<number, number[]>();
+  for (const m of memberRows) {
+    const arr = membersByEvent.get(m.eventId) ?? [];
+    arr.push(m.norad);
+    membersByEvent.set(m.eventId, arr);
+  }
+
+  let forces = knownForces;
+  if (!forces) {
+    const meta = await loadCatalogMeta();
+    forces = new Map();
+    for (const [norad, m] of meta) {
+      forces.set(norad, forceOf({
+        name: m.name, owner: m.owner, state: m.state, gunterNation: m.gunterNation,
+        objectClass: m.objectClass, launchState: m.launchState,
+      }));
+    }
+  }
+
+  const toDocked: number[] = [];
+  const toConjunction: number[] = [];
+  for (const row of rows) {
+    const norads = membersByEvent.get(row.id) ?? [];
+    const geometry = isDockedGeometry(row.minRangeKm, row.relVelKmS);
+    const memberForces = norads.map((n) => forces!.get(n) ?? "neutral");
+    const dock = geometry && mayLabelDocked(norads, memberForces);
+    if (dock && row.kind !== "docked") toDocked.push(row.id);
+    else if (!dock && row.kind === "docked") toConjunction.push(row.id);
+  }
+  if (toDocked.length) {
+    await db.update(rpodEvents).set({ kind: "docked", updatedAt: sql`now()` }).where(inArray(rpodEvents.id, toDocked));
+  }
+  if (toConjunction.length) {
+    await db.update(rpodEvents).set({ kind: "conjunction", updatedAt: sql`now()` }).where(inArray(rpodEvents.id, toConjunction));
+  }
   if (toDocked.length || toConjunction.length) {
     logger.info({ toDocked: toDocked.length, toConjunction: toConjunction.length }, "rpod-scan: reclassified docked stacks");
   }
@@ -838,4 +1009,22 @@ async function retireDriftedCoplanarEvents(): Promise<void> {
     .set({ status: "ended", endedAt: sql`now()`, updatedAt: sql`now()` })
     .where(inArray(rpodEvents.id, ids));
   logger.info({ ended: ids.length }, "rpod-scan: retired drifted coplanar events");
+}
+
+/**
+ * Conjunction and elset-docked cases that no scan has re-seen for 24 h are
+ * ended. A discrete approach that is not refreshed is not still happening.
+ */
+async function retireUnseenConjunctions(): Promise<void> {
+  const active = await db
+    .select({ id: rpodEvents.id, kind: rpodEvents.kind, lastSeenAt: rpodEvents.lastSeenAt })
+    .from(rpodEvents)
+    .where(and(eq(rpodEvents.status, "active"), inArray(rpodEvents.kind, ["conjunction", "docked"])));
+  const ids = selectUnseenConjunctionIds(active, Date.now());
+  if (ids.length === 0) return;
+  await db
+    .update(rpodEvents)
+    .set({ status: "ended", endedAt: sql`now()`, updatedAt: sql`now()` })
+    .where(inArray(rpodEvents.id, ids));
+  logger.info({ ended: ids.length }, "rpod-scan: retired unseen conjunction events");
 }
