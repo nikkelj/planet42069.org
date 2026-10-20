@@ -15,6 +15,7 @@ import {
   isKosmosOutsider,
   isPackOnPack,
   mayLabelDocked,
+  relVelLimits,
   ELSET_MAX_AGE_MS,
   type PolicyEvent,
   type PolicyMember,
@@ -223,9 +224,49 @@ console.log("alert selection");
   check("a ~150 m non-docked same-operator miss alerts", near.eligible && near.reason === "near-miss", near.reason);
 
   const fast = evaluateAlert(base({ relVelKmS: 0.4 }), NOW);
-  check("relative velocity above ~100 m/s is out of scope", !fast.eligible && fast.reason === "fast", fast.reason);
-  const notSlow = evaluateAlert(base({ relVelKmS: 0.08 }), NOW);
-  check("a red-blue pair faster than ~50 m/s is not sustained", !notSlow.eligible && notSlow.reason === "not-slow", notSlow.reason);
+  check("red-blue at 400 m/s is over the 200 m/s ceiling", !fast.eligible && fast.reason === "fast", fast.reason);
+  const underRedBlue = evaluateAlert(base({ relVelKmS: 0.15 }), NOW);
+  check("red-blue at 150 m/s still alerts", underRedBlue.eligible && underRedBlue.reason === "kosmos", underRedBlue.reason);
+  const atCeiling = evaluateAlert(base({ relVelKmS: 0.2 }), NOW);
+  check("red-blue at exactly 200 m/s is not under the ceiling", !atCeiling.eligible && atCeiling.reason === "fast", atCeiling.reason);
+  const neutralFast = evaluateAlert(base({
+    eventId: 21,
+    members: [member(11111, "RU", { name: "KOSMOS-X" }), member(70001, "TBD", { name: "UNKNOWN" })],
+    relVelKmS: 0.08,
+  }), NOW);
+  check("red-vs-neutral above 70 m/s is out", !neutralFast.eligible && neutralFast.reason === "fast", neutralFast.reason);
+  const otherSlow = evaluateAlert(base({
+    eventId: 22,
+    kind: "conjunction",
+    members: [member(50001, "US"), member(50002, "US")],
+    minRangeKm: 0.15,
+    relVelKmS: 0.06,
+  }), NOW);
+  check("a same-operator miss under 70 m/s still alerts", otherSlow.eligible && otherSlow.reason === "near-miss", otherSlow.reason);
+  const tightening = evaluateAlert(base({
+    relVelKmS: 0.15,
+    minRangeKm: 8,
+    scanCount: 1,
+    firstDetectedAtMs: NOW,
+    previousMinRangeKm: 18,
+  }), NOW);
+  check("a tightening red-blue miss skips the two-scan wait", tightening.eligible, tightening.reason);
+  const firstLook = evaluateAlert(base({
+    relVelKmS: 0.15,
+    minRangeKm: 8,
+    scanCount: 1,
+    firstDetectedAtMs: NOW,
+    previousMinRangeKm: null,
+  }), NOW);
+  check("a first red-blue look is not yet persistent", !firstLook.eligible && firstLook.reason === "not-persistent", firstLook.reason);
+  const widening = evaluateAlert(base({
+    relVelKmS: 0.15,
+    minRangeKm: 18,
+    scanCount: 1,
+    firstDetectedAtMs: NOW,
+    previousMinRangeKm: 8,
+  }), NOW);
+  check("a widening red-blue miss still needs persistence", !widening.eligible && widening.reason === "not-persistent", widening.reason);
 
   const siblingCluster = evaluateAlert(base({
     eventId: 1623,
@@ -239,7 +280,7 @@ console.log("alert selection");
     ],
   }), NOW);
   check("a same-launch sibling pair does not carry a cluster that merely includes an outsider",
-    !siblingCluster.eligible && (siblingCluster.reason === "not-slow" || siblingCluster.reason === "co-launched"),
+    !siblingCluster.eligible && (siblingCluster.reason === "fast" || siblingCluster.reason === "not-slow" || siblingCluster.reason === "co-launched"),
     siblingCluster.reason);
 
   const realOutsider = evaluateAlert(base({
@@ -341,6 +382,37 @@ console.log("daily cap");
   const full = applyAlertCap([{ id: "a", score: 10, bypassCap: false }, { id: "k", score: 1, bypassCap: true }], 2, 2);
   check("a full day still posts the bypass and holds the rest",
     full.find((c) => c.item.id === "k")?.post === true && full.find((c) => c.item.id === "a")?.held === true);
+}
+
+console.log("velocity ceilings");
+{
+  const custom = relVelLimits({ RPOD_MAX_REL_VEL_MS: "40", RPOD_MAX_REL_VEL_RED_BLUE_MS: "90" } as NodeJS.ProcessEnv);
+  check("RPOD_MAX_REL_VEL_MS and RPOD_MAX_REL_VEL_RED_BLUE_MS override the defaults",
+    custom.otherKmS === 0.04 && custom.redBlueKmS === 0.09, JSON.stringify(custom));
+  check("a blank or bad override keeps 70 and 200",
+    relVelLimits({ RPOD_MAX_REL_VEL_MS: "nope", RPOD_MAX_REL_VEL_RED_BLUE_MS: "" } as NodeJS.ProcessEnv).otherKmS === 0.07
+    && relVelLimits({} as NodeJS.ProcessEnv).redBlueKmS === 0.2);
+  const prev = process.env.RPOD_MAX_REL_VEL_RED_BLUE_MS;
+  process.env.RPOD_MAX_REL_VEL_RED_BLUE_MS = "90";
+  try {
+    const gated = evaluateAlert(base({ relVelKmS: 0.1 }), NOW);
+    check("the live red-blue ceiling rejects 100 m/s when set to 90", !gated.eligible && gated.reason === "fast", gated.reason);
+  } finally {
+    if (prev == null) delete process.env.RPOD_MAX_REL_VEL_RED_BLUE_MS;
+    else process.env.RPOD_MAX_REL_VEL_RED_BLUE_MS = prev;
+  }
+  const kosmosNeutral = evaluateAlert(base({
+    members: [member(68764, "RU", { name: "Kosmos-2614" }), member(80001, "TBD", { name: "UNOWNED" })],
+    relVelKmS: 0.15,
+  }), NOW);
+  check("Kosmos-2614 versus a neutral outsider uses the 200 m/s ceiling",
+    kosmosNeutral.eligible && kosmosNeutral.reason === "kosmos", kosmosNeutral.reason);
+  const packFast = evaluateAlert(base({
+    members: [member(68758, "RU"), member(68764, "RU", { name: "Kosmos-2614" })],
+    minRangeKm: 3,
+    relVelKmS: 0.01,
+  }), NOW);
+  check("pack-on-pack still never alerts", !packFast.eligible && packFast.reason === "pack-on-pack", packFast.reason);
 }
 
 if (failures > 0) {

@@ -23,7 +23,7 @@ import { designatorFromTleLine1 } from "../lib/obc/designator";
 import { isSuspectedCrossTag, type ElsetSnap } from "../lib/rpod/maneuver";
 
 const WINDOW_START = Date.parse("2026-10-15T00:00:00Z");
-const WINDOW_END = Date.parse("2026-10-20T00:00:00Z");
+const WINDOW_END = Date.parse("2026-10-22T00:00:00Z");
 const PERSIST_MS = 6 * 3600_000;
 const API = process.env.RPOD_REPLAY_API ?? "https://www.planet42069.org";
 
@@ -241,10 +241,10 @@ async function main(): Promise<void> {
 
   console.log("\nshortlist reasons after TLE fill:");
   for (const [k, n] of [...reasons.entries()].sort((a, b) => b[1] - a[1])) console.log(`  ${k}: ${n}`);
-  console.log(`\neligible with onset 2026-10-15..19: ${inWindow.length}`);
+  console.log(`\neligible with onset 2026-10-15..21: ${inWindow.length}`);
   console.log(`eligible whose onset was before Oct 15 (not re-posted): ${beforeWindow.length}`);
   console.log(`would post inside the window: ${posted.length}`);
-  console.log(`still held at the end of Oct 19: ${stillHeld.length}`);
+  console.log(`still held at the end of the window: ${stillHeld.length}`);
   for (const row of stillHeld) {
     const names = row.m.members.map((m) => `${m.name ?? m.norad}`).join(" vs ");
     console.log(`  held score=${row.score} #${row.m.ids.join("+")} ${row.m.minRangeKm} km ${names}`);

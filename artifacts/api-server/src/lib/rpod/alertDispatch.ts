@@ -35,6 +35,8 @@ export interface TrackedRpodEvent extends NewRpodEvent {
   firstRangeKm: number;
   maxRangeKm: number;
   previousElsetEpochs: Record<string, number> | null;
+  /** Range on file before this scan. Null on a brand-new case. */
+  previousMinRangeKm?: number | null;
   suspectedCrossTag: boolean;
   pairs?: PolicyPair[];
 }
@@ -188,6 +190,7 @@ function toPolicy(
     lastSeenAtMs: ev.lastSeenAtMs,
     scanCount: ev.scanCount,
     previousElsetEpochs: ev.previousElsetEpochs,
+    previousMinRangeKm: ev.previousMinRangeKm,
     maneuver,
     suspectedCrossTag: ev.suspectedCrossTag,
     pairs: ev.pairs,

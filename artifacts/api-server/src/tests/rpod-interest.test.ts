@@ -170,8 +170,16 @@ console.log("Class 2: fast crossings are out of scope");
     [1, meta({ name: "KOSMOS", state: "RU" })],
     [2, meta({ name: "USA 1", state: "US" })],
   ]);
-  check("red-vs-blue above ~100 m/s is out of scope",
+  check("red-vs-blue at 150 m/s is inside the 200 m/s ceiling",
+    classifyEvent(event([1, 2], [pair(1, 2, 4, 0.15)]), redBlueFast).keep);
+  check("red-vs-blue at 200 m/s is not under the ceiling",
     !classifyEvent(event([1, 2], [pair(1, 2, 4, 0.2)]), redBlueFast).keep);
+  const redNeutralFast = catalog([
+    [1, meta({ name: "KOSMOS", state: "RU" })],
+    [3, meta({ name: "UNKNOWN", state: "TBD" })],
+  ]);
+  check("red-vs-neutral above 70 m/s is out",
+    !classifyEvent(event([1, 3], [pair(1, 3, 4, 0.08)]), redNeutralFast).keep);
 }
 
 console.log("Class 3: ultra-close same-operator near-miss (Starlink allowed)");
