@@ -15,7 +15,7 @@ import {
   semiMajorAxisKm, alongTrackRulesOutRange, COALIGNED_MAX_RANGE_KM, RPOD_MAX_RANGE_KM,
   type ScreenElset, type FlaggedPair,
 } from "../lib/rpod/screen";
-import { selectEndedCoplanarIds, COPLANAR_END_AFTER_MS, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS } from "../lib/rpod/retire";
+import { selectEndedCoplanarIds, COPLANAR_END_AFTER_MS, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS, selectUnseenConjunctionIds, CONJUNCTION_UNSEEN_MS } from "../lib/rpod/retire";
 
 let failures = 0;
 function check(name: string, cond: boolean, detail?: string): void {
@@ -317,6 +317,22 @@ console.log("Co-aligned (coplanar shadowing) screen");
   check("long-drifted event is ended", ended.includes(5));
   check("only the drifted events end", ended.length === 2, `got ${JSON.stringify(ended)}`);
   check("no events → nothing to end", selectEndedCoplanarIds([], now).length === 0);
+}
+
+{
+  console.log("\nConjunction retirement (unseen for 24 h ends; coplanar is left to its own rule):");
+  const now = Date.parse("2026-10-19T00:00:00Z");
+  const rows = [
+    { id: 10, kind: "conjunction", lastSeenAt: new Date(now - CONJUNCTION_UNSEEN_MS - 1) },
+    { id: 11, kind: "docked", lastSeenAt: new Date(now - 25 * 3600_000) },
+    { id: 12, kind: "conjunction", lastSeenAt: new Date(now - 23 * 3600_000) },
+    { id: 13, kind: "coplanar", lastSeenAt: new Date(now - 30 * 3600_000) },
+  ];
+  const unseen = selectUnseenConjunctionIds(rows, now);
+  check("a conjunction unseen for 24 h is retired", unseen.includes(10));
+  check("an elset-docked case unseen for 24 h is retired", unseen.includes(11));
+  check("a conjunction re-seen inside 24 h stays", !unseen.includes(12));
+  check("coplanar is not retired by the conjunction rule", !unseen.includes(13));
 }
 
 // ── coplanar reopen rule ────────────────────────────────────────────────────

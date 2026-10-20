@@ -2,10 +2,9 @@
  * RPOD interest policy (src/lib/rpod/interest.ts): what persists to the
  * board vs. what is constellation housekeeping.
  *
- * Same-constellation is not a hard ban. Locks in mixed-operator, Starlink-
- * on-Starlink (near-miss / crossing-track / messy cluster), and the boring
- * same-plane km-scale housekeeping class using catalog fixtures — no live
- * Space-Track.
+ * Same-constellation is not a hard ban. Locks in red-vs-blue, the
+ * same-operator near-miss and messy-cluster exceptions, and the boring
+ * blue-on-blue / red-red / fast-crossing classes using catalog fixtures.
  *
  * Run with: pnpm --filter @workspace/api-server run test:rpod
  */
@@ -87,66 +86,92 @@ console.log("Name / constellation affiliation");
   check("USA 245 family is usa", nameFamily("USA 245") === "usa");
 }
 
-console.log("Class 1: mixed-operator / mixed-force / mixed-name");
+console.log("Class 1: red vs blue/neutral — not 'any catalog field differs'");
 {
-  const starlinkVsOneweb = event([1001, 2001], [pair(1001, 2001, 12)]);
-  const mixedConst = catalog([
+  const starlinkVsOneweb = event([1001, 2001], [pair(1001, 2001, 12, 0.02)]);
+  const bothBlue = catalog([
     [1001, meta({ name: "STARLINK-30123", owner: "SPX", state: "US" })],
     [2001, meta({ name: "ONEWEB-0123", owner: "ONE", state: "UK" })],
   ]);
-  check("Starlink vs OneWeb at 12 km is mixed-operator",
-    classifyEvent(starlinkVsOneweb, mixedConst).reason === "mixed-operator");
-  check("Starlink vs OneWeb is kept",
-    classifyEvent(starlinkVsOneweb, mixedConst).keep);
+  check("Starlink (US) vs OneWeb (UK) is blue-on-blue, not an alert",
+    classifyEvent(starlinkVsOneweb, bothBlue).reason === "boring"
+    && !classifyEvent(starlinkVsOneweb, bothBlue).keep);
 
-  const cosmosVsUsa = event([2542, 3245], [pair(2542, 3245, 18)]);
-  const mixedNamesNoOwner = catalog([
+  const cosmosVsUsa = event([68762, 59103], [pair(68762, 59103, 15.8, 0.017)]);
+  const redBlue = catalog([
+    [68762, meta({ name: "Kosmos-2612", owner: "VVKOV", state: "RU" })],
+    [59103, meta({ name: "ICEYE-X36", owner: "ICEUS", state: "US" })],
+  ]);
+  check("Kosmos (RU) vs ICEYE (US) is red-blue and kept",
+    classifyEvent(cosmosVsUsa, redBlue).keep
+    && classifyEvent(cosmosVsUsa, redBlue).reason === "red-blue");
+
+  const namesOnly = catalog([
     [2542, meta({ name: "COSMOS 2542" })],
     [3245, meta({ name: "USA 245" })],
   ]);
-  check("COSMOS vs USA with missing owners is mixed-name, not dropped",
-    classifyEvent(cosmosVsUsa, mixedNamesNoOwner).keep
-    && classifyEvent(cosmosVsUsa, mixedNamesNoOwner).reason === "mixed-operator");
-  check("pair classifier agrees (mixed names, no owner)",
-    classifyPairByNorad(2542, 3245, mixedNamesNoOwner) === "mixed");
+  check("names alone do not invent a force (missing state fails closed)",
+    classifyPairByNorad(2542, 3245, namesOnly) === "unknown"
+    && !classifyEvent(event([2542, 3245], [pair(2542, 3245, 18, 0.02)]), namesOnly).keep);
 
-  const usMilVsStarlink = event([5001, 5002], [pair(5001, 5002, 9)]);
+  const suVsRu = catalog([
+    [8072, meta({ name: "Kosmos-755", state: "SU" })],
+    [68762, meta({ name: "Kosmos-2612", state: "RU" })],
+  ]);
+  check("SU vs RU is the same force and is not kept",
+    !classifyEvent(event([8072, 68762], [pair(8072, 68762, 12, 0.02)]), suVsRu).keep);
+
+  const usMilVsStarlink = event([5001, 5002], [pair(5001, 5002, 9, 0.02)]);
   const sameNationDifferentOwner = catalog([
     [5001, meta({ name: "USA 245", owner: "NRO", state: "US" })],
     [5002, meta({ name: "STARLINK-1234", owner: "SPX", state: "US" })],
   ]);
-  check("same nation + different owners is mixed-force (not same-operator)",
-    classifyEvent(usMilVsStarlink, sameNationDifferentOwner).reason === "mixed-operator");
+  check("same nation + different owners is still blue-on-blue",
+    classifyEvent(usMilVsStarlink, sameNationDifferentOwner).reason === "boring");
+
+  const prcVsTbd = catalog([
+    [62726, meta({ name: "OBJECT B", state: "PRC", objectClass: "U" })],
+    [66702, meta({ name: "IRIDE", state: "I" })],
+  ]);
+  check("Space-Track PRC vs Italy is red-blue",
+    classifyEvent(event([62726, 66702], [pair(62726, 66702, 4, 0.02)]), prcVsTbd).reason === "red-blue");
+
+  const debris = catalog([
+    [10, meta({ name: "OBJECT A", objectClass: "D", launchState: "RU" })],
+    [11, meta({ name: "STARLINK-1", state: "US" })],
+  ]);
+  check("unnamed debris inherits the launch state (RU debris vs US is red-blue)",
+    classifyEvent(event([10, 11], [pair(10, 11, 8, 0.02)]), debris).reason === "red-blue");
 
   const issDragon = event([25544, 58000], [pair(25544, 58000, 0.05, 0.001)]);
-  const mixedDocked = catalog([
+  const station = catalog([
     [25544, meta({ name: "ISS (ZARYA)", owner: "ISS", state: "ISS" })],
     [58000, meta({ name: "DRAGON CRS-32", owner: "SPX", state: "US" })],
   ]);
-  check("ISS + Dragon docked stack is mixed-operator (visiting vehicle), not a cluster",
-    classifyEvent(issDragon, mixedDocked).reason === "mixed-operator"
+  check("ISS + Dragon is not a red-blue alert (international station, docked)",
+    classifyEvent(issDragon, station).reason === "boring"
     && countFreeBodies(issDragon) === 0);
 }
 
-console.log("Class 2: Starlink-on-Starlink crossing-track (allowed, not a ban)");
+console.log("Class 2: fast crossings are out of scope");
 {
   const twoStarlink = catalog([
     [40, meta({ name: "STARLINK-40", owner: "SPX", state: "US" })],
     [41, meta({ name: "STARLINK-41", owner: "SPX", state: "US" })],
   ]);
   const crossing = event([40, 41], [pair(40, 41, 8.0, 0.5)]);
-  check("8 km Starlink-on-Starlink at 0.5 km/s is crossing-track geometry",
+  check("8 km Starlink-on-Starlink at 0.5 km/s is still crossing-track geometry",
     isCrossingTrackGeometry(8.0, 0.5));
-  check("crossing-track Starlink-on-Starlink is kept",
-    classifyEvent(crossing, twoStarlink).keep
-    && classifyEvent(crossing, twoStarlink).reason === "same-operator-crossing");
+  check("crossing-track Starlink-on-Starlink is not kept",
+    !classifyEvent(crossing, twoStarlink).keep
+    && classifyEvent(crossing, twoStarlink).reason === "boring");
 
-  const oneweb = catalog([
-    [50, meta({ name: "ONEWEB-050", owner: "ONE" })],
-    [51, meta({ name: "ONEWEB-051", owner: "ONE" })],
+  const redBlueFast = catalog([
+    [1, meta({ name: "KOSMOS", state: "RU" })],
+    [2, meta({ name: "USA 1", state: "US" })],
   ]);
-  check("same-constellation OneWeb crossing-track is also kept (not a Starlink-only exception)",
-    classifyEvent(event([50, 51], [pair(50, 51, 10, 0.45)]), oneweb).reason === "same-operator-crossing");
+  check("red-vs-blue above ~100 m/s is out of scope",
+    !classifyEvent(event([1, 2], [pair(1, 2, 4, 0.2)]), redBlueFast).keep);
 }
 
 console.log("Class 3: ultra-close same-operator near-miss (Starlink allowed)");
@@ -155,7 +180,7 @@ console.log("Class 3: ultra-close same-operator near-miss (Starlink allowed)");
     [30, meta({ name: "STARLINK-10", owner: "SPX" })],
     [31, meta({ name: "STARLINK-11", owner: "SPX" })],
   ]);
-  const nearMiss = event([30, 31], [pair(30, 31, 0.12, 0.4)]);
+  const nearMiss = event([30, 31], [pair(30, 31, 0.12, 0.04)]);
   check("0.12 km Starlink-on-Starlink with real relative velocity is a near-miss",
     classifyEvent(nearMiss, twoStarlink).keep
     && classifyEvent(nearMiss, twoStarlink).reason === "same-operator-near-miss");
@@ -268,39 +293,39 @@ console.log("Boring: typical same-plane km-scale housekeeping / fail-closed");
   check("empty catalog: 10 km slow pair fails closed",
     !classifyEvent(event([1, 2], [pair(1, 2, 10, 0.08)]), empty).keep);
   check("empty catalog: 0.1 km with real relvel still a near-miss (geometry only)",
-    classifyEvent(event([1, 2], [pair(1, 2, 0.1, 0.4)]), empty).reason === "same-operator-near-miss");
-  check("empty catalog: km-scale crossing-track still kept (unusual geometry, not a bland guess)",
-    classifyEvent(event([1, 2], [pair(1, 2, 8, 0.5)]), empty).reason === "same-operator-crossing");
+    classifyEvent(event([1, 2], [pair(1, 2, 0.1, 0.04)]), empty).reason === "same-operator-near-miss");
+  check("empty catalog: km-scale crossing-track is dropped",
+    classifyEvent(event([1, 2], [pair(1, 2, 8, 0.5)]), empty).reason === "boring");
 }
 
 console.log("selectInterestingEvents drops boring before persist");
 {
   const metaMap = catalog([
-    [1, meta({ name: "STARLINK-1", owner: "SPX" })],
-    [2, meta({ name: "STARLINK-2", owner: "SPX" })],
-    [3, meta({ name: "ONEWEB-1", owner: "ONE" })],
-    [4, meta({ name: "STARLINK-3", owner: "SPX" })],
-    [5, meta({ name: "STARLINK-4", owner: "SPX" })],
-    [6, meta({ name: "STARLINK-5", owner: "SPX" })],
-    [7, meta({ name: "STARLINK-6", owner: "SPX" })],
-    [8, meta({ name: "STARLINK-7", owner: "SPX" })],
-    [9, meta({ name: "STARLINK-8", owner: "SPX" })],
-    [10, meta({ name: "STARLINK-9", owner: "SPX" })],
+    [1, meta({ name: "STARLINK-1", owner: "SPX", state: "US" })],
+    [2, meta({ name: "STARLINK-2", owner: "SPX", state: "US" })],
+    [3, meta({ name: "KOSMOS 1", owner: "VVKOV", state: "RU" })],
+    [4, meta({ name: "STARLINK-3", owner: "SPX", state: "US" })],
+    [5, meta({ name: "STARLINK-4", owner: "SPX", state: "US" })],
+    [6, meta({ name: "STARLINK-5", owner: "SPX", state: "US" })],
+    [7, meta({ name: "STARLINK-6", owner: "SPX", state: "US" })],
+    [8, meta({ name: "STARLINK-7", owner: "SPX", state: "US" })],
+    [9, meta({ name: "STARLINK-8", owner: "SPX", state: "US" })],
+    [10, meta({ name: "STARLINK-9", owner: "SPX", state: "US" })],
   ]);
-  const mixed = event([1, 3], [pair(1, 3, 12)]);
-  const boring = event([1, 2], [pair(1, 2, 8, 0.12)]);
+  const mixed = event([1, 3], [pair(1, 3, 12, 0.02)]);
+  const boring = event([1, 2], [pair(1, 2, 8, 0.02)]);
   const cluster = event(
     [4, 5, 6, 7, 8, 9],
     [pair(4, 5, 7, 0.05), pair(5, 6, 9, 0.04), pair(6, 7, 5, 0.06), pair(7, 8, 8, 0.05), pair(8, 9, 6, 0.04)],
   );
-  const nearMiss = event([1, 10], [pair(1, 10, 0.08, 0.5)]);
+  const nearMiss = event([1, 10], [pair(1, 10, 0.08, 0.04)]);
   const crossing = event([2, 4], [pair(2, 4, 9, 0.55)]);
   const { kept, stats } = selectInterestingEvents([mixed, boring, cluster, nearMiss, crossing], metaMap);
-  check("keeps mixed, cluster, near-miss, and crossing-track Starlink", kept.length === 4, `kept=${kept.length}`);
-  check("drops the boring same-plane Starlink pair", stats.dropped === 1 && stats.kept === 4,
+  check("keeps red-blue, cluster, and near-miss; drops the fast crossing", kept.length === 3, `kept=${kept.length}`);
+  check("drops the boring same-plane pair and the fast crossing", stats.dropped === 2 && stats.kept === 3,
     JSON.stringify(stats));
   check("stats count each interesting class once",
-    stats.mixed === 1 && stats.cluster === 1 && stats.nearMiss === 1 && stats.crossing === 1,
+    stats.mixed === 1 && stats.cluster === 1 && stats.nearMiss === 1 && stats.crossing === 0,
     JSON.stringify(stats));
 }
 
@@ -339,9 +364,9 @@ console.log("doScan wires the filter in front of persist (scanner health path in
   const scanSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../lib/rpod/scan.ts"), "utf8");
   check("doScan filters via selectInterestingEvents", scanSrc.includes("selectInterestingEvents("));
   check("conjunction persist uses the filtered list",
-    /selectInterestingEvents\(events[\s\S]{0,500}persistEvents\(conjKept\.kept/.test(scanSrc));
+    /selectInterestingEvents\(events[\s\S]{0,2500}persistEvents\(conjKept\.kept/.test(scanSrc));
   check("coplanar persist uses the filtered list",
-    /selectInterestingEvents\(coEvents[\s\S]{0,500}persistEvents\(coKept\.kept/.test(scanSrc));
+    /selectInterestingEvents\(coEvents[\s\S]{0,2500}persistEvents\(coKept\.kept/.test(scanSrc));
   check("PR#7: doScan still loads elsets via getLatestElsetsOrSkip",
     scanSrc.includes("getLatestElsetsOrSkip("));
   check("PR#7: elset-fetch skip still logs success, not error",

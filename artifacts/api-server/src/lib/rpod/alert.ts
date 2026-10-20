@@ -24,7 +24,7 @@ import { provisionalAlertScore } from "./alertScore";
  * queued row posts regardless of mode.
  */
 
-export const DAILY_ALERT_CAP = 5;
+export const DAILY_ALERT_CAP = 2;
 const ALERT_LOG_SOURCE = "rpod-alert";
 const SITE_BASE = "https://www.planet42069.org";
 
@@ -172,13 +172,18 @@ function craftListForBudget(
 }
 
 /** Deadpan bureaucratic citation text for a new case. */
-export function formatCitation(ev: NewRpodEvent, metaFor: (norad: number) => AlertMeta | undefined): string {
+export function formatCitation(
+  ev: NewRpodEvent,
+  metaFor: (norad: number) => AlertMeta | undefined,
+  note?: string | null,
+): string {
   const kindLine = ev.kind === "coplanar"
     ? "Sustained co-planar shadowing detected."
     : "Unscheduled proximity operation detected.";
   return craftListForBudget(ev.members, metaFor, (list) => [
     `🚨 SPACE POLICE CITATION — Case ${caseNumber(ev.eventId)}`,
     kindLine,
+    ...(note ? [note] : []),
     ``,
     `Cited craft: ${list}`,
     `Predicted closest approach: ${fmtRange(ev.minRangeKm)} at ${fmtUtc(ev.tcaMs)}`,
@@ -291,6 +296,8 @@ interface PostItem {
   text: string;
   what: string; // for logs: "new event" | "escalation"
   score?: number;
+  /** Kosmos pack vs an outsider posts even when the daily cap is full. */
+  bypassCap?: boolean;
 }
 
 export type AlertQueueStatus = "pending" | "approved" | "rejected" | "posted";
@@ -358,6 +365,36 @@ export async function approveQueuedAlert(id: number): Promise<ApproveResult> {
   }
 }
 
+export interface PreparedAlert extends PostItem {
+  /** Cap-skipped. Queued pending even in auto mode. */
+  hold?: boolean;
+}
+
+/**
+ * Policy output. Review mode queues every row. Auto mode posts the ones
+ * the cap (and the Kosmos bypass) selected, and queues the rest as pending.
+ */
+export async function publishPolicyItems(
+  items: PreparedAlert[],
+  metaFor: (norad: number) => AlertMeta | undefined,
+): Promise<void> {
+  if (items.length === 0) return;
+  if (rpodAlertMode() !== "auto") {
+    for (const item of items) {
+      await enqueueRpodAlert(item).catch((err) => {
+        logger.warn({ err, eventId: item.ev.eventId }, "rpod-alert: queue insert failed");
+      });
+    }
+    return;
+  }
+  const posting = items.filter((i) => !i.hold);
+  const held = items.filter((i) => i.hold);
+  await postAlertItems(posting, metaFor);
+  for (const item of held) {
+    await enqueueRpodAlert(item).catch(() => {});
+  }
+}
+
 /** pending or approved → rejected. Posted rows stay posted. */
 export async function rejectQueuedAlert(id: number): Promise<{ ok: boolean; status: AlertQueueStatus | "missing"; error?: string }> {
   const [row] = await db.select().from(rpodAlertQueue).where(eq(rpodAlertQueue.id, id)).limit(1);
@@ -405,9 +442,11 @@ async function postAlertItems(
     let remaining = DAILY_ALERT_CAP - (await postsInLastDay());
     for (const item of items) {
       const { ev } = item;
-      if (remaining <= 0) {
-        logger.warn({ eventId: ev.eventId }, "rpod-alert: daily cap reached, skipping remaining alerts");
-        break;
+      if (remaining <= 0 && !item.bypassCap) {
+        // Held, not dropped: the citation stays pending for a later day or a human.
+        await enqueueRpodAlert(item).catch(() => {});
+        logger.warn({ eventId: ev.eventId }, "rpod-alert: daily cap reached, holding remaining alerts");
+        continue;
       }
       if (await alreadyPosted(item.ledgerKey)) continue;
       const started = new Date();
@@ -428,7 +467,7 @@ async function postAlertItems(
           postedAt: new Date(),
           tweetId,
         }).onConflictDoNothing({ target: rpodAlertQueue.ledgerKey }).catch(() => {});
-        remaining--;
+        if (!item.bypassCap) remaining--;
         logger.info({ eventId: ev.eventId, tweetId }, `rpod-alert: posted citation for ${item.what}`);
       } catch (err) {
         await db.insert(obcSyncLog).values({

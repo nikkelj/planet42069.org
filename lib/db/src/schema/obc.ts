@@ -222,6 +222,16 @@ export const rpodEvents = pgTable(
       .$type<{ start: string; lastSeenAt: string; endedAt: string }[]>()
       .notNull()
       .default(sql`'[]'::jsonb`),
+    /** How many scans have re-detected this case. Persistence alerts need ≥2. */
+    scanCount: integer("scan_count").notNull().default(1),
+    /** Min range on the first detection. Escalation compares against this and maxRangeKm. */
+    firstMinRangeKm: real("first_min_range_km"),
+    /** Largest min-range this case has shown. Escalation uses max(first, max), not the previous scan. */
+    maxRangeKm: real("max_range_km"),
+    /** Latest elset epoch (ms) per NORAD, so the next scan can require a newer elset. */
+    lastElsetEpochs: jsonb("last_elset_epochs").$type<Record<string, number>>(),
+    /** Near-identical elsets on two objects — a suspected catalog cross-tag, not a rendezvous. */
+    suspectedCrossTag: boolean("suspected_cross_tag").notNull().default(false),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [index("rpod_events_tca_idx").on(t.tca), index("rpod_events_status_idx").on(t.status, t.tca)],
@@ -242,6 +252,27 @@ export const rpodEventMembers = pgTable(
     index("rpod_event_members_norad_idx").on(t.norad),
   ],
 );
+
+/**
+ * Blue-on-blue pairs that should be allowed to alert while an exercise is
+ * running. Set `norad` alone to flag one object against anyone, or both
+ * `norad` and `noradB` to flag a specific pair. `expiresAt` null means open.
+ */
+export const rpodExerciseFlags = pgTable(
+  "rpod_exercise_flags",
+  {
+    id: serial("id").primaryKey(),
+    norad: integer("norad"),
+    noradB: integer("norad_b"),
+    note: text("note"),
+    source: text("source"),
+    expiresAt: timestamp("expires_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("rpod_exercise_flags_norad_idx").on(t.norad)],
+);
+
+export type RpodExerciseFlagRow = typeof rpodExerciseFlags.$inferSelect;
 
 /**
  * Would-be RPOD X citations waiting on a human (or already posted).

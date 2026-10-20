@@ -9,6 +9,7 @@ import { parseLaunchTsv, type LaunchEntry } from "../launch";
 import { buildMassModel, type EstimatableRow } from "./estimate";
 import { applyGunterAnnotations } from "./gunter";
 import { invalidateStore } from "./store";
+import { gcatIntlDesignator } from "./designator";
 
 const CHUNK = 400;
 
@@ -33,6 +34,11 @@ function stClassToGcat(objType: string | null): string {
     case "DEBRIS": return "D";
     default: return "U";
   }
+}
+
+function nonEmpty(v: string | null | undefined): string | null {
+  const t = v?.trim();
+  return t ? t : null;
 }
 
 function stNum(v: string | null): number | null {
@@ -60,6 +66,9 @@ function stNum(v: string | null): number | null {
  *        one, including clearing it back to NULL when upstream corrects a
  *        wrong value. (Space-track gap-fill already happened at merge time,
  *        so a NULL here means neither source currently asserts a value.)
+ *        intl_des is the exception: a null incoming designator never clears
+ *        a stored one. GCAT Launch_Tag+Piece fills the hole when Space-Track
+ *        OBJECT_ID is missing.
  *      * If the incoming row is space-track-only but the STORED row is also
  *        space-track-only (not in_gcat), space-track is authoritative for its
  *        own rows and likewise overwrites/clears.
@@ -86,7 +95,9 @@ export async function upsertObjects(rows: InsertObcObject[]): Promise<void> {
         set: {
           jcat: sql`excluded.jcat`,
           norad: sql`excluded.norad`,
-          intlDes: precedence("intl_des"),
+          // Never wipe a stored designator with null — that is what broke
+          // co-launch filtering when Space-Track OBJECT_ID was missing.
+          intlDes: sql`coalesce(excluded.intl_des, ${obcObjects.intlDes})`,
           name: sql`excluded.name`,
           plName: sql`excluded.pl_name`,
           ldate: precedence("ldate"),
@@ -115,9 +126,32 @@ export async function upsertObjects(rows: InsertObcObject[]): Promise<void> {
 }
 
 /**
- * Reconcile identity transitions: an object first seen via space-track
- * (key "ST<norad>") that GCAT has since catalogued now exists twice —
- * drop the ST-keyed (jcat-less) duplicate so analytics never double-count it.
+ * Second pass for designators the upsert left null (a stored row whose
+ * incoming GCAT/Space-Track value is now known). Never overwrites non-null.
+ */
+export async function backfillNullIntlDes(rows: InsertObcObject[]): Promise<number> {
+  const updates = rows.filter((r) => r.key && r.intlDes);
+  let filled = 0;
+  for (let i = 0; i < updates.length; i += CHUNK) {
+    const chunk = updates.slice(i, i + CHUNK);
+    const values = sql.join(
+      chunk.map((u) => sql`(${u.key}::text, ${u.intlDes}::text)`),
+      sql`, `,
+    );
+    const result = await db.execute(sql`
+      UPDATE obc_objects AS o
+      SET intl_des = v.intl_des, updated_at = now()
+      FROM (VALUES ${values}) AS v(key, intl_des)
+      WHERE o.key = v.key AND o.intl_des IS NULL
+    `);
+    filled += Number((result as { rowCount?: number }).rowCount ?? 0);
+  }
+  return filled;
+}
+
+/**
+ * An object first seen via space-track (key "ST<norad>") that GCAT has since
+ * catalogued now exists twice. Drop the ST-keyed duplicate.
  */
 export async function reconcileStDuplicates(): Promise<void> {
   await db.execute(sql`
@@ -222,7 +256,7 @@ async function doSync(): Promise<void> {
         key: e.jcat,
         jcat: e.jcat,
         norad: e.satno,
-        intlDes: st?.OBJECT_ID ?? null,
+        intlDes: nonEmpty(st?.OBJECT_ID) ?? gcatIntlDesignator(e.launchTag, e.piece) ?? null,
         name: e.name,
         plName: e.plName,
         ldate: e.ldate,
@@ -328,6 +362,8 @@ async function doSync(): Promise<void> {
 
   try {
     await upsertObjects(rows);
+    const backfilled = await backfillNullIntlDes(rows);
+    if (backfilled > 0) logger.info({ backfilled }, "obc-sync: filled null intl_des from GCAT piece / Space-Track");
     await reconcileStDuplicates();
     // Restore Gunter annotations from the crawl store — merges rebuild rows
     // (e.g. ST→GCAT key transitions), which can drop gunter_* values.
