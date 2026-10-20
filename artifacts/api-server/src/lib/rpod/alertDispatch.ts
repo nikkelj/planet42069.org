@@ -2,6 +2,7 @@ import { db } from "@workspace/db";
 import { rpodExerciseFlags } from "@workspace/db/schema";
 import { gt, isNull, or, sql } from "drizzle-orm";
 import { logger } from "../logger";
+import { dbErrorFields } from "../dbError";
 import {
   formatCitation,
   formatEscalationCitation,
@@ -208,7 +209,10 @@ async function loadExerciseFlags(nowMs: number): Promise<ExerciseFlag[]> {
       expiresAtMs: r.expiresAt ? r.expiresAt.getTime() : null,
     }));
   } catch (err) {
-    logger.warn({ err }, "rpod-alert: exercise-flag lookup failed");
+    logger.error(
+      { err, ...dbErrorFields(err) },
+      "rpod-alert: exercise-flag lookup failed; treating as no active exercise",
+    );
     return [];
   }
 }

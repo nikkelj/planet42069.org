@@ -3,6 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { dbErrorFields } from "./lib/dbError";
 import { CatalogLoadingError } from "./lib/obc/store";
 
 const app: Express = express();
@@ -48,7 +49,7 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     return;
   }
   // Re-surface any other error as a 500
-  logger.error({ err }, "unhandled route error");
+  logger.error({ err, ...dbErrorFields(err) }, "unhandled route error");
   res.status(500).json({ error: "internal_server_error" });
 });
 
