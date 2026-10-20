@@ -1,6 +1,6 @@
 import { RPOD_MAX_RANGE_KM, type ClusteredEvent, type FlaggedPair } from "./screen";
 import {
-  exerciseCovers, MAX_ALERT_RELVEL_KM_S, PERSIST_RELVEL_KM_S,
+  exerciseCovers, relVelLimits, usesRedBlueVelCap,
   type ExerciseFlag,
 } from "./alertPolicy";
 import { forceOf, forcesWarrantAlert, type ForceObject } from "./force";
@@ -374,35 +374,40 @@ function eventIsDockedNearMiss(ev: Pick<ClusteredEvent, "minRangeKm" | "relVelKm
 /**
  * Classify a clustered RPOD event. Pure — no DB, no Space-Track.
  *
- * Red-vs-blue/neutral is the default. Red-red is dropped. Blue-on-blue
- * at low speed is dropped unless an exercise flag covers the object or
- * the pair. Same-operator traffic is kept only for a ≤200 m non-docked
- * miss or a messy free-flyer cluster. Anything faster than ~100 m/s is
- * out of scope, including the old crossing-track class.
+ * Red-vs-blue (and a Kosmos pack member versus a non-pack object) is kept
+ * under the red-blue velocity ceiling (default 200 m/s). Red-vs-neutral
+ * that is not that pack, blue-on-blue, near-misses, and clusters use the
+ * single 70 m/s ceiling. Red-red is dropped. Blue-on-blue is dropped
+ * unless an exercise flag covers the object or the pair. Same-operator
+ * traffic is kept only for a ≤200 m non-docked miss or a messy free-flyer
+ * cluster. Pack-on-pack formation is not kept.
  */
 export function classifyEvent(
   ev: Pick<ClusteredEvent, "members" | "pairs" | "minRangeKm" | "relVelKmS">,
   meta: CatalogLookup,
   ctx: InterestContext = {},
 ): InterestDecision {
-  const tooFast = ev.relVelKmS > MAX_ALERT_RELVEL_KM_S;
-  if (!tooFast && ev.members.length >= 2 && eventIsRedBlue(ev.members, meta)) {
+  const limits = relVelLimits();
+  const forces = ev.members.map((n) => forceOf(forceInputFromMeta(meta.get(n))));
+  // The 200 m/s ceiling is only for a pair that is already worth an alert:
+  // red with blue, or a Kosmos pack member with a non-red outsider.
+  const privileged = usesRedBlueVelCap(ev.members, forces);
+  const velCap = privileged ? limits.redBlueKmS : limits.otherKmS;
+  if (ev.relVelKmS < velCap && ev.members.length >= 2 && eventIsRedBlue(ev.members, meta)) {
     return { keep: true, reason: "red-blue" };
   }
   if (
-    !tooFast
+    ev.relVelKmS < limits.otherKmS
     && ev.minRangeKm <= SAME_OPERATOR_NEAR_MISS_KM
     && !eventIsDockedNearMiss(ev)
   ) {
     return { keep: true, reason: "same-operator-near-miss" };
   }
-  if (!tooFast && countFreeBodies(ev) >= CLUSTER_MIN_FREE_BODIES) {
+  if (ev.relVelKmS < limits.otherKmS && countFreeBodies(ev) >= CLUSTER_MIN_FREE_BODIES) {
     return { keep: true, reason: "cluster" };
   }
-  const forces = ev.members.map((n) => forceOf(forceInputFromMeta(meta.get(n))));
   if (
-    !tooFast
-    && ev.relVelKmS <= PERSIST_RELVEL_KM_S
+    ev.relVelKmS < limits.otherKmS
     && forces.length >= 2
     && forces.every((f) => f === "blue")
     && exerciseCovers(ev.members, ctx.exerciseFlags ?? [], ctx.nowMs ?? Date.now())

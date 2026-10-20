@@ -18,14 +18,43 @@ import { isSuspectedCrossTag, type ElsetSnap, type ManeuverMark } from "./maneuv
  * for a ~200 m non-docked miss or a real messy cluster. Kosmos 2610–2614
  * against anything outside the pack is scored first and skips the daily cap.
  * Pack-on-pack formation at kilometer range is not an alert.
+ *
+ * Velocity: red-vs-blue, and a Kosmos pack member versus any non-pack
+ * object, alert under RPOD_MAX_REL_VEL_RED_BLUE_MS (default 200 m/s) and
+ * may skip the two-scan wait when the miss is tightening. Every other
+ * class uses one ceiling, RPOD_MAX_REL_VEL_MS (default 70 m/s).
  */
 
 export const LEO_ALERT_RANGE_KM = 30;
 export const GEO_ALERT_RANGE_KM = 10;
-/** Fast crossings are out of scope. */
-export const MAX_ALERT_RELVEL_KM_S = 0.1;
-/** Sustained-proximity bar (~50 m/s). */
-export const PERSIST_RELVEL_KM_S = 0.05;
+/** Default ceiling for every class that is not red-vs-blue or a Kosmos outsider. */
+export const DEFAULT_MAX_REL_VEL_MS = 70;
+/** Default ceiling for red-vs-blue and Kosmos 2610–2614 versus a non-pack object. */
+export const DEFAULT_MAX_REL_VEL_RED_BLUE_MS = 200;
+export function relVelLimits(env: NodeJS.ProcessEnv = process.env): { otherKmS: number; redBlueKmS: number } {
+  return {
+    otherKmS: positiveMs(env.RPOD_MAX_REL_VEL_MS, DEFAULT_MAX_REL_VEL_MS) / 1000,
+    redBlueKmS: positiveMs(env.RPOD_MAX_REL_VEL_RED_BLUE_MS, DEFAULT_MAX_REL_VEL_RED_BLUE_MS) / 1000,
+  };
+}
+
+function positiveMs(raw: string | undefined, fallback: number): number {
+  if (raw == null || raw.trim() === "") return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+/**
+ * The 200 m/s ceiling. Red paired with blue, or a Kosmos pack member versus
+ * a non-red outsider. Pack-on-pack and red-red (SU vs RU included) stay on
+ * the ordinary ceiling, and still do not alert.
+ */
+export function usesRedBlueVelCap(norads: number[], forces: Force[]): boolean {
+  if (isPackOnPack(norads) || !forcesWarrantAlert(forces)) return false;
+  if (isKosmosOutsider(norads)) return true;
+  return forces.includes("red") && forces.includes("blue");
+}
+
 export const PERSIST_MIN_SCANS = 2;
 export const PERSIST_MIN_SPAN_MS = 6 * 3600_000;
 export const ELSET_MAX_AGE_MS = 24 * 3600_000;
@@ -83,6 +112,8 @@ export interface PolicyEvent {
   firstDetectedAtMs: number;
   lastSeenAtMs: number;
   scanCount: number;
+  /** Min range from the previous scan. A smaller current range is a tightening miss. */
+  previousMinRangeKm?: number | null;
   /** Previous scan's per-object elset epochs, keyed by NORAD string. */
   previousElsetEpochs?: Record<string, number> | null;
   maneuver?: ManeuverMark | null;
@@ -268,29 +299,28 @@ export function evaluateAlert(
   const forces = memberForces(ev.members);
   const kosmos = isKosmosOutsider(norads);
   const base = { eventId: ev.eventId, bypassCap: kosmos, score: 0, eligible: false, ...cited };
+  const limits = relVelLimits();
+  const privileged = usesRedBlueVelCap(norads, forces);
+  const velCap = privileged ? limits.redBlueKmS : limits.otherKmS;
 
-  if (ev.relVelKmS > MAX_ALERT_RELVEL_KM_S) return { ...base, reason: "fast" };
   if (ev.suspectedCrossTag || pairCrossTag(ev.members)) return { ...base, reason: "cross-tag" };
   if (isBogusDocked(ev, forces)) return { ...base, reason: "bogus-docked" };
   if (ev.kind === "docked" || isDockedGeometry(ev.minRangeKm, ev.relVelKmS)) return { ...base, reason: "docked" };
   if (norads.some((n) => KNOWN_STATION_NORADS.has(n))) return { ...base, reason: "station" };
   if (coLaunched(ev.members)) return { ...base, reason: "co-launched" };
   if (isPackOnPack(norads) && ev.minRangeKm > SAME_OPERATOR_MISS_KM) return { ...base, reason: "pack-on-pack" };
+  if (ev.relVelKmS >= velCap) return { ...base, reason: "fast" };
 
   const redOther = forcesWarrantAlert(forces);
   const exercise = !redOther && sameForce(forces) && forces[0] === "blue"
-    && ev.relVelKmS <= PERSIST_RELVEL_KM_S
     && exerciseCovers(norads, exerciseFlags, nowMs);
   const nearMiss = !redOther && ev.minRangeKm <= SAME_OPERATOR_MISS_KM
-    && ev.relVelKmS <= MAX_ALERT_RELVEL_KM_S
     && !isDockedGeometry(ev.minRangeKm, ev.relVelKmS);
   const messy = !redOther && (ev.messyCluster === true || ev.members.length >= MESSY_CLUSTER_MIN);
   if (!redOther && !exercise && !nearMiss && !messy) {
     return { ...base, reason: sameForce(forces) && forces[0] === "red" ? "red-red" : "not-red-blue" };
   }
 
-  const sustained = redOther || exercise;
-  if (sustained && ev.relVelKmS > PERSIST_RELVEL_KM_S) return { ...base, reason: "not-slow" };
   if (ev.minRangeKm > rangeLimitKm(ev.members)) return { ...base, reason: "range" };
 
   const epochs: Record<string, number> = {};
@@ -301,7 +331,8 @@ export function evaluateAlert(
   if (!elsetsAreFresh(epochList.length >= 2 ? epochList : ev.members.map((m) => m.elset?.epochMs ?? NaN), nowMs)) {
     return { ...base, reason: "stale-elset" };
   }
-  if (!persistenceOk(ev, epochs)) return { ...base, reason: "not-persistent" };
+  const tightening = privileged && ev.previousMinRangeKm != null && ev.minRangeKm < ev.previousMinRangeKm;
+  if (!tightening && !persistenceOk(ev, epochs)) return { ...base, reason: "not-persistent" };
 
   return { ...base, eligible: true, score: scoreEvent(ev, forces, kosmos), reason: kosmos ? "kosmos" : redOther ? "red-blue" : exercise ? "exercise" : nearMiss ? "near-miss" : "cluster" };
 }
@@ -309,7 +340,7 @@ export function evaluateAlert(
 function scoreEvent(ev: PolicyEvent, forces: Force[], kosmos: boolean): number {
   const spanH = Math.max(0, ev.lastSeenAtMs - ev.firstDetectedAtMs) / 3600_000;
   let score = Math.max(0, rangeLimitKm(ev.members) - ev.minRangeKm);
-  score += Math.max(0, (PERSIST_RELVEL_KM_S - ev.relVelKmS) * 400);
+  score += Math.max(0, (relVelLimits().otherKmS - ev.relVelKmS) * 400);
   score += Math.min(spanH, 72) / 6;
   if (forces.includes("red") && forces.includes("blue")) score += 40;
   else if (forcesWarrantAlert(forces)) score += 25;

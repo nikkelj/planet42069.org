@@ -884,6 +884,7 @@ export async function persistEvents(
         ? Math.max(match.firstMinRangeKm ?? match.minRangeKm, match.maxRangeKm ?? match.minRangeKm, base.minRangeKm)
         : base.minRangeKm,
       previousElsetEpochs: match?.lastElsetEpochs ?? null,
+      previousMinRangeKm: match ? match.minRangeKm : null,
       suspectedCrossTag: cross,
       pairs: ev.pairs.map((p) => ({ a: p.a, b: p.b, minRangeKm: p.minRangeKm, relVelKmS: p.relVelKmS })),
     };
