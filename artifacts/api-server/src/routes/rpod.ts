@@ -8,6 +8,8 @@ import { formatRpodScanStatus } from "../lib/rpod/scan";
 import { getTle } from "../lib/tle";
 import { approveQueuedAlert, rejectQueuedAlert } from "../lib/rpod/alert";
 import { adminTokenMatches, presentedAdminToken } from "../lib/rpod/alertMode";
+import { logger } from "../lib/logger";
+import { dbErrorFields } from "../lib/dbError";
 
 const router: IRouter = Router();
 
@@ -344,37 +346,52 @@ function requireRpodAdmin(req: Request, res: Response): boolean {
 
 // ── alert queue (review mode; read-only) ───────────────────────────────────
 router.get("/rpod/alert-queue", async (req, res): Promise<void> => {
-  const statusRaw = req.query.status ? String(req.query.status) : "";
-  const status = QUEUE_STATUSES.has(statusRaw) ? statusRaw : undefined;
-  const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit ?? "50"), 10) || 50));
-  const where = status ? eq(rpodAlertQueue.status, status) : undefined;
-  const [rows, [{ total }]] = await Promise.all([
-    db.select().from(rpodAlertQueue).where(where).orderBy(desc(rpodAlertQueue.createdAt), desc(rpodAlertQueue.id)).limit(limit),
-    db.select({ total: sql<number>`count(*)::int` }).from(rpodAlertQueue).where(where),
-  ]);
-  res.json({ data: rows.map(queueJson), total });
+  try {
+    const statusRaw = req.query.status ? String(req.query.status) : "";
+    const status = QUEUE_STATUSES.has(statusRaw) ? statusRaw : undefined;
+    const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit ?? "50"), 10) || 50));
+    const where = status ? eq(rpodAlertQueue.status, status) : undefined;
+    const [rows, [{ total }]] = await Promise.all([
+      db.select().from(rpodAlertQueue).where(where).orderBy(desc(rpodAlertQueue.createdAt), desc(rpodAlertQueue.id)).limit(limit),
+      db.select({ total: sql<number>`count(*)::int` }).from(rpodAlertQueue).where(where),
+    ]);
+    res.json({ data: rows.map(queueJson), total });
+  } catch (err) {
+    logger.error({ err, ...dbErrorFields(err) }, "GET /api/rpod/alert-queue failed");
+    res.status(500).json({ error: "internal_server_error" });
+  }
 });
 
 router.post("/rpod/alert-queue/:id/approve", async (req, res): Promise<void> => {
   if (!requireRpodAdmin(req, res)) return;
   const id = parseInt(String(req.params.id), 10);
   if (!Number.isFinite(id)) { res.status(400).json({ error: "invalid queue id" }); return; }
-  const result = await approveQueuedAlert(id);
-  if (result.status === "missing") { res.status(404).json({ error: result.error }); return; }
-  if (!result.ok && result.status === "posted") { res.status(409).json({ error: result.error }); return; }
-  if (!result.ok && result.status === "rejected") { res.status(409).json({ error: result.error }); return; }
-  if (!result.ok) { res.status(502).json({ error: result.error, status: result.status }); return; }
-  res.json({ id, status: "posted", tweetId: result.tweetId });
+  try {
+    const result = await approveQueuedAlert(id);
+    if (result.status === "missing") { res.status(404).json({ error: result.error }); return; }
+    if (!result.ok && result.status === "posted") { res.status(409).json({ error: result.error }); return; }
+    if (!result.ok && result.status === "rejected") { res.status(409).json({ error: result.error }); return; }
+    if (!result.ok) { res.status(502).json({ error: result.error, status: result.status }); return; }
+    res.json({ id, status: "posted", tweetId: result.tweetId });
+  } catch (err) {
+    logger.error({ err, ...dbErrorFields(err), id }, "POST /api/rpod/alert-queue/:id/approve failed");
+    res.status(500).json({ error: "internal_server_error" });
+  }
 });
 
 router.post("/rpod/alert-queue/:id/reject", async (req, res): Promise<void> => {
   if (!requireRpodAdmin(req, res)) return;
   const id = parseInt(String(req.params.id), 10);
   if (!Number.isFinite(id)) { res.status(400).json({ error: "invalid queue id" }); return; }
-  const result = await rejectQueuedAlert(id);
-  if (result.status === "missing") { res.status(404).json({ error: result.error }); return; }
-  if (!result.ok) { res.status(409).json({ error: result.error }); return; }
-  res.json({ id, status: "rejected" });
+  try {
+    const result = await rejectQueuedAlert(id);
+    if (result.status === "missing") { res.status(404).json({ error: result.error }); return; }
+    if (!result.ok) { res.status(409).json({ error: result.error }); return; }
+    res.json({ id, status: "rejected" });
+  } catch (err) {
+    logger.error({ err, ...dbErrorFields(err), id }, "POST /api/rpod/alert-queue/:id/reject failed");
+    res.status(500).json({ error: "internal_server_error" });
+  }
 });
 
 // ── archive status ─────────────────────────────────────────────────────────

@@ -2,7 +2,8 @@ import { db } from "@workspace/db";
 import { obcSyncLog, rpodAlertQueue } from "@workspace/db/schema";
 import { sql, and, eq, gt } from "drizzle-orm";
 import { logger } from "../logger";
-import { rpodAlertMode } from "./alertMode";
+import { dbErrorFields } from "../dbError";
+import { mayPostToX, rpodAlertMode } from "./alertMode";
 import { provisionalAlertScore } from "./alertScore";
 
 /**
@@ -18,10 +19,12 @@ import { provisionalAlertScore } from "./alertScore";
  *  - a daily cap keeps a noisy scan from flooding the timeline
  *
  * Default mode is review: each would-be citation is inserted into
- * rpod_alert_queue (status pending) and nothing is posted. Set
- * RPOD_ALERT_MODE=auto to restore direct posting. Direct posts still only
- * run in production (or with RPOD_ALERTS_FORCE=1). An admin approve of a
- * queued row posts regardless of mode.
+ * rpod_alert_queue (status pending) and nothing is posted. A failed insert
+ * is logged and still does not post. Set RPOD_ALERT_MODE=auto to restore
+ * direct posting, but only after the queue insert succeeds — a missing
+ * table must not tweet. Direct posts still only run in production (or with
+ * RPOD_ALERTS_FORCE=1). An admin approve of a queued row posts regardless
+ * of mode.
  */
 
 export const DAILY_ALERT_CAP = 2;
@@ -232,6 +235,16 @@ async function postsInLastDay(): Promise<number> {
   return rows[0]?.n ?? 0;
 }
 
+async function loadQueueStatus(ledgerKey: number): Promise<AlertQueueStatus | null> {
+  const [row] = await db
+    .select({ status: rpodAlertQueue.status })
+    .from(rpodAlertQueue)
+    .where(eq(rpodAlertQueue.ledgerKey, ledgerKey))
+    .limit(1);
+  if (!row) return null;
+  return row.status as AlertQueueStatus;
+}
+
 /**
  * Has this milestone ever posted? rowCount stores the ledger key:
  * +eventId for the new-case citation, -eventId for the escalation follow-up.
@@ -336,6 +349,15 @@ export async function approveQueuedAlert(id: number): Promise<ApproveResult> {
   if (!row) return { ok: false, status: "missing", error: "queue row not found" };
   if (row.status === "posted") return { ok: false, status: "posted", error: "already posted" };
   if (row.status === "rejected") return { ok: false, status: "rejected", error: "row was rejected" };
+  if (await alreadyPosted(row.ledgerKey)) {
+    await db.update(rpodAlertQueue).set({
+      status: "posted",
+      postedAt: row.postedAt ?? new Date(),
+    }).where(eq(rpodAlertQueue.id, id)).catch((err) => {
+      logger.error({ err, ...dbErrorFields(err), id }, "rpod-alert: failed to repair an already-posted queue row");
+    });
+    return { ok: false, status: "posted", error: "already posted" };
+  }
   await db.update(rpodAlertQueue).set({ status: "approved" }).where(eq(rpodAlertQueue.id, id));
   if (!credsAvailable()) {
     return { ok: false, status: "approved", error: "X credentials missing; row left approved" };
@@ -380,9 +402,14 @@ export async function publishPolicyItems(
 ): Promise<void> {
   if (items.length === 0) return;
   if (rpodAlertMode() !== "auto") {
+    // Review is the default. Queue and return. Nothing here calls X,
+    // including when the insert throws (missing table, missing column).
     for (const item of items) {
       await enqueueRpodAlert(item).catch((err) => {
-        logger.warn({ err, eventId: item.ev.eventId }, "rpod-alert: queue insert failed");
+        logger.error(
+          { err, ...dbErrorFields(err), eventId: item.ev.eventId, ledgerKey: item.ledgerKey },
+          "rpod-alert: queue insert failed; review mode will not post",
+        );
       });
     }
     return;
@@ -391,7 +418,12 @@ export async function publishPolicyItems(
   const held = items.filter((i) => i.hold);
   await postAlertItems(posting, metaFor);
   for (const item of held) {
-    await enqueueRpodAlert(item).catch(() => {});
+    await enqueueRpodAlert(item).catch((err) => {
+      logger.error(
+        { err, ...dbErrorFields(err), eventId: item.ev.eventId, ledgerKey: item.ledgerKey },
+        "rpod-alert: queue insert failed for a held alert; not posting",
+      );
+    });
   }
 }
 
@@ -426,7 +458,10 @@ async function postAlertItems(
         "rpod-alert: review mode, queued citations instead of posting",
       );
     } catch (err) {
-      logger.error({ err }, "rpod-alert: failed to queue citations");
+      logger.error(
+        { err, ...dbErrorFields(err) },
+        "rpod-alert: failed to queue citations; review mode will not post",
+      );
     }
     return;
   }
@@ -444,29 +479,60 @@ async function postAlertItems(
       const { ev } = item;
       if (remaining <= 0 && !item.bypassCap) {
         // Held, not dropped: the citation stays pending for a later day or a human.
-        await enqueueRpodAlert(item).catch(() => {});
+        await enqueueRpodAlert(item).catch((err) => {
+          logger.error(
+            { err, ...dbErrorFields(err), eventId: ev.eventId, ledgerKey: item.ledgerKey },
+            "rpod-alert: queue insert failed while holding for the daily cap; not posting",
+          );
+        });
         logger.warn({ eventId: ev.eventId }, "rpod-alert: daily cap reached, holding remaining alerts");
         continue;
       }
       if (await alreadyPosted(item.ledgerKey)) continue;
+      // The queue row has to exist before X is called. A missing table or
+      // a failed insert skips the tweet entirely.
+      let queueWriteOk = false;
+      try {
+        const queued = await enqueueRpodAlert(item);
+        if (queued === "duplicate") {
+          const status = await loadQueueStatus(item.ledgerKey);
+          if (status === "posted" || status === "rejected") continue;
+        }
+        queueWriteOk = true;
+      } catch (err) {
+        logger.error(
+          { err, ...dbErrorFields(err), eventId: ev.eventId, ledgerKey: item.ledgerKey },
+          "rpod-alert: queue insert failed; not posting",
+        );
+      }
+      if (!mayPostToX(rpodAlertMode(), queueWriteOk)) continue;
       const started = new Date();
       try {
         const image = await tryRenderCaseCard(ev, metaFor);
         const tweetId = await postToX(item.text, image);
-        await db.insert(obcSyncLog).values({
-          source: ALERT_LOG_SOURCE, status: "success", rowCount: item.ledgerKey,
-          error: null, startedAt: started,
-        });
-        await db.insert(rpodAlertQueue).values({
-          eventId: ev.eventId,
-          objects: [...ev.members].sort((a, b) => a - b),
-          text: item.text,
-          score: item.score ?? provisionalAlertScore(ev),
-          status: "posted",
-          ledgerKey: item.ledgerKey,
-          postedAt: new Date(),
-          tweetId,
-        }).onConflictDoNothing({ target: rpodAlertQueue.ledgerKey }).catch(() => {});
+        try {
+          await db.update(rpodAlertQueue).set({
+            status: "posted",
+            postedAt: new Date(),
+            tweetId,
+          }).where(eq(rpodAlertQueue.ledgerKey, item.ledgerKey));
+        } catch (markErr) {
+          logger.error(
+            { err: markErr, ...dbErrorFields(markErr), eventId: ev.eventId, ledgerKey: item.ledgerKey, tweetId },
+            "rpod-alert: posted but failed to mark the queue row posted",
+          );
+        }
+        try {
+          await db.insert(obcSyncLog).values({
+            source: ALERT_LOG_SOURCE, status: "success", rowCount: item.ledgerKey,
+            error: null, startedAt: started,
+          });
+        } catch (logErr) {
+          logger.error(
+            { err: logErr, ...dbErrorFields(logErr), eventId: ev.eventId, ledgerKey: item.ledgerKey, tweetId },
+            "rpod-alert: posted but failed to write the alert ledger",
+          );
+        }
         if (!item.bypassCap) remaining--;
         logger.info({ eventId: ev.eventId, tweetId }, `rpod-alert: posted citation for ${item.what}`);
       } catch (err) {
@@ -474,11 +540,14 @@ async function postAlertItems(
           source: ALERT_LOG_SOURCE, status: "error", rowCount: item.ledgerKey,
           error: String(err).slice(0, 2000), startedAt: started,
         }).catch(() => {});
-        logger.error({ err, eventId: ev.eventId }, `rpod-alert: failed to post citation for ${item.what}`);
+        logger.error(
+          { err, ...dbErrorFields(err), eventId: ev.eventId },
+          `rpod-alert: failed to post citation for ${item.what}`,
+        );
       }
     }
   } catch (err) {
-    logger.error({ err }, "rpod-alert: alert pass failed");
+    logger.error({ err, ...dbErrorFields(err) }, "rpod-alert: alert pass failed; not posting");
   }
 }
 

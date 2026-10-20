@@ -1,5 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { dbErrorFields } from "./lib/dbError";
+import { ensureRpodAlertSchema } from "./lib/rpod/ensureAlertSchema";
 import { startObcScheduler } from "./lib/obc/scheduler";
 
 /**
@@ -71,5 +73,16 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
-  startObcScheduler();
+  // Create the review-queue tables before the first scan. A failure here
+  // must not take down catalog or /api/rpod/status; the scan then refuses
+  // to post when the queue insert fails.
+  void (async () => {
+    try {
+      await ensureRpodAlertSchema();
+      logger.info("rpod-alert: schema ensured");
+    } catch (err) {
+      logger.error({ err, ...dbErrorFields(err) }, "rpod-alert: schema ensure failed");
+    }
+    startObcScheduler();
+  })();
 });

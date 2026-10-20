@@ -12,6 +12,16 @@ export function rpodAlertMode(env: NodeJS.ProcessEnv = process.env): RpodAlertMo
   return env.RPOD_ALERT_MODE?.trim().toLowerCase() === "auto" ? "auto" : "review";
 }
 
+/**
+ * Direct X posts require auto mode AND a queue row already on disk.
+ * Review mode never posts. A failed queue insert never posts, including
+ * when RPOD_ALERT_MODE=auto — the scan degrades to "hold" instead.
+ * Human approve is a separate path and does not use this gate.
+ */
+export function mayPostToX(mode: RpodAlertMode, queueWriteOk: boolean): boolean {
+  return mode === "auto" && queueWriteOk;
+}
+
 /** Bearer token or the dedicated header. Empty string is treated as absent. */
 export function presentedAdminToken(
   authorization: string | undefined | null,
