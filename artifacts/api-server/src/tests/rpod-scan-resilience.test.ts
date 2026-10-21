@@ -12,8 +12,10 @@
  *    window of ~5.1M-row obc_tle_history (live 2026-08-26 ~13:45Z Failed
  *    query; String(err) hid the PG cause; doScan stamped status=error)
  *  - the Aug MAX(epoch)+join follow-up is also not cheap at ~19M rows
- *    (live 2026-09-28 connection timeout). Latest-per-norad must be a
- *    LATERAL index seek (ORDER BY epoch DESC LIMIT 1) keyed by norad.
+ *    (live 2026-09-28 connection timeout). A per-norad LATERAL seek of the
+ *    archive still heap-fetches ~30k TLE rows and timed out handshakes
+ *    next to thinning. The scan reads obc_latest_elset and seeks history
+ *    only for future-dated newest epochs.
  *  - a failed latest-elset fetch skips/logs instead of aborting doScan
  *  - a pg-pool handshake abort ("Connection terminated due to connection
  *    timeout <- Connection terminated unexpectedly", live 2026-10-14) is
@@ -38,7 +40,7 @@ import { MAX_RPOD_SCAN_MS, RPOD_SCAN_CHECK_INTERVAL_MS } from "../lib/rpod/scanP
 import {
   getArchiveStatus, clearArchiveStatusCache,
   getLatestElsetsOrSkip, formatDbError, latestElsetsSqlIsCheap,
-  latestElsetsQuerySql, sqlTemplateText, mapLatestElsetRow,
+  latestElsetsQuerySql, latestElsetsArchiveSql, sqlTemplateText, mapLatestElsetRow,
   attachLatestElsetClientDeadline, latestElsetClientIsDead,
   LATEST_ELSETS_STATEMENT_TIMEOUT_MS, LATEST_ELSETS_CLIENT_TIMEOUT_MS,
   isTransientConnectionError, retryOnceOnTransient, retryTransientConnection, DB_CONNECT_RETRY_DELAY_MS,
@@ -139,14 +141,23 @@ async function main(): Promise<void> {
     const since = new Date("2026-08-23T13:44:31.178Z");
     const until = new Date("2026-08-26T19:44:31.178Z");
     const sqlText = sqlTemplateText(latestElsetsQuerySql(since, until));
-    check("current latest-elset SQL is a LATERAL LIMIT 1 seek per norad", latestElsetsSqlIsCheap(sqlText), sqlText.slice(0, 400));
+    check("current latest-elset SQL reads obc_latest_elset", latestElsetsSqlIsCheap(sqlText), sqlText.slice(0, 500));
     check("current SQL does not DISTINCT ON", !/distinct\s+on/i.test(sqlText), sqlText.slice(0, 160));
     check("current SQL does not aggregate MAX(epoch) over the archive", !/max\s*\(\s*epoch\s*\)/i.test(sqlText), sqlText.slice(0, 240));
     check("current SQL drives from catalog norads", /obc_objects/i.test(sqlText) && /distinct\s+norad/i.test(sqlText));
-    check("current SQL seeks norad = ids.norad", /norad\s*=\s*ids\.norad/i.test(sqlText), sqlText.slice(0, 400));
+    check("current SQL joins obc_latest_elset", /join\s+obc_latest_elset/i.test(sqlText), sqlText.slice(0, 400));
     check("current SQL keeps the epoch window", /epoch\s*>/i.test(sqlText) && /epoch\s*<=/i.test(sqlText));
-    check("current SQL ORDER BY epoch DESC LIMIT 1", /order\s+by\s+epoch\s+desc/i.test(sqlText) && /limit\s+1/i.test(sqlText), sqlText.slice(0, 400));
-    check("current SQL still selects TLE lines on the lateral row", /h\.line1/.test(sqlText) && /h\.line2/.test(sqlText));
+    check("future-dated newest epoch falls back to one history seek",
+      /union\s+all/i.test(sqlText) && /h\.epoch\s*>/i.test(sqlText) && /limit\s+1/i.test(sqlText),
+      sqlText.slice(0, 500));
+    check("current SQL still selects TLE lines", /h\.line1/.test(sqlText) && /h\.line2/.test(sqlText));
+    const archiveText = sqlTemplateText(latestElsetsArchiveSql(since, until));
+    check("full-catalog archive lateral is no longer the cheap plan", latestElsetsSqlIsCheap(archiveText) === false, archiveText.slice(0, 200));
+    const tleSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../lib/obc/tleArchive.ts"), "utf8");
+    check("getLatestElsets waits for the latest-elset table before reading it",
+      /ensureLatestElsetReady\(/.test(tleSrc) && /latestElsetsQuerySql\(/.test(tleSrc));
+    check("unready latest-elset table still falls back to the archive seek",
+      /latestElsetsArchiveSql\(/.test(tleSrc));
 
     const mapped = mapLatestElsetRow({
       norad: 25544,

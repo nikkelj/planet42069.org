@@ -4,6 +4,17 @@ import { sql, desc, asc, and, gte, eq, type SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { logger } from "../logger";
 import { runLockedSession } from "./advisorySession";
+import {
+  ensureLatestElsetReady,
+  isUndefinedLatestTable,
+  latestElsetsArchiveSql,
+  latestElsetsQuerySql,
+  LATEST_ELSET_MAINTAIN_BUDGET_MS,
+  refreshLatestElsetsForDeletedEpochs,
+  rememberLatestElsets,
+} from "./latestElset";
+
+export { latestElsetsArchiveSql, latestElsetsQuerySql, latestElsetsSqlIsCheap } from "./latestElset";
 
 /**
  * TLE history archive — samples space-track's public elset history into
@@ -59,6 +70,9 @@ const GP_HISTORY_ROW_LIMIT = 60_000;
  * nextRecentWatermarkMs for why an EPOCH cursor loses nearly every elset.
  */
 const STATE_WATERMARK = "tle_recent_created_watermark";
+/** UTC day (ms) the coarse thin is walking. The leading edge is thinned every run. */
+const STATE_PRUNE_DAY = "tle_prune_coarse_day";
+const DAY_MS = 86_400_000;
 /** First run (or a fresh key) re-reads this much publish history so the RPOD scan's 3-day window refills. */
 export const RECENT_INITIAL_LOOKBACK_MS = 4 * 86_400_000;
 const STATE_BACKFILL = "tle_backfill_cursor";
@@ -265,6 +279,10 @@ export async function upsertTleHistory(rows: InsertObcTleHistory[]): Promise<num
       .onConflictDoNothing({ target: [obcTleHistory.norad, obcTleHistory.epoch] })
       .returning({ id: obcTleHistory.id });
     written += res.length;
+    // Conflicts still carry the payload: a replay must not leave the pointer
+    // behind the row that is already in history. Older epochs lose the
+    // setWhere race against a newer pointer.
+    await rememberLatestElsets(chunk);
   }
   return written;
 }
@@ -327,9 +345,16 @@ export function nextRecentWatermarkMs(sinceMs: number, creationDates: (string | 
   return Math.max(sinceMs, Math.min(max, nowMs) - 5 * 60_000);
 }
 
+async function maintainLatestElsetTable(): Promise<void> {
+  await ensureLatestElsetReady(LATEST_ELSET_MAINTAIN_BUDGET_MS).catch((err: unknown) => {
+    logger.warn({ err: formatDbError(err) }, "tle-archive: latest-elset backfill paused");
+  });
+}
+
 async function doRecentElsetWatch(): Promise<void> {
   const started = new Date();
   try {
+    await maintainLatestElsetTable();
     const s = await getWorkerState<{ epochMs: number }>(STATE_WATERMARK);
     const sinceMs = s?.epochMs ?? Date.now() - RECENT_INITIAL_LOOKBACK_MS;
     const path =
@@ -372,6 +397,7 @@ async function doTleBackfill(): Promise<void> {
   const started = new Date();
   let totalWritten = 0;
   try {
+    await maintainLatestElsetTable();
     const horizonMs = backfillHorizonMs();
     const s = await getWorkerState<{ cursorMs: number }>(STATE_BACKFILL);
     let cursorMs = s?.cursorMs ?? Date.now();
@@ -431,33 +457,163 @@ async function doTleBackfill(): Promise<void> {
  *     day (newest of each day wins) — recent-feed rows are stored at 6h
  *     resolution and age past the coarse boundary over time.
  */
+/** UTC midnight at or before `ms`. Matches sampleRows' UTC day bins. */
+export function utcDayStartMs(ms: number): number {
+  return Math.floor(ms / DAY_MS) * DAY_MS;
+}
+
+/** The UTC day that just became coarse: it contains the instant before `coarseBeforeMs`. */
+export function newestCoarseDayStartMs(coarseBeforeMs: number): number {
+  return utcDayStartMs(coarseBeforeMs - 1);
+}
+
+/**
+ * Backlog cursor for coarse thinning. The leading edge (newest coarse day)
+ * is thinned on every run, so the cursor walks older days and wraps to the
+ * day just behind that edge instead of re-scanning the whole horizon.
+ * A day that filled the delete budget stays put so the rest of its
+ * duplicates are removed on the next run.
+ */
+export function coerceCoarsePruneCursor(
+  cursorMs: number | null,
+  horizonMs: number,
+  coarseBeforeMs: number,
+): number {
+  const leading = newestCoarseDayStartMs(coarseBeforeMs);
+  const floor = utcDayStartMs(horizonMs);
+  const behind = leading - DAY_MS;
+  const fallback = behind >= floor ? behind : leading;
+  if (cursorMs == null || !Number.isFinite(cursorMs)) return fallback;
+  const day = utcDayStartMs(cursorMs);
+  if (day === leading || day >= coarseBeforeMs || day < floor) return fallback;
+  return day;
+}
+
+export function advanceCoarsePruneCursor(
+  cursorMs: number,
+  deleted: number,
+  budget: number,
+  horizonMs: number,
+  coarseBeforeMs: number,
+): number {
+  if (deleted >= budget) return utcDayStartMs(cursorMs);
+  const prev = utcDayStartMs(cursorMs) - DAY_MS;
+  const floor = utcDayStartMs(horizonMs);
+  if (prev < floor) return coerceCoarsePruneCursor(null, horizonMs, coarseBeforeMs);
+  return prev;
+}
+
+/**
+ * Delete rn>1 rows inside one UTC day. The day bounds keep this off the
+ * ~19M-row window the old `epoch < coarse AND epoch >= horizon` plan sorted
+ * on every backfill tick. Winner is still the newest epoch, then highest id.
+ */
+export function coarseDayThinSql(
+  dayStart: Date,
+  dayEnd: Date,
+  horizon: Date,
+  coarseBefore: Date,
+  budget: number,
+) {
+  return sql`
+    delete from obc_tle_history where id in (
+      select id from (
+        select id, row_number() over (
+          partition by norad
+          order by epoch desc, id desc
+        ) as rn
+        from obc_tle_history
+        where epoch >= ${dayStart}
+          and epoch < ${dayEnd}
+          and epoch < ${coarseBefore}
+          and epoch >= ${horizon}
+      ) t
+      where t.rn > 1
+      limit ${budget}
+    )
+  `;
+}
+
+export function horizonDeleteSql(horizon: Date, budget: number) {
+  return sql`
+    delete from obc_tle_history where id in (
+      select id from obc_tle_history
+      where epoch < ${horizon}
+      limit ${budget}
+    )
+    returning norad, epoch
+  `;
+}
+
+function deletedEpochRows(result: unknown): { norad: number; epoch: Date }[] {
+  const rows = Array.isArray(result)
+    ? result
+    : (result && typeof result === "object" && "rows" in result
+      ? ((result as { rows?: unknown[] }).rows ?? [])
+      : []);
+  const out: { norad: number; epoch: Date }[] = [];
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue;
+    const norad = Number((row as { norad?: unknown }).norad);
+    const raw = (row as { epoch?: unknown }).epoch;
+    const epoch = raw instanceof Date ? raw : new Date(String(raw));
+    if (Number.isFinite(norad) && Number.isFinite(epoch.getTime())) out.push({ norad, epoch });
+  }
+  return out;
+}
+
+function executeRowCount(result: unknown): number {
+  if (result && typeof result === "object" && "rowCount" in result) {
+    const n = (result as { rowCount?: number | null }).rowCount;
+    return typeof n === "number" ? n : 0;
+  }
+  return 0;
+}
+
 export async function pruneTleHistory(horizonMs: number, nowMs: number = Date.now()): Promise<number> {
   let deleted = 0;
   try {
-    const beyondHorizon = await db.execute(sql`
-      delete from obc_tle_history where id in (
-        select id from obc_tle_history
-        where epoch < ${new Date(horizonMs)}
-        limit ${PRUNE_ROW_LIMIT}
-      )`);
-    deleted += beyondHorizon.rowCount ?? 0;
+    const horizon = new Date(horizonMs);
+    const beyondHorizon = await db.execute(horizonDeleteSql(horizon, PRUNE_ROW_LIMIT));
+    const removed = deletedEpochRows(beyondHorizon);
+    deleted += removed.length || executeRowCount(beyondHorizon);
+    if (removed.length > 0) {
+      await refreshLatestElsetsForDeletedEpochs(removed);
+    }
 
     const budget = PRUNE_ROW_LIMIT - deleted;
-    if (budget > 0) {
-      const coarseBefore = new Date(nowMs - COARSE_AFTER_DAYS * 86_400_000);
-      const thinned = await db.execute(sql`
-        delete from obc_tle_history where id in (
-          select id from (
-            select id, row_number() over (
-              partition by norad, date_trunc('day', epoch)
-              order by epoch desc, id desc
-            ) as rn
-            from obc_tle_history
-            where epoch < ${coarseBefore} and epoch >= ${new Date(horizonMs)}
-          ) t where t.rn > 1
-          limit ${budget}
-        )`);
-      deleted += thinned.rowCount ?? 0;
+    const coarseBeforeMs = nowMs - COARSE_AFTER_DAYS * DAY_MS;
+    if (budget > 0 && coarseBeforeMs > horizonMs) {
+      const coarseBefore = new Date(coarseBeforeMs);
+      const leading = newestCoarseDayStartMs(coarseBeforeMs);
+      // Rows age into the coarse region here. Always thin this day so a
+      // 6-hour sample cannot sit for a full walk of the horizon.
+      const leadDeleted = executeRowCount(await db.execute(coarseDayThinSql(
+        new Date(leading),
+        new Date(leading + DAY_MS),
+        horizon,
+        coarseBefore,
+        budget,
+      )));
+      deleted += leadDeleted;
+      const backlogBudget = budget - leadDeleted;
+      const saved = await getWorkerState<{ dayStartMs?: number }>(STATE_PRUNE_DAY);
+      const cursor = coerceCoarsePruneCursor(saved?.dayStartMs ?? null, horizonMs, coarseBeforeMs);
+      let backlogDeleted = 0;
+      if (backlogBudget > 0 && cursor !== leading && cursor + DAY_MS > horizonMs && cursor < coarseBeforeMs) {
+        backlogDeleted = executeRowCount(await db.execute(coarseDayThinSql(
+          new Date(cursor),
+          new Date(cursor + DAY_MS),
+          horizon,
+          coarseBefore,
+          backlogBudget,
+        )));
+        deleted += backlogDeleted;
+      }
+      const next = backlogBudget > 0
+        ? advanceCoarsePruneCursor(cursor, backlogDeleted, backlogBudget, horizonMs, coarseBeforeMs)
+        : cursor;
+      await setWorkerState(STATE_PRUNE_DAY, { dayStartMs: next });
     }
     if (deleted > 0) logger.info({ deleted }, "tle-archive: retention prune");
   } catch (err) {
@@ -611,95 +767,6 @@ export async function retryOnceOnTransient<T>(
   }
 }
 
-/**
- * True when `sqlText` is a cheap "latest elset per norad in a window" plan.
- *
- * The live 2026-08-26 scan failed on drizzle `selectDistinctOn(norad)` over
- * `obc_tle_history` (~5.1M rows) for a ~3-day epoch window while selecting
- * TLE `line1`/`line2`. Indexes are unique(norad, epoch) and (epoch). The
- * WHERE is an epoch range, so Postgres typically range-scans `epoch_idx`
- * then SORTS the matching heap rows by (norad, epoch DESC) for DISTINCT ON.
- * Those heap rows include two TEXT TLE lines — a few hundred thousand wide
- * tuples blow work_mem, spill, or hit statement_timeout.
- *
- * The Aug follow-up (MAX(epoch) GROUP BY norad, then join back) avoids
- * sorting TEXT, but the epoch index does not include norad, so the aggregate
- * still heap-fetches every row in the window. Live 2026-09-28 (~19.1M rows)
- * died on that plan with "Connection terminated due to connection timeout".
- *
- * Cheap at this size is LATERAL … ORDER BY epoch DESC LIMIT 1 keyed by
- * norad, which is an index seek on unique(norad, epoch). A wide DISTINCT ON,
- * or a window-wide MAX(epoch) aggregate, is not.
- */
-export function latestElsetsSqlIsCheap(sqlText: string): boolean {
-  const s = sqlText.toLowerCase().replace(/["`]/g, "").replace(/\s+/g, " ");
-  const distinctOnWidePayload =
-    /distinct\s+on/.test(s) && /line1/.test(s) && /line2/.test(s) && !/\blateral\b/.test(s);
-  if (distinctOnWidePayload) return false;
-  // The Sep 28 stall. Kept explicit so a regression to MAX+join fails the test
-  // even if someone also pastes LATERAL somewhere in a comment.
-  if (/max\s*\(\s*epoch\s*\)/.test(s) && /group\s+by\s+norad/.test(s)) return false;
-  const lateralLimit =
-    /\blateral\b/.test(s)
-    && /\blimit\s+1\b/.test(s)
-    && /order\s+by\s+[\w.]*epoch\s+desc/.test(s)
-    && /norad\s*=\s*[\w.]*norad/.test(s);
-  return lateralLimit;
-}
-
-/**
- * Latest-per-norad in (`since`, `until`] for every catalogued norad.
- *
- * Equivalent to MAX(epoch) per norad on the unique (norad, epoch) key, then
- * joining back for TLE lines — but driven from `obc_objects` (~70k norads)
- * so each object is one index seek + LIMIT 1. Empty ranges (no elset in the
- * window) drop out, matching the old inner join.
- *
- * Norads archived before they have an `obc_objects` row are omitted until
- * the next catalog merge. A window aggregate over `obc_tle_history` would
- * include them and is the plan that stalled at ~19M rows. New launches land
- * in `obc_objects` as space-track-only keys once that sync runs.
- */
-export function latestElsetsQuerySql(since: Date, until: Date) {
-  return sql`
-    SELECT
-      h.norad,
-      h.epoch,
-      h.line1,
-      h.line2,
-      h.inc_deg,
-      h.raan_deg,
-      h.eccentricity,
-      h.arg_perigee_deg,
-      h.mean_anomaly_deg,
-      h.mean_motion_rev_per_day
-    FROM (
-      SELECT DISTINCT norad
-      FROM obc_objects
-      WHERE norad IS NOT NULL
-    ) AS ids
-    CROSS JOIN LATERAL (
-      SELECT
-        norad,
-        epoch,
-        line1,
-        line2,
-        inc_deg,
-        raan_deg,
-        eccentricity,
-        arg_perigee_deg,
-        mean_anomaly_deg,
-        mean_motion_rev_per_day
-      FROM obc_tle_history
-      WHERE norad = ids.norad
-        AND epoch > ${since}
-        AND epoch <= ${until}
-      ORDER BY epoch DESC
-      LIMIT 1
-    ) AS h
-  `;
-}
-
 const pgDialect = new PgDialect();
 
 /** SQL text drizzle will send (params as `$n`) — for plan-shape tests. */
@@ -807,22 +874,19 @@ export function latestElsetClientIsDead(err: unknown): boolean {
   return /terminated|ECONN|socket|client deadline|timeout exceeded when trying to connect/i.test(text);
 }
 
-/** Latest archived elset per catalogued object with epoch in (`sinceMs`, `untilMs`]. */
-export async function getLatestElsets(
-  sinceMs: number,
-  untilMs: number = Date.now() + ELSET_FUTURE_SLACK_MS,
-): Promise<LatestElset[]> {
+async function queryLatestElsetRows(query: SQL, seqscanOff: boolean): Promise<LatestElset[]> {
   const client = await pool.connect();
   const deadline = attachLatestElsetClientDeadline(client, LATEST_ELSETS_CLIENT_TIMEOUT_MS);
   const work = (async (): Promise<LatestElset[]> => {
-    const q = pgDialect.sqlToQuery(latestElsetsQuerySql(new Date(sinceMs), new Date(untilMs)));
+    const q = pgDialect.sqlToQuery(query);
     const params = q.params ?? [];
     // SET LOCAL is transaction-scoped so it cannot leak onto a pooled client.
-    // enable_seqscan=off stops a misestimate from walking ~19M heap rows; the
-    // LATERAL seek on unique(norad, epoch) does not need a sequential scan.
+    // enable_seqscan=off is only for the archive fallback: a misestimate there
+    // walks ~19M heap rows. The latest-elset table is ~30k rows and should
+    // be free to sequential-scan.
     await client.query("BEGIN");
     await client.query(`SET LOCAL statement_timeout = ${LATEST_ELSETS_STATEMENT_TIMEOUT_MS}`);
-    await client.query("SET LOCAL enable_seqscan = off");
+    if (seqscanOff) await client.query("SET LOCAL enable_seqscan = off");
     const result = await client.query<LatestElsetRow>(q.sql, params);
     await client.query("COMMIT");
     return result.rows.map((r) => mapLatestElsetRow(r));
@@ -846,6 +910,32 @@ export async function getLatestElsets(
       logger.warn({ err: String(releaseFailure) }, "tle-archive: latest-elset client release failed");
     }
   }
+}
+
+/** Latest archived elset per catalogued object with epoch in (`sinceMs`, `untilMs`]. */
+export async function getLatestElsets(
+  sinceMs: number,
+  untilMs: number = Date.now() + ELSET_FUTURE_SLACK_MS,
+): Promise<LatestElset[]> {
+  const since = new Date(sinceMs);
+  const until = new Date(untilMs);
+  let ready = false;
+  try {
+    ready = await ensureLatestElsetReady();
+  } catch (err) {
+    if (!isUndefinedLatestTable(err)) throw err;
+  }
+  if (ready) {
+    try {
+      return await queryLatestElsetRows(latestElsetsQuerySql(since, until), false);
+    } catch (err) {
+      if (!isUndefinedLatestTable(err)) throw err;
+      logger.warn("tle-archive: obc_latest_elset missing at read time; using archive seek");
+    }
+  } else {
+    logger.warn("tle-archive: latest-elset table not ready; using per-norad archive seek");
+  }
+  return queryLatestElsetRows(latestElsetsArchiveSql(since, until), true);
 }
 
 /**
