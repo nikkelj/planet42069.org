@@ -1,9 +1,9 @@
-import { currentPoolClient, db, pool, type DbPoolClient } from "@workspace/db";
+import { currentPoolClient, db, pool, rebindDbClient, type DbPoolClient } from "@workspace/db";
 import { obcTleHistory, obcWorkerState, obcSyncLog, type InsertObcTleHistory } from "@workspace/db/schema";
 import { sql, asc, and, gte, eq, inArray, type SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { logger } from "../logger";
-import { runLockedSession } from "./advisorySession";
+import { failLockClient, runLockedSession, waitForLockRecovery } from "./advisorySession";
 import {
   ensureLatestElsetReady,
   isUndefinedLatestTable,
@@ -176,10 +176,53 @@ export async function withAdvisoryLock(
   // checkout: the scan has not started, and a second dial usually lands.
   // The scan's own queries reuse this client instead of dialing again.
   const client = await retryOnceOnTransient(`${label} connect`, () => pool.connect());
+  // The scan holds this socket across SGP4. pg 8.20 sets `_queryable` false
+  // only after the socket errors (`Client._handleErrorEvent`). The next
+  // query never reaches the server: "Client has encountered a connection
+  // error and is not queryable", and a retry on that same client fails
+  // again — that is the 22:56Z lastScanError. A heartbeat "Query read
+  // timeout" does not clear `_queryable` and must not drop the session:
+  // this backend still holds the advisory lock. When the socket really
+  // dies, reacquire the lock on a new connection and rebind `db`.
   const ran = await runLockedSession(client, key, () => fn(client), (err) => {
     logger.error({ err: String(err), label }, "db: advisory lock session lost; discarding connection");
+  }, 20_000, {
+    connect: () => connectReplacementClient(label),
+    onSwap: (next) => {
+      rebindDbClient(next as DbPoolClient);
+      logger.warn({ label }, "db: reacquired advisory lock on a new connection");
+    },
   });
   if (!ran) logger.info(`${label}: another instance holds the lock, skipping run`);
+}
+
+/**
+ * Handshake for a replacement lock socket. Not `retryOnceOnTransient`:
+ * that waits on this recovery and would deadlock.
+ */
+async function connectReplacementClient(label: string): Promise<DbPoolClient> {
+  let last: unknown;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      return await pool.connect();
+    } catch (err) {
+      last = err;
+      if (attempt >= 2 || !isTransientConnectionError(err)) throw err;
+      logger.warn(
+        { err: formatDbError(err), label, attempt },
+        "db: advisory reconnect handshake failed, retrying once",
+      );
+      await new Promise((resolve) => setTimeout(resolve, DB_CONNECT_RETRY_DELAY_MS));
+    }
+  }
+  throw last instanceof Error ? last : new Error(String(last));
+}
+
+/** Wait out an in-flight lock reconnect. No-op when this call is not on the lock client. */
+export async function ensureAdvisoryLockClient(): Promise<void> {
+  const client = currentPoolClient();
+  if (!client) return;
+  await waitForLockRecovery(client);
 }
 
 export const LOCK_TLE_RECENT = 421070;
@@ -707,7 +750,7 @@ export const DB_CONNECT_RETRY_DELAY_MS = 1_000;
 export function isTransientConnectionError(err: unknown): boolean {
   const text = formatDbError(err);
   if (/statement timeout/i.test(text)) return false;
-  return /connection terminated|terminating connection due to administrator command|\b57P01\b|timeout exceeded when trying to connect|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EPIPE|socket disconnected before secure TLS|Client has encountered a connection error/i.test(text);
+  return /connection terminated|terminating connection due to administrator command|\b57P01\b|timeout exceeded when trying to connect|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EPIPE|socket disconnected before secure TLS|Client has encountered a connection error|not queryable/i.test(text);
 }
 
 /**
@@ -761,16 +804,25 @@ export async function retryOnceOnTransient<T>(
   delayMs: number = DB_CONNECT_RETRY_DELAY_MS,
 ): Promise<T> {
   const startedAt = Date.now();
-  try {
+  // The client the attempt actually used. Recovery may swap it before the
+  // rejection is observed; failLockClient ignores a client that was already replaced.
+  let used: DbPoolClient | null = null;
+  const attempt = async (): Promise<T> => {
+    await ensureAdvisoryLockClient();
+    used = currentPoolClient();
     return await fn();
+  };
+  try {
+    return await attempt();
   } catch (err) {
     if (!isTransientConnectionError(err)) throw err;
     logger.warn({
       err: formatDbError(err), label, elapsedMs: Date.now() - startedAt,
       poolTotal: pool.totalCount, poolIdle: pool.idleCount, poolWaiting: pool.waitingCount,
     }, "db: transient connection error, retrying once");
+    if (used) failLockClient(used, err instanceof Error ? err : new Error(formatDbError(err)));
     if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
-    return await fn();
+    return await attempt();
   }
 }
 
@@ -878,7 +930,7 @@ export function attachLatestElsetClientDeadline(
 /** Drop the pooled client when the socket is dead; keep it after a clean statement timeout. */
 export function latestElsetClientIsDead(err: unknown): boolean {
   const text = formatDbError(err);
-  return /terminated|ECONN|socket|client deadline|timeout exceeded when trying to connect/i.test(text);
+  return /terminated|ECONN|socket|client deadline|timeout exceeded when trying to connect|not queryable/i.test(text);
 }
 
 async function queryLatestElsetRows(query: SQL, seqscanOff: boolean): Promise<LatestElset[]> {

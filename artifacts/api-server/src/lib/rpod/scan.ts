@@ -2,7 +2,7 @@ import { currentPoolClient, db, poolDb, runWithDbClient } from "@workspace/db";
 import { rpodEvents, rpodEventMembers, obcSyncLog } from "@workspace/db/schema";
 import { sql, eq, and, inArray, lt, desc } from "drizzle-orm";
 import { logger } from "../logger";
-import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, retryOnceOnTransient, retryTransientConnection, isTransientConnectionError, DB_CONNECT_RETRY_ATTEMPTS, DB_CONNECT_RETRY_DELAYS_MS, type LatestElset } from "../obc/tleArchive";
+import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, retryOnceOnTransient, retryTransientConnection, isTransientConnectionError, ensureAdvisoryLockClient, DB_CONNECT_RETRY_ATTEMPTS, DB_CONNECT_RETRY_DELAYS_MS, type LatestElset } from "../obc/tleArchive";
 import { getSatcatFromStore } from "../obc/store";
 import { MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline, cancelScanAttempt, markScanLogged, sgp4ShouldStop } from "./scanPolicy";
 import {
@@ -293,7 +293,23 @@ const COALIGNED_PHASE_SLACK_DEG = DEFAULT_COALIGNED.maxRaanDiffDeg + DEFAULT_COA
  * ("not enough elsets") stays a success row.
  */
 export function elsetFetchFailureShouldRetryScan(warning: string): boolean {
-  return /connection terminated|timeout exceeded when trying to connect|statement timeout|query read timeout|\b57P01\b|ECONN|EPIPE|socket/i.test(warning);
+  // isTransientConnectionError covers the live "not queryable" string. A
+  // statement or query-read timeout is not a dead socket, but the hour was
+  // still not screened, so the scheduler must retry it too.
+  if (isTransientConnectionError(warning)) return true;
+  return /statement timeout|query read timeout|could not be reacquired/i.test(warning);
+}
+
+/**
+ * A dead lock socket is not a bad event. Soft-skipping it logged the hour
+ * as success (or burned it on one not-queryable select). Connection loss
+ * and a failed lock reacquire abort the scan so the scheduler retries.
+ */
+export function rethrowIfConnectionLost(err: unknown): void {
+  if (isTransientConnectionError(err)) throw err instanceof Error ? err : new Error(formatDbError(err));
+  if (/could not be reacquired/i.test(formatDbError(err))) {
+    throw err instanceof Error ? err : new Error(formatDbError(err));
+  }
 }
 
 async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
@@ -504,6 +520,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       try {
         await fn();
       } catch (err) {
+        rethrowIfConnectionLost(err);
         warnings.push(`${label}: ${String(err)}`.slice(0, 300));
         logger.warn({ err }, `rpod-scan: ${label} failed (scan otherwise ok)`);
       }
@@ -517,12 +534,14 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       try {
         await retireDriftedCoplanarEvents();
       } catch (err) {
+        rethrowIfConnectionLost(err);
         warnings.push(`retireCoplanar: ${String(err)}`.slice(0, 300));
         logger.warn({ err }, "rpod-scan: retireCoplanar failed (scan otherwise ok)");
       }
       try {
         await retireUnseenConjunctions();
       } catch (err) {
+        rethrowIfConnectionLost(err);
         warnings.push(`retireConjunction: ${String(err)}`.slice(0, 300));
         logger.warn({ err }, "rpod-scan: retireConjunction failed (scan otherwise ok)");
       }
@@ -753,6 +772,10 @@ export async function persistEvents(
     }
 
     try {
+    // The lock socket can die during SGP4. Wait for the replacement (and
+    // its reacquired advisory lock) before writing; a not-queryable client
+    // never sent this transaction.
+    await ensureAdvisoryLockClient();
     const evSet = new Set(ev.members);
     let match: (typeof active)[number] | undefined;
     let matchScore = -1;
@@ -922,6 +945,7 @@ export async function persistEvents(
       logger.info({ eventId: persisted.eventId, kind }, "rpod-scan: reopened lapsed case (same pair re-detected)");
     }
     } catch (err) {
+      rethrowIfConnectionLost(err);
       const msg = `members ${ev.members.join("+")}: ${err instanceof Error ? err.message : String(err)}`;
       errors.push(msg.slice(0, 300));
       logger.warn({ err, members: ev.members, kind }, "rpod-scan: persist skipped one event");
@@ -952,6 +976,7 @@ function epochRecord(members: number[], epochs: Map<number, number> | undefined)
  * row is neutral, so an uncatalogued pair still follows geometry.
  */
 export async function reclassifyDockedEvents(knownForces?: Map<number, Force>): Promise<void> {
+  await ensureAdvisoryLockClient();
   const rows = await db
     .select({
       id: rpodEvents.id,
@@ -1009,6 +1034,7 @@ export async function reclassifyDockedEvents(knownForces?: Map<number, Force>): 
 
 /** Active events whose window has long passed become stale (kept for history). */
 async function markStaleEvents(): Promise<void> {
+  await ensureAdvisoryLockClient();
   await db
     .update(rpodEvents)
     .set({ status: "stale", updatedAt: sql`now()` })
@@ -1023,6 +1049,7 @@ async function markStaleEvents(): Promise<void> {
  * of the scanner itself can't retire cases.
  */
 async function retireDriftedCoplanarEvents(): Promise<void> {
+  await ensureAdvisoryLockClient();
   const active = await db
     .select({ id: rpodEvents.id, lastSeenAt: rpodEvents.lastSeenAt })
     .from(rpodEvents)
@@ -1041,6 +1068,7 @@ async function retireDriftedCoplanarEvents(): Promise<void> {
  * ended. A discrete approach that is not refreshed is not still happening.
  */
 async function retireUnseenConjunctions(): Promise<void> {
+  await ensureAdvisoryLockClient();
   const active = await db
     .select({ id: rpodEvents.id, kind: rpodEvents.kind, lastSeenAt: rpodEvents.lastSeenAt })
     .from(rpodEvents)

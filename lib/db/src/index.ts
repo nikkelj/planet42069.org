@@ -68,6 +68,19 @@ export function runWithDbClient<T>(client: PoolClient, fn: () => Promise<T>): Pr
   return dbBinding.run({ db: drizzle(client, { schema }), client }, fn);
 }
 
+/**
+ * Point the active scan at a replacement lock client.
+ * No-op outside `runWithDbClient` (TLE workers hold a lock but query the pool).
+ * The store object is mutated so a query that starts after this returns sees
+ * the new drizzle handle; callers must await reconnect before issuing one.
+ */
+export function rebindDbClient(client: PoolClient): void {
+  const store = dbBinding.getStore();
+  if (!store) return;
+  store.client = client;
+  store.db = drizzle(client, { schema });
+}
+
 export const db: AppDb = new Proxy(rootDb, {
   get(target, prop) {
     const current = dbBinding.getStore()?.db ?? target;

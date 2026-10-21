@@ -35,7 +35,7 @@ import { rpodEvents, rpodEventMembers } from "@workspace/db/schema";
 import { inArray, eq } from "drizzle-orm";
 import type { Server } from "node:http";
 import app from "../app";
-import { persistEvents, formatRpodScanStatus, insertRpodScanSyncLog, latestRpodScanFinishedAtMs, elsetFetchFailureShouldRetryScan } from "../lib/rpod/scan";
+import { persistEvents, formatRpodScanStatus, insertRpodScanSyncLog, latestRpodScanFinishedAtMs, elsetFetchFailureShouldRetryScan, rethrowIfConnectionLost } from "../lib/rpod/scan";
 import { MAX_RPOD_SCAN_MS, RPOD_SCAN_CHECK_INTERVAL_MS } from "../lib/rpod/scanPolicy";
 import {
   getArchiveStatus, clearArchiveStatusCache,
@@ -246,6 +246,34 @@ async function main(): Promise<void> {
       elsetFetchFailureShouldRetryScan("Query read timeout"));
     check("a non-timeout skip warning does not fail the scan",
       elsetFetchFailureShouldRetryScan("latest-elset fetch skipped: relation missing") === false);
+    // Live 2026-10-21 21:02Z: the elset fetch was skipped on a dead client and
+    // the hour was logged success with 0 events. The classifier did not match
+    // pg's "not queryable" text (the retry of a client that had already errored).
+    const notQueryable =
+      "Client has encountered a connection error and is not queryable";
+    const liveNotQueryable =
+      `Failed query: select id, status, kind, window_start, window_end, tca from rpod_events where rpod_events.status = $1 params: active <- ${notQueryable}`;
+    check("live 22:56Z not-queryable persist error is a dead socket",
+      isTransientConnectionError(new Error(liveNotQueryable)), liveNotQueryable);
+    check("21:02Z elset skip on a not-queryable client must retry the scan",
+      elsetFetchFailureShouldRetryScan(`latest-elset fetch skipped: ${liveNotQueryable}`));
+    check("a failed lock reacquire must retry the scan",
+      elsetFetchFailureShouldRetryScan("advisory lock lost after connection error and could not be reacquired"));
+    let aborted = false;
+    try {
+      rethrowIfConnectionLost(new Error(notQueryable));
+    } catch (err) {
+      aborted = err instanceof Error && err.message === notQueryable;
+    }
+    check("a not-queryable persist error aborts the scan", aborted);
+    let soft = false;
+    try {
+      rethrowIfConnectionLost(new Error('value "3000000000" is out of range for type integer'));
+      soft = true;
+    } catch {
+      soft = false;
+    }
+    check("a bad event row stays a soft persist error", soft);
     check("doScan throws on a retryable elset fetch so the hour is not a 0-event success",
       /elsetFetchFailureShouldRetryScan\(loaded\.warning\)\)[\s\S]{0,300}throw new Error\(loaded\.warning\)/.test(scanSrc));
     check("doScan still logs success for a non-timeout elset skip",
@@ -334,6 +362,12 @@ async function main(): Promise<void> {
     check(
       "scan queries reuse the advisory-lock client",
       /runWithDbClient\(client/.test(scanSrc),
+    );
+    check(
+      "a dead lock socket is replaced before the next query",
+      /connectReplacementClient\(label\)/.test(tleSrc)
+        && /ensureAdvisoryLockClient\(/.test(tleSrc)
+        && /rebindDbClient\(/.test(tleSrc),
     );
     check(
       "latest-elset read does not release a borrowed scan client",
@@ -606,7 +640,8 @@ async function main(): Promise<void> {
       "connect-timeout and socket-death errors discard the pooled client",
       latestElsetClientIsDead(new Error("Connection terminated due to connection timeout"))
         && latestElsetClientIsDead(new Error("Connection terminated unexpectedly"))
-        && latestElsetClientIsDead(new Error("latest-elset fetch exceeded 150000ms client deadline")),
+        && latestElsetClientIsDead(new Error("latest-elset fetch exceeded 150000ms client deadline"))
+        && latestElsetClientIsDead(new Error("Client has encountered a connection error and is not queryable")),
     );
     check(
       "a clean statement timeout keeps the pooled client",
