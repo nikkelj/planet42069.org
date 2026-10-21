@@ -159,6 +159,41 @@ export const obcTleHistory = pgTable(
   ],
 );
 
+/**
+ * Newest archived elset per NORAD. One row, not a scan of obc_tle_history.
+ *
+ * The RPOD scan wants the latest elset inside a 3-day window. Doing that
+ * with LIMIT 1 per catalogued object is an index seek plus a heap fetch of
+ * the TLE text, ~30k times, against a ~19M-row heap. On a small hosted
+ * Postgres that read (and the coarse-thin window next to it) saturates the
+ * server until new handshakes die at the 10s connection timeout.
+ *
+ * Ingest and the one-time backfill keep this table pointed at the absolute
+ * newest epoch. The scan still applies the epoch window, and objects whose
+ * newest epoch is past the window fall back to one history seek.
+ *
+ * The epoch index is created with the empty table by `drizzle-kit push`
+ * (scripts/post-merge.sh). Push runs inside a transaction, which cannot
+ * run CREATE INDEX CONCURRENTLY; an index build on this empty table does
+ * not lock obc_tle_history. Hand-run SQL: lib/db/sql/obc_latest_elset.sql.
+ */
+export const obcLatestElset = pgTable(
+  "obc_latest_elset",
+  {
+    norad: integer("norad").primaryKey(),
+    epoch: timestamp("epoch").notNull(),
+    line1: text("line1").notNull(),
+    line2: text("line2").notNull(),
+    incDeg: real("inc_deg").notNull(),
+    raanDeg: real("raan_deg").notNull(),
+    eccentricity: real("eccentricity").notNull(),
+    argPerigeeDeg: real("arg_perigee_deg").notNull(),
+    meanAnomalyDeg: real("mean_anomaly_deg").notNull(),
+    meanMotionRevPerDay: real("mean_motion_rev_per_day").notNull(),
+  },
+  (t) => [index("obc_latest_elset_epoch_idx").on(t.epoch)],
+);
+
 /** Small key/value state store for background workers (cursors, watermarks). */
 /**
  * Latest SpaceX public ephemeris pointer per satellite.
@@ -305,6 +340,7 @@ export const rpodAlertQueue = pgTable(
 
 export type RpodAlertQueueRow = typeof rpodAlertQueue.$inferSelect;
 
+export type ObcLatestElsetRow = typeof obcLatestElset.$inferSelect;
 export type ObcTleHistoryRow = typeof obcTleHistory.$inferSelect;
 export type InsertObcTleHistory = typeof obcTleHistory.$inferInsert;
 export type RpodEventRow = typeof rpodEvents.$inferSelect;

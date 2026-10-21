@@ -12,8 +12,10 @@
  *    window of ~5.1M-row obc_tle_history (live 2026-08-26 ~13:45Z Failed
  *    query; String(err) hid the PG cause; doScan stamped status=error)
  *  - the Aug MAX(epoch)+join follow-up is also not cheap at ~19M rows
- *    (live 2026-09-28 connection timeout). Latest-per-norad must be a
- *    LATERAL index seek (ORDER BY epoch DESC LIMIT 1) keyed by norad.
+ *    (live 2026-09-28 connection timeout). A per-norad LATERAL seek of the
+ *    archive still heap-fetches ~30k TLE rows and timed out handshakes
+ *    next to thinning. The scan reads obc_latest_elset and seeks history
+ *    only for future-dated newest epochs.
  *  - a failed latest-elset fetch skips/logs instead of aborting doScan
  *  - a pg-pool handshake abort ("Connection terminated due to connection
  *    timeout <- Connection terminated unexpectedly", live 2026-10-14) is
@@ -33,12 +35,13 @@ import { rpodEvents, rpodEventMembers } from "@workspace/db/schema";
 import { inArray, eq } from "drizzle-orm";
 import type { Server } from "node:http";
 import app from "../app";
-import { persistEvents, formatRpodScanStatus, insertRpodScanSyncLog, latestRpodScanFinishedAtMs } from "../lib/rpod/scan";
+import { persistEvents, formatRpodScanStatus, insertRpodScanSyncLog, latestRpodScanFinishedAtMs, elsetFetchFailureShouldRetryScan } from "../lib/rpod/scan";
 import { MAX_RPOD_SCAN_MS, RPOD_SCAN_CHECK_INTERVAL_MS } from "../lib/rpod/scanPolicy";
 import {
   getArchiveStatus, clearArchiveStatusCache,
   getLatestElsetsOrSkip, formatDbError, latestElsetsSqlIsCheap,
-  latestElsetsQuerySql, sqlTemplateText, mapLatestElsetRow,
+  latestElsetsQuerySql, latestElsetsArchiveSql, sqlTemplateText, mapLatestElsetRow,
+  archiveEpochBoundsSql, oldestArchiveProbeCutoff, ARCHIVE_OLDEST_PROBE_SLACK_MS, backfillHorizonMs,
   attachLatestElsetClientDeadline, latestElsetClientIsDead,
   LATEST_ELSETS_STATEMENT_TIMEOUT_MS, LATEST_ELSETS_CLIENT_TIMEOUT_MS,
   isTransientConnectionError, retryOnceOnTransient, retryTransientConnection, DB_CONNECT_RETRY_DELAY_MS,
@@ -139,14 +142,35 @@ async function main(): Promise<void> {
     const since = new Date("2026-08-23T13:44:31.178Z");
     const until = new Date("2026-08-26T19:44:31.178Z");
     const sqlText = sqlTemplateText(latestElsetsQuerySql(since, until));
-    check("current latest-elset SQL is a LATERAL LIMIT 1 seek per norad", latestElsetsSqlIsCheap(sqlText), sqlText.slice(0, 400));
+    check("current latest-elset SQL reads obc_latest_elset", latestElsetsSqlIsCheap(sqlText), sqlText.slice(0, 500));
     check("current SQL does not DISTINCT ON", !/distinct\s+on/i.test(sqlText), sqlText.slice(0, 160));
     check("current SQL does not aggregate MAX(epoch) over the archive", !/max\s*\(\s*epoch\s*\)/i.test(sqlText), sqlText.slice(0, 240));
     check("current SQL drives from catalog norads", /obc_objects/i.test(sqlText) && /distinct\s+norad/i.test(sqlText));
-    check("current SQL seeks norad = ids.norad", /norad\s*=\s*ids\.norad/i.test(sqlText), sqlText.slice(0, 400));
+    check("current SQL joins obc_latest_elset", /join\s+obc_latest_elset/i.test(sqlText), sqlText.slice(0, 400));
     check("current SQL keeps the epoch window", /epoch\s*>/i.test(sqlText) && /epoch\s*<=/i.test(sqlText));
-    check("current SQL ORDER BY epoch DESC LIMIT 1", /order\s+by\s+epoch\s+desc/i.test(sqlText) && /limit\s+1/i.test(sqlText), sqlText.slice(0, 400));
-    check("current SQL still selects TLE lines on the lateral row", /h\.line1/.test(sqlText) && /h\.line2/.test(sqlText));
+    check("future-dated newest epoch falls back to one history seek",
+      /union\s+all/i.test(sqlText) && /h\.epoch\s*>/i.test(sqlText) && /limit\s+1/i.test(sqlText),
+      sqlText.slice(0, 500));
+    check("current SQL still selects TLE lines", /h\.line1/.test(sqlText) && /h\.line2/.test(sqlText));
+    const archiveText = sqlTemplateText(latestElsetsArchiveSql(since, until));
+    check("full-catalog archive lateral is no longer the cheap plan", latestElsetsSqlIsCheap(archiveText) === false, archiveText.slice(0, 200));
+    const tleSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../lib/obc/tleArchive.ts"), "utf8");
+    check("getLatestElsets waits for the latest-elset table before reading it",
+      /ensureLatestElsetReady\(/.test(tleSrc) && /latestElsetsQuerySql\(/.test(tleSrc));
+    check("unready latest-elset table still falls back to the archive seek",
+      /latestElsetsArchiveSql\(/.test(tleSrc));
+
+    const cutoff = oldestArchiveProbeCutoff(Date.parse("2026-10-21T15:16:12Z"));
+    const boundsSql = sqlTemplateText(archiveEpochBoundsSql(cutoff));
+    check("status oldest epoch starts a week before the horizon",
+      cutoff.getTime() === backfillHorizonMs(Date.parse("2026-10-21T15:16:12Z")) - ARCHIVE_OLDEST_PROBE_SLACK_MS);
+    check("status bounds SQL seeks oldest epoch from a cutoff",
+      /where epoch >=/i.test(boundsSql) && /order by epoch asc/i.test(boundsSql) && /limit 1/i.test(boundsSql),
+      boundsSql.slice(0, 300));
+    check("status bounds SQL does not seq-scan with count or distinct",
+      !/count\s*\(/i.test(boundsSql) && !/distinct/i.test(boundsSql), boundsSql.slice(0, 200));
+    check("status bounds SQL still reads the newest epoch",
+      /order by epoch desc/i.test(boundsSql) && /newest_epoch/i.test(boundsSql), boundsSql.slice(0, 400));
 
     const mapped = mapLatestElsetRow({
       norad: 25544,
@@ -213,8 +237,19 @@ async function main(): Promise<void> {
     const scanSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../lib/rpod/scan.ts"), "utf8");
     check("doScan loads elsets via getLatestElsetsOrSkip", scanSrc.includes("getLatestElsetsOrSkip("));
     check("doScan does not call throwing getLatestElsets(", !/\bgetLatestElsets\(/.test(scanSrc));
-    check("doScan logs success (not error) when the fetch is skipped",
-      /if \(loaded\.warning\)[\s\S]{0,500}logScanRow\(\s*"success"/.test(scanSrc));
+    const liveFetchWarning =
+      "latest-elset fetch skipped: Failed query: select ... from rpod_events <- Connection terminated due to connection timeout <- Connection terminated unexpectedly";
+    check("connection timeout on the elset fetch must retry the scan", elsetFetchFailureShouldRetryScan(liveFetchWarning));
+    check("statement timeout on the elset fetch must retry the scan",
+      elsetFetchFailureShouldRetryScan("latest-elset fetch skipped: canceling statement due to statement timeout"));
+    check("query read timeout on the elset fetch must retry the scan",
+      elsetFetchFailureShouldRetryScan("Query read timeout"));
+    check("a non-timeout skip warning does not fail the scan",
+      elsetFetchFailureShouldRetryScan("latest-elset fetch skipped: relation missing") === false);
+    check("doScan throws on a retryable elset fetch so the hour is not a 0-event success",
+      /elsetFetchFailureShouldRetryScan\(loaded\.warning\)\)[\s\S]{0,300}throw new Error\(loaded\.warning\)/.test(scanSrc));
+    check("doScan still logs success for a non-timeout elset skip",
+      /if \(loaded\.warning\)[\s\S]{0,700}logScanRow\(\s*"success"/.test(scanSrc));
   }
 
   console.log("pg-pool handshake abort is retried once (live 2026-10-14)");
@@ -295,6 +330,23 @@ async function main(): Promise<void> {
     check(
       "advisory-lock checkout retries pool.connect once",
       /retryOnceOnTransient\(`\$\{label\} connect`, \(\) => pool\.connect\(\)\)/.test(tleSrc),
+    );
+    check(
+      "scan queries reuse the advisory-lock client",
+      /runWithDbClient\(client/.test(scanSrc),
+    );
+    check(
+      "latest-elset read does not release a borrowed scan client",
+      /const borrowed = currentPoolClient\(\)/.test(tleSrc) && /if \(!borrowed\)/.test(tleSrc),
+    );
+    const livePersist = new Error(
+      'Failed query: select "id", "status", "kind" from "rpod_events" where "rpod_events"."status" = $1\nparams: active',
+    );
+    livePersist.cause = live;
+    check(
+      "2026-10-21 drizzle-wrapped persist handshake abort is transient",
+      isTransientConnectionError(livePersist),
+      formatDbError(livePersist),
     );
     check(
       "latest-elset loader retries the fetch once before skipping",
