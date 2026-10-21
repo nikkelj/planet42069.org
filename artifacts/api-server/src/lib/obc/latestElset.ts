@@ -1,4 +1,4 @@
-import { db, pool } from "@workspace/db";
+import { currentPoolClient, db, pool } from "@workspace/db";
 import {
   obcLatestElset,
   obcSyncLog,
@@ -435,6 +435,35 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Idempotent DDL so a deploy that skips `drizzle-kit push` still has the
+ * pointer table. The table starts empty; the backfill fills it. This does
+ * not lock obc_tle_history.
+ */
+export const LATEST_ELSET_TABLE_DDL = [
+  `CREATE TABLE IF NOT EXISTS obc_latest_elset (
+    norad integer PRIMARY KEY,
+    epoch timestamp NOT NULL,
+    line1 text NOT NULL,
+    line2 text NOT NULL,
+    inc_deg real NOT NULL,
+    raan_deg real NOT NULL,
+    eccentricity real NOT NULL,
+    arg_perigee_deg real NOT NULL,
+    mean_anomaly_deg real NOT NULL,
+    mean_motion_rev_per_day real NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS obc_latest_elset_epoch_idx ON obc_latest_elset (epoch)`,
+] as const;
+
+export async function ensureLatestElsetTable(): Promise<void> {
+  const client = currentPoolClient();
+  for (const statement of LATEST_ELSET_TABLE_DDL) {
+    if (client) await client.query(statement);
+    else await pool.query(statement);
+  }
+}
+
+/**
  * Visit catalog norads until obc_latest_elset has a row for every one that
  * has history, then catch objects added by a later catalog merge.
  * Returns false when the table is missing or the budget runs out — callers
@@ -445,10 +474,15 @@ export async function ensureLatestElsetReady(
 ): Promise<boolean> {
   const deadline = Date.now() + budgetMs;
   try {
+    await ensureLatestElsetTable();
     const mergeAt = await catalogMergeFinishedAt();
     if (!latestElsetBackfillNeedsWork(await readState(), mergeAt)) return true;
 
-    const client = await pool.connect();
+    // The RPOD scan already holds a checked-out client. A second
+    // pool.connect() here is the handshake that dies when the pool has
+    // gone idle. Advisory locks stack on one session.
+    const borrowed = currentPoolClient();
+    const client = borrowed ?? await pool.connect();
     let locked = false;
     try {
       while (Date.now() < deadline) {
@@ -476,7 +510,7 @@ export async function ensureLatestElsetReady(
       if (locked) {
         await client.query("SELECT pg_advisory_unlock($1)", [LOCK_LATEST_ELSET_BACKFILL]).catch(() => undefined);
       }
-      client.release();
+      if (!borrowed) client.release();
     }
   } catch (err) {
     if (isUndefinedLatestTable(err)) return false;

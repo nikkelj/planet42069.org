@@ -1,8 +1,8 @@
-import { db } from "@workspace/db";
+import { currentPoolClient, db, poolDb, runWithDbClient } from "@workspace/db";
 import { rpodEvents, rpodEventMembers, obcSyncLog } from "@workspace/db/schema";
 import { sql, eq, and, inArray, lt, desc } from "drizzle-orm";
 import { logger } from "../logger";
-import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, retryOnceOnTransient, retryTransientConnection, DB_CONNECT_RETRY_ATTEMPTS, DB_CONNECT_RETRY_DELAYS_MS, type LatestElset } from "../obc/tleArchive";
+import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, retryOnceOnTransient, retryTransientConnection, isTransientConnectionError, DB_CONNECT_RETRY_ATTEMPTS, DB_CONNECT_RETRY_DELAYS_MS, type LatestElset } from "../obc/tleArchive";
 import { getSatcatFromStore } from "../obc/store";
 import { MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline, cancelScanAttempt, markScanLogged, sgp4ShouldStop } from "./scanPolicy";
 import {
@@ -72,21 +72,26 @@ export function runRpodScan(): Promise<void> {
   const abort: ScanAbort = { cancelled: false, logged: false };
   scanInFlight = (async () => {
     try {
-      await withAdvisoryLock(LOCK_RPOD_SCAN, "rpod-scan", async () => {
-        const deadlineMs = Date.now() + MAX_RPOD_SCAN_MS;
-        try {
-          await withDeadline(doScan(deadlineMs, abort), MAX_RPOD_SCAN_MS, "rpod-scan");
-        } catch (err) {
-          // withDeadline does not cancel doScan. Set cancelled so a late inner
-          // return cannot insert a second row after the lock is released — but
-          // still write one row here, or lastScanAt stays on the previous success.
-          if (cancelScanAttempt(abort)) {
-            await logScanRow("error", started, null, formatDbError(err), abort, true).catch((logErr) => {
-              logger.error({ err: logErr }, "rpod-scan: failed to write sync log");
-            });
+      await withAdvisoryLock(LOCK_RPOD_SCAN, "rpod-scan", async (client) => {
+        // Persist used to dial a new pool client after SGP4. Idle clients
+        // are gone by then (60s idle timeout), and that handshake is what
+        // pg-pool aborts as "Connection terminated due to connection timeout".
+        await runWithDbClient(client, async () => {
+          const deadlineMs = Date.now() + MAX_RPOD_SCAN_MS;
+          try {
+            await withDeadline(doScan(deadlineMs, abort), MAX_RPOD_SCAN_MS, "rpod-scan");
+          } catch (err) {
+            // withDeadline does not cancel doScan. Set cancelled so a late inner
+            // return cannot insert a second row after the lock is released — but
+            // still write one row here, or lastScanAt stays on the previous success.
+            if (cancelScanAttempt(abort)) {
+              await logScanRow("error", started, null, formatDbError(err), abort, true).catch((logErr) => {
+                logger.error({ err: logErr }, "rpod-scan: failed to write sync log");
+              });
+            }
+            throw err;
           }
-          throw err;
-        }
+        });
       });
     } catch (err) {
       // Lock checkout can fail before doScan (pool connect). That attempt
@@ -118,7 +123,14 @@ export interface RpodScanSyncLogRow {
 export async function insertRpodScanSyncLog(
   row: RpodScanSyncLogRow,
   insert: (values: RpodScanSyncLogRow & { source: "rpod-scan" }) => Promise<unknown> = async (values) => {
-    await db.insert(obcSyncLog).values(values);
+    try {
+      await db.insert(obcSyncLog).values(values);
+    } catch (err) {
+      // The scan client can be dead after a socket destroy. Record the row
+      // on the shared pool so lastScanAt still moves.
+      if (currentPoolClient() == null || !isTransientConnectionError(err)) throw err;
+      await poolDb.insert(obcSyncLog).values(values);
+    }
   },
   delaysMs: readonly number[] = DB_CONNECT_RETRY_DELAYS_MS,
 ): Promise<void> {
@@ -274,6 +286,16 @@ async function sgp4FlagPairs(
 const CONJ_PHASE_SLACK_DEG = DEFAULT_SCREEN.maxRaanDiffDeg + DEFAULT_SCREEN.maxIncDiffDeg;
 const COALIGNED_PHASE_SLACK_DEG = DEFAULT_COALIGNED.maxRaanDiffDeg + DEFAULT_COALIGNED.maxIncDiffDeg;
 
+/**
+ * Connection loss and statement/read timeouts mean the hour did not screen.
+ * Logging success with 0 events used to consume the hour (live 2026-10-21
+ * degraded scans). Those failures should retry. An ordinary skip warning
+ * ("not enough elsets") stays a success row.
+ */
+export function elsetFetchFailureShouldRetryScan(warning: string): boolean {
+  return /connection terminated|timeout exceeded when trying to connect|statement timeout|query read timeout|\b57P01\b|ECONN|EPIPE|socket/i.test(warning);
+}
+
 async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
   const started = new Date();
   const nowMs = Date.now();
@@ -284,9 +306,11 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       loadCatalogMeta(),
     ]);
     if (loaded.warning) {
-      // Do not stamp lastScanStatus=error — a bad TLE fetch must not abort
-      // the hour (same idea as persist skipping one bad event). Record a
-      // success row with the reason so lastScanError is visible.
+      if (elsetFetchFailureShouldRetryScan(loaded.warning)) {
+        // A connection or statement timeout used to log success with 0
+        // events, which consumed the hour. Fail so the scheduler retries.
+        throw new Error(loaded.warning);
+      }
       await logScanRow("success", started, 0, loaded.warning, abort);
       logger.warn({ warning: loaded.warning }, "rpod-scan: skipping hour after elset fetch failure");
       return;

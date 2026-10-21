@@ -145,5 +145,33 @@ class FakeClient extends EventEmitter implements LockClient {
     (err) => err === original);
   assert.equal(client.destroyed, true, "failed work discards session and releases lock");
 }
+{
+  // pg starts query_timeout when query() is called, even if the query is only
+  // queued behind another one on the same socket. The lock session must not
+  // hand the heartbeat to the driver until the in-flight query settles.
+  const client = new FakeClient();
+  const hold = deferred();
+  const driver = client.query.bind(client);
+  client.query = async (config: { text: string; values?: number[]; query_timeout: number }) => {
+    if (config.text === "select pg_sleep") {
+      await hold.promise;
+      return { rows: [] };
+    }
+    return driver(config);
+  };
+  const run = runLockedSession(client, 1, async () => {
+    const sleeping = client.query({ text: "select pg_sleep", query_timeout: 10_000 });
+    await delay(40);
+    assert.equal(
+      client.queries.filter((q) => q === "select 1").length,
+      0,
+      "heartbeat must not reach the driver during the in-flight query",
+    );
+    hold.resolve();
+    await sleeping;
+  }, () => {}, 5);
+  await run;
+  assert.equal(client.destroyed, false);
+}
 console.log("DB worker reliability: all fault-injection checks passed");
 clearTimeout(watchdog);

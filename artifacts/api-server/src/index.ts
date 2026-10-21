@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { dbErrorFields } from "./lib/dbError";
 import { ensureRpodAlertSchema } from "./lib/rpod/ensureAlertSchema";
+import { ensureLatestElsetTable } from "./lib/obc/latestElset";
 import { startObcScheduler } from "./lib/obc/scheduler";
 
 /**
@@ -82,6 +83,12 @@ app.listen(port, (err) => {
       logger.info("rpod-alert: schema ensured");
     } catch (err) {
       logger.error({ err, ...dbErrorFields(err) }, "rpod-alert: schema ensure failed");
+    }
+    try {
+      await ensureLatestElsetTable();
+      logger.info("tle-archive: latest-elset table ensured");
+    } catch (err) {
+      logger.error({ err, ...dbErrorFields(err) }, "tle-archive: latest-elset table ensure failed");
     }
     startObcScheduler();
   })();

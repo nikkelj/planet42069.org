@@ -7,6 +7,30 @@ export interface LockClient {
 }
 
 /**
+ * pg starts a query_timeout when query() is called, even if that query is
+ * only queued behind another one on the same socket. A heartbeat submitted
+ * during the scan's elset read would fire "Query read timeout" at 10s and
+ * mark the session broken. Hold later queries until the in-flight promise
+ * settles so the timeout covers the heartbeat itself, not the query ahead of it.
+ */
+function installQuerySerializer(client: LockClient): () => void {
+  const previous = client.query;
+  const call = previous.bind(client) as (...args: unknown[]) => Promise<unknown>;
+  let tail: Promise<unknown> = Promise.resolve();
+  client.query = ((...args: unknown[]) => {
+    const run = tail.then(() => call(...args));
+    tail = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }) as LockClient["query"];
+  return () => {
+    client.query = previous;
+  };
+}
+
+/**
  * A failed lock session must be destroyed, never returned for reuse.
  * Do not race work against connection loss: JS promises cannot cancel work,
  * and releasing early would allow retries while the original still runs.
@@ -28,6 +52,7 @@ export async function runLockedSession(
       onLoss(err);
     }
   };
+  const restoreQueries = installQuerySerializer(client);
   const query = (text: string, values?: number[]) =>
     client.query({ text, values, query_timeout: 10_000 });
   client.on("error", lose);
@@ -60,6 +85,8 @@ export async function runLockedSession(
         await query("select pg_advisory_unlock($1)", [key]).catch(lose);
       }
     } finally {
+      // Restore the pool client's query method before it is reused.
+      restoreQueries();
       // Keep the listener installed through release (the pool then owns idle errors).
       client.release(Boolean(broken));
       client.removeListener("error", lose);

@@ -1,6 +1,6 @@
-import { db, pool } from "@workspace/db";
+import { currentPoolClient, db, pool, type DbPoolClient } from "@workspace/db";
 import { obcTleHistory, obcWorkerState, obcSyncLog, type InsertObcTleHistory } from "@workspace/db/schema";
-import { sql, desc, asc, and, gte, eq, type SQL } from "drizzle-orm";
+import { sql, asc, and, gte, eq, inArray, type SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { logger } from "../logger";
 import { runLockedSession } from "./advisorySession";
@@ -160,16 +160,23 @@ async function fetchJson<T>(path: string): Promise<T> {
  * budgets hold system-wide even with multiple server instances (autoscaled
  * deployment). When another instance holds the lock, this run is skipped.
  */
-export async function withAdvisoryLock(key: number, label: string, fn: () => Promise<void>): Promise<void> {
-  // pg-pool 3.13 (pg 8.20) is the only place that builds
-  // "Connection terminated due to connection timeout" with cause
-  // "Connection terminated unexpectedly": Pool.newClient destroys the
-  // socket when a *new* handshake exceeds connectionTimeoutMillis (10s).
-  // That rejection is not a Drizzle "Failed query", so runRpodScan's
-  // lock-checkout catch stores it verbatim as lastScanStatus=error.
-  // One retry: the scan has not started, and a second dial usually lands.
+export async function withAdvisoryLock(
+  key: number,
+  label: string,
+  fn: (client: DbPoolClient) => Promise<void>,
+): Promise<void> {
+  // pg-pool 3.13 (pg 8.20) builds "Connection terminated due to connection
+  // timeout" with cause "Connection terminated unexpectedly" only in
+  // Pool.newClient, when a *new* handshake exceeds connectionTimeoutMillis
+  // (10s). pool.connect() stores that string as-is. A drizzle query that
+  // has to dial (no idle client) wraps the same error as
+  // "Failed query: … <- Connection terminated due to connection timeout".
+  // That is the 2026-10-21 rpod_events failure: the scan had retired every
+  // pooled client during SGP4, then persist dialed. One retry on the lock
+  // checkout: the scan has not started, and a second dial usually lands.
+  // The scan's own queries reuse this client instead of dialing again.
   const client = await retryOnceOnTransient(`${label} connect`, () => pool.connect());
-  const ran = await runLockedSession(client, key, fn, (err) => {
+  const ran = await runLockedSession(client, key, () => fn(client), (err) => {
     logger.error({ err: String(err), label }, "db: advisory lock session lost; discarding connection");
   });
   if (!ran) logger.info(`${label}: another instance holds the lock, skipping run`);
@@ -875,7 +882,11 @@ export function latestElsetClientIsDead(err: unknown): boolean {
 }
 
 async function queryLatestElsetRows(query: SQL, seqscanOff: boolean): Promise<LatestElset[]> {
-  const client = await pool.connect();
+  // Inside the RPOD scan this is the advisory-lock client, already checked
+  // out and heartbeated. Releasing it would return the lock session to the
+  // pool while the scan still holds the lock.
+  const borrowed = currentPoolClient();
+  const client = borrowed ?? await pool.connect();
   const deadline = attachLatestElsetClientDeadline(client, LATEST_ELSETS_CLIENT_TIMEOUT_MS);
   const work = (async (): Promise<LatestElset[]> => {
     const q = pgDialect.sqlToQuery(query);
@@ -903,11 +914,13 @@ async function queryLatestElsetRows(query: SQL, seqscanOff: boolean): Promise<La
     throw wrapped;
   } finally {
     deadline.cancel();
-    try {
-      if (releaseErr) client.release(releaseErr);
-      else client.release();
-    } catch (releaseFailure) {
-      logger.warn({ err: String(releaseFailure) }, "tle-archive: latest-elset client release failed");
+    if (!borrowed) {
+      try {
+        if (releaseErr) client.release(releaseErr);
+        else client.release();
+      } catch (releaseFailure) {
+        logger.warn({ err: String(releaseFailure) }, "tle-archive: latest-elset client release failed");
+      }
     }
   }
 }
@@ -1009,10 +1022,46 @@ export interface ArchiveStatus {
  * newestEpoch can still be days in the future — space-track publishes
  * predicted epochs for multi-day objects. That is archive truth, not the
  * scan window (getLatestElsets caps at now + ELSET_FUTURE_SLACK_MS).
+ *
+ * Live 2026-10-21 ~15:16Z: an unbounded `ORDER BY epoch ASC LIMIT 1` on the
+ * 17.9M-row archive took ~27s (dead leading edge from horizon deletes) while
+ * GET /api/rpod/events stayed under a second and the 10s cache made the
+ * retry look healthy. The oldest probe starts a week before the horizon so
+ * the index seek skips that graveyard and still reports a prune backlog.
  */
 export const ARCHIVE_STATUS_CACHE_MS = 10_000;
 
+/** How far before the retention horizon the oldest-epoch probe may start. */
+export const ARCHIVE_OLDEST_PROBE_SLACK_MS = 7 * 86_400_000;
+
+export function oldestArchiveProbeCutoff(nowMs: number = Date.now()): Date {
+  return new Date(backfillHorizonMs(nowMs) - ARCHIVE_OLDEST_PROBE_SLACK_MS);
+}
+
+/**
+ * One round trip, two index probes. The oldest probe is bounded so it does
+ * not walk dead tuples from years of horizon deletes. The newest probe is
+ * the live right edge (future-dated epochs included).
+ */
+export function archiveEpochBoundsSql(cutoff: Date = oldestArchiveProbeCutoff()) {
+  return sql`
+    SELECT
+      (
+        SELECT epoch FROM obc_tle_history
+        WHERE epoch >= ${cutoff}
+        ORDER BY epoch ASC
+        LIMIT 1
+      ) AS oldest_epoch,
+      (
+        SELECT epoch FROM obc_tle_history
+        ORDER BY epoch DESC
+        LIMIT 1
+      ) AS newest_epoch
+  `;
+}
+
 let archiveStatusCache: { at: number; value: ArchiveStatus } | null = null;
+let archiveStatusInflight: Promise<ArchiveStatus> | null = null;
 
 export function clearArchiveStatusCache(): void {
   archiveStatusCache = null;
@@ -1061,15 +1110,24 @@ export async function getArchiveStatus(): Promise<ArchiveStatus> {
   if (archiveStatusCache && Date.now() - archiveStatusCache.at < ARCHIVE_STATUS_CACHE_MS) {
     return archiveStatusCache.value;
   }
-  const value = await loadArchiveStatus();
-  archiveStatusCache = { at: Date.now(), value };
-  return value;
+  // A retry during a slow load used to start a second set of checkouts
+  // before the cache was filled. Share the in-flight read.
+  if (!archiveStatusInflight) {
+    archiveStatusInflight = loadArchiveStatus()
+      .then((value) => {
+        archiveStatusCache = { at: Date.now(), value };
+        return value;
+      })
+      .finally(() => {
+        archiveStatusInflight = null;
+      });
+  }
+  return archiveStatusInflight;
 }
 
 async function loadArchiveStatus(): Promise<ArchiveStatus> {
-  const [newestRows, oldestRows, estResult, bf, wm, bo] = await Promise.all([
-    db.select({ epoch: obcTleHistory.epoch }).from(obcTleHistory).orderBy(desc(obcTleHistory.epoch)).limit(1),
-    db.select({ epoch: obcTleHistory.epoch }).from(obcTleHistory).orderBy(asc(obcTleHistory.epoch)).limit(1),
+  const [boundResult, estResult, stateRows] = await Promise.all([
+    db.execute(archiveEpochBoundsSql()),
     db.execute(sql`
       SELECT
         c.reltuples AS total_rows,
@@ -1087,20 +1145,25 @@ async function loadArchiveStatus(): Promise<ArchiveStatus> {
       logger.warn({ err }, "tle-archive: pg_class stats unavailable");
       return null;
     }),
-    getWorkerState<{ cursorMs: number }>(STATE_BACKFILL),
-    getWorkerState<{ epochMs: number }>(STATE_WATERMARK),
-    getWorkerState<{ until: number }>(STATE_BACKOFF),
+    db.select().from(obcWorkerState).where(inArray(obcWorkerState.key, [
+      STATE_BACKFILL, STATE_WATERMARK, STATE_BACKOFF,
+    ])),
   ]);
+  const bounds = executeRows<{ oldest_epoch: Date | string | null; newest_epoch: Date | string | null }>(boundResult)[0];
   const est = executeRows<{ total_rows: unknown; n_distinct: unknown }>(estResult)[0];
   const totalRows = estimatePgCount(asFiniteNumber(est?.total_rows));
   const objects = estimatePgDistinct(asFiniteNumber(est?.n_distinct), totalRows);
+  const state = new Map(stateRows.map((row) => [row.key, row.value]));
+  const bf = state.get(STATE_BACKFILL) as { cursorMs?: number } | undefined;
+  const wm = state.get(STATE_WATERMARK) as { epochMs?: number } | undefined;
+  const bo = state.get(STATE_BACKOFF) as { until?: number } | undefined;
   const iso = (v: string | Date | null | undefined): string | null =>
     v == null ? null : new Date(v).toISOString();
   return {
     totalRows,
     objects,
-    newestEpoch: iso(newestRows[0]?.epoch ?? null),
-    oldestEpoch: iso(oldestRows[0]?.epoch ?? null),
+    newestEpoch: iso(bounds?.newest_epoch ?? null),
+    oldestEpoch: iso(bounds?.oldest_epoch ?? null),
     horizonDays: BACKFILL_HORIZON_DAYS,
     horizon: new Date(backfillHorizonMs()).toISOString(),
     coarseAfterDays: COARSE_AFTER_DAYS,
