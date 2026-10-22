@@ -297,7 +297,10 @@ export function elsetFetchFailureShouldRetryScan(warning: string): boolean {
   // statement or query-read timeout is not a dead socket, but the hour was
   // still not screened, so the scheduler must retry it too.
   if (isTransientConnectionError(warning)) return true;
-  return /statement timeout|query read timeout|could not be reacquired/i.test(warning);
+  // A missing pointer table used to fall through to the catalog-wide history
+  // probe. Refusing that probe must still fail the hour (so it retries)
+  // rather than log success with 0 events.
+  return /statement timeout|query read timeout|could not be reacquired|refusing full-catalog history probe/i.test(warning);
 }
 
 /**

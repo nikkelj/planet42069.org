@@ -16,14 +16,19 @@ export const LOCK_LATEST_ELSET_BACKFILL = 421073;
 
 const STATE_LATEST_ELSET = "tle_latest_elset_backfill";
 
-/** Catalog norads per backfill statement. Each one is a single index seek. */
-export const LATEST_ELSET_BACKFILL_BATCH = 500;
+/**
+ * Catalog norads per backfill statement. Each one must be a single index
+ * seek into obc_tle_history. 500 at a time was enough random heap I/O to
+ * blow the 20s statement timeout (or get the backend killed) on the
+ * ~17.9M-row archive, which rolled the batch back and left the cursor unmoved.
+ */
+export const LATEST_ELSET_BACKFILL_BATCH = 100;
 
 /**
- * How long one scan may spend finishing the backfill before it gives up and
- * reads the archive directly. 30k objects / 500 is ~60 seeks-batches; this
- * budget covers a cold small Postgres without holding the scan for the
- * whole 25-minute cap.
+ * How long one scan may spend filling obc_latest_elset before it reads
+ * whatever the pointer already holds. The scan must not switch to a
+ * per-norad history probe when this budget runs out — that probe is what
+ * saturates the host until new handshakes die.
  */
 export const LATEST_ELSET_BACKFILL_BUDGET_MS = 180_000;
 
@@ -71,52 +76,61 @@ function epochMillis(epoch: Date | string): number {
   return Number.isFinite(ms) ? ms : Number.NEGATIVE_INFINITY;
 }
 
+function normalizeSql(sqlText: string): string {
+  return sqlText.toLowerCase().replace(/["`]/g, "").replace(/\s+/g, " ");
+}
+
 /**
- * True when `sqlText` reads the small latest-elset table instead of sorting
- * or aggregating obc_tle_history.
+ * True when `sqlText` is an index-range read of obc_latest_elset and does
+ * not touch obc_tle_history.
  *
- * Rejected shapes, both seen live:
+ * Rejected shapes, all seen live:
  *  - DISTINCT ON (norad) selecting line1/line2 over an epoch window
  *    (2026-08-26, ~5.1M rows, statement_timeout)
  *  - MAX(epoch) GROUP BY norad, then join back for the TLE text
  *    (2026-09-28, ~19.1M rows, connection timeout)
- *  - LATERAL ORDER BY epoch DESC LIMIT 1 for every catalogued norad
- *    (still a ~30k random heap fetch of the TLE lines; the handshake
- *    timeout on 2026-10-14 kept firing while that plan ran next to thinning)
- *
- * The cheap plan reads obc_latest_elset and only seeks obc_tle_history for
- * objects whose stored epoch is past the scan window (future-dated elsets).
+ *  - LATERAL ORDER BY epoch DESC LIMIT 1 for every catalogued norad,
+ *    including a UNION whose WHERE h.epoch > until sits *after* the lateral
+ *    (2026-10-14 and still 2026-10-22: the host saturates and the retry's
+ *    new handshake dies as "Connection terminated due to connection timeout")
  */
 export function latestElsetsSqlIsCheap(sqlText: string): boolean {
-  const s = sqlText.toLowerCase().replace(/["`]/g, "").replace(/\s+/g, " ");
+  const s = normalizeSql(sqlText);
   if (/distinct\s+on/.test(s) && /line1/.test(s) && /line2/.test(s)) return false;
   if (/max\s*\(\s*epoch\s*\)/.test(s) && /group\s+by/.test(s)) return false;
-  const readsLatest = /from\s+obc_latest_elset\b/.test(s) || /join\s+obc_latest_elset\b/.test(s);
+  if (/obc_tle_history/.test(s) || /\blateral\b/.test(s)) return false;
+  if (/distinct\s+norad/.test(s)) return false;
+  const readsLatest = /from\s+obc_latest_elset\b/.test(s);
   const epochWindow = /epoch\s*>/.test(s) && /epoch\s*<=/.test(s);
-  const fromCatalog = /obc_objects/.test(s) && /distinct\s+norad/.test(s);
-  const futureFallback =
-    /union\s+all/.test(s)
-    && /obc_tle_history/.test(s)
-    && /\blateral\b/.test(s)
-    && /\blimit\s+1\b/.test(s)
-    && /order\s+by\s+[\w.]*epoch\s+desc/.test(s)
-    && /h\.epoch\s*>/.test(s);
-  // A lateral seek driven by every catalog id (no latest table) is the plan
-  // that still timed out. Require the latest table plus the gated fallback.
-  return readsLatest && epochWindow && fromCatalog && futureFallback;
+  // Catalog membership is a semi-join on the small pointer, not the driver
+  // of a history seek.
+  const catalogFilter = /obc_objects/.test(s);
+  return readsLatest && epochWindow && catalogFilter;
 }
 
 /**
- * Latest elset per catalogued norad with epoch in (`since`, `until`].
- *
- * Objects whose absolute newest epoch is past `until` (space-track slides
- * multi-day objects forward to the next perigee; live newestEpoch has been
- * days ahead) take the second branch: one index seek for the newest row
- * that is still inside the window. Everyone else is a filter on the
- * ~30k-row table. Norads with no in-window elset drop out, matching the
- * old inner lateral.
+ * True when a lateral history seek is driven by the whole catalog (or by
+ * the pointer *before* the future-epoch filter). Postgres may apply a
+ * WHERE that follows CROSS JOIN LATERAL only after the seek; the
+ * 2026-10-22 scans still died that way.
  */
-export function latestElsetsQuerySql(since: Date, until: Date) {
+export function historyLateralIsCatalogWide(sqlText: string): boolean {
+  const s = normalizeSql(sqlText);
+  if (!/obc_tle_history/.test(s) || !/\blateral\b/.test(s)) return false;
+  const lateralAt = s.search(/\blateral\b/);
+  const head = s.slice(0, lateralAt);
+  if (/distinct\s+norad/.test(head) && /obc_objects/.test(head)) return true;
+  if (!/from\s+obc_latest_elset\b/.test(head)) return true;
+  if (!/epoch\s*>/.test(head)) return true;
+  return false;
+}
+
+/**
+ * In-window pointer rows. No history read. Epoch bounds hit
+ * obc_latest_elset_epoch_idx; the EXISTS is an index lookup on
+ * obc_objects(norad) per returned row (~30k), not per archive row.
+ */
+export function latestElsetsInWindowSql(since: Date, until: Date) {
   return sql`
     SELECT
       h.norad,
@@ -129,15 +143,25 @@ export function latestElsetsQuerySql(since: Date, until: Date) {
       h.arg_perigee_deg,
       h.mean_anomaly_deg,
       h.mean_motion_rev_per_day
-    FROM (
-      SELECT DISTINCT norad
-      FROM obc_objects
-      WHERE norad IS NOT NULL
-    ) AS ids
-    JOIN obc_latest_elset AS h ON h.norad = ids.norad
+    FROM obc_latest_elset AS h
     WHERE h.epoch > ${since}
       AND h.epoch <= ${until}
-    UNION ALL
+      AND EXISTS (
+        SELECT 1
+        FROM obc_objects AS o
+        WHERE o.norad = h.norad
+      )
+  `;
+}
+
+/**
+ * Objects whose stored newest epoch is past `until` (space-track slides
+ * multi-day objects forward to the next perigee). The future filter is
+ * inside the driving subquery so the lateral cannot run for every catalog
+ * norad. One index seek each, and only for that future-dated set.
+ */
+export function latestElsetsFutureSql(since: Date, until: Date) {
+  return sql`
     SELECT
       p.norad,
       p.epoch,
@@ -150,11 +174,15 @@ export function latestElsetsQuerySql(since: Date, until: Date) {
       p.mean_anomaly_deg,
       p.mean_motion_rev_per_day
     FROM (
-      SELECT DISTINCT norad
-      FROM obc_objects
-      WHERE norad IS NOT NULL
-    ) AS ids
-    JOIN obc_latest_elset AS h ON h.norad = ids.norad
+      SELECT h.norad
+      FROM obc_latest_elset AS h
+      WHERE h.epoch > ${until}
+        AND EXISTS (
+          SELECT 1
+          FROM obc_objects AS o
+          WHERE o.norad = h.norad
+        )
+    ) AS future
     CROSS JOIN LATERAL (
       SELECT
         norad,
@@ -168,13 +196,12 @@ export function latestElsetsQuerySql(since: Date, until: Date) {
         mean_anomaly_deg,
         mean_motion_rev_per_day
       FROM obc_tle_history
-      WHERE norad = h.norad
+      WHERE norad = future.norad
         AND epoch > ${since}
         AND epoch <= ${until}
       ORDER BY epoch DESC
       LIMIT 1
     ) AS p
-    WHERE h.epoch > ${until}
   `;
 }
 
@@ -371,6 +398,13 @@ function firstRow(result: unknown): Record<string, unknown> | null {
 async function runBackfillBatch(afterNorad: number, missingOnly: boolean): Promise<BackfillBatchResult> {
   const result = await db.transaction(async (tx) => {
     await tx.execute(sql.raw(`SET LOCAL statement_timeout = ${BACKFILL_STATEMENT_TIMEOUT_MS}`));
+    // The lateral is already LIMIT 1, but a hash or merge over obc_tle_history
+    // is still a legal plan and seq-scans ~17.9M rows. Forbid those so a
+    // batch is N index seeks. A statement_timeout then cancels cleanly
+    // instead of the backend being killed under memory pressure.
+    await tx.execute(sql.raw("SET LOCAL enable_seqscan = off"));
+    await tx.execute(sql.raw("SET LOCAL enable_hashjoin = off"));
+    await tx.execute(sql.raw("SET LOCAL enable_mergejoin = off"));
     return tx.execute(backfillBatchSql(afterNorad, LATEST_ELSET_BACKFILL_BATCH, missingOnly));
   });
   const row = firstRow(result);
@@ -466,8 +500,9 @@ export async function ensureLatestElsetTable(): Promise<void> {
 /**
  * Visit catalog norads until obc_latest_elset has a row for every one that
  * has history, then catch objects added by a later catalog merge.
- * Returns false when the table is missing or the budget runs out — callers
- * must not serve a partial table as the scan input.
+ * Returns false when the table is missing, the budget runs out, or a batch
+ * stops. Callers still read the pointer. A partial table is the scan input;
+ * the full-catalog history lateral is not a fallback.
  */
 export async function ensureLatestElsetReady(
   budgetMs: number = LATEST_ELSET_BACKFILL_BUDGET_MS,
@@ -530,7 +565,16 @@ async function fillUntil(deadline: number, mergeAt: string | null): Promise<void
   }
   while (Date.now() < deadline) {
     if (!state.done) {
-      const batch = await runBackfillBatch(state.cursor, false);
+      let batch: BackfillBatchResult;
+      try {
+        batch = await runBackfillBatch(state.cursor, false);
+      } catch (err) {
+        // Leave the cursor where the last committed batch put it. The scan
+        // reads the pointer next; retrying this batch via the archive probe
+        // is what wedged the host.
+        logger.warn({ err: String(err) }, "tle-archive: latest-elset backfill batch stopped");
+        return;
+      }
       const exhausted = batch.idCount < LATEST_ELSET_BACKFILL_BATCH;
       state = {
         cursor: batch.maxNorad ?? state.cursor,
@@ -555,7 +599,13 @@ async function fillUntil(deadline: number, mergeAt: string | null): Promise<void
       if (batch.idCount === 0) return;
       continue;
     }
-    const batch = await runBackfillBatch(state.sweepCursor, true);
+    let batch: BackfillBatchResult;
+    try {
+      batch = await runBackfillBatch(state.sweepCursor, true);
+    } catch (err) {
+      logger.warn({ err: String(err) }, "tle-archive: latest-elset catalog sweep batch stopped");
+      return;
+    }
     const exhausted = batch.idCount < LATEST_ELSET_BACKFILL_BATCH;
     state = {
       ...state,

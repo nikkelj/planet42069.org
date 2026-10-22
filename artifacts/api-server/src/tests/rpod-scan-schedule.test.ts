@@ -159,10 +159,10 @@ console.log("scheduler + scan source: staleness checks, skip logging, timeouts")
   const tleSrc = readFileSync(join(here, "../lib/obc/tleArchive.ts"), "utf8");
   check("latest-elset fetch sets a local statement_timeout",
     /SET LOCAL statement_timeout = \$\{LATEST_ELSETS_STATEMENT_TIMEOUT_MS\}/.test(tleSrc)
-    && /LATEST_ELSETS_STATEMENT_TIMEOUT_MS = 120_000/.test(tleSrc));
+    && /LATEST_ELSETS_STATEMENT_TIMEOUT_MS = 20_000/.test(tleSrc));
   check("latest-elset fetch arms a client socket deadline under the scan cap",
     tleSrc.includes("attachLatestElsetClientDeadline(client, LATEST_ELSETS_CLIENT_TIMEOUT_MS)")
-    && /LATEST_ELSETS_CLIENT_TIMEOUT_MS = 150_000/.test(tleSrc));
+    && /LATEST_ELSETS_CLIENT_TIMEOUT_MS = 30_000/.test(tleSrc));
   check("client deadline destroys the pg socket",
     /stream\?\.destroy\(err\)/.test(tleSrc));
 }

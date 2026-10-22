@@ -26,6 +26,13 @@ export const pool = new Pool({
   // timeout twice in a row, so a longer checkout would only stall every
   // worker on a database that is actually down. Cheap sync-log writes and
   // freshness reads retry instead (retryTransientConnection).
+  //
+  // pg-pool 3.13 builds "Connection terminated due to connection timeout"
+  // with cause "Connection terminated unexpectedly" only in Pool.newClient,
+  // when this handshake cap fires (stream.destroy() with no error). A full
+  // pool is a different string ("timeout exceeded when trying to connect").
+  // Raising this cap does not help a server that is wedged by a history
+  // probe; it only delays every other worker. Keep the probe off the scan.
   connectionTimeoutMillis: 10_000,
   // Notice a proxy that already RST an idle socket. Pool max stays the
   // driver default (10). The hourly scan reuses its advisory-lock client
