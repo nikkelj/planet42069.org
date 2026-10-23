@@ -1,10 +1,12 @@
 /**
- * Station keeping: a plane-matched red-versus-blue pair holding a steady
+ * Station keeping: a plane-matched red-versus-blue pair holding an
  * along-track offset. Pure checks (no database):
- *  - stable offsets inside the cap classify; far, fast, or short histories do not
+ *  - one elset per object classifies from current geometry (0.5° RAAN
+ *    plane match, matched SMA, offset inside the cap)
+ *  - drift under 25 km/day is required only when 2+ samples exist
  *  - blue-blue, red-neutral, and same-launch pairs never enter the prefilter
- *  - Kosmos 2612 (68762) trailing ICEYE-X36 (59103) classifies from the
- *    published 2026-10-21 elements, rewound at each object's own mean motion
+ *  - Kosmos 2612 (68762) trailing ICEYE-X36 (59103) by ~476 km classifies
+ *    from the published 2026-10-21 elements alone, and from a rewound history
  *  - alerts fire on onset and on a ≥100 km offset change, not on a repeat
  *  - the history seek is a VALUES/LATERAL over candidate NORADs only
  *  - existing range and velocity gates are unchanged
@@ -100,6 +102,8 @@ console.log("gates that must stay put");
   check("coplanar SGP4 range cap stays 250 km", COALIGNED_MAX_RANGE_KM === 250);
   check("coplanar SGP4 velocity cap stays 0.6 km/s", COALIGNED_MAX_RELVEL_KM_S === 0.6);
   check("default station-keeping offset cap is 1000 km", DEFAULT_STATION_KEEPING.maxOffsetKm === 1000);
+  check("plane match stays the 0.5° RAAN prefilter", DEFAULT_STATION_KEEPING.prefilterRaanDiffDeg === 0.5);
+  check("one paired elset is enough", DEFAULT_STATION_KEEPING.minSamples === 1);
   const widened = stationKeepingOptions({ RPOD_STATION_KEEP_MAX_OFFSET_KM: "1500" } as NodeJS.ProcessEnv);
   check("RPOD_STATION_KEEP_MAX_OFFSET_KM overrides the cap", widened.maxOffsetKm === 1500);
   const bogus = stationKeepingOptions({ RPOD_STATION_KEEP_MAX_OFFSET_KM: "nope" } as NodeJS.ProcessEnv);
@@ -122,14 +126,40 @@ console.log("classification");
 
   const drifting = el({ norad: 200, meanAnomalyDeg: 12, meanMotionRevPerDay: 15.1 + 0.0046 });
   check("about 200 km/day of drift is rejected", classifyPair(red, drifting) == null);
+  const driftingOnce = classifyStationKeeping([red], [drifting], T0 + 3600_000);
+  check("one elset skips the drift-rate check", driftingOnce != null && driftingOnce.samples === 1, JSON.stringify(driftingOnce));
+  const driftingTwice = classifyStationKeeping(historyFrom(red, [0, 2]), historyFrom(drifting, [0, 2]), T0 + 3600_000);
+  check("two samples still reject about 200 km/day of drift", driftingTwice == null);
 
   const skewed = el({ norad: 200, meanAnomalyDeg: 14, raanDeg: 42 });
   check("a 2° RAAN split is rejected", classifyPair(red, skewed) == null);
+  const raanOk = el({ norad: 200, meanAnomalyDeg: 14, raanDeg: 40.4 });
+  check("0.4° RAAN still matches the 0.5° prefilter from one elset",
+    classifyStationKeeping([red], [raanOk], T0 + 3600_000) != null);
+  const raanOut = el({ norad: 200, meanAnomalyDeg: 14, raanDeg: 40.6 });
+  check("0.6° RAAN is outside the prefilter", classifyStationKeeping([red], [raanOut], T0 + 3600_000) == null);
+  const incOk = el({ norad: 200, meanAnomalyDeg: 14, incDeg: 98.05 });
+  check("0.25° inclination is inside the plane prefilter",
+    classifyStationKeeping([red], [incOk], T0 + 3600_000) != null);
+  const incOut = el({ norad: 200, meanAnomalyDeg: 14, incDeg: 98.15 });
+  check("0.35° inclination is outside the plane prefilter",
+    classifyStationKeeping([red], [incOut], T0 + 3600_000) == null);
+  const smaOk = el({ norad: 200, meanAnomalyDeg: 14, meanMotionRevPerDay: 15.12 });
+  check("about 6 km of SMA difference still matches",
+    classifyStationKeeping([red], [smaOk], T0 + 3600_000) != null);
+  const smaOut = el({ norad: 200, meanAnomalyDeg: 14, meanMotionRevPerDay: 15.13 });
+  check("about 9 km of SMA difference is not matched",
+    classifyStationKeeping([red], [smaOut], T0 + 3600_000) == null);
 
+  const one = classifyStationKeeping([red], [blue], T0 + 3600_000);
+  check("one elset per object classifies a plane-matched offset",
+    one != null && one.samples === 1 && one.offsetKm > 200 && one.offsetKm < 900 && one.spanDays === 0,
+    JSON.stringify(one));
   const short = classifyStationKeeping(historyFrom(red, [0, 1]), historyFrom(blue, [0, 1]), T0 + 3600_000);
-  check("fewer than 3 samples is rejected", short == null);
+  check("two samples of a steady offset classify", short != null && short.samples === 2, JSON.stringify(short));
   const brief = classifyStationKeeping(historyFrom(red, [0, 0.5, 1]), historyFrom(blue, [0, 0.5, 1]), T0 + 3600_000);
-  check("a span under 48 h is rejected", brief == null);
+  check("a span under 48 h still classifies", brief != null && brief.spanDays < 2, JSON.stringify(brief));
+  check("no samples do not classify", classifyStationKeeping([], [], T0 + 3600_000) == null);
 
   const tight = stationKeepingOptions({ RPOD_STATION_KEEP_MAX_OFFSET_KM: "100" } as NodeJS.ProcessEnv);
   check("a lower configured cap rejects the same steady pair", classifyPair(red, blue, T0 + 3600_000, tight) == null);
@@ -251,6 +281,23 @@ console.log("Kosmos 2612 vs ICEYE-X36 (CelesTrak GP, epoch 2026-10-21)");
   check("SMA split is under 1 km", verdict != null && Math.abs(verdict.dSmaKm) < 1, String(verdict?.dSmaKm));
   check("published elements are not a suspected cross-tag", !isSuspectedCrossTag(kosmos2612, iceye));
 
+  // CelesTrak often has a single fresh elset for each vehicle. That pair
+  // still has to classify: Kosmos 2612 trailing ICEYE-X36 by ~476 km.
+  const once = classifyStationKeeping([kosmos2612], [iceye], nowMs);
+  console.log(
+    `  single elset 68762 vs 59103: offset=${once?.offsetKm.toFixed(1)} km`
+    + ` signed=${once?.signedOffsetKm.toFixed(1)} km`
+    + ` samples=${once?.samples} trail=${once?.trailNorad} lead=${once?.leadNorad}`,
+  );
+  check("one published elset per object classifies Kosmos 2612 trailing ICEYE-X36",
+    once != null && once.samples === 1, JSON.stringify(once));
+  check("the single-elset offset is about 476 km, inside the 1000 km cap",
+    once != null && once.offsetKm >= 460 && once.offsetKm <= 490, String(once?.offsetKm));
+  check("the single elset still has Kosmos 2612 trailing ICEYE-X36",
+    once?.trailNorad === 68762 && once?.leadNorad === 59103);
+  check("a single elset does not invent a drift rate",
+    once != null && once.driftKmPerDay === 0 && once.spanDays === 0, String(once?.driftKmPerDay));
+
   // CelesTrak publishes one elset for every vehicle docked to the ISS.
   // Nauka and Crew Dragon 13, epoch 2026-10-21T01:08:59.469792Z.
   const iss = el({
@@ -282,6 +329,27 @@ console.log("Kosmos 2612 vs ICEYE-X36 (CelesTrak GP, epoch 2026-10-21)");
   });
   check("screen returns the Kosmos/ICEYE hit",
     screened.hits.length === 1 && screened.hits[0].a === 68762 && screened.hits[0].b === 59103 && !screened.capped);
+
+  const sparse = await screenStationKeeping({
+    latest: [iceye, kosmos2612],
+    catalog,
+    nowMs,
+    loadHistory: async (norads) => {
+      check("sparse history is still sought only for the plane-matched pair",
+        norads.length === 2 && norads.includes(68762) && norads.includes(59103), norads.join(","));
+      return [];
+    },
+  });
+  check("an empty archive still classifies the pair from the current elsets",
+    sparse.hits.length === 1
+      && sparse.hits[0].a === 68762
+      && sparse.hits[0].b === 59103
+      && sparse.hits[0].verdict.samples === 1
+      && sparse.hits[0].verdict.trailNorad === 68762
+      && sparse.hits[0].verdict.leadNorad === 59103
+      && sparse.hits[0].verdict.offsetKm >= 460
+      && sparse.hits[0].verdict.offsetKm <= 490,
+    JSON.stringify(sparse.hits[0]?.verdict));
 
   const excluded = await screenStationKeeping({
     latest: [iceye, kosmos2612],

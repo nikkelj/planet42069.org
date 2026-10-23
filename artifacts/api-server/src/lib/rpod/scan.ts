@@ -58,10 +58,12 @@ export { DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry };
  *  - persist only interesting events (red paired with blue or neutral,
  *    exercise-flagged blue-on-blue, messy clusters, ultra-close
  *    near-misses) — see interest.ts
- *  - station keeping is a separate kind: red-versus-blue pairs whose
- *    along-track offset stays inside the configured cap (default 1000 km)
- *    across several elsets. History is sought only for plane-matched
- *    candidates, not per catalog object. Existing classes are not relabeled.
+ *  - station keeping is a separate kind: a plane-matched red-versus-blue
+ *    pair whose along-track offset stays inside the configured cap
+ *    (default 1000 km). One elset per object is enough. History is sought
+ *    only for those candidates, not per catalog object, and the drift-rate
+ *    check runs only when a second sample exists. Existing classes are
+ *    not relabeled.
  */
 
 const ELSET_MAX_AGE_MS = 3 * 86400_000;
