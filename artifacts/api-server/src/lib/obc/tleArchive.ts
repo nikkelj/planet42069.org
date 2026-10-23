@@ -592,11 +592,32 @@ export function coarseDayThinSql(
   `;
 }
 
-export function horizonDeleteSql(horizon: Date, budget: number) {
+/**
+ * Delete live rows just past the retention horizon without walking the dead
+ * leading edge of obc_tle_history_epoch_idx.
+ *
+ * `WHERE epoch < horizon LIMIT n` is a bitmap of every dead index entry
+ * horizon deletes have left behind. On PostgreSQL 16 with autovacuum off,
+ * 1,999,085 dead tuples and 80 live rows in the window: that bitmap visited
+ * 1,995,980 index rows, read 54,078 buffers, and took 457ms. The same
+ * unbounded left edge was ~27s in production for LIMIT 1 (2026-10-21), which
+ * is long enough that a new handshake hits the 10s pool cap
+ * ("Connection terminated due to connection timeout"). Starting at
+ * horizon − ARCHIVE_OLDEST_PROBE_SLACK_MS (the status probe's cutoff) was
+ * an index scan, 28 buffers, 0.078ms, same 80 rows. A backlog older than that
+ * slack is invisible to the status oldest probe too; prune runs every 30 min
+ * and the live backlog is minutes, not days.
+ */
+export function horizonDeleteSql(
+  horizon: Date,
+  budget: number,
+  notBefore: Date = new Date(horizon.getTime() - ARCHIVE_OLDEST_PROBE_SLACK_MS),
+) {
   return sql`
     delete from obc_tle_history where id in (
       select id from obc_tle_history
-      where epoch < ${horizon}
+      where epoch >= ${notBefore}
+        and epoch < ${horizon}
       limit ${budget}
     )
     returning norad, epoch
@@ -628,11 +649,27 @@ function executeRowCount(result: unknown): number {
   return 0;
 }
 
+/**
+ * Horizon delete only. Seq and bitmap scans are off so a planner miss cannot
+ * revive the graveyard bitmap; the measured plan is an index scan on
+ * obc_tle_history_epoch_idx. statement_timeout matches the elset read so a
+ * planner miss is cancelled instead of pinning the host until the next hour.
+ */
+async function executeHorizonDelete(horizon: Date): Promise<unknown> {
+  return db.transaction(async (tx) => {
+    await tx.execute(sql.raw(`SET LOCAL statement_timeout = ${LATEST_ELSETS_STATEMENT_TIMEOUT_MS}`));
+    await tx.execute(sql.raw("SET LOCAL enable_seqscan = off"));
+    await tx.execute(sql.raw("SET LOCAL enable_bitmapscan = off"));
+    await tx.execute(sql.raw("SET LOCAL max_parallel_workers_per_gather = 0"));
+    return tx.execute(horizonDeleteSql(horizon, PRUNE_ROW_LIMIT));
+  });
+}
+
 export async function pruneTleHistory(horizonMs: number, nowMs: number = Date.now()): Promise<number> {
   let deleted = 0;
   try {
     const horizon = new Date(horizonMs);
-    const beyondHorizon = await db.execute(horizonDeleteSql(horizon, PRUNE_ROW_LIMIT));
+    const beyondHorizon = await executeHorizonDelete(horizon);
     const removed = deletedEpochRows(beyondHorizon);
     deleted += removed.length || executeRowCount(beyondHorizon);
     if (removed.length > 0) {

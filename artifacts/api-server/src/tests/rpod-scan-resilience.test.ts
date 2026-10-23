@@ -719,9 +719,10 @@ async function main(): Promise<void> {
     const dueBody = dueStart >= 0 && dueEnd > dueStart ? schedSrc.slice(dueStart, dueEnd) : "";
     check(
       "runRpodScanIfDue reads freshness without swallowing a hard error",
-      /const last = await latestRpodScanFinishedAtMs\(\);/.test(dueBody)
-        && !/latestRpodScanFinishedAtMs\(\)\.catch/.test(dueBody)
-        && !/try\s*\{[^}]*latestRpodScanFinishedAtMs/.test(dueBody),
+      /const fresh = await latestRpodScanFreshness\(\);/.test(dueBody)
+        && !/latestRpodScanFreshness\(\)\.catch/.test(dueBody)
+        && !/try\s*\{[^}]*latestRpodScanFreshness/.test(dueBody)
+        && /rpodScanIsDue\(fresh\.finishedAtMs, Date\.now\(\), RPOD_SCAN_INTERVAL_MS, fresh\.status\)/.test(dueBody),
     );
     check(
       "GET /rpod/status retries the scan-log read",

@@ -20,7 +20,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  rpodScanIsDue, withDeadline, RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_CHECK_INTERVAL_MS,
+  rpodScanIsDue, withDeadline, RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_ERROR_RETRY_MS, RPOD_SCAN_CHECK_INTERVAL_MS,
   RPOD_SCAN_BOOT_DELAY_MS, MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS,
   RPOD_POST_SGP4_RESERVE_MS, sgp4ShouldStop,
   cancelScanAttempt, markScanLogged,
@@ -44,6 +44,12 @@ console.log("rpodScanIsDue: overdue lastScanAt must not wait for the next hourly
     rpodScanIsDue(at("2026-09-08T12:34:28.691Z"), NOW) === true);
   check("59 min ago is still fresh",
     rpodScanIsDue(NOW - 59 * 60_000, NOW) === false);
+  check("a success 5 min ago is not due",
+    rpodScanIsDue(NOW - RPOD_SCAN_ERROR_RETRY_MS, NOW, RPOD_SCAN_INTERVAL_MS, "success") === false);
+  check("an error younger than the retry wait is not due",
+    rpodScanIsDue(NOW - RPOD_SCAN_ERROR_RETRY_MS + 1, NOW, RPOD_SCAN_INTERVAL_MS, "error") === false);
+  check("an error at the retry wait is due on any instance",
+    rpodScanIsDue(NOW - RPOD_SCAN_ERROR_RETRY_MS, NOW, RPOD_SCAN_INTERVAL_MS, "error") === true);
   check("exactly 60 min ago is due",
     rpodScanIsDue(NOW - RPOD_SCAN_INTERVAL_MS, NOW) === true);
   check("cadence is hourly", RPOD_SCAN_INTERVAL_MS === 60 * 60 * 1000);

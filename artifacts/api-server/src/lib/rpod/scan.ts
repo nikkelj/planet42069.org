@@ -34,7 +34,7 @@ import {
 } from "./stationKeeping";
 
 export {
-  rpodScanIsDue, RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_CHECK_INTERVAL_MS, RPOD_SCAN_BOOT_DELAY_MS,
+  rpodScanIsDue, RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_ERROR_RETRY_MS, RPOD_SCAN_CHECK_INTERVAL_MS, RPOD_SCAN_BOOT_DELAY_MS,
   MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, RPOD_POST_SGP4_RESERVE_MS, sgp4ShouldStop,
   withDeadline, cancelScanAttempt, markScanLogged,
 } from "./scanPolicy";
@@ -171,6 +171,37 @@ export async function latestRpodScanFinishedAtMs(
       .limit(1),
   delaysMs: readonly number[] = DB_CONNECT_RETRY_DELAYS_MS,
 ): Promise<number | null> {
+  const fresh = await latestRpodScanFreshness(
+    async () => {
+      const rows = await read();
+      return rows.map((row) => ({ finishedAt: row.finishedAt, status: null }));
+    },
+    delaysMs,
+  );
+  return fresh.finishedAtMs;
+}
+
+export interface RpodScanFreshness {
+  finishedAtMs: number | null;
+  status: string | null;
+}
+
+/**
+ * Newest rpod-scan sync-log row. `status` is how the scheduler tells an
+ * error (retry after RPOD_SCAN_ERROR_RETRY_MS) from a success (wait an hour).
+ * Transient connect errors are retried; a hard failure after that still throws
+ * so the scheduler tick can log it and try again next interval.
+ */
+export async function latestRpodScanFreshness(
+  read: () => Promise<Array<{ finishedAt: Date | null; status: string | null }>> = async () =>
+    db
+      .select({ finishedAt: obcSyncLog.finishedAt, status: obcSyncLog.status })
+      .from(obcSyncLog)
+      .where(eq(obcSyncLog.source, "rpod-scan"))
+      .orderBy(desc(obcSyncLog.finishedAt))
+      .limit(1),
+  delaysMs: readonly number[] = DB_CONNECT_RETRY_DELAYS_MS,
+): Promise<RpodScanFreshness> {
   const [row] = await retryTransientConnection(
     "rpod-scan freshness",
     read,
@@ -178,7 +209,10 @@ export async function latestRpodScanFinishedAtMs(
     delaysMs,
   );
   const t = row?.finishedAt?.getTime();
-  return t != null && Number.isFinite(t) ? t : null;
+  return {
+    finishedAtMs: t != null && Number.isFinite(t) ? t : null,
+    status: row?.status ?? null,
+  };
 }
 
 function throwIfScanDeadline(deadlineMs: number, where: string, abort?: ScanAbort): void {
