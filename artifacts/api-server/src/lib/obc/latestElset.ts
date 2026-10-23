@@ -25,10 +25,11 @@ const STATE_LATEST_ELSET = "tle_latest_elset_backfill";
 export const LATEST_ELSET_BACKFILL_BATCH = 100;
 
 /**
- * How long one scan may spend filling obc_latest_elset before it reads
- * whatever the pointer already holds. The scan must not switch to a
- * per-norad history probe when this budget runs out — that probe is what
- * saturates the host until new handshakes die.
+ * Upper bound for one `ensureLatestElsetReady` call. The RPOD scan must not
+ * spend this on the archive: each batch is a history seek, and running that
+ * on the scan connection saturated the host until the pointer read missed
+ * its 30s client deadline (live 2026-10-23). TLE workers pass the shorter
+ * maintain budget instead.
  */
 export const LATEST_ELSET_BACKFILL_BUDGET_MS = 180_000;
 
@@ -364,7 +365,14 @@ interface BackfillBatchResult {
   written: number;
 }
 
-function backfillBatchSql(afterNorad: number, batch: number, missingOnly: boolean) {
+/**
+ * One backfill batch. The history lateral is a row comparison on
+ * (norad, epoch), same pin as the scan's future-dated correction.
+ * `WHERE norad = $1 ORDER BY epoch DESC LIMIT 1` is also a legal plan on
+ * obc_tle_history_epoch_idx; that plan walks the archive once per norad
+ * and is what wedges the host while a scan is trying to read the pointer.
+ */
+export function backfillBatchSql(afterNorad: number, batch: number, missingOnly: boolean) {
   const missing = missingOnly
     ? sql`AND NOT EXISTS (SELECT 1 FROM obc_latest_elset l WHERE l.norad = obc_objects.norad)`
     : sql``;
@@ -395,8 +403,9 @@ function backfillBatchSql(afterNorad: number, batch: number, missingOnly: boolea
           norad, epoch, line1, line2, inc_deg, raan_deg, eccentricity,
           arg_perigee_deg, mean_anomaly_deg, mean_motion_rev_per_day
         FROM obc_tle_history
-        WHERE norad = ids.norad
-        ORDER BY epoch DESC
+        WHERE (norad, epoch) > (ids.norad, '-infinity'::timestamp)
+          AND (norad, epoch) <= (ids.norad, 'infinity'::timestamp)
+        ORDER BY norad DESC, epoch DESC
         LIMIT 1
       ) AS h
       ON CONFLICT (norad) DO UPDATE SET
@@ -448,6 +457,10 @@ async function runBackfillBatch(afterNorad: number, missingOnly: boolean): Promi
     await tx.execute(sql.raw("SET LOCAL enable_seqscan = off"));
     await tx.execute(sql.raw("SET LOCAL enable_hashjoin = off"));
     await tx.execute(sql.raw("SET LOCAL enable_mergejoin = off"));
+    // A bitmap of obc_tle_history_epoch_idx is still a legal plan for a
+    // norad filter and reads the epoch window once per batch member.
+    await tx.execute(sql.raw("SET LOCAL enable_bitmapscan = off"));
+    await tx.execute(sql.raw("SET LOCAL max_parallel_workers_per_gather = 0"));
     return tx.execute(backfillBatchSql(afterNorad, LATEST_ELSET_BACKFILL_BATCH, missingOnly));
   });
   const row = firstRow(result);
@@ -551,6 +564,9 @@ export async function ensureLatestElsetTable(): Promise<void> {
  * Returns false when the table is missing, the budget runs out, or a batch
  * stops. Callers still read the pointer. A partial table is the scan input;
  * the full-catalog history lateral is not a fallback.
+ *
+ * Not used by the RPOD scan. The scan reads whatever the pointer already
+ * holds; this fill runs on the TLE workers.
  */
 export async function ensureLatestElsetReady(
   budgetMs: number = LATEST_ELSET_BACKFILL_BUDGET_MS,
@@ -728,8 +744,9 @@ export async function refreshLatestElsetsForDeletedEpochs(
             norad, epoch, line1, line2, inc_deg, raan_deg, eccentricity,
             arg_perigee_deg, mean_anomaly_deg, mean_motion_rev_per_day
           FROM obc_tle_history
-          WHERE norad = still.norad
-          ORDER BY epoch DESC
+          WHERE (norad, epoch) > (still.norad, '-infinity'::timestamp)
+            AND (norad, epoch) <= (still.norad, 'infinity'::timestamp)
+          ORDER BY norad DESC, epoch DESC
           LIMIT 1
         ) AS h
         ON CONFLICT (norad) DO UPDATE SET

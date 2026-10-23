@@ -8,6 +8,7 @@ import { formatRpodScanStatus } from "../lib/rpod/scan";
 import { getTle } from "../lib/tle";
 import { approveQueuedAlert, rejectQueuedAlert } from "../lib/rpod/alert";
 import { adminTokenMatches, presentedAdminToken } from "../lib/rpod/alertMode";
+import { buildCommit } from "../lib/buildInfo";
 import { logger } from "../lib/logger";
 import { dbErrorFields } from "../lib/dbError";
 
@@ -415,6 +416,7 @@ router.get("/rpod/status", async (_req, res): Promise<void> => {
   res.json({
     archive,
     activeEvents: active,
+    buildCommit: buildCommit(),
     ...formatRpodScanStatus(lastScan),
   });
 });

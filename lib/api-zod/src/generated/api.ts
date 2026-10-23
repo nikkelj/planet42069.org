@@ -673,7 +673,8 @@ export const GetRpodStatusResponse = zod.object({
   "lastScanAt": zod.string().nullish(),
   "lastScanStatus": zod.string().nullish(),
   "lastScanEvents": zod.number().nullish(),
-  "lastScanError": zod.string().nullish().describe('Short reason from the latest rpod-scan sync-log row (null when the scan stored none)')
+  "lastScanError": zod.string().nullish().describe('Short reason from the latest rpod-scan sync-log row (null when the scan stored none)'),
+  "buildCommit": zod.string().describe('Git commit SHA of the running server, or "unknown" when it could not be resolved. Computed once at startup; not a database read.')
 })
 
 

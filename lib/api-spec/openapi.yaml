@@ -929,7 +929,10 @@ components:
           type: string
           nullable: true
           description: Short reason from the latest rpod-scan sync-log row (null when the scan stored none)
-      required: [archive, activeEvents]
+        buildCommit:
+          type: string
+          description: Git commit SHA of the running server, or "unknown" when it could not be resolved. Computed once at startup; not a database read.
+      required: [archive, activeEvents, buildCommit]
 
     ConstellationSeries:
       type: object

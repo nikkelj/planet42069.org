@@ -6,6 +6,7 @@ import { logger } from "../logger";
 import { failLockClient, runLockedSession, waitForLockRecovery } from "./advisorySession";
 import {
   ensureLatestElsetReady,
+  ensureLatestElsetTable,
   isUndefinedLatestTable,
   latestElsetsFutureSql,
   latestElsetsInWindowSql,
@@ -949,10 +950,13 @@ export function latestElsetClientIsDead(err: unknown): boolean {
 }
 
 async function queryLatestElsetRows(query: SQL, lockHistoryToIndex: boolean): Promise<LatestElset[]> {
-  // Inside the RPOD scan this is the advisory-lock client, already checked
-  // out and heartbeated. Releasing it would return the lock session to the
-  // pool while the scan still holds the lock.
-  const borrowed = currentPoolClient();
+  // The in-window read reuses the advisory-lock client. Releasing it would
+  // return the lock session to the pool while the scan still holds the lock.
+  // The future-dated correction reads obc_tle_history and its client deadline
+  // destroys the socket. That must be a different connection: destroying the
+  // lock session fails the hour after the pointer rows are already in memory
+  // (live "exceeded 30000ms client deadline", 2026-10-23).
+  const borrowed = lockHistoryToIndex ? null : currentPoolClient();
   const client = borrowed ?? await pool.connect();
   const deadline = attachLatestElsetClientDeadline(client, LATEST_ELSETS_CLIENT_TIMEOUT_MS);
   const work = (async (): Promise<LatestElset[]> => {
@@ -1012,24 +1016,27 @@ async function queryLatestElsetRows(query: SQL, lockHistoryToIndex: boolean): Pr
 const MISSING_POINTER_TABLE = "obc_latest_elset is missing; refusing full-catalog history probe";
 
 /**
- * A dead socket must retry the whole fetch (the in-window rows were read on
- * that socket and the connection is gone). A statement timeout is the
- * future-dated correction being too slow — keep the pointer rows already
- * loaded so the hour still screens.
+ * The future-dated correction runs on its own pool client. A statement
+ * timeout, a client deadline, or a dead side connection leaves the in-window
+ * pointer rows usable. Aborting here used to retry the whole fetch and, when
+ * the deadline had destroyed the lock socket, fail the hour after a good
+ * pointer read (live 2026-10-23, "exceeded 30000ms client deadline").
  */
 export function futureElsetCorrectionFailureAbortsFetch(err: unknown): boolean {
-  return latestElsetClientIsDead(err) || isTransientConnectionError(err);
+  void err;
+  return false;
 }
 
 /**
  * Latest archived elset per catalogued object with epoch in (`sinceMs`, `untilMs`].
  *
- * Reads obc_latest_elset only. The previous fallback (one history seek per
- * catalog norad whenever the backfill was unfinished) is the query that
- * wedged the host: the lock socket died, and the single retry opened a new
- * connection that pg-pool aborted at connectionTimeoutMillis. That string
- * is what lastScanError stored on 2026-10-22. A partial pointer is served
- * as-is; ingest (rememberLatestElsets) and later backfill batches fill gaps.
+ * Reads obc_latest_elset only. Does not backfill it. `ensureLatestElsetReady`
+ * spends its budget on per-norad history seeks; doing that on the scan's
+ * lock connection before this read saturated the host, and the pointer
+ * query then stored "latest-elset fetch exceeded 30000ms client deadline"
+ * (live 2026-10-23 05:03Z through 15:00Z). TLE workers fill gaps. A partial
+ * pointer is served as-is. The previous full-catalog fallback is the query
+ * that wedged the host on 2026-10-22.
  */
 export async function getLatestElsets(
   sinceMs: number,
@@ -1038,13 +1045,10 @@ export async function getLatestElsets(
   const since = new Date(sinceMs);
   const until = new Date(untilMs);
   try {
-    await ensureLatestElsetReady();
+    await ensureLatestElsetTable();
   } catch (err) {
     if (isUndefinedLatestTable(err)) throw new Error(MISSING_POINTER_TABLE);
-    // A batch that already stopped is swallowed inside the backfill. This
-    // is a connection failure before any batch committed. Still try the
-    // pointer read; if the socket is dead the caller retries once.
-    logger.warn({ err: formatDbError(err) }, "tle-archive: latest-elset backfill paused; reading the pointer table");
+    logger.warn({ err: formatDbError(err) }, "tle-archive: latest-elset table ensure failed; reading the pointer table");
   }
   let inWindow: LatestElset[];
   try {
