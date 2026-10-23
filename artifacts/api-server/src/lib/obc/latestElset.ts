@@ -81,8 +81,8 @@ function normalizeSql(sqlText: string): string {
 }
 
 /**
- * True when `sqlText` is an index-range read of obc_latest_elset and does
- * not touch obc_tle_history.
+ * True when `sqlText` is a read of obc_latest_elset and does not touch
+ * obc_tle_history.
  *
  * Rejected shapes, all seen live:
  *  - DISTINCT ON (norad) selecting line1/line2 over an epoch window
@@ -129,9 +129,45 @@ export function historyLateralIsCatalogWide(sqlText: string): boolean {
 }
 
 /**
- * In-window pointer rows. No history read. Epoch bounds hit
- * obc_latest_elset_epoch_idx; the EXISTS is an index lookup on
- * obc_objects(norad) per returned row (~30k), not per archive row.
+ * True when the future-dated history seek can only be served by an index
+ * that leads with norad (the unique (norad, epoch) key or
+ * obc_tle_history_norad_idx).
+ *
+ * A bare `epoch > since AND epoch <= until ORDER BY epoch DESC LIMIT 1`
+ * is also a legal plan on obc_tle_history_epoch_idx. That plan filters
+ * every archive row in the window once per future-dated pointer. On a
+ * 2.7M-row stand-in of the live archive (270,556 rows inside the 3-day
+ * window) 30 such norads removed 270,556 rows each and took 1.06s
+ * (~35ms/norad, 2.38M buffer hits). A few hundred future-dated pointers
+ * then miss the 30s client deadline; the full future set measured here
+ * (6,148) would be a few minutes. The same seek as a backward index scan
+ * on (norad, epoch) finished all 6,148 norads in a few hundred milliseconds.
+ */
+export function futureElsetSeekPinsCompositeIndex(sqlText: string): boolean {
+  const s = normalizeSql(sqlText);
+  const lateralAt = s.search(/\blateral\b/);
+  if (lateralAt < 0) return false;
+  const body = s.slice(lateralAt);
+  const rowLower = /\(\s*norad\s*,\s*epoch\s*\)\s*>/.test(body);
+  const rowUpper = /\(\s*norad\s*,\s*epoch\s*\)\s*<=/.test(body);
+  // ORDER BY epoch DESC alone is what makes the epoch-only index look cheap.
+  const ordersComposite = /order\s+by\s+norad\s+desc\s*,\s*epoch\s+desc/.test(body);
+  const oneRow = /limit\s+1/.test(body);
+  return rowLower && rowUpper && ordersComposite && oneRow && /obc_tle_history/.test(body);
+}
+
+/**
+ * In-window pointer rows. No history read.
+ *
+ * The 3-day window covers most of this ~30k-row table (active GP epochs
+ * are current). obc_latest_elset_epoch_idx then heap-fetches line1/line2
+ * for nearly every row, and non-HOT epoch updates scatter those pages.
+ * Callers sequential-scan the pointer for this statement. The EXISTS is
+ * a hash of obc_objects(norad), not a probe per archive row.
+ *
+ * Bounds are cast to `timestamp` so a timestamptz parameter cannot wrap
+ * the column and drop the comparison off the (epoch, norad) index used
+ * by the future-dated list.
  */
 export function latestElsetsInWindowSql(since: Date, until: Date) {
   return sql`
@@ -147,8 +183,8 @@ export function latestElsetsInWindowSql(since: Date, until: Date) {
       h.mean_anomaly_deg,
       h.mean_motion_rev_per_day
     FROM obc_latest_elset AS h
-    WHERE h.epoch > ${since}
-      AND h.epoch <= ${until}
+    WHERE h.epoch > ${since}::timestamp
+      AND h.epoch <= ${until}::timestamp
       AND EXISTS (
         SELECT 1
         FROM obc_objects AS o
@@ -161,7 +197,12 @@ export function latestElsetsInWindowSql(since: Date, until: Date) {
  * Objects whose stored newest epoch is past `until` (space-track slides
  * multi-day objects forward to the next perigee). The future filter is
  * inside the driving subquery so the lateral cannot run for every catalog
- * norad. One index seek each, and only for that future-dated set.
+ * norad.
+ *
+ * The history predicate is a row comparison on (norad, epoch). That is
+ * only an index condition on (norad, epoch). It is not an index condition
+ * on obc_tle_history_epoch_idx, which is the plan that scans the whole
+ * epoch window per future norad (see futureElsetSeekPinsCompositeIndex).
  */
 export function latestElsetsFutureSql(since: Date, until: Date) {
   return sql`
@@ -179,7 +220,7 @@ export function latestElsetsFutureSql(since: Date, until: Date) {
     FROM (
       SELECT h.norad
       FROM obc_latest_elset AS h
-      WHERE h.epoch > ${until}
+      WHERE h.epoch > ${until}::timestamp
         AND EXISTS (
           SELECT 1
           FROM obc_objects AS o
@@ -199,10 +240,9 @@ export function latestElsetsFutureSql(since: Date, until: Date) {
         mean_anomaly_deg,
         mean_motion_rev_per_day
       FROM obc_tle_history
-      WHERE norad = future.norad
-        AND epoch > ${since}
-        AND epoch <= ${until}
-      ORDER BY epoch DESC
+      WHERE (norad, epoch) > (future.norad, ${since}::timestamp)
+        AND (norad, epoch) <= (future.norad, ${until}::timestamp)
+      ORDER BY norad DESC, epoch DESC
       LIMIT 1
     ) AS p
   `;
@@ -489,7 +529,12 @@ export const LATEST_ELSET_TABLE_DDL = [
     mean_anomaly_deg real NOT NULL,
     mean_motion_rev_per_day real NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS obc_latest_elset_epoch_idx ON obc_latest_elset (epoch)`,
+  // (epoch, norad) answers "pointers past until" as an index-only scan.
+  // The single-column epoch index could not return norad without a heap
+  // fetch of line1/line2, and a 3-day range matches most of the table so
+  // the wide read does not use it (see latestElsetsInWindowSql).
+  `CREATE INDEX IF NOT EXISTS obc_latest_elset_epoch_norad_idx ON obc_latest_elset (epoch, norad)`,
+  `DROP INDEX IF EXISTS obc_latest_elset_epoch_idx`,
 ] as const;
 
 export async function ensureLatestElsetTable(): Promise<void> {

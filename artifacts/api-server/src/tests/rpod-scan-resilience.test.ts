@@ -33,6 +33,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { db, pool } from "@workspace/db";
+import { PgDialect } from "drizzle-orm/pg-core";
 import { rpodEvents, rpodEventMembers } from "@workspace/db/schema";
 import { inArray, eq } from "drizzle-orm";
 import type { Server } from "node:http";
@@ -43,7 +44,7 @@ import {
   getArchiveStatus, clearArchiveStatusCache,
   getLatestElsetsOrSkip, formatDbError, latestElsetsSqlIsCheap,
   historyLateralIsCatalogWide, latestElsetsInWindowSql, latestElsetsFutureSql,
-  latestElsetsArchiveSql, futureElsetCorrectionFailureAbortsFetch,
+  latestElsetsArchiveSql, futureElsetSeekPinsCompositeIndex, futureElsetCorrectionFailureAbortsFetch,
   sqlTemplateText, mapLatestElsetRow,
   archiveEpochBoundsSql, oldestArchiveProbeCutoff, ARCHIVE_OLDEST_PROBE_SLACK_MS, backfillHorizonMs,
   attachLatestElsetClientDeadline, latestElsetClientIsDead,
@@ -163,6 +164,18 @@ async function main(): Promise<void> {
       futureText.slice(0, 500));
     check("future-dated correction seeks one history row",
       /obc_tle_history/i.test(futureText) && /limit\s+1/i.test(futureText));
+    check("future-dated correction pins the (norad, epoch) index",
+      futureElsetSeekPinsCompositeIndex(futureText), futureText.slice(0, 500));
+    check("future-dated correction casts bounds to timestamp",
+      /::timestamp/i.test(futureText) && /::timestamp/i.test(sqlText));
+    const epochIndexSeek = `
+      select line1 from obc_tle_history
+      where norad = $1 and epoch > $2 and epoch <= $3
+      order by epoch desc
+      limit 1
+    `;
+    check("bare epoch window ORDER BY epoch DESC is not a pinned seek",
+      futureElsetSeekPinsCompositeIndex(epochIndexSeek) === false);
     // The pre-fix union put WHERE h.epoch > until AFTER the lateral, and the
     // lateral was driven by every distinct catalog norad. That is the plan
     // that still produced the 2026-10-22 handshake timeout.
@@ -196,6 +209,15 @@ async function main(): Promise<void> {
       /SET LOCAL enable_seqscan = off/.test(latestSrc)
       && /SET LOCAL enable_hashjoin = off/.test(latestSrc)
       && /SET LOCAL enable_mergejoin = off/.test(latestSrc));
+    check("in-window pointer read is a sequential scan, not an epoch index range",
+      /SET LOCAL enable_indexscan = off/.test(tleSrc)
+      && /SET LOCAL enable_bitmapscan = off/.test(tleSrc)
+      && /SET LOCAL max_parallel_workers_per_gather = 0/.test(tleSrc));
+    check("future-dated correction cannot bitmap-scan the history epoch index",
+      /SET LOCAL enable_bitmapscan = off/.test(tleSrc));
+    check("pointer index is (epoch, norad), not epoch alone",
+      /obc_latest_elset_epoch_norad_idx/.test(latestSrc)
+      && /DROP INDEX IF EXISTS obc_latest_elset_epoch_idx/.test(latestSrc));
     check("a failed backfill batch stops instead of throwing into the archive probe",
       /latest-elset backfill batch stopped/.test(latestSrc));
     check("statement timeout on the future-dated correction keeps the in-window rows",
@@ -292,6 +314,16 @@ async function main(): Promise<void> {
       elsetFetchFailureShouldRetryScan("Query read timeout"));
     check("a non-timeout skip warning does not fail the scan",
       elsetFetchFailureShouldRetryScan("latest-elset fetch skipped: relation missing") === false);
+    // Live GET /api/rpod/status 2026-10-23 02:35Z. The fetch hit the 30s
+    // socket deadline and the hour was stored success / 0 events because
+    // "client deadline" matched neither isTransientConnectionError nor the
+    // statement-timeout regex.
+    const liveDeadline =
+      "latest-elset fetch skipped: latest-elset fetch exceeded 30000ms client deadline";
+    check("02:35Z client-deadline skip must not be a 0-event success",
+      elsetFetchFailureShouldRetryScan(liveDeadline) === true);
+    check("client deadline is not an immediate same-socket retry",
+      isTransientConnectionError(new Error("latest-elset fetch exceeded 30000ms client deadline")) === false);
     check("refusing the catalog-wide probe fails the hour instead of a 0-event success",
       elsetFetchFailureShouldRetryScan(
         "latest-elset fetch skipped: obc_latest_elset is missing; refusing full-catalog history probe",
@@ -723,6 +755,66 @@ async function main(): Promise<void> {
     }
     console.log("\nAll RPOD scan-resilience checks passed");
     return;
+  }
+
+  console.log("future-dated history seek plan does not walk the epoch index");
+  {
+    const client = await pool.connect();
+    try {
+      const present = await client.query(
+        "SELECT to_regclass('obc_tle_history') AS history, to_regclass('obc_latest_elset') AS pointer",
+      );
+      const row = present.rows[0] as { history: string | null; pointer: string | null };
+      if (!row?.history || !row?.pointer) {
+        console.log("  (skipping plan check; obc_tle_history or obc_latest_elset is absent)");
+      } else {
+        const since = new Date("2026-10-20T02:35:00.000Z");
+        const until = new Date("2026-10-23T08:35:00.000Z");
+        const dialect = new PgDialect();
+        await client.query("BEGIN");
+        await client.query("SET LOCAL enable_seqscan = off");
+        await client.query("SET LOCAL enable_hashjoin = off");
+        await client.query("SET LOCAL enable_mergejoin = off");
+        await client.query("SET LOCAL enable_bitmapscan = off");
+        await client.query("SET LOCAL max_parallel_workers_per_gather = 0");
+        const future = dialect.sqlToQuery(latestElsetsFutureSql(since, until));
+        const futurePlan = await client.query<{ "QUERY PLAN": string }>(
+          `EXPLAIN ${future.sql}`,
+          future.params,
+        );
+        const futureText = futurePlan.rows.map((r) => r["QUERY PLAN"]).join("\n");
+        check(
+          "future seek plan uses a norad-leading history index",
+          /obc_tle_history_norad/.test(futureText) && !/obc_tle_history_epoch_idx/.test(futureText),
+          futureText.slice(0, 700),
+        );
+        // The future statement turned seq/hash/merge scans off. The in-window
+        // read is a different statement: index and bitmap scans off, sequential
+        // scan left on (see queryLatestElsetRows).
+        await client.query("SET LOCAL enable_seqscan = on");
+        await client.query("SET LOCAL enable_hashjoin = on");
+        await client.query("SET LOCAL enable_mergejoin = on");
+        await client.query("SET LOCAL enable_indexscan = off");
+        await client.query("SET LOCAL enable_bitmapscan = off");
+        const inWindow = dialect.sqlToQuery(latestElsetsInWindowSql(since, until));
+        const windowPlan = await client.query<{ "QUERY PLAN": string }>(
+          `EXPLAIN ${inWindow.sql}`,
+          inWindow.params,
+        );
+        const windowText = windowPlan.rows.map((r) => r["QUERY PLAN"]).join("\n");
+        check(
+          "in-window plan sequential-scans the pointer",
+          /Seq Scan on obc_latest_elset/.test(windowText) && !/Index Scan[^\n]*obc_latest_elset/.test(windowText),
+          windowText.slice(0, 500),
+        );
+        await client.query("ROLLBACK");
+      }
+    } catch (err) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      check("latest-elset plan check ran", false, String(err).slice(0, 300));
+    } finally {
+      client.release();
+    }
   }
 
   const nowMs = Date.now();

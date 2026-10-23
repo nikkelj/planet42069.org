@@ -357,7 +357,11 @@ export function elsetFetchFailureShouldRetryScan(warning: string): boolean {
   // A missing pointer table used to fall through to the catalog-wide history
   // probe. Refusing that probe must still fail the hour (so it retries)
   // rather than log success with 0 events.
-  return /statement timeout|query read timeout|could not be reacquired|refusing full-catalog history probe/i.test(warning);
+  // The 30s client deadline is the same class: the hour did not screen.
+  // Live 2026-10-23 02:35Z stored it as success / 0 events because this
+  // regex did not match "client deadline" (isTransientConnectionError does
+  // not either, so the fetch is not immediately re-run on the wedged host).
+  return /statement timeout|query read timeout|client deadline|could not be reacquired|refusing full-catalog history probe/i.test(warning);
 }
 
 /**

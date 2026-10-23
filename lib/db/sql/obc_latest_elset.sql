@@ -3,7 +3,7 @@
 -- Deploy applies this through Drizzle, not by running this file:
 --   scripts/post-merge.sh → pnpm --filter db push
 -- (`lib/db/package.json` script `push`, drizzle-kit push). Push creates
--- obc_latest_elset and obc_latest_elset_epoch_idx from lib/db/src/schema/obc.ts
+-- obc_latest_elset and obc_latest_elset_epoch_norad_idx from lib/db/src/schema/obc.ts
 -- on the next Replit deploy. No separate migration step.
 --
 -- drizzle-kit push executes its statements inside one transaction, and
@@ -33,8 +33,13 @@ CREATE TABLE IF NOT EXISTS obc_latest_elset (
   mean_motion_rev_per_day real NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS obc_latest_elset_epoch_idx
-  ON obc_latest_elset (epoch);
+-- (epoch, norad): future-dated pointer ids are an index-only range.
+-- The wide in-window read sequential-scans this table; a single-column
+-- epoch index heap-fetched line1/line2 for nearly every row.
+CREATE INDEX IF NOT EXISTS obc_latest_elset_epoch_norad_idx
+  ON obc_latest_elset (epoch, norad);
+
+DROP INDEX IF EXISTS obc_latest_elset_epoch_idx;
 
 -- Optional one-shot fill. Prefer the app's batched backfill on a busy
 -- primary; this holds one connection for one index seek per catalogued norad

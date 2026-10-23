@@ -171,13 +171,18 @@ export const obcTleHistory = pgTable(
  * backfill is only partly done.
  *
  * Ingest and the one-time backfill keep this table pointed at the absolute
- * newest epoch. The scan still applies the epoch window, and objects whose
- * newest epoch is past the window fall back to one history seek.
+ * newest epoch. The scan still applies the epoch window. Objects whose
+ * newest epoch is past the window fall back to one history seek on
+ * (norad, epoch), not a scan of obc_tle_history_epoch_idx.
  *
- * The epoch index is created with the empty table by `drizzle-kit push`
- * (scripts/post-merge.sh). Push runs inside a transaction, which cannot
- * run CREATE INDEX CONCURRENTLY; an index build on this empty table does
- * not lock obc_tle_history. Hand-run SQL: lib/db/sql/obc_latest_elset.sql.
+ * (epoch, norad) serves that future-dated list as an index-only range.
+ * A single-column epoch index cannot return norad without fetching the
+ * TLE text, and the 3-day window matches most rows, so the wide read is a
+ * sequential scan of this table. The index is created with the empty table
+ * by `drizzle-kit push` (scripts/post-merge.sh) and by ensureLatestElsetTable.
+ * Push runs inside a transaction, which cannot run CREATE INDEX CONCURRENTLY;
+ * an index build on this small table does not lock obc_tle_history.
+ * Hand-run SQL: lib/db/sql/obc_latest_elset.sql.
  */
 export const obcLatestElset = pgTable(
   "obc_latest_elset",
@@ -193,7 +198,7 @@ export const obcLatestElset = pgTable(
     meanAnomalyDeg: real("mean_anomaly_deg").notNull(),
     meanMotionRevPerDay: real("mean_motion_rev_per_day").notNull(),
   },
-  (t) => [index("obc_latest_elset_epoch_idx").on(t.epoch)],
+  (t) => [index("obc_latest_elset_epoch_norad_idx").on(t.epoch, t.norad)],
 );
 
 /** Small key/value state store for background workers (cursors, watermarks). */

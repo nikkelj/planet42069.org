@@ -17,6 +17,7 @@ import {
 export {
   historyLateralIsCatalogWide,
   latestElsetsArchiveSql,
+  futureElsetSeekPinsCompositeIndex,
   latestElsetsFutureSql,
   latestElsetsInWindowSql,
   latestElsetsSqlIsCheap,
@@ -963,13 +964,23 @@ async function queryLatestElsetRows(query: SQL, lockHistoryToIndex: boolean): Pr
     // obc_tle_history, and only for norads already filtered to epoch > until.
     await client.query("BEGIN");
     await client.query(`SET LOCAL statement_timeout = ${LATEST_ELSETS_STATEMENT_TIMEOUT_MS}`);
-    // The future-dated correction seeks obc_tle_history. Forbid a hash or
-    // seq scan of that heap so a planner miss cancels at statement_timeout
-    // instead of killing the backend.
+    // A parallel seq scan of a bloated pointer (or of the archive, if the
+    // planner misses) spends the worker slots of this small host and the
+    // leader may not surface statement_timeout before the client deadline.
+    await client.query("SET LOCAL max_parallel_workers_per_gather = 0");
     if (lockHistoryToIndex) {
+      // The future-dated correction seeks obc_tle_history by (norad, epoch).
+      // Forbid a hash, merge, seq scan, or bitmap of the epoch index so a
+      // planner miss cannot walk the 3-day window once per future norad.
       await client.query("SET LOCAL enable_seqscan = off");
       await client.query("SET LOCAL enable_hashjoin = off");
       await client.query("SET LOCAL enable_mergejoin = off");
+      await client.query("SET LOCAL enable_bitmapscan = off");
+    } else {
+      // The epoch window matches most of the ~30k-row pointer. An index
+      // range scan heap-fetches those wide rows; one sequential pass does not.
+      await client.query("SET LOCAL enable_indexscan = off");
+      await client.query("SET LOCAL enable_bitmapscan = off");
     }
     const result = await client.query<LatestElsetRow>(q.sql, params);
     await client.query("COMMIT");
