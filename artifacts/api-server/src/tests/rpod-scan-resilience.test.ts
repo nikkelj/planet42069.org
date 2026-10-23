@@ -14,8 +14,10 @@
  *  - the Aug MAX(epoch)+join follow-up is also not cheap at ~19M rows
  *    (live 2026-09-28 connection timeout). A per-norad LATERAL seek of the
  *    archive still heap-fetches ~30k TLE rows and timed out handshakes
- *    next to thinning. The scan reads obc_latest_elset and seeks history
- *    only for future-dated newest epochs.
+ *    next to thinning. The scan reads obc_latest_elset. History is sought
+ *    only for pointer rows whose epoch is already past the window, and an
+ *    unfinished backfill must not fall back to the catalog-wide probe
+ *    (live 2026-10-22 handshake timeout).
  *  - a failed latest-elset fetch skips/logs instead of aborting doScan
  *  - a pg-pool handshake abort ("Connection terminated due to connection
  *    timeout <- Connection terminated unexpectedly", live 2026-10-14) is
@@ -40,7 +42,9 @@ import { MAX_RPOD_SCAN_MS, RPOD_SCAN_CHECK_INTERVAL_MS } from "../lib/rpod/scanP
 import {
   getArchiveStatus, clearArchiveStatusCache,
   getLatestElsetsOrSkip, formatDbError, latestElsetsSqlIsCheap,
-  latestElsetsQuerySql, latestElsetsArchiveSql, sqlTemplateText, mapLatestElsetRow,
+  historyLateralIsCatalogWide, latestElsetsInWindowSql, latestElsetsFutureSql,
+  latestElsetsArchiveSql, futureElsetCorrectionFailureAbortsFetch,
+  sqlTemplateText, mapLatestElsetRow,
   archiveEpochBoundsSql, oldestArchiveProbeCutoff, ARCHIVE_OLDEST_PROBE_SLACK_MS, backfillHorizonMs,
   attachLatestElsetClientDeadline, latestElsetClientIsDead,
   LATEST_ELSETS_STATEMENT_TIMEOUT_MS, LATEST_ELSETS_CLIENT_TIMEOUT_MS,
@@ -141,24 +145,66 @@ async function main(): Promise<void> {
 
     const since = new Date("2026-08-23T13:44:31.178Z");
     const until = new Date("2026-08-26T19:44:31.178Z");
-    const sqlText = sqlTemplateText(latestElsetsQuerySql(since, until));
-    check("current latest-elset SQL reads obc_latest_elset", latestElsetsSqlIsCheap(sqlText), sqlText.slice(0, 500));
-    check("current SQL does not DISTINCT ON", !/distinct\s+on/i.test(sqlText), sqlText.slice(0, 160));
-    check("current SQL does not aggregate MAX(epoch) over the archive", !/max\s*\(\s*epoch\s*\)/i.test(sqlText), sqlText.slice(0, 240));
-    check("current SQL drives from catalog norads", /obc_objects/i.test(sqlText) && /distinct\s+norad/i.test(sqlText));
-    check("current SQL joins obc_latest_elset", /join\s+obc_latest_elset/i.test(sqlText), sqlText.slice(0, 400));
-    check("current SQL keeps the epoch window", /epoch\s*>/i.test(sqlText) && /epoch\s*<=/i.test(sqlText));
-    check("future-dated newest epoch falls back to one history seek",
-      /union\s+all/i.test(sqlText) && /h\.epoch\s*>/i.test(sqlText) && /limit\s+1/i.test(sqlText),
-      sqlText.slice(0, 500));
-    check("current SQL still selects TLE lines", /h\.line1/.test(sqlText) && /h\.line2/.test(sqlText));
+    const sqlText = sqlTemplateText(latestElsetsInWindowSql(since, until));
+    check("in-window latest-elset SQL is a pointer read", latestElsetsSqlIsCheap(sqlText), sqlText.slice(0, 500));
+    check("in-window SQL does not DISTINCT ON", !/distinct\s+on/i.test(sqlText), sqlText.slice(0, 160));
+    check("in-window SQL does not aggregate MAX(epoch) over the archive", !/max\s*\(\s*epoch\s*\)/i.test(sqlText), sqlText.slice(0, 240));
+    check("in-window SQL does not read obc_tle_history", !/obc_tle_history/i.test(sqlText), sqlText.slice(0, 400));
+    check("in-window SQL filters catalog membership without DISTINCT norad",
+      /obc_objects/i.test(sqlText) && !/distinct\s+norad/i.test(sqlText), sqlText.slice(0, 400));
+    check("in-window SQL reads obc_latest_elset", /from\s+obc_latest_elset/i.test(sqlText), sqlText.slice(0, 400));
+    check("in-window SQL keeps the epoch window", /epoch\s*>/i.test(sqlText) && /epoch\s*<=/i.test(sqlText));
+    check("in-window SQL still selects TLE lines", /h\.line1/.test(sqlText) && /h\.line2/.test(sqlText));
+    const futureText = sqlTemplateText(latestElsetsFutureSql(since, until));
+    check("future-dated correction is not a catalog-wide history probe",
+      historyLateralIsCatalogWide(futureText) === false, futureText.slice(0, 500));
+    check("future-dated correction filters the pointer before the lateral",
+      /obc_latest_elset/i.test(futureText) && /epoch\s*>/i.test(futureText.split(/lateral/i)[0] ?? ""),
+      futureText.slice(0, 500));
+    check("future-dated correction seeks one history row",
+      /obc_tle_history/i.test(futureText) && /limit\s+1/i.test(futureText));
+    // The pre-fix union put WHERE h.epoch > until AFTER the lateral, and the
+    // lateral was driven by every distinct catalog norad. That is the plan
+    // that still produced the 2026-10-22 handshake timeout.
+    const previousUnion = `
+      select h.line1 from (select distinct norad from obc_objects) ids
+      join obc_latest_elset h on h.norad = ids.norad
+      where h.epoch > $1 and h.epoch <= $2
+      union all
+      select p.line1 from (select distinct norad from obc_objects) ids
+      join obc_latest_elset h on h.norad = ids.norad
+      cross join lateral (
+        select line1 from obc_tle_history where norad = h.norad
+        order by epoch desc limit 1
+      ) p
+      where h.epoch > $2
+    `;
+    check("pre-fix union is a catalog-wide history probe", historyLateralIsCatalogWide(previousUnion) === true);
+    check("pre-fix union is not the cheap plan", latestElsetsSqlIsCheap(previousUnion) === false);
     const archiveText = sqlTemplateText(latestElsetsArchiveSql(since, until));
-    check("full-catalog archive lateral is no longer the cheap plan", latestElsetsSqlIsCheap(archiveText) === false, archiveText.slice(0, 200));
+    check("full-catalog archive lateral is not the cheap plan", latestElsetsSqlIsCheap(archiveText) === false, archiveText.slice(0, 200));
+    check("full-catalog archive lateral is catalog-wide", historyLateralIsCatalogWide(archiveText) === true, archiveText.slice(0, 200));
     const tleSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../lib/obc/tleArchive.ts"), "utf8");
-    check("getLatestElsets waits for the latest-elset table before reading it",
-      /ensureLatestElsetReady\(/.test(tleSrc) && /latestElsetsQuerySql\(/.test(tleSrc));
-    check("unready latest-elset table still falls back to the archive seek",
-      /latestElsetsArchiveSql\(/.test(tleSrc));
+    const latestSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../lib/obc/latestElset.ts"), "utf8");
+    check("getLatestElsets waits for the pointer table and reads it",
+      /ensureLatestElsetReady\(/.test(tleSrc) && /latestElsetsInWindowSql\(/.test(tleSrc));
+    check("getLatestElsets does not fall back to the archive seek",
+      !/latestElsetsArchiveSql\(/.test(tleSrc));
+    check("a missing pointer table is an error, not an archive probe",
+      /refusing full-catalog history probe/.test(tleSrc));
+    check("backfill batches cannot hash or seq-scan history",
+      /SET LOCAL enable_seqscan = off/.test(latestSrc)
+      && /SET LOCAL enable_hashjoin = off/.test(latestSrc)
+      && /SET LOCAL enable_mergejoin = off/.test(latestSrc));
+    check("a failed backfill batch stops instead of throwing into the archive probe",
+      /latest-elset backfill batch stopped/.test(latestSrc));
+    check("statement timeout on the future-dated correction keeps the in-window rows",
+      futureElsetCorrectionFailureAbortsFetch(new Error("canceling statement due to statement timeout")) === false);
+    check("handshake abort on the future-dated correction still retries the fetch",
+      futureElsetCorrectionFailureAbortsFetch(new Error(
+        "Connection terminated due to connection timeout",
+        { cause: new Error("Connection terminated unexpectedly") },
+      )) === true);
 
     const cutoff = oldestArchiveProbeCutoff(Date.parse("2026-10-21T15:16:12Z"));
     const boundsSql = sqlTemplateText(archiveEpochBoundsSql(cutoff));
@@ -246,6 +292,10 @@ async function main(): Promise<void> {
       elsetFetchFailureShouldRetryScan("Query read timeout"));
     check("a non-timeout skip warning does not fail the scan",
       elsetFetchFailureShouldRetryScan("latest-elset fetch skipped: relation missing") === false);
+    check("refusing the catalog-wide probe fails the hour instead of a 0-event success",
+      elsetFetchFailureShouldRetryScan(
+        "latest-elset fetch skipped: obc_latest_elset is missing; refusing full-catalog history probe",
+      ) === true);
     // Live 2026-10-21 21:02Z: the elset fetch was skipped on a dead client and
     // the hour was logged success with 0 events. The classifier did not match
     // pg's "not queryable" text (the retry of a client that had already errored).
@@ -622,8 +672,8 @@ async function main(): Promise<void> {
   console.log("latest-elset client deadline destroys a hung socket");
   {
     check(
-      "statement_timeout is at least a minute and at most three",
-      LATEST_ELSETS_STATEMENT_TIMEOUT_MS >= 60_000 && LATEST_ELSETS_STATEMENT_TIMEOUT_MS <= 180_000,
+      "statement_timeout cancels a bad plan before it wedges the host",
+      LATEST_ELSETS_STATEMENT_TIMEOUT_MS >= 10_000 && LATEST_ELSETS_STATEMENT_TIMEOUT_MS <= 30_000,
       String(LATEST_ELSETS_STATEMENT_TIMEOUT_MS),
     );
     check(

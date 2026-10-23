@@ -166,7 +166,9 @@ export const obcTleHistory = pgTable(
  * with LIMIT 1 per catalogued object is an index seek plus a heap fetch of
  * the TLE text, ~30k times, against a ~19M-row heap. On a small hosted
  * Postgres that read (and the coarse-thin window next to it) saturates the
- * server until new handshakes die at the 10s connection timeout.
+ * server until new handshakes die at the 10s connection timeout. The scan
+ * reads this table and must not fall back to that per-norad probe when the
+ * backfill is only partly done.
  *
  * Ingest and the one-time backfill keep this table pointed at the absolute
  * newest epoch. The scan still applies the epoch window, and objects whose

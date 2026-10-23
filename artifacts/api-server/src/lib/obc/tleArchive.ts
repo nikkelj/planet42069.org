@@ -7,14 +7,20 @@ import { failLockClient, runLockedSession, waitForLockRecovery } from "./advisor
 import {
   ensureLatestElsetReady,
   isUndefinedLatestTable,
-  latestElsetsArchiveSql,
-  latestElsetsQuerySql,
+  latestElsetsFutureSql,
+  latestElsetsInWindowSql,
   LATEST_ELSET_MAINTAIN_BUDGET_MS,
   refreshLatestElsetsForDeletedEpochs,
   rememberLatestElsets,
 } from "./latestElset";
 
-export { latestElsetsArchiveSql, latestElsetsQuerySql, latestElsetsSqlIsCheap } from "./latestElset";
+export {
+  historyLateralIsCatalogWide,
+  latestElsetsArchiveSql,
+  latestElsetsFutureSql,
+  latestElsetsInWindowSql,
+  latestElsetsSqlIsCheap,
+} from "./latestElset";
 
 /**
  * TLE history archive — samples space-track's public elset history into
@@ -867,17 +873,25 @@ export function mapLatestElsetRow(r: LatestElsetRow): LatestElset {
   };
 }
 
-export const LATEST_ELSETS_STATEMENT_TIMEOUT_MS = 120_000;
+/**
+ * Cancel a bad plan while the socket is still up. 120s was long enough for
+ * a catalog-wide history probe to pin the small host; the proxy then RST
+ * the session and the one retry's new handshake died at 10s
+ * ("Connection terminated due to connection timeout"). An index range scan
+ * of ~30k pointer rows finishes in well under this.
+ */
+export const LATEST_ELSETS_STATEMENT_TIMEOUT_MS = 20_000;
 
 /**
  * Socket backstop, shortly after statement_timeout. SET LOCAL
  * statement_timeout never arrives when the pooler drops the TCP session
- * without a reply — node-pg then waits until the 25-minute scan deadline,
- * and that deadline used to discard the sync-log write. Destroying the
- * socket rejects the query so the skip/error row is written in a couple of
- * minutes instead.
+ * without a reply. Destroying the socket rejects the query so the scan can
+ * retry on a live connection instead of waiting out the 25-minute cap.
+ * Kept just above the statement timeout so a responsive server still gets
+ * to cancel cleanly, and short enough that a black-holed read cannot wedge
+ * the host until every other handshake times out.
  */
-export const LATEST_ELSETS_CLIENT_TIMEOUT_MS = 150_000;
+export const LATEST_ELSETS_CLIENT_TIMEOUT_MS = 30_000;
 
 /**
  * When `ms` elapses, destroy the driver's socket and reject `promise`.
@@ -933,7 +947,7 @@ export function latestElsetClientIsDead(err: unknown): boolean {
   return /terminated|ECONN|socket|client deadline|timeout exceeded when trying to connect|not queryable/i.test(text);
 }
 
-async function queryLatestElsetRows(query: SQL, seqscanOff: boolean): Promise<LatestElset[]> {
+async function queryLatestElsetRows(query: SQL, lockHistoryToIndex: boolean): Promise<LatestElset[]> {
   // Inside the RPOD scan this is the advisory-lock client, already checked
   // out and heartbeated. Releasing it would return the lock session to the
   // pool while the scan still holds the lock.
@@ -944,12 +958,19 @@ async function queryLatestElsetRows(query: SQL, seqscanOff: boolean): Promise<La
     const q = pgDialect.sqlToQuery(query);
     const params = q.params ?? [];
     // SET LOCAL is transaction-scoped so it cannot leak onto a pooled client.
-    // enable_seqscan=off is only for the archive fallback: a misestimate there
-    // walks ~19M heap rows. The latest-elset table is ~30k rows and should
-    // be free to sequential-scan.
+    // The in-window read is a ~30k-row pointer scan and may seq-scan.
+    // The future-dated correction is the only statement that touches
+    // obc_tle_history, and only for norads already filtered to epoch > until.
     await client.query("BEGIN");
     await client.query(`SET LOCAL statement_timeout = ${LATEST_ELSETS_STATEMENT_TIMEOUT_MS}`);
-    if (seqscanOff) await client.query("SET LOCAL enable_seqscan = off");
+    // The future-dated correction seeks obc_tle_history. Forbid a hash or
+    // seq scan of that heap so a planner miss cancels at statement_timeout
+    // instead of killing the backend.
+    if (lockHistoryToIndex) {
+      await client.query("SET LOCAL enable_seqscan = off");
+      await client.query("SET LOCAL enable_hashjoin = off");
+      await client.query("SET LOCAL enable_mergejoin = off");
+    }
     const result = await client.query<LatestElsetRow>(q.sql, params);
     await client.query("COMMIT");
     return result.rows.map((r) => mapLatestElsetRow(r));
@@ -977,30 +998,65 @@ async function queryLatestElsetRows(query: SQL, seqscanOff: boolean): Promise<La
   }
 }
 
-/** Latest archived elset per catalogued object with epoch in (`sinceMs`, `untilMs`]. */
+const MISSING_POINTER_TABLE = "obc_latest_elset is missing; refusing full-catalog history probe";
+
+/**
+ * A dead socket must retry the whole fetch (the in-window rows were read on
+ * that socket and the connection is gone). A statement timeout is the
+ * future-dated correction being too slow — keep the pointer rows already
+ * loaded so the hour still screens.
+ */
+export function futureElsetCorrectionFailureAbortsFetch(err: unknown): boolean {
+  return latestElsetClientIsDead(err) || isTransientConnectionError(err);
+}
+
+/**
+ * Latest archived elset per catalogued object with epoch in (`sinceMs`, `untilMs`].
+ *
+ * Reads obc_latest_elset only. The previous fallback (one history seek per
+ * catalog norad whenever the backfill was unfinished) is the query that
+ * wedged the host: the lock socket died, and the single retry opened a new
+ * connection that pg-pool aborted at connectionTimeoutMillis. That string
+ * is what lastScanError stored on 2026-10-22. A partial pointer is served
+ * as-is; ingest (rememberLatestElsets) and later backfill batches fill gaps.
+ */
 export async function getLatestElsets(
   sinceMs: number,
   untilMs: number = Date.now() + ELSET_FUTURE_SLACK_MS,
 ): Promise<LatestElset[]> {
   const since = new Date(sinceMs);
   const until = new Date(untilMs);
-  let ready = false;
   try {
-    ready = await ensureLatestElsetReady();
+    await ensureLatestElsetReady();
   } catch (err) {
-    if (!isUndefinedLatestTable(err)) throw err;
+    if (isUndefinedLatestTable(err)) throw new Error(MISSING_POINTER_TABLE);
+    // A batch that already stopped is swallowed inside the backfill. This
+    // is a connection failure before any batch committed. Still try the
+    // pointer read; if the socket is dead the caller retries once.
+    logger.warn({ err: formatDbError(err) }, "tle-archive: latest-elset backfill paused; reading the pointer table");
   }
-  if (ready) {
-    try {
-      return await queryLatestElsetRows(latestElsetsQuerySql(since, until), false);
-    } catch (err) {
-      if (!isUndefinedLatestTable(err)) throw err;
-      logger.warn("tle-archive: obc_latest_elset missing at read time; using archive seek");
-    }
-  } else {
-    logger.warn("tle-archive: latest-elset table not ready; using per-norad archive seek");
+  let inWindow: LatestElset[];
+  try {
+    inWindow = await queryLatestElsetRows(latestElsetsInWindowSql(since, until), false);
+  } catch (err) {
+    if (isUndefinedLatestTable(err)) throw new Error(MISSING_POINTER_TABLE);
+    throw err;
   }
-  return queryLatestElsetRows(latestElsetsArchiveSql(since, until), true);
+  try {
+    const corrected = await queryLatestElsetRows(latestElsetsFutureSql(since, until), true);
+    logger.info(
+      { inWindow: inWindow.length, futureCorrected: corrected.length },
+      "tle-archive: latest elsets loaded",
+    );
+    return inWindow.concat(corrected);
+  } catch (err) {
+    if (futureElsetCorrectionFailureAbortsFetch(err)) throw err;
+    logger.warn(
+      { err: formatDbError(err), inWindow: inWindow.length },
+      "tle-archive: future-dated elset correction skipped",
+    );
+    return inWindow;
+  }
 }
 
 /**
