@@ -1,0 +1,75 @@
+[
+  {
+    "slug": "electron-hawkeye360",
+    "name": "We're Not Hawking Around (3x HawkEye 360)",
+    "vehicle": "Electron",
+    "t0_utc": "2026-10-23T07:11:00Z",
+    "status": "Success",
+    "phase": "recent",
+    "files": {
+      "csv": "/launches/electron-hawkeye360/trajectory.csv",
+      "kml": "/launches/electron-hawkeye360/trajectory.kml"
+    },
+    "illustrative": true,
+    "confidence": "low-medium",
+    "sources": [
+      "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+      "https://ll.thespacedevs.com/2.3.0/launches/"
+    ]
+  },
+  {
+    "slug": "lm6a-yaogan50-03",
+    "name": "Yaogan 50-03",
+    "vehicle": "Long March 6A",
+    "t0_utc": "2026-10-23T10:15:00Z",
+    "status": "Success",
+    "phase": "recent",
+    "files": {
+      "csv": "/launches/lm6a-yaogan50-03/trajectory.csv",
+      "kml": "/launches/lm6a-yaogan50-03/trajectory.kml"
+    },
+    "illustrative": true,
+    "confidence": "low",
+    "sources": [
+      "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+      "https://ll.thespacedevs.com/2.3.0/launches/"
+    ]
+  },
+  {
+    "slug": "lm4b-jiuquan",
+    "name": "Yaogan 53-07..09 / 56-19..21",
+    "vehicle": "Long March 4B",
+    "t0_utc": "2026-10-23T19:25:00Z",
+    "status": "Success",
+    "phase": "recent",
+    "files": {
+      "csv": "/launches/lm4b-jiuquan/trajectory.csv",
+      "kml": "/launches/lm4b-jiuquan/trajectory.kml"
+    },
+    "illustrative": true,
+    "confidence": "low-medium",
+    "sources": [
+      "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+      "https://ll.thespacedevs.com/2.3.0/launches/"
+    ]
+  },
+  {
+    "slug": "lm8a-wenchang",
+    "name": "Unknown payload",
+    "vehicle": "Long March 8A",
+    "t0_utc": "2026-10-25T01:50:00Z",
+    "status": "Go",
+    "phase": "upcoming",
+    "files": {
+      "csv": "/launches/lm8a-wenchang/trajectory.csv",
+      "kml": "/launches/lm8a-wenchang/trajectory.kml"
+    },
+    "illustrative": true,
+    "confidence": "low",
+    "sources": [
+      "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+      "https://www.sealagom.com/navarea/11/message/25242/",
+      "https://ll.thespacedevs.com/2.3.0/launches/"
+    ]
+  }
+]
