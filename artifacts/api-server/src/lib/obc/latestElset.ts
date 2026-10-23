@@ -120,6 +120,9 @@ export function historyLateralIsCatalogWide(sqlText: string): boolean {
   const lateralAt = s.search(/\blateral\b/);
   const head = s.slice(0, lateralAt);
   if (/distinct\s+norad/.test(head) && /obc_objects/.test(head)) return true;
+  // Station-keeping history is a VALUES list of plane-matched candidate
+  // NORADs (tens, not the catalog). That is an index seek per id.
+  if (/\bvalues\s*\(/.test(head) || /\bunnest\s*\(/.test(head)) return false;
   if (!/from\s+obc_latest_elset\b/.test(head)) return true;
   if (!/epoch\s*>/.test(head)) return true;
   return false;

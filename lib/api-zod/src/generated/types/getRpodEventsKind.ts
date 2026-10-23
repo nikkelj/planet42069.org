@@ -13,4 +13,5 @@ export const GetRpodEventsKind = {
   conjunction: 'conjunction',
   coplanar: 'coplanar',
   docked: 'docked',
+  'station-keeping': 'station-keeping',
 } as const;

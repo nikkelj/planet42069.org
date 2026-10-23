@@ -6,6 +6,7 @@ import { dbErrorFields } from "../dbError";
 import {
   formatCitation,
   formatEscalationCitation,
+  formatStationKeepingCitation,
   publishPolicyItems,
   type AlertMeta,
   type EscalatedRpodEvent,
@@ -14,12 +15,14 @@ import {
 import {
   applyAlertCap,
   evaluateAlert,
+  isKosmosOutsider,
   pairKey,
   type ExerciseFlag,
   type PolicyEvent,
   type PolicyMember,
   type PolicyPair,
 } from "./alertPolicy";
+import type { StationKeepingQueuedAlert } from "./stationKeeping";
 import { detectManeuver, type ElsetSnap, type ManeuverMark } from "./maneuver";
 import type { InterestCatalogMeta } from "./interest";
 
@@ -50,6 +53,7 @@ export interface DispatchCatalog extends InterestCatalogMeta {
 interface Ready {
   ev: TrackedRpodEvent;
   escalation?: EscalatedRpodEvent;
+  stationKeeping?: StationKeepingQueuedAlert;
   score: number;
   bypassCap: boolean;
   ledgerKey: number;
@@ -60,12 +64,15 @@ interface Ready {
 export async function deliverPolicyAlerts(input: {
   tracked: TrackedRpodEvent[];
   escalated: EscalatedRpodEvent[];
+  /** Onset and significant-change only. Ongoing holds are not in this list. */
+  stationKeeping?: StationKeepingQueuedAlert[];
   meta: Map<number, DispatchCatalog>;
   elsets: Map<number, ElsetSnap>;
   nowMs: number;
 }): Promise<void> {
   const { tracked, escalated, meta, elsets, nowMs } = input;
-  if (tracked.length === 0 && escalated.length === 0) return;
+  const stationKeeping = input.stationKeeping ?? [];
+  if (tracked.length === 0 && escalated.length === 0 && stationKeeping.length === 0) return;
   const flags = await loadExerciseFlags(nowMs);
   const byPair = new Map<string, TrackedRpodEvent>();
   for (const ev of tracked) {
@@ -81,6 +88,9 @@ export async function deliverPolicyAlerts(input: {
   const ready: Ready[] = [];
   const openingIds = new Set<number>();
   for (const ev of byPair.values()) {
+    // Station keeping is far by definition. The 30 km range gate stays put;
+    // onset and offset changes are queued from `stationKeeping` below.
+    if (ev.kind === "station-keeping") continue;
     const policy = toPolicy(ev, meta, elsets, previous);
     const verdict = evaluateAlert(policy, nowMs, flags);
     if (!verdict.eligible) continue;
@@ -108,6 +118,32 @@ export async function deliverPolicyAlerts(input: {
       note: maneuverSentence(policy.maneuver),
     });
   }
+  for (const sk of stationKeeping) {
+    const kosmos = isKosmosOutsider(sk.members);
+    ready.push({
+      ev: {
+        eventId: sk.eventId,
+        kind: "station-keeping",
+        members: sk.members,
+        minRangeKm: sk.minRangeKm,
+        relVelKmS: sk.relVelKmS,
+        tcaMs: sk.tcaMs,
+        firstDetectedAtMs: nowMs,
+        lastSeenAtMs: nowMs,
+        scanCount: 1,
+        firstRangeKm: sk.offsetKm,
+        maxRangeKm: sk.offsetKm,
+        previousElsetEpochs: null,
+        suspectedCrossTag: false,
+      },
+      stationKeeping: sk,
+      score: (kosmos ? 1000 : 12) + Math.max(0, 30 - Math.abs(sk.driftKmPerDay)),
+      bypassCap: kosmos,
+      ledgerKey: sk.ledgerKey,
+      what: sk.what === "onset" ? "station-keeping onset" : "station-keeping change",
+      note: null,
+    });
+  }
   if (ready.length === 0) return;
 
   const capped = applyAlertCap(ready);
@@ -120,7 +156,9 @@ export async function deliverPolicyAlerts(input: {
   const ordered = [...capped].sort((a, b) => b.item.score - a.item.score);
   await publishPolicyItems(ordered.map((c) => {
     const item = c.item;
-    const text = item.escalation
+    const text = item.stationKeeping
+      ? formatStationKeepingCitation(item.ev, metaFor, item.stationKeeping)
+      : item.escalation
       ? formatEscalationCitation(item.escalation, metaFor)
       : formatCitation(item.ev, metaFor, item.note);
     return {

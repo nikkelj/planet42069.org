@@ -540,7 +540,7 @@ export const GetRpodEventsQueryParams = zod.object({
   "page": zod.coerce.number().default(getRpodEventsQueryPageDefault),
   "limit": zod.coerce.number().default(getRpodEventsQueryLimitDefault),
   "status": zod.enum(['active', 'stale', 'ended']).optional().describe('Filter by event status (ended = coplanar pair drifted apart and stopped passing the screen)'),
-  "kind": zod.enum(['conjunction', 'coplanar', 'docked']).optional().describe('Filter by event kind (discrete conjunction, long-duration coplanar shadowing, or docked stack)'),
+  "kind": zod.enum(['conjunction', 'coplanar', 'docked', 'station-keeping']).optional().describe('Filter by event kind (discrete conjunction, long-duration coplanar shadowing, docked stack, or red-versus-blue station keeping)'),
   "reopened": zod.coerce.boolean().optional().describe('When true, only return repeat-offender cases that have been reopened at least once (reopenCount > 0)'),
   "q": zod.coerce.string().optional().describe('Search by participant satellite name (substring, case-insensitive) or NORAD number'),
   "country": zod.coerce.string().optional().describe('Filter to events with at least one participant whose catalog country\/state code matches (exact, case-insensitive)'),

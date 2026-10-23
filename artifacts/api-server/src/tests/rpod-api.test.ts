@@ -40,7 +40,7 @@ interface EventRow {
   [k: string]: unknown;
 }
 
-async function seed(): Promise<{ conjunctionId: number; coplanarId: number; dockedId: number; durationIds: { short: number; medium: number; long: number } }> {
+async function seed(): Promise<{ conjunctionId: number; coplanarId: number; dockedId: number; stationKeepingId: number; durationIds: { short: number; medium: number; long: number } }> {
   const now = new Date("2026-08-01T00:00:00Z");
   const later = new Date("2026-08-01T06:00:00Z");
   const [conj] = await db.insert(rpodEvents).values({
@@ -58,6 +58,11 @@ async function seed(): Promise<{ conjunctionId: number; coplanarId: number; dock
     windowStart: now, windowEnd: later, tca: now,
     minRangeKm: 0.05, relVelKmS: 0.001, memberCount: 2,
   }).returning({ id: rpodEvents.id });
+  const [station] = await db.insert(rpodEvents).values({
+    status: "active", kind: "station-keeping",
+    windowStart: now, windowEnd: later, tca: now,
+    minRangeKm: 479, relVelKmS: 0.0001, memberCount: 2,
+  }).returning({ id: rpodEvents.id });
   await db.insert(rpodEventMembers).values([
     { eventId: conj.id, norad: TEST_NORADS[0], minRangeKm: 4.2, relVelKmS: 0.05 },
     { eventId: conj.id, norad: TEST_NORADS[1], minRangeKm: 4.2, relVelKmS: 0.05 },
@@ -65,6 +70,8 @@ async function seed(): Promise<{ conjunctionId: number; coplanarId: number; dock
     { eventId: cop.id, norad: TEST_NORADS[3], minRangeKm: 175, relVelKmS: 0.02 },
     { eventId: dock.id, norad: TEST_NORADS[0], minRangeKm: 0.05, relVelKmS: 0.001 },
     { eventId: dock.id, norad: TEST_NORADS[1], minRangeKm: 0.05, relVelKmS: 0.001 },
+    { eventId: station.id, norad: TEST_NORADS[2], minRangeKm: 479, relVelKmS: 0.0001 },
+    { eventId: station.id, norad: TEST_NORADS[3], minRangeKm: 479, relVelKmS: 0.0001 },
   ]);
   // Duration-sort fixtures: three ended events with identical tca/status/kind
   // but observation spans of 1h, 3h, and 12h — so ordering by
@@ -88,7 +95,7 @@ async function seed(): Promise<{ conjunctionId: number; coplanarId: number; dock
   const medium = await mkSpan(3);
   const long = await mkSpan(12);
 
-  return { conjunctionId: conj.id, coplanarId: cop.id, dockedId: dock.id, durationIds: { short, medium, long } };
+  return { conjunctionId: conj.id, coplanarId: cop.id, dockedId: dock.id, stationKeepingId: station.id, durationIds: { short, medium, long } };
 }
 
 async function cleanup(ids: number[]): Promise<void> {
@@ -96,8 +103,8 @@ async function cleanup(ids: number[]): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const { conjunctionId, coplanarId, dockedId, durationIds } = await seed();
-  const seededIds = [conjunctionId, coplanarId, dockedId, durationIds.short, durationIds.medium, durationIds.long];
+  const { conjunctionId, coplanarId, dockedId, stationKeepingId, durationIds } = await seed();
+  const seededIds = [conjunctionId, coplanarId, dockedId, stationKeepingId, durationIds.short, durationIds.medium, durationIds.long];
 
   const server: Server = await new Promise((resolve) => {
     const s = app.listen(0, () => resolve(s));
@@ -118,11 +125,12 @@ async function main(): Promise<void> {
       // Unfiltered list (large limit so seeded rows appear regardless of others).
       const all = await fetchEvents("?limit=1000");
       check("every listed event carries a kind field",
-        all.data.every((e) => e.kind === "conjunction" || e.kind === "coplanar" || e.kind === "docked"),
+        all.data.every((e) => e.kind === "conjunction" || e.kind === "coplanar" || e.kind === "docked" || e.kind === "station-keeping"),
         JSON.stringify([...new Set(all.data.map((e) => e.kind))]));
       const ids = new Set(all.data.map((e) => e.id));
       check("seeded conjunction visible without filter", ids.has(conjunctionId));
       check("seeded coplanar visible without filter", ids.has(coplanarId));
+      check("seeded station-keeping visible without filter", ids.has(stationKeepingId));
 
       const conjOnly = await fetchEvents("?limit=200&kind=conjunction");
       check("kind=conjunction returns only conjunctions",
@@ -146,9 +154,17 @@ async function main(): Promise<void> {
       check("kind=docked excludes seeded conjunction", !dockIds.has(conjunctionId));
       check("kind=conjunction excludes seeded docked stack", !conjIds.has(dockedId));
 
+      const skOnly = await fetchEvents("?limit=200&kind=station-keeping");
+      check("kind=station-keeping returns only station-keeping events",
+        skOnly.data.length > 0 && skOnly.data.every((e) => e.kind === "station-keeping"));
+      const skIds = new Set(skOnly.data.map((e) => e.id));
+      check("kind=station-keeping includes the seeded offset case", skIds.has(stationKeepingId));
+      check("kind=station-keeping excludes seeded conjunction", !skIds.has(conjunctionId));
+      check("kind=coplanar excludes seeded station-keeping", !copIds.has(stationKeepingId));
+
       check("filtered totals partition the unfiltered total",
-        conjOnly.total + copOnly.total + dockOnly.total === all.total,
-        `${conjOnly.total} + ${copOnly.total} + ${dockOnly.total} != ${all.total}`);
+        conjOnly.total + copOnly.total + dockOnly.total + skOnly.total === all.total,
+        `${conjOnly.total} + ${copOnly.total} + ${dockOnly.total} + ${skOnly.total} != ${all.total}`);
 
       // Unknown kind values must be ignored, not silently match nothing.
       const bogus = await fetchEvents("?limit=200&kind=nonsense");
@@ -185,7 +201,7 @@ async function main(): Promise<void> {
 
     console.log("Detail endpoint: kind field");
     {
-      for (const [id, expected] of [[conjunctionId, "conjunction"], [coplanarId, "coplanar"], [dockedId, "docked"]] as const) {
+      for (const [id, expected] of [[conjunctionId, "conjunction"], [coplanarId, "coplanar"], [dockedId, "docked"], [stationKeepingId, "station-keeping"]] as const) {
         const res = await fetch(`${base}/rpod/events/${id}`);
         check(`detail ${expected} responds 200`, res.ok, `got ${res.status}`);
         const body = (await res.json()) as EventRow;

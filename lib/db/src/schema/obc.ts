@@ -230,6 +230,8 @@ export const rpodEvents = pgTable(
      * "conjunction": a discrete predicted close approach (bubble closes).
      * "coplanar": long-duration co-aligned shadowing — same plane and shell,
      * slowly drifting in phase; these encounters last weeks or months.
+     * "station-keeping": red-versus-blue pair holding a steady along-track
+     * offset beyond the conjunction and coplanar range gates.
      */
     kind: text("kind").notNull().default("conjunction"),
     windowStart: timestamp("window_start").notNull(),

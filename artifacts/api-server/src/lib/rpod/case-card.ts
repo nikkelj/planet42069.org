@@ -103,6 +103,8 @@ export function renderCaseCardSvg(
   const extra = craft.length > 3 ? `+${craft.length - 3} MORE CRAFT ON FILE` : null;
   const kindLine = ev.kind === "coplanar"
     ? "SUSTAINED CO-PLANAR SHADOWING"
+    : ev.kind === "station-keeping"
+    ? "STATION KEEPING — STEADY ALONG-TRACK OFFSET"
     : "UNSCHEDULED PROXIMITY OPERATION";
 
   const nameLines = shown
