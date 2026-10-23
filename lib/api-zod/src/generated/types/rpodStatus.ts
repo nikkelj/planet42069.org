@@ -14,4 +14,6 @@ export interface RpodStatus {
   lastScanStatus?: string | null;
   lastScanEvents?: number | null;
   lastScanError?: string | null;
+  /** Git commit SHA of the running server, or "unknown" when it could not be resolved. Computed once at startup; not a database read. */
+  buildCommit: string;
 }

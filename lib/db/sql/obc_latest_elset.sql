@@ -14,11 +14,14 @@
 -- LIMIT 1 via a backward index scan, and a duplicate would add hundreds of
 -- MB on the ~19M-row archive.
 --
--- The API backfills the table in batches of 500 catalog norads (advisory
--- lock 421073, worker state key tle_latest_elset_backfill) and keeps it
--- current on ingest. Until that backfill finishes, the scan keeps using the
--- per-norad archive seek so results stay complete. Running the INSERT below
--- by hand is optional; it does the same fill in one statement.
+-- The API backfills the table in batches of 100 catalog norads (advisory
+-- lock 421073, worker state key tle_latest_elset_backfill) from the TLE
+-- workers, and keeps it current on ingest. The RPOD scan reads this table
+-- only. It does not fall back to a per-norad archive seek, and it does not
+-- run the backfill itself — that seek on the scan connection is what made
+-- the pointer read miss its 30s client deadline. Running the INSERT below
+-- by hand is optional and should wait until scans are healthy; it is one
+-- index seek per catalogued norad, pinned to (norad, epoch).
 
 CREATE TABLE IF NOT EXISTS obc_latest_elset (
   norad integer PRIMARY KEY,
@@ -61,8 +64,9 @@ CROSS JOIN LATERAL (
     norad, epoch, line1, line2, inc_deg, raan_deg, eccentricity,
     arg_perigee_deg, mean_anomaly_deg, mean_motion_rev_per_day
   FROM obc_tle_history
-  WHERE norad = ids.norad
-  ORDER BY epoch DESC
+  WHERE (norad, epoch) > (ids.norad, '-infinity'::timestamp)
+    AND (norad, epoch) <= (ids.norad, 'infinity'::timestamp)
+  ORDER BY norad DESC, epoch DESC
   LIMIT 1
 ) AS h
 ON CONFLICT (norad) DO UPDATE SET

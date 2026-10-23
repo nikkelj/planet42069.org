@@ -18,6 +18,11 @@
  *    only for pointer rows whose epoch is already past the window, and an
  *    unfinished backfill must not fall back to the catalog-wide probe
  *    (live 2026-10-22 handshake timeout).
+ *  - the scan does not fill obc_latest_elset itself. That backfill is a
+ *    per-norad history seek; running it on the lock connection saturated
+ *    the host and the following pointer read stored "exceeded 30000ms
+ *    client deadline" (live 2026-10-23). A future-dated correction that
+ *    misses the deadline keeps the in-window rows.
  *  - a failed latest-elset fetch skips/logs instead of aborting doScan
  *  - a pg-pool handshake abort ("Connection terminated due to connection
  *    timeout <- Connection terminated unexpectedly", live 2026-10-14) is
@@ -29,6 +34,7 @@
  *
  * Run with: pnpm --filter @workspace/api-server run test:rpod
  */
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,6 +58,8 @@ import {
   isTransientConnectionError, retryOnceOnTransient, retryTransientConnection, DB_CONNECT_RETRY_DELAY_MS,
   DB_CONNECT_RETRY_ATTEMPTS, DB_CONNECT_RETRY_DELAYS_MS,
 } from "../lib/obc/tleArchive";
+import { backfillBatchSql } from "../lib/obc/latestElset";
+import { buildCommit } from "../lib/buildInfo";
 import type { ClusteredEvent } from "../lib/rpod/screen";
 
 let failures = 0;
@@ -199,16 +207,33 @@ async function main(): Promise<void> {
     check("full-catalog archive lateral is catalog-wide", historyLateralIsCatalogWide(archiveText) === true, archiveText.slice(0, 200));
     const tleSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../lib/obc/tleArchive.ts"), "utf8");
     const latestSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../lib/obc/latestElset.ts"), "utf8");
-    check("getLatestElsets waits for the pointer table and reads it",
-      /ensureLatestElsetReady\(/.test(tleSrc) && /latestElsetsInWindowSql\(/.test(tleSrc));
+    const fetchStart = tleSrc.indexOf("export async function getLatestElsets(");
+    const fetchEnd = tleSrc.indexOf("export async function getLatestElsetsOrSkip(");
+    const fetchBody = fetchStart >= 0 && fetchEnd > fetchStart ? tleSrc.slice(fetchStart, fetchEnd) : "";
+    check("getLatestElsets reads the pointer table",
+      /ensureLatestElsetTable\(/.test(fetchBody) && /latestElsetsInWindowSql\(/.test(fetchBody),
+      fetchBody.slice(0, 240));
+    check("getLatestElsets does not backfill the pointer on the scan connection",
+      !/ensureLatestElsetReady\(/.test(fetchBody));
+    check("TLE workers still fill the pointer",
+      /ensureLatestElsetReady\(/.test(tleSrc));
+    const backfillText = sqlTemplateText(backfillBatchSql(0, 100, false));
+    check("pointer backfill seek pins the (norad, epoch) index",
+      futureElsetSeekPinsCompositeIndex(backfillText), backfillText.slice(0, 500));
+    check("status route reports the deployed commit",
+      /buildCommit:\s*buildCommit\(\)/.test(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../routes/rpod.ts"), "utf8")));
+    const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+    check("buildCommit resolves once to the git SHA", buildCommit() === head && buildCommit() === head, buildCommit());
     check("getLatestElsets does not fall back to the archive seek",
       !/latestElsetsArchiveSql\(/.test(tleSrc));
     check("a missing pointer table is an error, not an archive probe",
       /refusing full-catalog history probe/.test(tleSrc));
-    check("backfill batches cannot hash or seq-scan history",
+    check("backfill batches cannot hash, seq-scan, or bitmap-scan history",
       /SET LOCAL enable_seqscan = off/.test(latestSrc)
       && /SET LOCAL enable_hashjoin = off/.test(latestSrc)
-      && /SET LOCAL enable_mergejoin = off/.test(latestSrc));
+      && /SET LOCAL enable_mergejoin = off/.test(latestSrc)
+      && /SET LOCAL enable_bitmapscan = off/.test(latestSrc)
+      && /SET LOCAL max_parallel_workers_per_gather = 0/.test(latestSrc));
     check("in-window pointer read is a sequential scan, not an epoch index range",
       /SET LOCAL enable_indexscan = off/.test(tleSrc)
       && /SET LOCAL enable_bitmapscan = off/.test(tleSrc)
@@ -222,11 +247,17 @@ async function main(): Promise<void> {
       /latest-elset backfill batch stopped/.test(latestSrc));
     check("statement timeout on the future-dated correction keeps the in-window rows",
       futureElsetCorrectionFailureAbortsFetch(new Error("canceling statement due to statement timeout")) === false);
-    check("handshake abort on the future-dated correction still retries the fetch",
+    check("client deadline on the future-dated correction keeps the in-window rows",
+      futureElsetCorrectionFailureAbortsFetch(new Error(
+        "latest-elset fetch exceeded 30000ms client deadline",
+      )) === false);
+    check("handshake abort on the future-dated correction keeps the in-window rows",
       futureElsetCorrectionFailureAbortsFetch(new Error(
         "Connection terminated due to connection timeout",
         { cause: new Error("Connection terminated unexpectedly") },
-      )) === true);
+      )) === false);
+    check("history correction does not borrow the scan lock client",
+      /lockHistoryToIndex \? null : currentPoolClient\(\)/.test(tleSrc));
 
     const cutoff = oldestArchiveProbeCutoff(Date.parse("2026-10-21T15:16:12Z"));
     const boundsSql = sqlTemplateText(archiveEpochBoundsSql(cutoff));
@@ -453,7 +484,8 @@ async function main(): Promise<void> {
     );
     check(
       "latest-elset read does not release a borrowed scan client",
-      /const borrowed = currentPoolClient\(\)/.test(tleSrc) && /if \(!borrowed\)/.test(tleSrc),
+      /const borrowed = lockHistoryToIndex \? null : currentPoolClient\(\)/.test(tleSrc)
+        && /if \(!borrowed\)/.test(tleSrc),
     );
     const livePersist = new Error(
       'Failed query: select "id", "status", "kind" from "rpod_events" where "rpod_events"."status" = $1\nparams: active',
@@ -875,9 +907,11 @@ async function main(): Promise<void> {
         lastScanStatus: string | null;
         lastScanEvents: number | null;
         lastScanError: string | null;
+        buildCommit: string;
       };
       check("status payload includes lastScanError key", "lastScanError" in body);
       check("lastScanError is string or null", body.lastScanError === null || typeof body.lastScanError === "string");
+      check("status payload includes the deployed commit", body.buildCommit === buildCommit(), body.buildCommit);
       check("activeEvents is a number", Number.isFinite(body.activeEvents));
     }
   } finally {

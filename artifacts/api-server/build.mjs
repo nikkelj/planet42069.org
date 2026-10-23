@@ -3,12 +3,31 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
+import { execFileSync } from "node:child_process";
 import { rm } from "node:fs/promises";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
+
+function resolveBuildCommit() {
+  for (const key of ["BUILD_COMMIT", "GIT_COMMIT", "COMMIT_SHA", "SOURCE_VERSION", "REPLIT_GIT_COMMIT"]) {
+    const value = process.env[key]?.trim();
+    if (value && /^[0-9a-f]{7,40}$/i.test(value)) return value;
+  }
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: path.resolve(artifactDir, "../.."),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "";
+  }
+}
+
+const buildCommit = resolveBuildCommit();
 
 async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist");
@@ -102,6 +121,11 @@ async function buildAll() {
       "puppeteer-core",
       "electron",
     ],
+    // Baked into the bundle so a deploy without .git still reports the SHA
+    // that was built. Empty string falls through to git / "unknown" at runtime.
+    define: {
+      __BUILD_COMMIT__: JSON.stringify(buildCommit),
+    },
     sourcemap: "linked",
     plugins: [
       // pino relies on workers to handle logging, instead of externalizing it we use a plugin to handle it
