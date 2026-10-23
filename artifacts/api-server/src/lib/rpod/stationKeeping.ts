@@ -12,11 +12,15 @@ import type { Force } from "./force";
  * such as Kosmos 2612 trailing ICEYE-X36 by a few hundred kilometres is
  * outside both, slow, and still a proximity operation.
  *
- * The decision is orbital elements over several elsets, not one SGP4
- * sample. The hourly scan pre-filters red-versus-blue pairs on the latest
- * elsets already in memory, then reads a bounded history only for those
- * NORADs (index seek per id, LIMIT per object). It does not walk the
- * TLE archive per catalog object.
+ * One elset per object is enough. Current geometry classifies the pair:
+ * the same plane match as the 0.5° RAAN prefilter, a matched semi-major
+ * axis, and an along-track offset inside the configured cap. The hourly
+ * scan still pre-filters red-versus-blue pairs on the latest elsets in
+ * memory, then reads a bounded history only for those NORADs (index seek
+ * per id, LIMIT per object). It does not walk the TLE archive. When that
+ * history has two or more samples, the along-track drift must also stay
+ * under 25 km/day. A single sample has no rate, so the drift check is
+ * skipped.
  */
 
 export interface ElementSample {
@@ -33,17 +37,13 @@ export interface ElementSample {
 export interface StationKeepingOptions {
   /** Absolute along-track separation cap. RPOD_STATION_KEEP_MAX_OFFSET_KM overrides. */
   maxOffsetKm: number;
-  /** Confirm gate: |Δinclination| on every sample of the stable suffix. */
-  maxIncDiffDeg: number;
-  /** Confirm gate: |ΔRAAN| on every sample of the stable suffix. */
-  maxRaanDiffDeg: number;
-  /** Confirm gate: median |ΔSMA| across the suffix, and the latest sample. */
+  /** Matched shell: median |ΔSMA| across the paired samples, and the latest sample. */
   maxSmaDiffKm: number;
-  /** |linear drift| of signed along-track offset. */
+  /** |linear drift| of signed along-track offset. Applied only when 2+ samples exist. */
   maxDriftKmPerDay: number;
+  /** Fewest paired samples that can classify. One current elset per object is enough. */
   minSamples: number;
-  minSpanMs: number;
-  /** How far back the history seek looks. */
+  /** How far back the history seek looks. Drift uses whatever this returns. */
   historyMs: number;
   /** Rows returned per NORAD. The (norad, epoch) index serves this. */
   maxSamplesPerObject: number;
@@ -55,9 +55,11 @@ export interface StationKeepingOptions {
   maxEpochSkewMs: number;
   /** Latest paired sample must be at least this fresh. */
   maxLatestAgeMs: number;
-  /** Wider than the confirm gates. History still has to pass those. */
+  /** Plane match, shared by the prefilter and classification. */
   prefilterIncDiffDeg: number;
+  /** Plane match. The 0.5° RAAN gate, shared by the prefilter and classification. */
   prefilterRaanDiffDeg: number;
+  /** Candidate shell gate, wider than the matched-SMA confirm. */
   prefilterSmaDiffKm: number;
   /** Near-circular assumption for the along-track arc. */
   maxEccentricity: number;
@@ -65,12 +67,9 @@ export interface StationKeepingOptions {
 
 export const DEFAULT_STATION_KEEPING: StationKeepingOptions = {
   maxOffsetKm: 1000,
-  maxIncDiffDeg: 0.2,
-  maxRaanDiffDeg: 0.35,
   maxSmaDiffKm: 8,
   maxDriftKmPerDay: 25,
-  minSamples: 3,
-  minSpanMs: 2 * 86400_000,
+  minSamples: 1,
   historyMs: 10 * 86400_000,
   maxSamplesPerObject: 12,
   pairCap: 60,
@@ -319,32 +318,42 @@ function linearDriftKmPerDay(points: TrackPoint[]): number {
   return num / den;
 }
 
+/** Plane match is the prefilter: inclination band and the 0.5° RAAN gate. */
+function planeMatched(p: TrackPoint, opts: StationKeepingOptions): boolean {
+  return Math.abs(p.dIncDeg) <= opts.prefilterIncDiffDeg
+    && Math.abs(p.dRaanDeg) <= opts.prefilterRaanDiffDeg;
+}
+
+function median(values: number[]): number {
+  if (values.length === 0) return Infinity;
+  const sorted = values.slice().sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/**
+ * Current geometry on every point in the window: plane match, matched SMA,
+ * offset inside the cap. Drift and along-track wander need a second sample;
+ * one elset has no rate and is not rejected for lacking one.
+ */
 function suffixHolds(points: TrackPoint[], opts: StationKeepingOptions): boolean {
-  if (points.length < opts.minSamples) return false;
-  const span = points[points.length - 1].atMs - points[0].atMs;
-  if (span < opts.minSpanMs) return false;
-  let smaAbs = 0;
+  if (points.length < 1) return false;
   const smaAbsValues: number[] = [];
   let minOff = Infinity;
   let maxOff = -Infinity;
   for (const p of points) {
     if (p.offsetKm > opts.maxOffsetKm) return false;
-    if (Math.abs(p.dIncDeg) > opts.maxIncDiffDeg) return false;
-    if (Math.abs(p.dRaanDeg) > opts.maxRaanDiffDeg) return false;
+    if (!planeMatched(p, opts)) return false;
     smaAbsValues.push(Math.abs(p.dSmaKm));
     if (p.offsetKm < minOff) minOff = p.offsetKm;
     if (p.offsetKm > maxOff) maxOff = p.offsetKm;
   }
-  smaAbsValues.sort((a, b) => a - b);
-  const mid = Math.floor(smaAbsValues.length / 2);
-  smaAbs = smaAbsValues.length % 2 === 1
-    ? smaAbsValues[mid]
-    : (smaAbsValues[mid - 1] + smaAbsValues[mid]) / 2;
   const latest = points[points.length - 1];
-  if (smaAbs > opts.maxSmaDiffKm || Math.abs(latest.dSmaKm) > opts.maxSmaDiffKm) return false;
+  if (median(smaAbsValues) > opts.maxSmaDiffKm || Math.abs(latest.dSmaKm) > opts.maxSmaDiffKm) return false;
+  if (points.length < 2) return true;
   const drift = Math.abs(linearDriftKmPerDay(points));
   if (drift > opts.maxDriftKmPerDay) return false;
-  const spanDays = span / 86400_000;
+  const spanDays = (latest.atMs - points[0].atMs) / 86400_000;
   const allowedRange = Math.max(80, opts.maxDriftKmPerDay * spanDays + 40);
   if (maxOff - minOff > allowedRange) return false;
   return true;
@@ -367,8 +376,10 @@ export interface StationKeepingVerdict {
 }
 
 /**
- * Longest recent suffix of paired elsets that stays inside the plane,
- * shell, offset, and drift gates. Null when the pair is not holding station.
+ * Longest recent suffix that stays inside the plane, shell, and offset
+ * gates. One paired elset classifies on that geometry. Two or more must
+ * also stay under the drift cap, so a fast drift is not hidden by keeping
+ * only the latest point. Null when the pair is not holding station.
  * `a` is the red object when the caller used the prefilter order.
  */
 export function classifyStationKeeping(
@@ -381,8 +392,12 @@ export function classifyStationKeeping(
   if (points.length < opts.minSamples) return null;
   const latest = points[points.length - 1];
   if (nowMs - latest.atMs > opts.maxLatestAgeMs) return null;
+  // One paired elset classifies on geometry alone. With two or more, do not
+  // shrink the window to a single point: that would skip a drift the extra
+  // samples are there to measure.
+  const floor = points.length >= 2 ? Math.max(opts.minSamples, 2) : opts.minSamples;
   let chosen: TrackPoint[] | null = null;
-  for (let start = 0; start <= points.length - opts.minSamples; start++) {
+  for (let start = 0; start <= points.length - floor; start++) {
     const window = points.slice(start);
     if (suffixHolds(window, opts)) { chosen = window; break; }
   }
@@ -421,8 +436,9 @@ function mergeLatest(list: ElementSample[], latest: ElementSample | undefined): 
 }
 
 /**
- * Prefilter, then classify from history. `loadHistory` must seek only the
- * norads passed in — the scan wires that to a VALUES/LATERAL query.
+ * Prefilter, then classify from the current elsets. History supplies the
+ * drift check when a second sample exists. `loadHistory` must seek only
+ * the norads passed in — the scan wires that to a VALUES/LATERAL query.
  */
 export async function screenStationKeeping(input: {
   latest: ElementSample[];
