@@ -11,7 +11,7 @@ import {
   sampleRows, backfillHorizonMs, BACKFILL_HORIZON_DAYS, COARSE_AFTER_DAYS, ELSET_FUTURE_SLACK_MS,
   estimatePgCount, estimatePgDistinct, asFiniteNumber,
   utcDayStartMs, newestCoarseDayStartMs, coerceCoarsePruneCursor, advanceCoarsePruneCursor,
-  coarseDayThinSql, sqlTemplateText,
+  coarseDayThinSql, horizonDeleteSql, sqlTemplateText,
 } from "../lib/obc/tleArchive";
 import { pickNewestElsets, latestElsetBackfillNeedsWork } from "../lib/obc/latestElset";
 import type { InsertObcTleHistory } from "@workspace/db/schema";
@@ -123,6 +123,11 @@ console.log("Coarse prune walks one UTC day, not the whole horizon");
     /row_number\(\)/i.test(thin) && /order by epoch desc, id desc/i.test(thin), thin.slice(0, 400));
   check("thin SQL does not partition the whole coarse span in one window",
     !/date_trunc\(\s*'day'/i.test(thin), thin.slice(0, 200));
+  const horizonDelete = sqlTemplateText(horizonDeleteSql(new Date(horizon), 20_000));
+  check("horizon delete has a lower bound so it does not start at the dead left edge",
+    /epoch\s*>=/.test(horizonDelete) && /epoch\s*</.test(horizonDelete), horizonDelete.slice(0, 400));
+  check("horizon delete is not the unbounded epoch < horizon probe",
+    !/where epoch < \$1\s+limit/i.test(horizonDelete.replace(/\s+/g, " ")), horizonDelete.slice(0, 400));
 }
 
 console.log("Latest-elset pointer keeps the newest epoch per norad");

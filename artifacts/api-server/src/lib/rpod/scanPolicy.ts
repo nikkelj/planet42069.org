@@ -8,8 +8,17 @@
  * boot. Catalog sync already works this way (catalogNeedsSync); RPOD did not.
  */
 
-/** Full RPOD screen cadence — lastScanAt younger than this is "fresh". */
+/** Full RPOD screen cadence — a success row younger than this is "fresh". */
 export const RPOD_SCAN_INTERVAL_MS = 60 * 60 * 1000;
+
+/**
+ * An error row is not a finished hour. The 5-minute and 10-minute retries
+ * sleep inside the process that failed. Autoscale can recycle that process
+ * during the sleep; every other instance was treating the error's finishedAt
+ * as a fresh success for RPOD_SCAN_INTERVAL_MS, so nothing recorded another
+ * attempt until the next hour. Five minutes matches the first in-process retry.
+ */
+export const RPOD_SCAN_ERROR_RETRY_MS = 5 * 60_000;
 
 /**
  * How often the scheduler re-reads lastScanAt. Short so a warm autoscale
@@ -54,9 +63,11 @@ export function rpodScanIsDue(
   lastFinishedAtMs: number | null | undefined,
   nowMs: number,
   intervalMs: number = RPOD_SCAN_INTERVAL_MS,
+  status?: string | null,
 ): boolean {
   if (lastFinishedAtMs == null || !Number.isFinite(lastFinishedAtMs)) return true;
-  return nowMs - lastFinishedAtMs >= intervalMs;
+  const waitMs = status === "error" ? RPOD_SCAN_ERROR_RETRY_MS : intervalMs;
+  return nowMs - lastFinishedAtMs >= waitMs;
 }
 
 /** Reject when `promise` has not settled by `ms`. Does not cancel `promise`. */

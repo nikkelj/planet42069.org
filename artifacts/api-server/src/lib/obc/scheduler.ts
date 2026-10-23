@@ -8,7 +8,7 @@ import { syncStarlinkManifest } from "./starlinkEphem";
 import { createWorkerGuard } from "./workerGuard";
 import { startDbDiagnostics } from "../dbDiagnostics";
 import {
-  runRpodScan, latestRpodScanFinishedAtMs, rpodScanIsDue,
+  runRpodScan, latestRpodScanFreshness, rpodScanIsDue,
   RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_CHECK_INTERVAL_MS, RPOD_SCAN_BOOT_DELAY_MS,
 } from "../rpod/scan";
 
@@ -197,10 +197,16 @@ async function runTleBackfillWithRetry(): Promise<void> {
 async function runRpodScanIfDue(): Promise<void> {
   // Retries transient connect errors internally. After those retries a hard
   // failure rejects this tick; safeTick logs it and the interval continues.
-  const last = await latestRpodScanFinishedAtMs();
-  if (!rpodScanIsDue(last, Date.now())) {
+  // An error row is due again after 5 minutes, not an hour: the 5/10-minute
+  // sleeps live only in this process, and a recycle during that sleep used
+  // to leave lastScanAt on the error until the success interval elapsed.
+  const fresh = await latestRpodScanFreshness();
+  if (!rpodScanIsDue(fresh.finishedAtMs, Date.now(), RPOD_SCAN_INTERVAL_MS, fresh.status)) {
     logger.info(
-      { ageMin: last != null ? Math.round((Date.now() - last) / 60_000) : null },
+      {
+        ageMin: fresh.finishedAtMs != null ? Math.round((Date.now() - fresh.finishedAtMs) / 60_000) : null,
+        status: fresh.status,
+      },
       "obc-scheduler: rpod-scan fresh, skipping",
     );
     return;
