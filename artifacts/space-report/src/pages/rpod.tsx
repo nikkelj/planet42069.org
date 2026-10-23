@@ -253,7 +253,7 @@ function readUrlState() {
   const caseRaw = parseInt(sp.get("case") ?? "", 10);
   return {
     q: sp.get("q") ?? "",
-    kind: kind === "conjunction" || kind === "coplanar" || kind === "docked" ? kind : "all",
+    kind: kind === "conjunction" || kind === "coplanar" || kind === "docked" || kind === "station-keeping" ? kind : "all",
     status: status === "active" || status === "stale" || status === "ended" ? status : "all",
     reopened: sp.get("reopened") === "true",
     // Country codes are uppercase catalog codes; normalize so ?country=us works.
@@ -336,7 +336,7 @@ export default function Rpod() {
     page,
     limit: 50,
     status: statusFilter !== "all" ? (statusFilter as "active" | "stale" | "ended") : undefined,
-    kind: kindFilter !== "all" ? (kindFilter as "conjunction" | "coplanar" | "docked") : undefined,
+    kind: kindFilter !== "all" ? (kindFilter as "conjunction" | "coplanar" | "docked" | "station-keeping") : undefined,
     reopened: reopenedOnly ? true : undefined,
     country: countryFilter !== "all" ? countryFilter : undefined,
     q: debouncedSearch || undefined,
@@ -416,13 +416,15 @@ export default function Rpod() {
 
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="font-mono text-[11px] text-muted-foreground uppercase tracking-widest max-w-3xl leading-relaxed normal-case">
-          Two kinds of cases: CONJUNCTIONS — discrete predicted approaches within 30 km at under
-          1.5 km/s — and SHADOWING — payload pairs from different launches co-aligned in plane
-          (ΔRAAN &amp; inclination ≤ 0.15°), radial shell, and along-track phase, trailing each other
-          for weeks or months. Pairs sitting at effectively zero range and zero relative velocity
-          are labeled DOCKED — physically joined stacks (station modules, visiting vehicles), not
-          operations in progress. Formation flying, inspections, dockings — all of it unlicensed,
-          none of it with a permit on file.
+          CONJUNCTIONS are discrete predicted approaches within 30 km at under 1.5 km/s.
+          SHADOWING is a payload pair from different launches co-aligned in plane
+          (ΔRAAN &amp; inclination ≤ 0.15°), radial shell, and along-track phase, trailing for
+          weeks or months. STATION KEEPING is a red-versus-blue pair in that same kind of
+          plane, holding a steady along-track offset out to about 1,000 km — still on the
+          board when the close-approach gates no longer reach. Pairs sitting at effectively
+          zero range and zero relative velocity are labeled DOCKED — physically joined stacks
+          (station modules, visiting vehicles), not operations in progress. Formation flying,
+          inspections, dockings — all of it unlicensed, none of it with a permit on file.
         </p>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="relative">
@@ -442,6 +444,7 @@ export default function Rpod() {
               <SelectItem value="all">ALL KINDS</SelectItem>
               <SelectItem value="conjunction">CONJUNCTION</SelectItem>
               <SelectItem value="coplanar">SHADOWING</SelectItem>
+              <SelectItem value="station-keeping">STATION KEEPING</SelectItem>
               <SelectItem value="docked">DOCKED</SelectItem>
             </SelectContent>
           </Select>
@@ -606,15 +609,21 @@ export default function Rpod() {
                           variant="outline"
                           className={`font-mono text-[10px] uppercase rounded-none ${
                             ev.kind === "coplanar" ? "border-secondary text-secondary"
+                            : ev.kind === "station-keeping" ? "border-primary text-primary"
                             : ev.kind === "docked" ? "border-muted-foreground/60 text-muted-foreground"
                             : "border-accent/70 text-accent"}`}
                           title={ev.kind === "coplanar"
                             ? "Long-duration co-aligned shadowing: same plane, same shell, slow phase drift — these encounters last weeks or months"
+                            : ev.kind === "station-keeping"
+                            ? "Red-versus-blue pair holding a steady along-track offset in a matched plane, including separations beyond the close-approach gates"
                             : ev.kind === "docked"
                             ? "Near-zero range at near-zero relative velocity: a physically joined stack (station modules, docked visiting vehicles), not a proximity operation"
                             : "Discrete predicted close approach"}
                         >
-                          {ev.kind === "coplanar" ? "SHADOWING" : ev.kind === "docked" ? "DOCKED" : "CONJUNCTION"}
+                          {ev.kind === "coplanar" ? "SHADOWING"
+                            : ev.kind === "station-keeping" ? "STATION KEEPING"
+                            : ev.kind === "docked" ? "DOCKED"
+                            : "CONJUNCTION"}
                         </Badge>
                       </TableCell>
                       <TableCell>{fmtUtc(ev.tca)}</TableCell>

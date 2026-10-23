@@ -195,6 +195,39 @@ export function formatCitation(
   ].join("\n"));
 }
 
+/** Citation for a station-keeping onset or a later offset change. */
+export function formatStationKeepingCitation(
+  ev: NewRpodEvent,
+  metaFor: (norad: number) => AlertMeta | undefined,
+  info: {
+    what: "onset" | "change";
+    offsetKm: number;
+    previousOffsetKm?: number | null;
+    driftKmPerDay: number;
+    dIncDeg: number;
+    dRaanDeg: number;
+    dSmaKm: number;
+    leadNorad: number;
+    trailNorad: number;
+  },
+): string {
+  const drift = `${info.driftKmPerDay >= 0 ? "+" : ""}${info.driftKmPerDay.toFixed(1)} km/day`;
+  const plane = `Δinc ${info.dIncDeg.toFixed(3)}° · ΔRAAN ${info.dRaanDeg.toFixed(3)}° · ΔSMA ${info.dSmaKm.toFixed(2)} km`;
+  const lead = craftLabel(info.leadNorad, metaFor);
+  const trail = craftLabel(info.trailNorad, metaFor);
+  const kindLine = info.what === "change" && info.previousOffsetKm != null
+    ? `Station-keeping offset changed: ${fmtRange(info.previousOffsetKm)} → ${fmtRange(info.offsetKm)}.`
+    : `Station-keeping detected. ${trail} holding ${fmtRange(info.offsetKm)} behind ${lead}.`;
+  return craftListForBudget(ev.members, metaFor, (list) => [
+    `🚨 SPACE POLICE CITATION — Case ${caseNumber(ev.eventId)}`,
+    kindLine,
+    `Drift ${drift}. ${plane}`,
+    ``,
+    `Cited craft: ${list}`,
+    `Case file: ${SITE_BASE}/rpod?case=${ev.eventId}`,
+  ].join("\n"));
+}
+
 /** Deadpan bureaucratic follow-up text for a sharply tightening case. */
 export function formatEscalationCitation(
   ev: EscalatedRpodEvent,
