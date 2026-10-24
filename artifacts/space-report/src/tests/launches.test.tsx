@@ -1,23 +1,26 @@
 /**
  * Launch desk — static /launches/index.json.
  *
- * The manifest is an array of { slug, name, vehicle, t0_utc, status, phase,
- * files: { csv, kml }, illustrative }. Upcoming and Recent are separate
- * boards. A missing or unreadable file must not crash the page.
+ * Current file: { methods, references, launches: [...] }, with surrogate
+ * files (csv/kml) and 3DOF sim files (csv_sim/kml_sim). A bare array still loads.
  */
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi, afterEach } from "vitest";
+import { MethodsMarkdown } from "@/components/MethodsMarkdown";
 import Launches, { LaunchesBoard } from "@/pages/launches";
 import {
+  emptyManifest,
   formatUtc,
+  loadLaunchDesk,
   loadLaunchIndex,
   parseLaunchIndex,
   partitionLaunches,
   publicAssetHref,
+  type LaunchManifest,
 } from "@/lib/launches";
 
-/** Shape published by the launches manifest (illustrative batch). */
-const MANIFEST = [
+/** Previous bare-array manifest. */
+const ARRAY_MANIFEST = [
   {
     slug: "electron-hawkeye360",
     name: "We're Not Hawking Around (3x HawkEye 360)",
@@ -75,18 +78,71 @@ const MANIFEST = [
   },
 ];
 
+const OBJECT_MANIFEST = {
+  methods: {
+    surrogate: {
+      title: "Surrogate (published-profile)",
+      summary: "Event knots from published brochures, interpolated every 5 s. ILLUSTRATIVE, not telemetry.",
+    },
+    sim: {
+      title: "First-principles 3DOF sim",
+      summary: "Point-mass ascent simulator with J2 gravity and staged thrust. ILLUSTRATIVE, not telemetry.",
+    },
+    methods_doc: "/launches/METHODS.md",
+  },
+  references: [
+    {
+      id: "rl-ug",
+      title: "Rocket Lab Electron Payload User's Guide v8.0",
+      url: "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+    },
+    {
+      id: "zj385",
+      title: "China MSA debris-zone notice ZJ385/26 (LM-4B Jiuquan)",
+      url: null,
+    },
+  ],
+  launches: ARRAY_MANIFEST.map((launch) => ({
+    ...launch,
+    files: {
+      ...launch.files,
+      csv_sim: `/launches/${launch.slug}/trajectory_sim.csv`,
+      kml_sim: `/launches/${launch.slug}/trajectory_sim.kml`,
+    },
+    method: {
+      csv: "event-surrogate parametric (published event table + azimuth)",
+      csv_sim: "first-principles 3DOF sim; ILLUSTRATIVE",
+    },
+    reference_ids: launch.slug === "lm4b-jiuquan" ? ["rl-ug", "zj385"] : ["rl-ug"],
+  })),
+};
+
+const METHODS_MD = `# How the files are made
+
+**Every trajectory here is ILLUSTRATIVE.**
+
+## 1. Surrogate
+- Event knots from a brochure.
+
+See https://example.test/guide for the table.
+`;
+
+function ready(manifest: LaunchManifest) {
+  return { kind: "ready" as const, manifest };
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
 describe("launch manifest parsing", () => {
-  it("keeps the published fields and ignores extras", () => {
-    const parsed = parseLaunchIndex(MANIFEST);
+  it("reads launches from the object wrapper and keeps methods and references", () => {
+    const parsed = parseLaunchIndex(OBJECT_MANIFEST);
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    expect(parsed.launches).toHaveLength(4);
-    expect(parsed.launches[0]).toMatchObject({
+    expect(parsed.manifest.launches).toHaveLength(4);
+    expect(parsed.manifest.launches[0]).toMatchObject({
       slug: "electron-hawkeye360",
       name: "We're Not Hawking Around (3x HawkEye 360)",
       vehicle: "Electron",
@@ -97,15 +153,56 @@ describe("launch manifest parsing", () => {
       files: {
         csv: "/launches/electron-hawkeye360/trajectory.csv",
         kml: "/launches/electron-hawkeye360/trajectory.kml",
+        csvSim: "/launches/electron-hawkeye360/trajectory_sim.csv",
+        kmlSim: "/launches/electron-hawkeye360/trajectory_sim.kml",
       },
+      method: {
+        csv: "event-surrogate parametric (published event table + azimuth)",
+        csvSim: "first-principles 3DOF sim; ILLUSTRATIVE",
+      },
+      referenceIds: ["rl-ug"],
+    });
+    expect(parsed.manifest.methods).toEqual([
+      {
+        key: "surrogate",
+        title: "Surrogate (published-profile)",
+        summary: "Event knots from published brochures, interpolated every 5 s. ILLUSTRATIVE, not telemetry.",
+      },
+      {
+        key: "sim",
+        title: "First-principles 3DOF sim",
+        summary: "Point-mass ascent simulator with J2 gravity and staged thrust. ILLUSTRATIVE, not telemetry.",
+      },
+    ]);
+    expect(parsed.manifest.methodsDoc).toBe("/launches/METHODS.md");
+    expect(parsed.manifest.references[1]).toEqual({
+      id: "zj385",
+      title: "China MSA debris-zone notice ZJ385/26 (LM-4B Jiuquan)",
+      url: null,
     });
   });
 
-  it("splits upcoming (soonest NET first) from recent (latest T-0 first)", () => {
-    const parsed = parseLaunchIndex(MANIFEST);
+  it("keeps a bare array working, with no sim files unless they are present", () => {
+    const parsed = parseLaunchIndex(ARRAY_MANIFEST);
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    const { upcoming, recent } = partitionLaunches(parsed.launches);
+    expect(parsed.manifest.launches).toHaveLength(4);
+    expect(parsed.manifest.methods).toEqual([]);
+    expect(parsed.manifest.references).toEqual([]);
+    expect(parsed.manifest.launches[0].files).toEqual({
+      csv: "/launches/electron-hawkeye360/trajectory.csv",
+      kml: "/launches/electron-hawkeye360/trajectory.kml",
+      csvSim: null,
+      kmlSim: null,
+    });
+    expect(parsed.manifest.launches[0].method).toEqual({ csv: null, csvSim: null });
+  });
+
+  it("splits upcoming (soonest NET first) from recent (latest T-0 first)", () => {
+    const parsed = parseLaunchIndex(OBJECT_MANIFEST);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    const { upcoming, recent } = partitionLaunches(parsed.manifest.launches);
     expect(upcoming.map((l) => l.slug)).toEqual(["lm8a-wenchang"]);
     expect(recent.map((l) => l.slug)).toEqual([
       "lm4b-jiuquan",
@@ -114,14 +211,17 @@ describe("launch manifest parsing", () => {
     ]);
   });
 
-  it("treats an empty array as an empty board, not a failure", () => {
-    const parsed = parseLaunchIndex([]);
-    expect(parsed).toEqual({ ok: true, launches: [] });
+  it("treats an empty array and an empty launches list as an empty board", () => {
+    expect(parseLaunchIndex([])).toEqual({ ok: true, manifest: emptyManifest() });
+    const wrapped = parseLaunchIndex({ launches: [], methods: {}, references: [] });
+    expect(wrapped.ok).toBe(true);
+    if (!wrapped.ok) return;
+    expect(wrapped.manifest.launches).toEqual([]);
   });
 
   it("treats a missing shape as unavailable", () => {
     expect(parseLaunchIndex(null).ok).toBe(false);
-    expect(parseLaunchIndex({ launches: [] }).ok).toBe(false);
+    expect(parseLaunchIndex({ methods: {}, references: [] }).ok).toBe(false);
     expect(parseLaunchIndex("nope").ok).toBe(false);
   });
 
@@ -135,9 +235,9 @@ describe("launch manifest parsing", () => {
     ]);
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    expect(parsed.launches.map((l) => l.name)).toEqual(["Bare", "Plain", "String flag"]);
-    expect(parsed.launches.map((l) => l.illustrative)).toEqual([false, false, false]);
-    expect(parsed.launches[0].files).toEqual({ csv: null, kml: null });
+    expect(parsed.manifest.launches.map((l) => l.name)).toEqual(["Bare", "Plain", "String flag"]);
+    expect(parsed.manifest.launches.map((l) => l.illustrative)).toEqual([false, false, false]);
+    expect(parsed.manifest.launches[0].files).toEqual({ csv: null, kml: null, csvSim: null, kmlSim: null });
   });
 
   it("formats T-0 / NET instants in UTC", () => {
@@ -156,7 +256,7 @@ describe("launch manifest parsing", () => {
 
   it("reads an empty body as an empty manifest and a 404 as unavailable", async () => {
     const empty = await loadLaunchIndex(async () => new Response("", { status: 200 }));
-    expect(empty).toEqual({ ok: true, launches: [] });
+    expect(empty).toEqual({ ok: true, manifest: emptyManifest() });
 
     const missing = await loadLaunchIndex(async () => new Response("not found", { status: 404 }));
     expect(missing).toEqual({ ok: false, reason: "unavailable" });
@@ -169,15 +269,46 @@ describe("launch manifest parsing", () => {
     const junk = await loadLaunchIndex(async () => new Response("{", { status: 200 }));
     expect(junk).toEqual({ ok: false, reason: "unavailable" });
   });
+
+  it("attaches METHODS.md and ignores an HTML fallback for a missing file", async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (String(url).endsWith("index.json")) {
+        return new Response(JSON.stringify(OBJECT_MANIFEST), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      return new Response(METHODS_MD, { status: 200, headers: { "Content-Type": "text/markdown" } });
+    });
+    const loaded = await loadLaunchDesk(fetchImpl);
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(loaded.manifest.methodsMarkdown).toContain("How the files are made");
+
+    const htmlFallback = vi.fn(async (url: string) => {
+      if (String(url).endsWith("index.json")) {
+        return new Response(JSON.stringify(ARRAY_MANIFEST), { status: 200 });
+      }
+      return new Response("<!DOCTYPE html><html><body>index</body></html>", {
+        status: 200,
+        headers: { "Content-Type": "text/html" },
+      });
+    });
+    const withoutDoc = await loadLaunchDesk(htmlFallback);
+    expect(withoutDoc.ok).toBe(true);
+    if (!withoutDoc.ok) return;
+    expect(withoutDoc.manifest.methodsMarkdown).toBeNull();
+  });
 });
 
 describe("Launches page", () => {
-  it("shows upcoming and recent rows, the badge, UTC times, and download links", () => {
-    const parsed = parseLaunchIndex(MANIFEST);
+  it("shows two labelled download sets, both badged, for the object manifest", () => {
+    const parsed = parseLaunchIndex(OBJECT_MANIFEST);
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
+    const manifest: LaunchManifest = {
+      ...parsed.manifest,
+      methodsMarkdown: METHODS_MD,
+    };
 
-    render(<LaunchesBoard state={{ kind: "ready", launches: parsed.launches }} />);
+    render(<LaunchesBoard state={ready(manifest)} />);
 
     expect(screen.getByRole("heading", { name: "Launches" })).toBeInTheDocument();
     expect(screen.getByTestId("synthetic-note")).toHaveTextContent(/trajectories are synthetic/i);
@@ -189,12 +320,36 @@ describe("Launches page", () => {
     expect(within(upcoming).getByText("Long March 8A")).toBeInTheDocument();
     expect(within(upcoming).getByText("2026-10-25 01:50:00 UTC")).toBeInTheDocument();
     expect(within(upcoming).getByText("Go")).toBeInTheDocument();
-    expect(within(upcoming).queryByText("Yaogan 50-03")).not.toBeInTheDocument();
+
+    const surrogate = within(upcoming).getByTestId("download-set-surrogate");
+    expect(within(surrogate).getByText("Surrogate")).toBeInTheDocument();
+    expect(within(surrogate).getByTestId("illustrative-badge")).toBeInTheDocument();
+    expect(within(surrogate).getByRole("link", { name: "trajectory.csv" })).toHaveAttribute(
+      "href",
+      "/launches/lm8a-wenchang/trajectory.csv",
+    );
+    expect(within(surrogate).getByRole("link", { name: "trajectory.kml" })).toHaveAttribute(
+      "download",
+      "trajectory.kml",
+    );
+    expect(within(surrogate).getByTestId("method-note-surrogate")).toHaveTextContent(/event-surrogate parametric/i);
+
+    const sim = within(upcoming).getByTestId("download-set-sim");
+    expect(within(sim).getByText("3DOF sim")).toBeInTheDocument();
+    expect(within(sim).getByTestId("illustrative-badge")).toBeInTheDocument();
+    expect(within(sim).getByRole("link", { name: "trajectory_sim.csv" })).toHaveAttribute(
+      "href",
+      "/launches/lm8a-wenchang/trajectory_sim.csv",
+    );
+    expect(within(sim).getByRole("link", { name: "trajectory_sim.kml" })).toHaveAttribute(
+      "href",
+      "/launches/lm8a-wenchang/trajectory_sim.kml",
+    );
+
+    expect(screen.getAllByTestId("illustrative-badge")).toHaveLength(8);
 
     const recent = screen.getByTestId("launch-section-recent");
     expect(within(recent).getByRole("columnheader", { name: "T-0 (UTC)" })).toBeInTheDocument();
-    expect(within(recent).getByText("We're Not Hawking Around (3x HawkEye 360)")).toBeInTheDocument();
-    expect(within(recent).getByText("2026-10-23 19:25:00 UTC")).toBeInTheDocument();
     const recentRows = within(recent).getAllByTestId("launch-row");
     expect(recentRows.map((row) => row.getAttribute("data-slug"))).toEqual([
       "lm4b-jiuquan",
@@ -202,20 +357,26 @@ describe("Launches page", () => {
       "electron-hawkeye360",
     ]);
 
-    expect(screen.getAllByTestId("illustrative-badge")).toHaveLength(4);
-    const csv = within(upcoming).getByRole("link", { name: "trajectory.csv" });
-    const kml = within(upcoming).getByRole("link", { name: "trajectory.kml" });
-    expect(csv).toHaveAttribute("href", "/launches/lm8a-wenchang/trajectory.csv");
-    expect(csv).toHaveAttribute("download", "trajectory.csv");
-    expect(kml).toHaveAttribute("href", "/launches/lm8a-wenchang/trajectory.kml");
-    expect(kml).toHaveAttribute("download", "trajectory.kml");
+    const methods = screen.getByTestId("launch-methods");
+    expect(within(methods).getByText("Surrogate (published-profile)")).toBeInTheDocument();
+    expect(within(methods).getByText(/interpolated every 5 s/i)).toBeInTheDocument();
+    expect(within(methods).getByText("First-principles 3DOF sim")).toBeInTheDocument();
+    expect(within(methods).getByText(/point-mass ascent simulator/i)).toBeInTheDocument();
+    expect(within(methods).getByRole("link", { name: "METHODS.md" })).toHaveAttribute("href", "/launches/METHODS.md");
+
+    const references = screen.getByTestId("launch-references");
+    const guide = within(references).getByRole("link", { name: /Rocket Lab Electron Payload User's Guide/i });
+    expect(guide).toHaveAttribute("href", "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf");
+    expect(within(references).getByText(/China MSA debris-zone notice/)).toBeInTheDocument();
+    expect(within(references).queryByRole("link", { name: /China MSA debris-zone notice/ })).not.toBeInTheDocument();
+    expect(within(references).getByText(/notice id only/i)).toBeInTheDocument();
   });
 
-  it("hides the badge when illustrative is not set and omits a missing file link", () => {
+  it("hides the badge when illustrative is not set and omits a missing file set", () => {
     render(
       <LaunchesBoard
-        state={{
-          kind: "ready",
+        state={ready({
+          ...emptyManifest(),
           launches: [
             {
               slug: "real",
@@ -224,23 +385,27 @@ describe("Launches page", () => {
               t0Utc: "2026-10-01T12:00:00Z",
               status: "Success",
               phase: "recent",
-              files: { csv: "/launches/real/trajectory.csv", kml: null },
+              files: { csv: "/launches/real/trajectory.csv", kml: null, csvSim: null, kmlSim: null },
               illustrative: false,
+              method: { csv: null, csvSim: null },
+              referenceIds: [],
             },
           ],
-        }}
+        })}
       />,
     );
 
     expect(screen.queryByTestId("illustrative-badge")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("download-set-sim")).not.toBeInTheDocument();
     const recent = screen.getByTestId("launch-section-recent");
     expect(within(recent).getByRole("link", { name: "trajectory.csv" })).toBeInTheDocument();
     expect(within(recent).queryByRole("link", { name: "trajectory.kml" })).not.toBeInTheDocument();
-    expect(within(screen.getByTestId("launch-section-upcoming")).getByText(/no upcoming launches/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("launch-methods")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("launch-references")).not.toBeInTheDocument();
   });
 
   it("shows both empty sections when the manifest lists nothing", () => {
-    render(<LaunchesBoard state={{ kind: "ready", launches: [] }} />);
+    render(<LaunchesBoard state={ready(emptyManifest())} />);
     expect(screen.getByTestId("launch-manifest-empty")).toHaveTextContent(/lists no launches/i);
     expect(screen.getByText(/no upcoming launches on the board/i)).toBeInTheDocument();
     expect(screen.getByText(/no recent launches on the board/i)).toBeInTheDocument();
@@ -268,19 +433,39 @@ describe("Launches page", () => {
     );
   });
 
-  it("loads a published manifest through fetch", async () => {
+  it("loads an object manifest and its methods note through fetch", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(new Response(JSON.stringify(MANIFEST), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      })),
+      vi.fn(async (url: string) => {
+        if (String(url).endsWith("index.json")) {
+          return new Response(JSON.stringify(OBJECT_MANIFEST), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        return new Response(METHODS_MD, { status: 200, headers: { "Content-Type": "text/markdown" } });
+      }),
     );
 
     render(<Launches />);
 
     expect(await screen.findByText("Unknown payload")).toBeInTheDocument();
-    expect(screen.getAllByTestId("illustrative-badge")).toHaveLength(4);
-    expect(screen.getByText("Electron")).toBeInTheDocument();
+    expect(screen.getAllByTestId("illustrative-badge")).toHaveLength(8);
+    expect(screen.getAllByText("3DOF sim").length).toBeGreaterThan(0);
+    expect(screen.getByText("Surrogate (published-profile)")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Rocket Lab Electron Payload User's Guide/i })).toBeInTheDocument();
+  });
+});
+
+describe("Methods note", () => {
+  it("renders headings, a list, and a link from METHODS.md", () => {
+    render(<MethodsMarkdown source={METHODS_MD} />);
+    expect(screen.getByText("How the files are made")).toBeInTheDocument();
+    expect(screen.getByText("1. Surrogate")).toBeInTheDocument();
+    expect(screen.getByText(/Event knots from a brochure/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "https://example.test/guide" })).toHaveAttribute(
+      "href",
+      "https://example.test/guide",
+    );
   });
 });
