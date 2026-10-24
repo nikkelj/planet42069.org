@@ -1,5 +1,14 @@
 [
   {
+    "id": "cislunar-0001",
+    "caseNo": "CISLUNAR-0001",
+    "title": "Bureau Briefing: The Cislunar Situation",
+    "description": "The Pentagon now calls cislunar a warfighting domain. The Bureau checked what the word means, where it starts, and whether saying it makes you sound important.",
+    "target": "/briefing/cislunar",
+    "canonical": "/r/cislunar-0001.html",
+    "image": "cislunar-0001.png"
+  },
+  {
     "id": "zq3-0002",
     "caseNo": "ZQ3-0002",
     "title": "Zhuque-3 Has Legs. The Paperwork Begins.",
