@@ -9,6 +9,8 @@ import Analytics from "@/pages/analytics";
 import Catalog from "@/pages/catalog";
 import Constellations from "@/pages/constellations";
 import Rpod from "@/pages/rpod";
+import Launches from "@/pages/launches";
+import CislunarBriefing from "@/pages/briefing/cislunar";
 import { AppLayout } from "@/components/layout/app-layout";
 
 const queryClient = new QueryClient({
@@ -28,9 +30,12 @@ function Router() {
         <Route path="/analytics" component={Analytics} />
         <Route path="/briefing" component={Home} />
         <Route path="/briefing/landspace-zhuque-3" component={LandspaceZhuque3Route} />
+        <Route path="/briefing/cislunar" component={CislunarBriefing} />
+        <Route path="/briefings/cislunar" component={CislunarBriefing} />
         <Route path="/catalog" component={Catalog} />
         <Route path="/constellations" component={Constellations} />
         <Route path="/rpod" component={Rpod} />
+        <Route path="/launches" component={Launches} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

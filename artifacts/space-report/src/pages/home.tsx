@@ -975,6 +975,20 @@ type DossierEntry = {
 
 const DOSSIERS: DossierEntry[] = [
   {
+    id: "cislunar-0001",
+    caseNo: "CISLUNAR-0001",
+    kind: "Bureau Briefing",
+    posted: "2026-10-23",
+    title: "The Cislunar Situation — Where the Line Is, and Whether Saying It Makes You Relevant",
+    status: "RULING ISSUED",
+    icon: Radar,
+    href: "/briefing/cislunar",
+    sharePath: "/r/cislunar-0001.html",
+    tone: "text-sky-300/90",
+    toneDim: "text-sky-400/60",
+    hover: "hover:border-sky-400/50 hover:bg-sky-950/25",
+  },
+  {
     id: "zq3-0002",
     caseNo: "ZQ3-0002",
     kind: "Hardware Review",
