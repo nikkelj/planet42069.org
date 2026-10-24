@@ -8,10 +8,11 @@
 - **Ground path:** a constant-azimuth (rhumb) line from the pad. The azimuth comes from NOTAM/maritime hazard areas when available (LM-4B: ZJ385/26, RKRR D3252/26, RJJJ P5065/26; LM-8A: NAVAREA XI 26-0481), otherwise from the target inclination (Electron: 97° SSO → 189°).
 - **One assumption:** a single horizontal-split assumption turns the published speed and altitude profile into downrange motion.
 - **Family stand-in:** when a vehicle has no published profile (LM-4B, LM-6A, LM-8A), the LM-3B profile from the CALT manual is used. Each file's header says so.
+- **Falcon 9 (Starlink 15-16):** SpaceX publishes event times but no altitude profile, so the altitude and downrange-vs-time curve comes from SpaceX webcast telemetry of a past Falcon 9 Block 5 Vandenberg launch with a droneship landing (Iridium NEXT-7, 2018; MECO at 146 s, the same as 15-16), via shahar603/Telemetry-Data. It is lightly smoothed, and range is integrated from the horizontal speed. The azimuth is the bearing to the centre of the far edge of NAVAREA XII 737/26 Hazard Area A (154.6°). The last 11 s, from the end of the telemetry to SpaceX's published SECO-1 at T+8:39, are extrapolated.
 
 ## 2. First-principles 3DOF sim: `trajectory_sim.csv` / `trajectory_sim.kml`
 A point-mass ascent simulator (`ascent3dof.py`):
-- Rotating WGS-84 Earth with J2 gravity, integrated with RK4 at a 0.5 s step.
+- Rotating WGS-84 Earth with J2 gravity, integrated with RK4 at a 0.5 s step (0.1 s for Falcon 9, whose high end-of-burn acceleration needs a finer step for a clean cutoff).
 - US Standard Atmosphere 1976 density for drag. Thrust is interpolated from sea-level to vacuum values using ambient pressure. Mass flow comes from Isp.
 - Staging, parallel boosters, fairing jettison and coasts.
 - Guidance: vertical rise, pitch kick, gravity turn, then linear-tangent steering. A Nelder-Mead optimizer tunes the steering to reach the target orbit (flight-path angle 0 at the target altitude) along the launch azimuth.
@@ -21,6 +22,7 @@ A point-mass ascent simulator (`ascent3dof.py`):
 - *Electron vs Payload User's Guide 8.0:* stage cutoff and ignition times match within about 1–2 s. Altitude runs 4–22 km low around fairing separation.
 - *LM-3B vs CALT LM-3A Series manual (tuned):* every event time is now pinned to the manual (booster shutdown 127.2 s, stage-1 shutdown 144.7 s, fairing 215.2 s, S2 shutdown 325.5 s, S3 first shutdown 615.7 s), and burn rates are derived from published thrust and Isp. The remaining free settings (pitch-over, drag, payload, steering) are fitted to all nine manual altitude and ground-range points. Altitude is now within 3.4 km at every event (before: up to 26 km low) and ground range within 4.6 km up to S2/S3 separation and 9.3 km at S3 shutdown.
 - *LM-4B vs published Y51 event sequence (tuned):* all event times now match exactly (stage-1 153.06 s, fairing 198.56 s, S2 282.49 s, S3 shutdown 648.68 s); before, the sim reached orbit 18 s late. Payload mass is fitted (about 1.6 t) to reach the assumed 500 km orbit at the published shutdown. No LM-4B altitudes are published, so altitude is unvalidated.
+- *Falcon 9 / Starlink 15-16:* Block 5 stage masses, with Merlin thrust and Isp; stage 1 cuts off at the published MECO (T+2:26). Its burn rate comes from the published 162 s full-load burn time, which stands in for the Max-Q throttle-down and leaves about 41 t, roughly a landing reserve. Result: SECO-1 at 527 s against SpaceX's 519 s. At MECO the sim is at 62.7 km and 2.01 km/s; Iridium NEXT-7's webcast telemetry at the same moment shows 64.0 km and 1.91 km/s, on a lighter payload. The parking orbit (162 km perigee, 266 km apogee, 70° inclination) is derived from the published SES-2 time and reported Group 15 deploy altitudes, and is labelled an assumption.
 - *LM-6A / LM-8A:* only the fitted drag value carries over from LM-3B; their kerolox engines and timelines are unpublished, so they keep the untuned method.
 
 ## File format (CSV, both types)
@@ -58,3 +60,12 @@ KML 2.2. The 3D ascent line uses `altitudeMode` absolute (metres above the ellip
 13. **The Space Devs Launch Library 2 API v2.3.0 (launch times/status)** (`ll2`) — https://ll.thespacedevs.com/2.3.0/launches/
 14. **OGC KML 2.2 namespace/specification** (`kml`) — http://www.opengis.net/kml/2.2
 15. **Wikipedia: YF-20 (sea-level vs vacuum thrust and Isp)** (`wp-yf20`) — https://en.wikipedia.org/wiki/YF-20
+16. **SpaceX: Starlink 15-16 mission page and timeline** (`spacex-sl-15-16`) — https://www.spacex.com/launches/sl-15-16
+17. **NAVAREA XII 737/26 (Starlink 15-16 hazard areas) via space-notices** (`navarea-xii-737-26`) — https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20737%2F26
+18. **USCG Local Notice to Mariners 56736, Sector San Diego** (`uscg-lnm-56736`) — https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20737%2F26
+19. **NOTAM MMFR B3055/26 (Falcon 9 stage-1 reentry)** (`mmfr-b3055-26`) — https://www.notamify.com/notams/MMFR/42c9513c-5fc7-4d3c-8ad8-cccd7e6a30de
+20. **FAA operations advisory: SpaceX Starlink 15-16** (`faa-sl-15-16`) — https://space-notices.com/notice/infopage-faa-operations-advisory-spacex-starlink-15-16
+21. **shahar603/Telemetry-Data: Falcon 9 webcast telemetry (Iridium NEXT-7)** (`shahar603-tel`) — https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207
+22. **Wikipedia: Falcon 9** (`wp-falcon9`) — https://en.wikipedia.org/wiki/Falcon_9
+23. **Wikipedia: Falcon 9 Block 5** (`wp-falcon9-b5`) — https://en.wikipedia.org/wiki/Falcon_9_Block_5
+24. **Spaceflight Now launch schedule** (`sfn-schedule`) — https://spaceflightnow.com/launch-schedule/
