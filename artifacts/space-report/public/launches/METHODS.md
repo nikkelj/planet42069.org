@@ -19,8 +19,9 @@ A point-mass ascent simulator (`ascent3dof.py`):
 
 **Validation:**
 - *Electron vs Payload User's Guide 8.0:* stage cutoff and ignition times match within about 1–2 s. Altitude runs 4–22 km low around fairing separation.
-- *LM-3B vs CALT LM-3A Series manual:* event times are within about 4 s, except third-stage cutoff, which comes about 15 s early. Mid-ascent altitude runs 6–26 km low.
-- *LM-4B:* reaches orbit about 18 s after the published third-stage shutdown.
+- *LM-3B vs CALT LM-3A Series manual (tuned):* every event time is now pinned to the manual (booster shutdown 127.2 s, stage-1 shutdown 144.7 s, fairing 215.2 s, S2 shutdown 325.5 s, S3 first shutdown 615.7 s), and burn rates are derived from published thrust and Isp. The remaining free settings (pitch-over, drag, payload, steering) are fitted to all nine manual altitude and ground-range points. Altitude is now within 3.4 km at every event (before: up to 26 km low) and ground range within 4.6 km up to S2/S3 separation and 9.3 km at S3 shutdown.
+- *LM-4B vs published Y51 event sequence (tuned):* all event times now match exactly (stage-1 153.06 s, fairing 198.56 s, S2 282.49 s, S3 shutdown 648.68 s); before, the sim reached orbit 18 s late. Payload mass is fitted (about 1.6 t) to reach the assumed 500 km orbit at the published shutdown. No LM-4B altitudes are published, so altitude is unvalidated.
+- *LM-6A / LM-8A:* only the fitted drag value carries over from LM-3B; their kerolox engines and timelines are unpublished, so they keep the untuned method.
 
 ## File format (CSV, both types)
 `#` lines at the top give provenance. The columns are:
@@ -56,3 +57,4 @@ KML 2.2. The 3D ascent line uses `altitudeMode` absolute (metres above the ellip
 12. **NOTAM RJJJ P5065/26 (Fukuoka FIR, LM-4B hazard area)** (`rjjj-p5065`) — notice ID only; no stable public URL captured
 13. **The Space Devs Launch Library 2 API v2.3.0 (launch times/status)** (`ll2`) — https://ll.thespacedevs.com/2.3.0/launches/
 14. **OGC KML 2.2 namespace/specification** (`kml`) — http://www.opengis.net/kml/2.2
+15. **Wikipedia: YF-20 (sea-level vs vacuum thrust and Isp)** (`wp-yf20`) — https://en.wikipedia.org/wiki/YF-20

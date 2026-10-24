@@ -6,7 +6,7 @@
     },
     "sim": {
       "title": "First-principles 3DOF sim",
-      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry."
+      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry. Long March vehicles run in timeline mode: published ignition/cutoff/separation times are hard events, burn rates from published thrust/Isp, and remaining free parameters fitted (bounded least squares) to the CALT manual LM-3B profile (altitude within 3.4 km at all events)."
     },
     "methods_doc": "/launches/METHODS.md"
   },
@@ -80,6 +80,11 @@
       "id": "kml",
       "title": "OGC KML 2.2 namespace/specification",
       "url": "http://www.opengis.net/kml/2.2"
+    },
+    {
+      "id": "wp-yf20",
+      "title": "Wikipedia: YF-20 (sea-level vs vacuum thrust and Isp)",
+      "url": "https://en.wikipedia.org/wiki/YF-20"
     }
   ],
   "launches": [
@@ -165,7 +170,7 @@
       ],
       "method": {
         "csv": "event-surrogate parametric (published event table + azimuth)",
-        "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: published Y51 event times as hard constraints; payload/steering fitted; Cd from LM-3B fit; ILLUSTRATIVE"
       },
       "reference_ids": [
         "calt-lm3a",
@@ -176,7 +181,8 @@
         "rkrr-d3252",
         "rjjj-p5065",
         "ll2",
-        "kml"
+        "kml",
+        "wp-yf20"
       ]
     },
     {

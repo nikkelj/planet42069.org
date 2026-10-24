@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>ILLUSTRATIVE electron-hawkeye360 ascent (3DOF sim)</name><description>ILLUSTRATIVE ASCENT ECEF — Electron &#x27;We&#x27;re Not Hawking Around&#x27; (3x HawkEye 360) — NOT OFFICIAL TELEMETRY
 Method: first-principles 3DOF sim (/workspace/trajectory-deck/sim/ascent3dof.py): WGS-84 rotating Earth, J2, US76 drag,
-thrust SL/vac interpolated on ambient pressure, mdot from Isp, staging/fairing/coast events; vertical rise 8 s,
+thrust SL/vac interpolated on ambient pressure, mdot from Isp, staging/fairing/coast events; vertical rise to 8.0 s (rule: config guidance),
 pitch kick 3.710 deg over 10 s, gravity turn, linear-tangent upper-stage steering tan(theta)=0.6257-0.001676*(t-t_ign), solved by optimizer.
 Vehicle config: Rocket Lab Electron (sim/vehicles/electron.json; every number carries a source URL, derivation, or ASSUMPTION).
 Electron: GLOW, S2 propellant, thrusts, Isp, fairing mass/time from Rocket Lab Electron Payload User Guide (7.0 content, 8.0 URL).
