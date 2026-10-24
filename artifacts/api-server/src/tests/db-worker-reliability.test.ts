@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import { setTimeout as delay } from "node:timers/promises";
 import { createWorkerGuard } from "../lib/obc/workerGuard";
-import { runLockedSession, waitForLockRecovery, type LockClient } from "../lib/obc/advisorySession";
+import { activeLockClient, runLockedSession, waitForLockRecovery, type LockClient } from "../lib/obc/advisorySession";
 
 // Production heartbeats are deliberately unref'd; keep this standalone test
 // process alive while awaiting injected heartbeat activity.
@@ -289,6 +289,35 @@ class FakeClient extends EventEmitter implements LockClient {
     connect: async () => { throw new Error("Connection terminated due to connection timeout"); },
   }), /connection timeout/);
   assert.equal(first.destroyed, true);
+}
+{
+  // The socket error handler swaps the session, but the scan can still hold
+  // the dead client (rebind runs outside its async context). The next read
+  // has to ask the session which connection replaced it.
+  const first = new FakeClient();
+  const second = new FakeClient();
+  let rebound: LockClient | null = null;
+  await runLockedSession(first, 421072, async () => {
+    first.dead = true;
+    first._queryable = false;
+    first.emit("error", new Error("Connection terminated unexpectedly"));
+    await waitForLockRecovery(first);
+    rebound = activeLockClient(first);
+    assert.equal(rebound, second, "dead client must not stay the active lock connection");
+    assert.notEqual(rebound, first);
+    await assert.rejects(
+      first.query({ text: "select 1 from obc_latest_elset", query_timeout: 10_000 }),
+      /not queryable/,
+    );
+    await rebound.query({ text: "select 1 from obc_latest_elset", query_timeout: 10_000 });
+  }, () => {}, 20_000, {
+    connect: async () => second,
+    onSwap: () => { /* production rebind no-ops off the scan's async context */ },
+  });
+  assert.equal(first.destroyed, true, "dead client is released with destroy");
+  assert.equal(second.destroyed, false, "replacement stays checked out for the scan");
+  assert.ok(second.queries.some((q) => q.includes("obc_latest_elset")));
+  assert.ok(!first.queries.some((q) => q.includes("obc_latest_elset")), "dead client was not queried");
 }
 console.log("DB worker reliability: all fault-injection checks passed");
 clearTimeout(watchdog);

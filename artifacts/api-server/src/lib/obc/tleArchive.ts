@@ -3,7 +3,7 @@ import { obcTleHistory, obcWorkerState, obcSyncLog, type InsertObcTleHistory } f
 import { sql, asc, and, gte, eq, inArray, type SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { logger } from "../logger";
-import { failLockClient, runLockedSession, waitForLockRecovery } from "./advisorySession";
+import { activeLockClient, failLockClient, runLockedSession, waitForLockRecovery } from "./advisorySession";
 import {
   ensureLatestElsetReady,
   ensureLatestElsetTable,
@@ -226,11 +226,46 @@ async function connectReplacementClient(label: string): Promise<DbPoolClient> {
   throw last instanceof Error ? last : new Error(String(last));
 }
 
-/** Wait out an in-flight lock reconnect. No-op when this call is not on the lock client. */
+/**
+ * pg sets `_queryable` false in `_handleErrorEvent` and then rejects every
+ * later `query()` locally: "Client has encountered a connection error and is
+ * not queryable". The socket is not used. A destroyed stream is the same
+ * client, a moment before that flag flips.
+ */
+export function pgClientIsQueryable(client: object): boolean {
+  const row = client as {
+    _queryable?: boolean;
+    connection?: { stream?: { destroyed?: boolean } };
+  };
+  if (row._queryable === false) return false;
+  if (row.connection?.stream?.destroyed === true) return false;
+  return true;
+}
+
+/**
+ * Wait out an in-flight lock reconnect and point the scan at the replacement.
+ *
+ * The socket `error` handler runs outside the scan's AsyncLocalStorage
+ * context, so `onSwap` → `rebindDbClient` no-ops there. The session has
+ * already moved to a new connection, but `currentPoolClient()` still returns
+ * the dead one, and the next latest-elset `query()` throws "not queryable"
+ * without reaching Postgres (live 2026-10-24 22:17Z). Rebind here, on the
+ * scan's turn. A client that is already not queryable is failed first so
+ * recovery starts even when that error event was missed.
+ */
 export async function ensureAdvisoryLockClient(): Promise<void> {
-  const client = currentPoolClient();
-  if (!client) return;
-  await waitForLockRecovery(client);
+  const bound = currentPoolClient();
+  if (!bound) return;
+  if (!pgClientIsQueryable(bound)) {
+    failLockClient(bound, new Error("Client has encountered a connection error and is not queryable"));
+  }
+  await waitForLockRecovery(bound);
+  const live = activeLockClient(bound);
+  if (live !== bound) rebindDbClient(live as DbPoolClient);
+  const current = currentPoolClient() ?? live;
+  if (!pgClientIsQueryable(current)) {
+    throw new Error("Client has encountered a connection error and is not queryable");
+  }
 }
 
 export const LOCK_TLE_RECENT = 421070;
@@ -986,23 +1021,37 @@ export function latestElsetClientIsDead(err: unknown): boolean {
   return /terminated|ECONN|socket|client deadline|timeout exceeded when trying to connect|not queryable/i.test(text);
 }
 
-async function queryLatestElsetRows(query: SQL, lockHistoryToIndex: boolean): Promise<LatestElset[]> {
-  // The in-window read reuses the advisory-lock client. Releasing it would
-  // return the lock session to the pool while the scan still holds the lock.
-  // The future-dated correction reads obc_tle_history and its client deadline
-  // destroys the socket. That must be a different connection: destroying the
-  // lock session fails the hour after the pointer rows are already in memory
-  // (live "exceeded 30000ms client deadline", 2026-10-23).
+const NOT_QUERYABLE = "Client has encountered a connection error and is not queryable";
+
+async function queryLatestElsetRowsOnce(query: SQL, lockHistoryToIndex: boolean): Promise<LatestElset[]> {
+  // The in-window read reuses the advisory-lock client when that socket is
+  // still queryable. Releasing a healthy one would return the lock session
+  // to the pool while the scan still holds the lock. A client that has
+  // already errored must not be queried: pg answers locally with "not
+  // queryable" and the 30s deadline never starts. Replace it first.
+  //
+  // The future-dated correction reads obc_tle_history on its own connection.
+  // Its client deadline must not destroy the lock session (live "exceeded
+  // 30000ms client deadline", 2026-10-23).
+  if (!lockHistoryToIndex) await ensureAdvisoryLockClient();
   const borrowed = lockHistoryToIndex ? null : currentPoolClient();
   const client = borrowed ?? await pool.connect();
+  if (!pgClientIsQueryable(client)) {
+    const dead = new Error(NOT_QUERYABLE);
+    if (borrowed) failLockClient(borrowed, dead);
+    else client.release(dead);
+    throw dead;
+  }
   const deadline = attachLatestElsetClientDeadline(client, LATEST_ELSETS_CLIENT_TIMEOUT_MS);
   const work = (async (): Promise<LatestElset[]> => {
     const q = pgDialect.sqlToQuery(query);
     const params = q.params ?? [];
     // SET LOCAL is transaction-scoped so it cannot leak onto a pooled client.
-    // The in-window read is a ~30k-row pointer scan and may seq-scan.
-    // The future-dated correction is the only statement that touches
-    // obc_tle_history, and only for norads already filtered to epoch > until.
+    // The in-window read is a ~30k-row pointer scan and may seq-scan. It does
+    // not read obc_tle_history; that archive seek is what misses the deadline
+    // when the host is wedged. The future-dated correction is the only
+    // statement here that touches the archive, and only for norads already
+    // filtered to epoch > until.
     await client.query("BEGIN");
     await client.query(`SET LOCAL statement_timeout = ${LATEST_ELSETS_STATEMENT_TIMEOUT_MS}`);
     // A parallel seq scan of a bloated pointer (or of the archive, if the
@@ -1034,19 +1083,53 @@ async function queryLatestElsetRows(query: SQL, lockHistoryToIndex: boolean): Pr
     return await Promise.race([work, deadline.promise]);
   } catch (err) {
     const wrapped = err instanceof Error ? err : new Error(String(err));
-    if (latestElsetClientIsDead(wrapped)) releaseErr = wrapped;
-    await client.query("ROLLBACK").catch(() => undefined);
+    if (latestElsetClientIsDead(wrapped)) {
+      releaseErr = wrapped;
+      // Do not ROLLBACK on this socket. That query is what pg answers with
+      // "not queryable", and it is the error the retry would otherwise store.
+      if (borrowed) failLockClient(borrowed, wrapped);
+    } else if (pgClientIsQueryable(client)) {
+      await client.query("ROLLBACK").catch(() => undefined);
+    }
     throw wrapped;
   } finally {
     deadline.cancel();
     if (!borrowed) {
       try {
+        // An Error argument removes the client from the pool. release() with
+        // no argument would hand the dead socket to the next checkout.
         if (releaseErr) client.release(releaseErr);
         else client.release();
       } catch (releaseFailure) {
         logger.warn({ err: String(releaseFailure) }, "tle-archive: latest-elset client release failed");
       }
     }
+  }
+}
+
+/**
+ * One attempt, then — only when that client is dead — one attempt on a
+ * replacement connection. A statement timeout is a slow plan on a live
+ * socket and is not retried. The client deadline destroys the socket, so
+ * it is in the dead class: the hour used to store "exceeded 30000ms client
+ * deadline" and the next query on that same client stored "not queryable"
+ * (live 2026-10-24 19:12Z, 20:07Z, 22:17Z).
+ *
+ * `isTransientConnectionError` still rejects the deadline string, so
+ * `retryOnceOnTransient` does not run the whole fetch again on the socket
+ * that just died. This retry happens after that socket has been discarded.
+ */
+export async function queryLatestElsetRows(query: SQL, lockHistoryToIndex: boolean): Promise<LatestElset[]> {
+  try {
+    return await queryLatestElsetRowsOnce(query, lockHistoryToIndex);
+  } catch (err) {
+    if (!latestElsetClientIsDead(err)) throw err;
+    logger.warn(
+      { err: formatDbError(err) },
+      "tle-archive: latest-elset client discarded, retrying on a fresh connection",
+    );
+    if (!lockHistoryToIndex) await ensureAdvisoryLockClient();
+    return await queryLatestElsetRowsOnce(query, lockHistoryToIndex);
   }
 }
 
@@ -1081,6 +1164,10 @@ export async function getLatestElsets(
 ): Promise<LatestElset[]> {
   const since = new Date(sinceMs);
   const until = new Date(untilMs);
+  // DDL on a client that has already errored throws "not queryable" before
+  // the pointer read can replace the socket. Rebind first when this scan
+  // is holding the lock client; startup and the TLE workers have no binding.
+  if (currentPoolClient()) await ensureAdvisoryLockClient();
   try {
     await ensureLatestElsetTable();
   } catch (err) {

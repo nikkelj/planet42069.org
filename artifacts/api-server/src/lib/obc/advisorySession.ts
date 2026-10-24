@@ -98,6 +98,18 @@ export function waitForLockRecovery(client: object): Promise<void> {
 }
 
 /**
+ * The connection the lock session is using now.
+ * After a swap, `sessions` still has the dead client as a key, and
+ * `session.client` is the replacement. Callers that captured the old
+ * object must query this one.
+ */
+export function activeLockClient<T extends object>(client: T): T {
+  const session = sessions.get(client);
+  if (!session) return client;
+  return session.client as T;
+}
+
+/**
  * The query failed on `client`. If that client is still the session's active
  * socket, reconnect. A query that was already in flight on a replaced client
  * must not take down the replacement.

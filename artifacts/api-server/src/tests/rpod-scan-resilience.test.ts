@@ -480,7 +480,14 @@ async function main(): Promise<void> {
       "a dead lock socket is replaced before the next query",
       /connectReplacementClient\(label\)/.test(tleSrc)
         && /ensureAdvisoryLockClient\(/.test(tleSrc)
-        && /rebindDbClient\(/.test(tleSrc),
+        && /rebindDbClient\(/.test(tleSrc)
+        && /activeLockClient\(/.test(tleSrc),
+    );
+    check(
+      "a dead latest-elset client is discarded and the read retried on a fresh connection",
+      /latest-elset client discarded, retrying on a fresh connection/.test(tleSrc)
+        && /if \(!pgClientIsQueryable\(client\)\)/.test(tleSrc)
+        && /failLockClient\(borrowed, wrapped\)/.test(tleSrc),
     );
     check(
       "latest-elset read does not release a borrowed scan client",
