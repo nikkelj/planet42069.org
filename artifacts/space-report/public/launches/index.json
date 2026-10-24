@@ -8,14 +8,20 @@
     "phase": "recent",
     "files": {
       "csv": "/launches/electron-hawkeye360/trajectory.csv",
-      "kml": "/launches/electron-hawkeye360/trajectory.kml"
+      "kml": "/launches/electron-hawkeye360/trajectory.kml",
+      "csv_sim": "/launches/electron-hawkeye360/trajectory_sim.csv",
+      "kml_sim": "/launches/electron-hawkeye360/trajectory_sim.kml"
     },
     "illustrative": true,
     "confidence": "low-medium",
     "sources": [
       "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
       "https://ll.thespacedevs.com/2.3.0/launches/"
-    ]
+    ],
+    "method": {
+      "csv": "event-surrogate parametric (published event table + azimuth)",
+      "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
+    }
   },
   {
     "slug": "lm6a-yaogan50-03",
@@ -26,14 +32,20 @@
     "phase": "recent",
     "files": {
       "csv": "/launches/lm6a-yaogan50-03/trajectory.csv",
-      "kml": "/launches/lm6a-yaogan50-03/trajectory.kml"
+      "kml": "/launches/lm6a-yaogan50-03/trajectory.kml",
+      "csv_sim": "/launches/lm6a-yaogan50-03/trajectory_sim.csv",
+      "kml_sim": "/launches/lm6a-yaogan50-03/trajectory_sim.kml"
     },
     "illustrative": true,
     "confidence": "low",
     "sources": [
       "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
       "https://ll.thespacedevs.com/2.3.0/launches/"
-    ]
+    ],
+    "method": {
+      "csv": "event-surrogate parametric (published event table + azimuth)",
+      "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
+    }
   },
   {
     "slug": "lm4b-jiuquan",
@@ -44,14 +56,20 @@
     "phase": "recent",
     "files": {
       "csv": "/launches/lm4b-jiuquan/trajectory.csv",
-      "kml": "/launches/lm4b-jiuquan/trajectory.kml"
+      "kml": "/launches/lm4b-jiuquan/trajectory.kml",
+      "csv_sim": "/launches/lm4b-jiuquan/trajectory_sim.csv",
+      "kml_sim": "/launches/lm4b-jiuquan/trajectory_sim.kml"
     },
     "illustrative": true,
     "confidence": "low-medium",
     "sources": [
       "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
       "https://ll.thespacedevs.com/2.3.0/launches/"
-    ]
+    ],
+    "method": {
+      "csv": "event-surrogate parametric (published event table + azimuth)",
+      "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
+    }
   },
   {
     "slug": "lm8a-wenchang",
@@ -62,7 +80,9 @@
     "phase": "upcoming",
     "files": {
       "csv": "/launches/lm8a-wenchang/trajectory.csv",
-      "kml": "/launches/lm8a-wenchang/trajectory.kml"
+      "kml": "/launches/lm8a-wenchang/trajectory.kml",
+      "csv_sim": "/launches/lm8a-wenchang/trajectory_sim.csv",
+      "kml_sim": "/launches/lm8a-wenchang/trajectory_sim.kml"
     },
     "illustrative": true,
     "confidence": "low",
@@ -70,6 +90,10 @@
       "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
       "https://www.sealagom.com/navarea/11/message/25242/",
       "https://ll.thespacedevs.com/2.3.0/launches/"
-    ]
+    ],
+    "method": {
+      "csv": "event-surrogate parametric (published event table + azimuth)",
+      "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
+    }
   }
 ]
