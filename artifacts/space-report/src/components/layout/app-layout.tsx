@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { ReactNode } from "react";
-import { Radar, Satellite, Database, TerminalSquare, Orbit, Crosshair } from "lucide-react";
+import { Radar, Satellite, Database, TerminalSquare, Orbit, Crosshair, Rocket } from "lucide-react";
 import { DataFreshness } from "./DataFreshness";
 
 interface AppLayoutProps {
@@ -15,6 +15,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     { href: "/constellations", label: "CONSTELLATION WATCH", icon: Orbit },
     { href: "/catalog", label: "SATCAT EXPLORER", icon: Database },
     { href: "/rpod", label: "RPOD WATCH", icon: Crosshair },
+    { href: "/launches", label: "LAUNCHES", icon: Rocket },
     { href: "/briefing", label: "BRIEFING", icon: TerminalSquare },
   ];
 
