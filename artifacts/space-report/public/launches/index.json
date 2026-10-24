@@ -85,6 +85,21 @@
       "id": "wp-yf20",
       "title": "Wikipedia: YF-20 (sea-level vs vacuum thrust and Isp)",
       "url": "https://en.wikipedia.org/wiki/YF-20"
+    },
+    {
+      "id": "nasa-bluemarble",
+      "title": "NASA Visible Earth — Blue Marble Next Generation w/ Topography and Bathymetry (Dec 2004), R. Stöckli et al., NASA Earth Observatory (public domain); globe day texture",
+      "url": "https://visibleearth.nasa.gov/images/73909/december-blue-marble-next-generation-w-topography-and-bathymetry"
+    },
+    {
+      "id": "nasa-blackmarble",
+      "title": "NASA Earth Observatory — Earth at Night / Black Marble 2016 (Suomi NPP VIIRS) (public domain); globe night-lights texture",
+      "url": "https://earthobservatory.nasa.gov/features/NightLights"
+    },
+    {
+      "id": "threejs",
+      "title": "three.js (MIT) — WebGL renderer, OrbitControls, Line2/LineMaterial used by the launch globe",
+      "url": "https://threejs.org/"
     }
   ],
   "launches": [
@@ -99,7 +114,8 @@
         "csv": "/launches/electron-hawkeye360/trajectory.csv",
         "kml": "/launches/electron-hawkeye360/trajectory.kml",
         "csv_sim": "/launches/electron-hawkeye360/trajectory_sim.csv",
-        "kml_sim": "/launches/electron-hawkeye360/trajectory_sim.kml"
+        "kml_sim": "/launches/electron-hawkeye360/trajectory_sim.kml",
+        "track_lite": "/launches/electron-hawkeye360/track_lite.json"
       },
       "illustrative": true,
       "confidence": "low-medium",
@@ -129,7 +145,8 @@
         "csv": "/launches/lm6a-yaogan50-03/trajectory.csv",
         "kml": "/launches/lm6a-yaogan50-03/trajectory.kml",
         "csv_sim": "/launches/lm6a-yaogan50-03/trajectory_sim.csv",
-        "kml_sim": "/launches/lm6a-yaogan50-03/trajectory_sim.kml"
+        "kml_sim": "/launches/lm6a-yaogan50-03/trajectory_sim.kml",
+        "track_lite": "/launches/lm6a-yaogan50-03/track_lite.json"
       },
       "illustrative": true,
       "confidence": "low",
@@ -160,7 +177,8 @@
         "csv": "/launches/lm4b-jiuquan/trajectory.csv",
         "kml": "/launches/lm4b-jiuquan/trajectory.kml",
         "csv_sim": "/launches/lm4b-jiuquan/trajectory_sim.csv",
-        "kml_sim": "/launches/lm4b-jiuquan/trajectory_sim.kml"
+        "kml_sim": "/launches/lm4b-jiuquan/trajectory_sim.kml",
+        "track_lite": "/launches/lm4b-jiuquan/track_lite.json"
       },
       "illustrative": true,
       "confidence": "low-medium",
@@ -196,7 +214,8 @@
         "csv": "/launches/lm8a-wenchang/trajectory.csv",
         "kml": "/launches/lm8a-wenchang/trajectory.kml",
         "csv_sim": "/launches/lm8a-wenchang/trajectory_sim.csv",
-        "kml_sim": "/launches/lm8a-wenchang/trajectory_sim.kml"
+        "kml_sim": "/launches/lm8a-wenchang/trajectory_sim.kml",
+        "track_lite": "/launches/lm8a-wenchang/track_lite.json"
       },
       "illustrative": true,
       "confidence": "low",
@@ -218,5 +237,19 @@
         "kml"
       ]
     }
-  ]
+  ],
+  "globe": {
+    "textures": {
+      "day": "/launches/globe/earth_day_4k.webp",
+      "day_placeholder": "/launches/globe/earth_day_512.webp",
+      "night": "/launches/globe/earth_night_4k.webp",
+      "night_placeholder": "/launches/globe/earth_night_512.webp",
+      "fallback_png": "/launches/globe/fallback.png"
+    },
+    "reference_ids": [
+      "nasa-bluemarble",
+      "nasa-blackmarble",
+      "threejs"
+    ]
+  }
 }
