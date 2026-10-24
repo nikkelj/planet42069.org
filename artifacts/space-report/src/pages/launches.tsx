@@ -2,6 +2,7 @@ import { Fragment, lazy, Suspense, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Download, Loader2, Rocket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MethodsMarkdown } from "@/components/MethodsMarkdown";
+import LaunchGlobe from "@/components/launches/LaunchGlobe";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -370,6 +371,8 @@ export function LaunchesBoard({ state }: { state: BoardState }) {
           {" "}Surrogate and 3DOF sim files marked ILLUSTRATIVE are generated illustrations, not reconstructed flight telemetry.
         </span>
       </p>
+
+      <LaunchGlobe />
 
       {state.kind === "loading" && (
         <div className="border-2 border-border bg-card flex flex-col items-center justify-center p-12 space-y-4">
