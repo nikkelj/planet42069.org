@@ -1,99 +1,216 @@
-[
-  {
-    "slug": "electron-hawkeye360",
-    "name": "We're Not Hawking Around (3x HawkEye 360)",
-    "vehicle": "Electron",
-    "t0_utc": "2026-10-23T07:11:00Z",
-    "status": "Success",
-    "phase": "recent",
-    "files": {
-      "csv": "/launches/electron-hawkeye360/trajectory.csv",
-      "kml": "/launches/electron-hawkeye360/trajectory.kml",
-      "csv_sim": "/launches/electron-hawkeye360/trajectory_sim.csv",
-      "kml_sim": "/launches/electron-hawkeye360/trajectory_sim.kml"
+{
+  "methods": {
+    "surrogate": {
+      "title": "Surrogate (published-profile)",
+      "summary": "Event knots (time, altitude, velocity) from official vehicle brochures/user manuals, interpolated every 5 s and laid along a constant-azimuth rhumb line from the pad (azimuth from NOTAM/hazard areas or from target inclination). One assumption splits horizontal motion from the published profile. Where a vehicle has no published profile, a family stand-in (LM-3B from the CALT manual) is used and labelled. ILLUSTRATIVE, not telemetry."
     },
-    "illustrative": true,
-    "confidence": "low-medium",
-    "sources": [
-      "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
-      "https://ll.thespacedevs.com/2.3.0/launches/"
-    ],
-    "method": {
-      "csv": "event-surrogate parametric (published event table + azimuth)",
-      "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
-    }
+    "sim": {
+      "title": "First-principles 3DOF sim",
+      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry."
+    },
+    "methods_doc": "/launches/METHODS.md"
   },
-  {
-    "slug": "lm6a-yaogan50-03",
-    "name": "Yaogan 50-03",
-    "vehicle": "Long March 6A",
-    "t0_utc": "2026-10-23T10:15:00Z",
-    "status": "Success",
-    "phase": "recent",
-    "files": {
-      "csv": "/launches/lm6a-yaogan50-03/trajectory.csv",
-      "kml": "/launches/lm6a-yaogan50-03/trajectory.kml",
-      "csv_sim": "/launches/lm6a-yaogan50-03/trajectory_sim.csv",
-      "kml_sim": "/launches/lm6a-yaogan50-03/trajectory_sim.kml"
+  "references": [
+    {
+      "id": "rl-ug",
+      "title": "Rocket Lab Electron Payload User's Guide v8.0",
+      "url": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf"
     },
-    "illustrative": true,
-    "confidence": "low",
-    "sources": [
-      "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
-      "https://ll.thespacedevs.com/2.3.0/launches/"
-    ],
-    "method": {
-      "csv": "event-surrogate parametric (published event table + azimuth)",
-      "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
-    }
-  },
-  {
-    "slug": "lm4b-jiuquan",
-    "name": "Yaogan 53-07..09 / 56-19..21",
-    "vehicle": "Long March 4B",
-    "t0_utc": "2026-10-23T19:25:00Z",
-    "status": "Success",
-    "phase": "recent",
-    "files": {
-      "csv": "/launches/lm4b-jiuquan/trajectory.csv",
-      "kml": "/launches/lm4b-jiuquan/trajectory.kml",
-      "csv_sim": "/launches/lm4b-jiuquan/trajectory_sim.csv",
-      "kml_sim": "/launches/lm4b-jiuquan/trajectory_sim.kml"
+    {
+      "id": "calt-lm3a",
+      "title": "CALT LM-3A Series Launch Vehicles User's Manual, Issue 2011",
+      "url": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
     },
-    "illustrative": true,
-    "confidence": "low-medium",
-    "sources": [
-      "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
-      "https://ll.thespacedevs.com/2.3.0/launches/"
-    ],
-    "method": {
-      "csv": "event-surrogate parametric (published event table + azimuth)",
-      "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
-    }
-  },
-  {
-    "slug": "lm8a-wenchang",
-    "name": "Unknown payload",
-    "vehicle": "Long March 8A",
-    "t0_utc": "2026-10-25T01:50:00Z",
-    "status": "Go",
-    "phase": "upcoming",
-    "files": {
-      "csv": "/launches/lm8a-wenchang/trajectory.csv",
-      "kml": "/launches/lm8a-wenchang/trajectory.kml",
-      "csv_sim": "/launches/lm8a-wenchang/trajectory_sim.csv",
-      "kml_sim": "/launches/lm8a-wenchang/trajectory_sim.kml"
+    {
+      "id": "wp-electron",
+      "title": "Wikipedia: Rocket Lab Electron",
+      "url": "https://en.wikipedia.org/wiki/Rocket_Lab_Electron"
     },
-    "illustrative": true,
-    "confidence": "low",
-    "sources": [
-      "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
-      "https://www.sealagom.com/navarea/11/message/25242/",
-      "https://ll.thespacedevs.com/2.3.0/launches/"
-    ],
-    "method": {
-      "csv": "event-surrogate parametric (published event table + azimuth)",
-      "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
+    {
+      "id": "wp-lm3b",
+      "title": "Wikipedia: Long March 3B",
+      "url": "https://en.wikipedia.org/wiki/Long_March_3B"
+    },
+    {
+      "id": "wp-lm4b",
+      "title": "Wikipedia: Long March 4B",
+      "url": "https://en.wikipedia.org/wiki/Long_March_4B"
+    },
+    {
+      "id": "wp-lm6a",
+      "title": "Wikipedia: Long March 6A",
+      "url": "https://en.wikipedia.org/wiki/Long_March_6A"
+    },
+    {
+      "id": "wp-lm8",
+      "title": "Wikipedia: Long March 8",
+      "url": "https://en.wikipedia.org/wiki/Long_March_8"
+    },
+    {
+      "id": "huiji-lm4b",
+      "title": "Huiji Satellite Wiki: 长征四号乙 (Long March 4B event times)",
+      "url": "https://sat.huijiwiki.com/wiki/长征四号乙"
+    },
+    {
+      "id": "navarea-xi-26-0481",
+      "title": "NAVAREA XI 26-0481 (LM-8A drop zones, Sulu Sea) via sealagom",
+      "url": "https://www.sealagom.com/navarea/11/message/25242/"
+    },
+    {
+      "id": "zj385",
+      "title": "China MSA debris-zone notice ZJ385/26 (LM-4B Jiuquan)",
+      "url": null
+    },
+    {
+      "id": "rkrr-d3252",
+      "title": "NOTAM RKRR D3252/26 (Incheon FIR, LM-4B hazard area)",
+      "url": null
+    },
+    {
+      "id": "rjjj-p5065",
+      "title": "NOTAM RJJJ P5065/26 (Fukuoka FIR, LM-4B hazard area)",
+      "url": null
+    },
+    {
+      "id": "ll2",
+      "title": "The Space Devs Launch Library 2 API v2.3.0 (launch times/status)",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/"
+    },
+    {
+      "id": "kml",
+      "title": "OGC KML 2.2 namespace/specification",
+      "url": "http://www.opengis.net/kml/2.2"
     }
-  }
-]
+  ],
+  "launches": [
+    {
+      "slug": "electron-hawkeye360",
+      "name": "We're Not Hawking Around (3x HawkEye 360)",
+      "vehicle": "Electron",
+      "t0_utc": "2026-10-23T07:11:00Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/electron-hawkeye360/trajectory.csv",
+        "kml": "/launches/electron-hawkeye360/trajectory.kml",
+        "csv_sim": "/launches/electron-hawkeye360/trajectory_sim.csv",
+        "kml_sim": "/launches/electron-hawkeye360/trajectory_sim.kml"
+      },
+      "illustrative": true,
+      "confidence": "low-medium",
+      "sources": [
+        "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+        "https://ll.thespacedevs.com/2.3.0/launches/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric (published event table + azimuth)",
+        "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "rl-ug",
+        "wp-electron",
+        "ll2",
+        "kml"
+      ]
+    },
+    {
+      "slug": "lm6a-yaogan50-03",
+      "name": "Yaogan 50-03",
+      "vehicle": "Long March 6A",
+      "t0_utc": "2026-10-23T10:15:00Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/lm6a-yaogan50-03/trajectory.csv",
+        "kml": "/launches/lm6a-yaogan50-03/trajectory.kml",
+        "csv_sim": "/launches/lm6a-yaogan50-03/trajectory_sim.csv",
+        "kml_sim": "/launches/lm6a-yaogan50-03/trajectory_sim.kml"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+        "https://ll.thespacedevs.com/2.3.0/launches/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric (published event table + azimuth)",
+        "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "calt-lm3a",
+        "wp-lm3b",
+        "wp-lm6a",
+        "ll2",
+        "kml"
+      ]
+    },
+    {
+      "slug": "lm4b-jiuquan",
+      "name": "Yaogan 53-07..09 / 56-19..21",
+      "vehicle": "Long March 4B",
+      "t0_utc": "2026-10-23T19:25:00Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/lm4b-jiuquan/trajectory.csv",
+        "kml": "/launches/lm4b-jiuquan/trajectory.kml",
+        "csv_sim": "/launches/lm4b-jiuquan/trajectory_sim.csv",
+        "kml_sim": "/launches/lm4b-jiuquan/trajectory_sim.kml"
+      },
+      "illustrative": true,
+      "confidence": "low-medium",
+      "sources": [
+        "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+        "https://ll.thespacedevs.com/2.3.0/launches/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric (published event table + azimuth)",
+        "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "calt-lm3a",
+        "wp-lm3b",
+        "wp-lm4b",
+        "huiji-lm4b",
+        "zj385",
+        "rkrr-d3252",
+        "rjjj-p5065",
+        "ll2",
+        "kml"
+      ]
+    },
+    {
+      "slug": "lm8a-wenchang",
+      "name": "Unknown payload",
+      "vehicle": "Long March 8A",
+      "t0_utc": "2026-10-25T01:50:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/lm8a-wenchang/trajectory.csv",
+        "kml": "/launches/lm8a-wenchang/trajectory.kml",
+        "csv_sim": "/launches/lm8a-wenchang/trajectory_sim.csv",
+        "kml_sim": "/launches/lm8a-wenchang/trajectory_sim.kml"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+        "https://www.sealagom.com/navarea/11/message/25242/",
+        "https://ll.thespacedevs.com/2.3.0/launches/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric (published event table + azimuth)",
+        "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "calt-lm3a",
+        "wp-lm3b",
+        "wp-lm8",
+        "navarea-xi-26-0481",
+        "ll2",
+        "kml"
+      ]
+    }
+  ]
+}
