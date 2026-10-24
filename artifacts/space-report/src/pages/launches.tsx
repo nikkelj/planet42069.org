@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Download, Loader2, Rocket } from "lucide-react";
+import { Fragment, lazy, Suspense, useEffect, useState } from "react";
+import { ChevronDown, ChevronRight, Download, Loader2, Rocket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MethodsMarkdown } from "@/components/MethodsMarkdown";
 import {
@@ -16,6 +16,8 @@ import {
   type LaunchIndexResult,
   type LaunchManifest,
 } from "@/lib/launches";
+
+const LaunchTrackPanel = lazy(() => import("@/components/LaunchTrackPanel"));
 
 type BoardState =
   | { kind: "loading" }
@@ -112,6 +114,8 @@ function LaunchTable({
   launches: LaunchEntry[];
   timeHeader: string;
 }) {
+  const [openSlug, setOpenSlug] = useState<string | null>(null);
+
   return (
     <div className="overflow-x-auto relative z-10">
       <Table className="font-mono text-sm">
@@ -125,9 +129,12 @@ function LaunchTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {launches.map((launch) => (
+          {launches.map((launch) => {
+            const canView = Boolean(launch.files.csv || launch.files.csvSim);
+            const open = openSlug === launch.slug;
+            return (
+            <Fragment key={launch.slug}>
             <TableRow
-              key={launch.slug}
               data-testid="launch-row"
               data-slug={launch.slug}
               className="border-b-border/50 hover:bg-primary/5"
@@ -172,10 +179,45 @@ function LaunchTable({
                     note={launch.method.csvSim}
                     illustrative={launch.illustrative}
                   />
+                  {canView && (
+                    <button
+                      type="button"
+                      data-testid={`view-trajectory-${launch.slug}`}
+                      aria-expanded={open}
+                      onClick={() => setOpenSlug(open ? null : launch.slug)}
+                      className="mt-2 inline-flex items-center gap-1 border border-primary/60 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-primary hover:bg-primary hover:text-primary-foreground"
+                    >
+                      {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                      {open ? "Hide trajectory" : "View trajectory"}
+                    </button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>
-          ))}
+            {open && canView && (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={5} className="bg-muted/10 p-3">
+                  <Suspense
+                    fallback={
+                      <div className="flex items-center justify-center gap-2 p-8 font-mono text-xs uppercase tracking-widest text-primary">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading trajectory viewer…
+                      </div>
+                    }
+                  >
+                    <LaunchTrackPanel
+                      name={launch.name}
+                      illustrative={launch.illustrative}
+                      surrogateUrl={publicAssetHref(launch.files.csv)}
+                      simUrl={publicAssetHref(launch.files.csvSim)}
+                    />
+                  </Suspense>
+                </TableCell>
+              </TableRow>
+            )}
+            </Fragment>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
