@@ -9,6 +9,7 @@ import Analytics from "@/pages/analytics";
 import Catalog from "@/pages/catalog";
 import Constellations from "@/pages/constellations";
 import Rpod from "@/pages/rpod";
+import Launches from "@/pages/launches";
 import { AppLayout } from "@/components/layout/app-layout";
 
 const queryClient = new QueryClient({
@@ -31,6 +32,7 @@ function Router() {
         <Route path="/catalog" component={Catalog} />
         <Route path="/constellations" component={Constellations} />
         <Route path="/rpod" component={Rpod} />
+        <Route path="/launches" component={Launches} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
