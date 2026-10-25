@@ -1,0 +1,278 @@
+{
+ "id": "lm3b",
+ "name": "Long March 3B (validation vehicle)",
+ "timeline": true,
+ "cd": {
+  "value": 0.4,
+  "assumption": "not published"
+ },
+ "glow_kg": {
+  "value": 425800,
+  "src": "https://en.wikipedia.org/wiki/Long_March_3B"
+ },
+ "stages": [
+  {
+   "name": "Boosters (4)",
+   "count": 4,
+   "parallel": true,
+   "diameter_m": {
+    "value": 2.25,
+    "src": "https://en.wikipedia.org/wiki/Long_March_3B"
+   },
+   "propellant_kg": {
+    "value": 37700,
+    "src": "https://en.wikipedia.org/wiki/Long_March_3B"
+   },
+   "dry_kg": {
+    "value": 3200,
+    "assumption": "Wikipedia infobox commented-out (hidden, unverified) value - treated as ASSUMPTION"
+   },
+   "thrust_vac_N": {
+    "value": 826232,
+    "derived": "SL 740.4 kN x YF-20 vac/SL thrust ratio 816.3/731.5 (https://en.wikipedia.org/wiki/YF-20)"
+   },
+   "isp_vac_s": {
+    "value": 290.92,
+    "derived": "SL Isp 260.7 s x same ratio, so mdot = F/(Isp g0) is unchanged from the published SL pair"
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
+   },
+   "cutoff_s": {
+    "value": 127.2,
+    "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+    "note": "Table 3-5 boosters shutdown"
+   },
+   "separation_s": {
+    "value": 128.7,
+    "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+    "note": "boosters separation"
+   },
+   "thrust_sl_N": {
+    "value": 740400,
+    "src": "https://en.wikipedia.org/wiki/Long_March_3B",
+    "note": "published thrust is the sea-level value"
+   }
+  },
+  {
+   "name": "Stage 1",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://en.wikipedia.org/wiki/Long_March_3B"
+   },
+   "propellant_kg": {
+    "value": 171800,
+    "src": "https://en.wikipedia.org/wiki/Long_March_3B"
+   },
+   "dry_kg": {
+    "value": 9000,
+    "assumption": "Wikipedia infobox commented-out (hidden, unverified) value - treated as ASSUMPTION"
+   },
+   "thrust_vac_N": {
+    "value": 3304927,
+    "derived": "SL 2961.6 kN x YF-20 vac/SL thrust ratio 816.3/731.5 (https://en.wikipedia.org/wiki/YF-20)"
+   },
+   "isp_vac_s": {
+    "value": 290.92,
+    "derived": "SL Isp 260.7 s x same ratio, so mdot = F/(Isp g0) is unchanged from the published SL pair"
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
+   },
+   "cutoff_s": {
+    "value": 144.7,
+    "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+    "note": "Stage-1 shutdown"
+   },
+   "separation_s": {
+    "value": 146.2,
+    "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+    "note": "S1/S2 separation"
+   },
+   "thrust_sl_N": {
+    "value": 2961600,
+    "src": "https://en.wikipedia.org/wiki/Long_March_3B",
+    "note": "published thrust is the sea-level value"
+   }
+  },
+  {
+   "name": "Stage 2",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://en.wikipedia.org/wiki/Long_March_3B"
+   },
+   "propellant_kg": {
+    "value": 49400,
+    "src": "https://en.wikipedia.org/wiki/Long_March_3B"
+   },
+   "dry_kg": {
+    "value": 5000,
+    "assumption": "Wikipedia infobox commented-out (hidden, unverified) value - treated as ASSUMPTION"
+   },
+   "thrust_vac_N": {
+    "value": 742000,
+    "src": "https://en.wikipedia.org/wiki/Long_March_3B",
+    "note": "YF-22 main only; verniers modelled as tail"
+   },
+   "isp_vac_s": {
+    "value": 298.0,
+    "derived": "main 2922.57 m/s / g0 (W)"
+   },
+   "ignition_s": {
+    "value": 146.2,
+    "assumption": "ignition taken at S1/S2 separation 146.2 s (manual lists separation, not S2 ignition)"
+   },
+   "cutoff_s": {
+    "value": 325.5,
+    "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+    "note": "S2 main engine shutdown"
+   },
+   "separation_s": {
+    "value": 331.5,
+    "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+    "note": "S2/S3 separation"
+   },
+   "tail": {
+    "thrust_vac_N": {
+     "value": 47100,
+     "src": "https://en.wikipedia.org/wiki/Long_March_3B",
+     "note": "4x YF-23 verniers total"
+    },
+    "isp_vac_s": {
+     "value": 281.6,
+     "assumption": "YF-23H vernier 2761.6 m/s (huijiwiki LM-4B, same vernier family) used for LM-3B YF-23C"
+    },
+    "cutoff_s": {
+     "value": 330.5,
+     "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+     "note": "S2 vernier shutdown"
+    },
+    "runs_with_main": true
+   }
+  },
+  {
+   "name": "Stage 3 (burn 1 of 2)",
+   "diameter_m": {
+    "value": 3.0,
+    "src": "https://en.wikipedia.org/wiki/Long_March_3B"
+   },
+   "propellant_kg": {
+    "value": 18200,
+    "src": "https://en.wikipedia.org/wiki/Long_March_3B"
+   },
+   "dry_kg": {
+    "value": 2800,
+    "assumption": "Wikipedia infobox commented-out (hidden, unverified) value - treated as ASSUMPTION"
+   },
+   "thrust_vac_N": {
+    "value": 167170,
+    "src": "https://en.wikipedia.org/wiki/Long_March_3B"
+   },
+   "isp_vac_s": {
+    "value": 438.0,
+    "derived": "4295 m/s / g0"
+   },
+   "ignition_s": {
+    "value": 332.5,
+    "assumption": "1.0 s after S2/S3 separation 331.5 s"
+   },
+   "cutoff_s": {
+    "value": 615.7,
+    "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+    "note": "Stage-3 first shutdown (burn 2 after parking-orbit coast is outside this validation leg; burn-2 propellant is carried as mass)"
+   }
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 2000,
+   "assumption": "budget: GLOW 425.8 t - props - dry = 6.0 t for payload+fairing; split 4.0/2.0 t ASSUMED"
+  },
+  "jettison_time_s": {
+   "value": 215.2,
+   "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+   "note": "Table 3-5 fairing jettison 215.2 s"
+  }
+ },
+ "guidance": {
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "not published"
+  },
+  "linear_tangent_from_stage": 2
+ },
+ "fit": {
+  "vertical_rise_s": {
+   "x0": 10,
+   "bounds": [
+    5,
+    25
+   ],
+   "basis": "ASSUMPTION bound; LM-4B Y43 programme turn at 20 s (huijiwiki) is the only published CALT/SAST value"
+  },
+  "kick_deg": {
+   "x0": 5,
+   "bounds": [
+    0.5,
+    20
+   ],
+   "basis": "ASSUMPTION bound"
+  },
+  "cd": {
+   "x0": 0.4,
+   "bounds": [
+    0.2,
+    0.8
+   ],
+   "basis": "ASSUMPTION bound for slender LV mean Cd"
+  },
+  "payload_kg": {
+   "x0": 4000,
+   "bounds": [
+    1500,
+    5500
+   ],
+   "basis": "upper bound = LM-3B GTO capability 5,500 kg (W); payload+adapter of the 'typical' manual trajectory not published"
+  },
+  "tan0": {
+   "x0": 0.4,
+   "bounds": [
+    -2,
+    5
+   ],
+   "basis": "guidance law parameter"
+  },
+  "tan_rate": {
+   "x0": 0.001,
+   "bounds": [
+    -0.05,
+    0.05
+   ],
+   "basis": "guidance law parameter"
+  }
+ },
+ "header_notes": [
+  "LM-3B TIMELINE mode: every ignition/cutoff/separation/fairing time from CALT LM-3A Series manual 2011 Tables 3-5/3-6; mdot=F/(Isp g0), burned=mdot*burn time; published loads minus burned carried as residual.",
+  "Free parameters (vertical rise, kick, Cd, payload, linear-tangent) FITTED by least squares to manual altitude + ground-range knots."
+ ],
+ "is_family_reference": true,
+ "fitted_family": {
+  "cd": {
+   "value": 0.66658,
+   "status": "FITTED",
+   "fit_run": "lm3b-calt-validation"
+  },
+  "vertical_rise_s": {
+   "value": 8.79153,
+   "status": "FITTED",
+   "fit_run": "lm3b-calt-validation"
+  },
+  "kick_deg": {
+   "value": 7.8029,
+   "status": "FITTED",
+   "fit_run": "lm3b-calt-validation"
+  }
+ }
+}

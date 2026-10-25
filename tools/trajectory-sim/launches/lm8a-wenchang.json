@@ -1,0 +1,42 @@
+{
+  "slug": "lm8a-wenchang",
+  "title": "Long March 8A (unknown payload, Wenchang Commercial LC-1)",
+  "vehicle": "lm8a",
+  "t0_utc": "2026-10-25T01:50:00Z",
+  "pad": {
+    "lat": 19.597275,
+    "lon": 110.930753,
+    "alt_m": 0,
+    "src": "https://ll.thespacedevs.com/2.3.0/launches/"
+  },
+  "azimuth_deg": {
+    "value": 140.4,
+    "src": "https://www.sealagom.com/navarea/11/message/25242/",
+    "note": "bearing pad -> NAVAREA XI 26-0481 zone B/C"
+  },
+  "payload_kg": {
+    "value": 5000,
+    "assumption": "unknown payload; below 7 t/700 km SSO capability"
+  },
+  "target": {
+    "insertion_alt_km": {
+      "value": 700,
+      "assumption": "capability reference altitude 700 km (W); circular ASSUMED"
+    },
+    "cutoff": "energy"
+  },
+  "header_notes": [
+    "Not flown: LL2 NET 2026-10-25T01:50Z, status Go, orbit Unknown."
+  ],
+  "post_cutoff": {
+    "deploy": {
+      "t_s": null,
+      "note": "CASC/CALT did not publish a payload-separation time; payload and orbit unannounced"
+    },
+    "drag": {
+      "cd": 2.2,
+      "area_m2": 8.8,
+      "basis": "ASSUMPTION: free-molecular Cd 2.2, frontal area of 3.35 m-diameter upper stage; drag negligible at these altitudes"
+    }
+  }
+}

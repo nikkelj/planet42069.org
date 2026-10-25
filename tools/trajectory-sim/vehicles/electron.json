@@ -1,0 +1,127 @@
+{
+ "id": "electron",
+ "name": "Rocket Lab Electron",
+ "cd": {
+  "value": 0.4,
+  "assumption": "Cd mid of 0.3-0.5 range, not published"
+ },
+ "glow_kg": {
+  "value": 13000,
+  "src": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+  "note": "VEHICLE MASS (LIFT-OFF) 13,000 kg"
+ },
+ "stages": [
+  {
+   "name": "Stage 1",
+   "count": 1,
+   "diameter_m": {
+    "value": 1.2,
+    "src": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf"
+   },
+   "propellant_kg": {
+    "value": 9473,
+    "derived": "GLOW 13000 - S2 gross 2250 - payload stack 180 - fairing 44 = S1 gross 10526 kg; x ASSUMED propellant fraction 0.90"
+   },
+   "dry_kg": {
+    "value": 1053,
+    "derived": "S1 gross 10526 - propellant 9473 (fraction 0.90 ASSUMPTION)"
+   },
+   "thrust_sl_N": {
+    "value": 224300,
+    "src": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+    "note": "9 x 5600 lbf sea level"
+   },
+   "thrust_vac_N": {
+    "value": 234000,
+    "src": "https://en.wikipedia.org/wiki/Rocket_Lab_Electron",
+    "note": "vac 234 kN (infobox)"
+   },
+   "isp_vac_s": {
+    "value": 311,
+    "src": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+    "note": "311 s (guide; treated as vacuum)"
+   },
+   "burn_time_s": {
+    "value": 155,
+    "src": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+    "note": "Stage 1 engine cutoff L+155 s"
+   },
+   "mdot_from_burn_time": true,
+   "mdot_note": "Published thrust/Isp would burn 11.9 t in 155 s > stage gross; mdot = propellant/155 s and thrust scaled to mdot*Isp*g0 (effective average, implies throttling or lower real Isp). DERIVED."
+  },
+  {
+   "name": "Stage 2",
+   "count": 1,
+   "diameter_m": {
+    "value": 1.2,
+    "src": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf"
+   },
+   "coast_before_s": {
+    "value": 7,
+    "src": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+    "note": "S1 sep L+155, S2 ignition L+162"
+   },
+   "propellant_kg": {
+    "value": 2000,
+    "src": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+    "note": "approximately 2,000 kg of propellant"
+   },
+   "dry_kg": {
+    "value": 250,
+    "assumption": "S2 dry incl. 3 HVB batteries + interstage share; not published (battery jettison L+388 s not modelled)"
+   },
+   "thrust_vac_N": {
+    "value": 25800,
+    "src": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+    "note": "5800 lbf vacuum"
+   },
+   "isp_vac_s": {
+    "value": 343,
+    "src": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf"
+   },
+   "burn_time_s": {
+    "value": 373,
+    "derived": "S2 ignition L+162 to cutoff L+535 (guide)"
+   },
+   "mdot_from_burn_time": true,
+   "mdot_note": "Published thrust/Isp burns 2000 kg in 261 s, guide says ~5 min (373 s): mdot=2000/373, effective thrust 18.0 kN. DERIVED."
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 44,
+   "src": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+   "note": "fairing mass 44 kg"
+  },
+  "jettison_time_s": {
+   "value": 184,
+   "src": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+   "note": "Fairing separation L+184 s"
+  }
+ },
+ "guidance": {
+  "vertical_rise_s": {
+   "value": 8,
+   "assumption": "not published"
+  },
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "not published"
+  },
+  "linear_tangent_from_stage": 1,
+  "kick_grid": [
+   1.5,
+   3,
+   5
+  ],
+  "x0": [
+   3,
+   0.5,
+   0.003
+  ]
+ },
+ "header_notes": [
+  "Electron: GLOW, S2 propellant, thrusts, Isp, fairing mass/time from Rocket Lab Electron Payload User Guide (7.0 content, 8.0 URL).",
+  "DERIVED: S1 propellant (0.90 fraction ASSUMPTION), effective mdot from published burn times; ASSUMED S2 dry 250 kg, Cd 0.4, 8 s vertical rise."
+ ]
+}

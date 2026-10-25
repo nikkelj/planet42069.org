@@ -1,0 +1,289 @@
+{
+ "slug": "lm3b-calt-validation",
+ "title": "LM-3B CALT manual validation (GTO parking-orbit leg)",
+ "vehicle": "lm3b",
+ "t0_utc": "2026-01-01T00:00:00Z",
+ "pad": {
+  "lat": 28.246,
+  "lon": 102.027,
+  "alt_m": {
+   "value": 1800,
+   "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+   "note": "manual liftoff flight altitude 1.8 km (Xichang)"
+  },
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/"
+ },
+ "azimuth_deg": {
+  "value": 97,
+  "assumption": "Xichang typical GTO azimuth, not used for comparison"
+ },
+ "payload_kg": {
+  "fit": true,
+  "value": null,
+  "note": "FITTED, see vehicle fit bounds"
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 204.3,
+   "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+   "note": "Table 3-5 S3 first shutdown 204.3 km at 615.7 s"
+  },
+  "apoapsis_alt_km": {
+   "value": 204.3,
+   "assumption": "parking orbit treated as circular"
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 20,
+  "note2": "ASSUMPTION: near-circular parking orbit at first shutdown (fpa 0, a at 204.3 km, sigma 20 km); manual gives altitude only"
+ },
+ "header_notes": [
+  "Validation run only."
+ ],
+ "knots": [
+  {
+   "t_s": 127.2,
+   "event": "Boosters shutdown",
+   "alt_km": 53.9,
+   "range_km": 68.7,
+   "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
+  },
+  {
+   "t_s": 128.7,
+   "event": "Boosters separation",
+   "alt_km": 55.4,
+   "range_km": 71.8,
+   "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
+  },
+  {
+   "t_s": 144.7,
+   "event": "Stage-1 shutdown",
+   "alt_km": 71.0,
+   "range_km": 108.2,
+   "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
+  },
+  {
+   "t_s": 146.2,
+   "event": "S1/S2 separation",
+   "alt_km": 72.5,
+   "range_km": 112.0,
+   "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
+  },
+  {
+   "t_s": 215.2,
+   "event": "Fairing jettison",
+   "alt_km": 131.5,
+   "range_km": 307.2,
+   "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
+  },
+  {
+   "t_s": 325.5,
+   "event": "S2 main engine shutdown",
+   "alt_km": 190.3,
+   "range_km": 744.8,
+   "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
+  },
+  {
+   "t_s": 330.5,
+   "event": "S2 vernier shutdown",
+   "alt_km": 192.1,
+   "range_km": 769.8,
+   "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
+  },
+  {
+   "t_s": 331.5,
+   "event": "S2/S3 separation",
+   "alt_km": 192.5,
+   "range_km": 774.8,
+   "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
+  },
+  {
+   "t_s": 615.7,
+   "event": "Stage-3 first shutdown",
+   "alt_km": 204.3,
+   "range_km": 2466.2,
+   "src": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
+  }
+ ],
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "vertical_rise_s": {
+    "value": 8.791535,
+    "bounds": [
+     5,
+     25
+    ],
+    "basis": "ASSUMPTION bound; LM-4B Y43 programme turn at 20 s (huijiwiki) is the only published CALT/SAST value"
+   },
+   "kick_deg": {
+    "value": 7.802897,
+    "bounds": [
+     0.5,
+     20
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "cd": {
+    "value": 0.666575,
+    "bounds": [
+     0.2,
+     0.8
+    ],
+    "basis": "ASSUMPTION bound for slender LV mean Cd"
+   },
+   "payload_kg": {
+    "value": 5241.249433,
+    "bounds": [
+     1500,
+     5500
+    ],
+    "basis": "upper bound = LM-3B GTO capability 5,500 kg (W); payload+adapter of the 'typical' manual trajectory not published"
+   },
+   "tan0": {
+    "value": 0.248725,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law parameter"
+   },
+   "tan_rate": {
+    "value": 0.000243,
+    "bounds": [
+     -0.05,
+     0.05
+    ],
+    "basis": "guidance law parameter"
+   }
+  },
+  "fixed": {},
+  "knot_residuals": [
+   {
+    "event": "Boosters shutdown",
+    "t_pub": 127.2,
+    "t_sim": 127.2,
+    "alt_pub": 53.9,
+    "alt_sim": 56.73,
+    "rng_pub": 68.7,
+    "rng_sim": 72.7
+   },
+   {
+    "event": "Boosters separation",
+    "t_pub": 128.7,
+    "t_sim": 128.7,
+    "alt_pub": 55.4,
+    "alt_sim": 58.2,
+    "rng_pub": 71.8,
+    "rng_sim": 75.8
+   },
+   {
+    "event": "Stage-1 shutdown",
+    "t_pub": 144.7,
+    "t_sim": 144.7,
+    "alt_pub": 71.0,
+    "alt_sim": 74.37,
+    "rng_pub": 108.2,
+    "rng_sim": 112.5
+   },
+   {
+    "event": "S1/S2 separation",
+    "t_pub": 146.2,
+    "t_sim": 146.2,
+    "alt_pub": 72.5,
+    "alt_sim": 75.93,
+    "rng_pub": 112.0,
+    "rng_sim": 116.3
+   },
+   {
+    "event": "Fairing jettison",
+    "t_pub": 215.2,
+    "t_sim": 215.2,
+    "alt_pub": 131.5,
+    "alt_sim": 134.03,
+    "rng_pub": 307.2,
+    "rng_sim": 311.8
+   },
+   {
+    "event": "S2 main engine shutdown",
+    "t_pub": 325.5,
+    "t_sim": 325.5,
+    "alt_pub": 190.3,
+    "alt_sim": 187.38,
+    "rng_pub": 744.8,
+    "rng_sim": 747.6
+   },
+   {
+    "event": "S2 vernier shutdown",
+    "t_pub": 330.5,
+    "t_sim": 330.5,
+    "alt_pub": 192.1,
+    "alt_sim": 189.25,
+    "rng_pub": 769.8,
+    "rng_sim": 772.2
+   },
+   {
+    "event": "S2/S3 separation",
+    "t_pub": 331.5,
+    "t_sim": 331.5,
+    "alt_pub": 192.5,
+    "alt_sim": 189.61,
+    "rng_pub": 774.8,
+    "rng_sim": 777.1
+   },
+   {
+    "event": "Stage-3 first shutdown",
+    "t_pub": 615.7,
+    "t_sim": 615.7,
+    "alt_pub": 204.3,
+    "alt_sim": 205.41,
+    "rng_pub": 2466.2,
+    "rng_sim": 2456.9
+   }
+  ],
+  "final": {
+   "alt_km": 205.41180672448968,
+   "fpa_deg": -0.10529120571074493,
+   "sma_err_km": 15.220073891779409,
+   "mass_kg": 15219.3
+  },
+  "cost": 42.8376180079037,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "Boosters (4)",
+     "loaded_kg": 150800,
+     "burned_kg": 147352,
+     "residual_kg": 3448,
+     "dry_kg": 12800,
+     "flag": null
+    },
+    {
+     "name": "Stage 1",
+     "loaded_kg": 171800,
+     "burned_kg": 167624,
+     "residual_kg": 4176,
+     "dry_kg": 9000,
+     "flag": null
+    },
+    {
+     "name": "Stage 2",
+     "loaded_kg": 49400,
+     "burned_kg": 48668,
+     "residual_kg": 732,
+     "dry_kg": 5000,
+     "flag": null
+    },
+    {
+     "name": "Stage 3 (burn 1 of 2)",
+     "loaded_kg": 18200,
+     "burned_kg": 11022,
+     "residual_kg": 7178,
+     "dry_kg": 2800,
+     "flag": null
+    }
+   ],
+   "glow_kg": 427041
+  }
+ }
+}

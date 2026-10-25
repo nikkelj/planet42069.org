@@ -1,0 +1,123 @@
+{
+  "slug": "lm4b-jiuquan",
+  "title": "Long March 4B / Yaogan 53-07..09 + 56-19..21 (Jiuquan)",
+  "vehicle": "lm4b",
+  "t0_utc": "2026-10-23T19:25:00Z",
+  "pad": {
+    "lat": 40.960482,
+    "lon": 100.298059,
+    "alt_m": 0,
+    "src": "https://ll.thespacedevs.com/2.3.0/launches/"
+  },
+  "azimuth_deg": {
+    "value": 109,
+    "src": "https://ll.thespacedevs.com/2.3.0/launches/",
+    "note": "from ZJ385/26 + NOTAMs RKRR D3252/26, RJJJ P5065/26"
+  },
+  "payload_kg": {
+    "fit": true,
+    "value": null,
+    "note": "FITTED to reach target orbit at published S3 shutdown"
+  },
+  "target": {
+    "insertion_alt_km": {
+      "value": 500,
+      "assumption": "LL2 says LEO only; 500 km circular ASSUMED"
+    },
+    "cutoff": "energy",
+    "sma_sigma_km": 5
+  },
+  "header_notes": [
+    "Flown: LL2 Success 19:25Z (Y81). Az 109 from ZJ385/26 + NOTAMs. Event times = published Y51/LEO Jiuquan sequence (huijiwiki), the closest published LM-4B LEO-from-Jiuquan flight; Y81's own sequence unpublished."
+  ],
+  "fitted": {
+    "status": "FITTED",
+    "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+    "params": {
+      "kick_deg": {
+        "value": 3.395452,
+        "bounds": [
+          0.3,
+          15
+        ],
+        "basis": "ASSUMPTION bound"
+      },
+      "payload_kg": {
+        "value": 1570.777934,
+        "bounds": [
+          500,
+          4200
+        ],
+        "basis": "upper bound LM-4B LEO capability 4.2 t (W); 6 Yaogan sats mass not published"
+      },
+      "tan0": {
+        "value": 0.834596,
+        "bounds": [
+          -2,
+          5
+        ],
+        "basis": "guidance law"
+      },
+      "tan_rate": {
+        "value": 0.002481,
+        "bounds": [
+          -0.05,
+          0.05
+        ],
+        "basis": "guidance law"
+      }
+    },
+    "fixed": {
+      "vertical_rise_s": 20.0,
+      "cd": 0.66658
+    },
+    "knot_residuals": [],
+    "final": {
+      "alt_km": 499.99999946926164,
+      "fpa_deg": -1.5220227704894205e-09,
+      "sma_err_km": -1.1345641687512398e-06,
+      "mass_kg": 5597.0
+    },
+    "cost": 1.6704964359991367e-13,
+    "mass_budget": {
+      "stages": [
+        {
+          "name": "Stage 1",
+          "loaded_kg": 181900,
+          "burned_kg": 177784,
+          "residual_kg": 4116,
+          "dry_kg": 10058,
+          "flag": null
+        },
+        {
+          "name": "Stage 2",
+          "loaded_kg": 34648,
+          "burned_kg": 34648,
+          "residual_kg": 0,
+          "dry_kg": 3003,
+          "flag": "published load 34267 kg < burned 34648 kg; load raised to burned"
+        },
+        {
+          "name": "Stage 3",
+          "loaded_kg": 14336,
+          "burned_kg": 12028,
+          "residual_kg": 2308,
+          "dry_kg": 1718,
+          "flag": null
+        }
+      ],
+      "glow_kg": 248884
+    }
+  },
+  "post_cutoff": {
+    "deploy": {
+      "t_s": null,
+      "note": "CASC/SAST did not publish Y81's separation time; the Y51 sequence's 14 s velocity-trim burn to T+662.7 s is also not modelled (thrust unpublished)"
+    },
+    "drag": {
+      "cd": 2.2,
+      "area_m2": 6.6,
+      "basis": "ASSUMPTION: free-molecular Cd 2.2, frontal area of 2.9 m-diameter upper stage; drag negligible at these altitudes"
+    }
+  }
+}

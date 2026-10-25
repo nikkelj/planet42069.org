@@ -1,0 +1,41 @@
+{
+  "slug": "lm6a-yaogan50-03",
+  "title": "Long March 6A / Yaogan 50-03",
+  "vehicle": "lm6a",
+  "t0_utc": "2026-10-23T10:15:00Z",
+  "pad": {
+    "lat": 38.8583,
+    "lon": 111.5802,
+    "alt_m": 0,
+    "src": "https://ll.thespacedevs.com/2.3.0/launches/"
+  },
+  "azimuth_deg": {
+    "value": 190,
+    "assumption": "guess, no hazard azimuth used"
+  },
+  "payload_kg": {
+    "value": 3000,
+    "assumption": "Yaogan class, not published"
+  },
+  "target": {
+    "insertion_alt_km": {
+      "value": 500,
+      "assumption": "LL2 says LEO only; 500 km circular ASSUMED"
+    },
+    "cutoff": "energy"
+  },
+  "header_notes": [
+    "Flown: LL2 Success. Az 190 is a guess. LOW confidence."
+  ],
+  "post_cutoff": {
+    "deploy": {
+      "t_s": null,
+      "note": "CASC/SAST did not publish a payload-separation time for this flight"
+    },
+    "drag": {
+      "cd": 2.2,
+      "area_m2": 8.8,
+      "basis": "ASSUMPTION: free-molecular Cd 2.2, frontal area of 3.35 m-diameter upper stage; drag negligible at these altitudes"
+    }
+  }
+}

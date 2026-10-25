@@ -1,0 +1,218 @@
+{
+ "id": "lm4b",
+ "name": "Long March 4B",
+ "timeline": true,
+ "cd": {
+  "value": null,
+  "note": "transferred from LM-3B fit (same 3.35 m YF-21C core family), see fixed_params"
+ },
+ "glow_kg": {
+  "value": 249200,
+  "src": "https://en.wikipedia.org/wiki/Long_March_4B",
+  "note": "huijiwiki 250 t; check only"
+ },
+ "stages": [
+  {
+   "name": "Stage 1",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://en.wikipedia.org/wiki/Long_March_4B"
+   },
+   "propellant_kg": {
+    "value": 181900,
+    "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+    "note": "S1 propellant load 181.900 t"
+   },
+   "dry_kg": {
+    "value": 10058,
+    "derived": "huijiwiki S1 mass 191.958 t - propellant 181.900 t"
+   },
+   "thrust_vac_N": {
+    "value": 3304927,
+    "derived": "SL 2961.6 kN x YF-20 vac/SL thrust ratio 816.3/731.5 (https://en.wikipedia.org/wiki/YF-20)"
+   },
+   "isp_vac_s": {
+    "value": 290.14,
+    "derived": "SL Isp 260.0 s x same ratio, so mdot = F/(Isp g0) is unchanged from the published SL pair"
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "https://sat.huijiwiki.com/wiki/长征四号乙"
+   },
+   "cutoff_s": {
+    "value": 153.059,
+    "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+    "note": "Y51/LEO S1 shutdown"
+   },
+   "separation_s": {
+    "value": 154.259,
+    "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+    "note": "Y51 S1/S2 separation"
+   },
+   "thrust_sl_N": {
+    "value": 2961600,
+    "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+    "note": "published thrust is the sea-level value"
+   }
+  },
+  {
+   "name": "Stage 2",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://en.wikipedia.org/wiki/Long_March_4B"
+   },
+   "propellant_kg": {
+    "value": 34267,
+    "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+    "note": "S2 load 34.267 t (Wikipedia 52,700 kg is inconsistent with GLOW)"
+   },
+   "dry_kg": {
+    "value": 3003,
+    "derived": "huijiwiki S2 mass 37.270 t - 34.267 t"
+   },
+   "thrust_vac_N": {
+    "value": 742040,
+    "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+    "note": "YF-22E main vac"
+   },
+   "isp_vac_s": {
+    "value": 300.0,
+    "derived": "2942 m/s / g0 (huijiwiki)"
+   },
+   "ignition_s": {
+    "value": 154.259,
+    "assumption": "ignition at S1/S2 separation (only separation published)"
+   },
+   "cutoff_s": {
+    "value": 282.494,
+    "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+    "note": "Y51 S2 main shutdown"
+   },
+   "separation_s": {
+    "value": 293.294,
+    "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+    "note": "Y51 S2/S3 separation"
+   },
+   "tail": {
+    "thrust_vac_N": {
+     "value": 46100,
+     "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+     "note": "4x YF-23H total vac"
+    },
+    "isp_vac_s": {
+     "value": 281.6,
+     "derived": "2761.6 m/s / g0 (huijiwiki)"
+    },
+    "cutoff_s": {
+     "value": 292.294,
+     "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+     "note": "Y51 S2 vernier shutdown"
+    },
+    "runs_with_main": true
+   }
+  },
+  {
+   "name": "Stage 3",
+   "diameter_m": {
+    "value": 2.9,
+    "src": "https://en.wikipedia.org/wiki/Long_March_4B"
+   },
+   "propellant_kg": {
+    "value": 14336,
+    "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+    "note": "S3 load 14.336 t"
+   },
+   "dry_kg": {
+    "value": 1718,
+    "derived": "huijiwiki S3 mass 16.054 t - 14.336 t"
+   },
+   "thrust_vac_N": {
+    "value": 100848,
+    "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+    "note": "YF-40B vac"
+   },
+   "isp_vac_s": {
+    "value": 303.0,
+    "derived": "2971 m/s / g0 (huijiwiki YF-40B)"
+   },
+   "ignition_s": {
+    "value": 294.294,
+    "assumption": "1.0 s after S2/S3 separation"
+   },
+   "cutoff_s": {
+    "value": 648.684,
+    "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+    "note": "Y51/LEO S3 shutdown"
+   }
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 1650,
+   "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+   "note": "C-type 3.8 m fairing structure mass; fairing type for this flight ASSUMED"
+  },
+  "jettison_time_s": {
+   "value": 198.558,
+   "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+   "note": "Y51/LEO fairing jettison"
+  }
+ },
+ "guidance": {
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "not published"
+  },
+  "linear_tangent_from_stage": 1
+ },
+ "fixed_params": {
+  "vertical_rise_s": {
+   "value": 20,
+   "src": "https://sat.huijiwiki.com/wiki/长征四号乙",
+   "note": "Y43 programme turn 20 s (only published LM-4B pitch-over time)"
+  },
+  "cd": {
+   "value": null,
+   "derived": "FITTED LM-3B value transferred (same 3.35 m YF-21C/YF-24 hypergolic CALT/SAST family); filled at run time from vehicles/lm3b.json fitted_family"
+  }
+ },
+ "fit": {
+  "kick_deg": {
+   "x0": 2,
+   "bounds": [
+    0.3,
+    15
+   ],
+   "basis": "ASSUMPTION bound"
+  },
+  "payload_kg": {
+   "x0": 2500,
+   "bounds": [
+    500,
+    4200
+   ],
+   "basis": "upper bound LM-4B LEO capability 4.2 t (W); 6 Yaogan sats mass not published"
+  },
+  "tan0": {
+   "x0": 0.4,
+   "bounds": [
+    -2,
+    5
+   ],
+   "basis": "guidance law"
+  },
+  "tan_rate": {
+   "x0": 0.001,
+   "bounds": [
+    -0.05,
+    0.05
+   ],
+   "basis": "guidance law"
+  }
+ },
+ "header_notes": [
+  "LM-4B TIMELINE mode: stage data + Y51/LEO flight sequence from huijiwiki (sources: World Launch Vehicles 2nd ed. 2007, SAST); all event times hard constraints.",
+  "Terminal-velocity-trim burn (S3 'final velocity correction' to 662.684 s) not modelled: its thrust is unpublished. Insertion reported at S3 shutdown 648.684 s."
+ ],
+ "family_from": "lm3b"
+}

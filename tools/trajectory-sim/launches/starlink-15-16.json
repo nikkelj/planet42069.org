@@ -1,0 +1,227 @@
+{
+ "slug": "starlink-15-16",
+ "title": "Falcon 9 Starlink Group 15-16 (27 V2 Mini Optimized, SLC-4E)",
+ "vehicle": "falcon9",
+ "t0_utc": "2026-10-27T04:45:00Z",
+ "pad": {
+  "lat": 34.632,
+  "lon": -120.611,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/ (SLC-4E, Vandenberg SFB)"
+ },
+ "azimuth_deg": {
+  "value": 155.87,
+  "derived": "launch-plane azimuth tuned (2026-10-25) so the simulated orbit plane reaches i=70.007 deg (SpaceX pre-launch state vector via CelesTrak SupGP): the textbook inertial azimuth 180-asin(cos i/cos lat)=155.45 deg gave i=69.67 deg in the sim because the sim's steering plane is applied to the Earth-rotating launch state; +0.42 deg corrects it",
+  "src": "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-16&FORMAT=json (CelesTrak SupGP 'Starlink G15-16 Pre-Launch', derived from a pre-launch state vector provided by SpaceX; epoch 2026-10-27T05:47:17.38Z)",
+  "check": "inside hazard corridor: NAVAREA XII 737/26 Hazard Area A (alternate window 270445Z-270910Z OCT covers T0) far edge spans bearings 151.8-157.3 deg from the pad (centre 154.56 deg, used for the surrogate) https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20737%2F26"
+ },
+ "payload_kg": {
+  "fit": true,
+  "value": null,
+  "note": "FITTED within 13.0-21.6 t so the published SECO-1 time delivers the SpaceX-sourced parking orbit; SpaceX does not publish Starlink stack mass"
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 159.0,
+   "derived": "perigee of SECO-1 parking orbit: SECO-1 (T+8:39) at perigee, SES-2 (T+53:01) at apogee per SpaceX timeline -> coast 2662 s = half period -> a=6590.0 km; r_p = 2a - r_a"
+  },
+  "apoapsis_alt_km": {
+   "value": 264.7,
+   "src": "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-16&FORMAT=json (CelesTrak SupGP 'Starlink G15-16 Pre-Launch', derived from a pre-launch state vector provided by SpaceX; epoch 2026-10-27T05:47:17.38Z): deploy orbit 252.1 x 264.7 km (mean elements, above equatorial radius), i 70.007 deg; SES-2 at apogee raises perigee only, so parking apogee = deploy apogee (DERIVED)"
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 2,
+  "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude (~3 km difference at ~22N, accepted via 1 km-weight)"
+ },
+ "header_notes": [
+  "Not flown: LL2 NET 2026-10-27T04:45Z (Mon Oct 26 9:45 pm PDT), status Go; Spaceflight Now agrees (B1082.26, OCISLY). File continues past SECO-1 through SES-2/SECO-2 to payload deploy (POST-CUTOFF lines).",
+  "Published timeline (SpaceX): Max-Q 1:08, MECO 2:26, stage sep 2:30, SES-1 2:36, fairing 2:56, SECO-1 8:39, SES-2 53:01, SECO-2 53:03, deploy 1:01:53.",
+  "Target orbit: SpaceX pre-launch state vector (CelesTrak SupGP starlink-g15-16): deploy 252 x 265 km, i 70.007 deg. Deploy epoch 05:47:17Z = T+1:02:17 vs SpaceX page 1:01:53 (24 s, noted)."
+ ],
+ "final_cutoff_s": {
+  "value": 519,
+  "src": "https://www.spacex.com/launches/sl-15-16 SECO-1 T+00:08:39"
+ },
+ "knots": [
+  {
+   "event": "MECO (F9 family telemetry, Iridium NEXT-7)",
+   "t_s": 146,
+   "alt_km": 63.98,
+   "range_km": 58.6,
+   "alt_sigma_km": 3,
+   "range_sigma_km": 10,
+   "src": "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207 (SpaceX webcast telemetry; FAMILY stand-in, not this flight)"
+  },
+  {
+   "event": "SES-1 (F9 family telemetry)",
+   "t_s": 156,
+   "alt_km": 73.78,
+   "range_km": 74.8,
+   "alt_sigma_km": 3,
+   "range_sigma_km": 10,
+   "src": "same"
+  },
+  {
+   "event": "Fairing sep (F9 family telemetry)",
+   "t_s": 176,
+   "alt_km": 91.15,
+   "range_km": 108.7,
+   "alt_sigma_km": 3,
+   "range_sigma_km": 10,
+   "src": "same"
+  }
+ ],
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "vertical_rise_s": {
+    "value": 9.713597,
+    "bounds": [
+     4,
+     30
+    ],
+    "basis": "ASSUMPTION bound (F9 pitch-over time unpublished)"
+   },
+   "kick_deg": {
+    "value": 3.4957,
+    "bounds": [
+     0.2,
+     10
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "payload_kg": {
+    "value": 16899.035141,
+    "bounds": [
+     13000,
+     21600
+    ],
+    "basis": "27 V2 Mini Optimized: ~575 kg each community-reported (spacex.com.pl) = 15.5 t; MaxQ lists 800 kg each = 21.6 t (upper bound). Mass not published by SpaceX"
+   },
+   "tan0": {
+    "value": 0.461358,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": 0.000985,
+    "bounds": [
+     -0.05,
+     0.05
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "cd": 0.4
+  },
+  "knot_residuals": [
+   {
+    "event": "MECO (F9 family telemetry, Iridium NEXT-7)",
+    "t_pub": 146,
+    "t_sim": 146.0,
+    "alt_pub": 63.98,
+    "alt_sim": 66.53,
+    "rng_pub": 58.6,
+    "rng_sim": 85.6
+   },
+   {
+    "event": "SES-1 (F9 family telemetry)",
+    "t_pub": 156,
+    "t_sim": 156.0,
+    "alt_pub": 73.78,
+    "alt_sim": 76.55,
+    "rng_pub": 74.8,
+    "rng_sim": 107.5
+   },
+   {
+    "event": "Fairing sep (F9 family telemetry)",
+    "t_pub": 176,
+    "t_sim": 176.0,
+    "alt_pub": 91.15,
+    "alt_sim": 94.62,
+    "rng_pub": 108.7,
+    "rng_sim": 152.3
+   }
+  ],
+  "final": {
+   "alt_km": 158.98230154349747,
+   "fpa_deg": -0.0004333820296766136,
+   "sma_err_km": -0.03665395303722471,
+   "mass_kg": 24053.1
+  },
+  "cost": 19.95307323182329,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "Stage 1 (9x Merlin 1D)",
+     "loaded_kg": 410900,
+     "burned_kg": 392572,
+     "residual_kg": 18328,
+     "dry_kg": 22200,
+     "flag": null
+    },
+    {
+     "name": "Stage 2 (1x Merlin Vacuum)",
+     "loaded_kg": 107500,
+     "burned_kg": 104346,
+     "residual_kg": 3154,
+     "dry_kg": 4000,
+     "flag": null
+    }
+   ],
+   "glow_kg": 563399
+  }
+ },
+ "post_cutoff": {
+  "drag": {
+   "cd": {
+    "value": 0.4,
+    "assumption": "same Cd as the ascent fit (fixed 0.4)"
+   },
+   "area_m2": {
+    "value": 10.75,
+    "derived": "pi*(3.7 m/2)^2, Falcon 9 diameter (vehicle config)"
+   }
+  },
+  "burns": [
+   {
+    "name": "SES-2/SECO-2 (MVac restart)",
+    "t_ign_s": {
+     "value": 3181,
+     "src": "https://www.spacex.com/launches/sl-15-16 SES-2 T+00:53:01"
+    },
+    "duration_s": {
+     "value": 2,
+     "src": "https://www.spacex.com/launches/sl-15-16 SECO-2 T+00:53:03 (SES-2 to SECO-2)"
+    },
+    "thrust_N": null,
+    "isp_s": {
+     "value": 348,
+     "src": "https://en.wikipedia.org/wiki/Falcon_9#Specifications"
+    },
+    "target_perigee_km": {
+     "value": 252.1,
+     "src": "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-16&FORMAT=json deploy orbit 252.1 x 264.7 km (SpaceX pre-launch state vector)"
+    },
+    "basis": "timing from SpaceX timeline; thrust solved (throttle unpublished) so the 2 s burn raises perigee to the SpaceX/CelesTrak deploy perigee 252.1 km."
+   }
+  ],
+  "deploy": {
+   "t_s": {
+    "value": 3713,
+    "src": "https://www.spacex.com/launches/sl-15-16 Starlink satellites deploy T+01:01:53"
+   },
+   "src": "SpaceX sl-15-16 timeline: deploy T+01:01:53",
+   "label": "Starlink stack deploy"
+  },
+  "notes": [
+   "CelesTrak SupGP deploy-state epoch 05:47:17Z = T+3737 s, 24 s after SpaceX's published deploy; SpaceX time used.",
+   "Perigee/apogee are osculating (r - 6378.137 km) and will differ by a few km from CelesTrak mean elements."
+  ]
+ }
+}
