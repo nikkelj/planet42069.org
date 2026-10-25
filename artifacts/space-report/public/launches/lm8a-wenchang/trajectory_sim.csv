@@ -8,6 +8,7 @@
 # Target (see launch config): insertion 700 km, apoapsis 700 km, fpa 0, launch azimuth 140.40 deg; payload 5000 kg.
 # Pad: 19.597275N 110.930753E. Frame: WGS-84 ECEF, positions km, velocities km/s (Earth-relative).
 # T0 used: 2026-10-25T02:03:00Z. Re-run with another T0 by shifting utc_iso only; ECEF geometry is Earth-fixed.
+# POST-CUTOFF: file ends at final cutoff T+763.0 s = orbit insertion (deploy time unpublished: CASC/CALT did not publish a payload-separation time; payload and orbit unannounced).
 elapsed_s,utc_iso,lat_deg,lon_deg,altitude_km,range_along_track_km,x_ecef_km,y_ecef_km,z_ecef_km,vx_ecef_km_s,vy_ecef_km_s,vz_ecef_km_s,rel_vel_km_s,source
 0.000,2026-10-25T02:03:00Z,19.5972750,110.9307530,0.000,0.000,-2147.343405,5614.292573,2125.749813,0.000000,0.000000,0.000000,0.000000,sim3dof-lm8a
 5.000,2026-10-25T02:03:05Z,19.5972719,110.9307529,0.040,0.000,-2147.356745,5614.327477,2125.762754,-0.005414,0.014172,0.005255,0.016055,sim3dof-lm8a

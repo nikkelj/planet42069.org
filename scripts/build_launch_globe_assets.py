@@ -14,9 +14,18 @@ import csv, json, sys, os
 ROOT = os.path.join(os.path.dirname(__file__), "..", "artifacts", "space-report", "public")
 MAXP = 600
 
+COAST_STEP_S = 30  # post-cutoff coast rows (sims run through payload deploy) are thinned to keep the globe fast
+
 def lite(path):
     with open(path) as f:
         rows = list(csv.DictReader(l for l in f if not l.startswith("#")))
+    asc = [r for r in rows if not r["source"].endswith("-coast")]
+    coast = [r for r in rows if r["source"].endswith("-coast")]
+    if coast:  # keep powered/ascent rows, thin the long coast (always keep its last row = deploy)
+        keep = [r for r in coast if float(r["elapsed_s"]) % COAST_STEP_S == 0]
+        if not keep or keep[-1] is not coast[-1]:
+            keep.append(coast[-1])
+        rows = sorted(asc + keep, key=lambda r: float(r["elapsed_s"]))
     step = max(1, -(-len(rows) // MAXP))
     pick = rows[::step]
     if pick[-1] is not rows[-1]:
