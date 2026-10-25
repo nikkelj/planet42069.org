@@ -1,0 +1,137 @@
+{
+ "id": "lm6a",
+ "name": "Long March 6A",
+ "cd": {
+  "value": 0.66658,
+  "derived": "FITTED LM-3B family Cd transferred (aero only: similar 3.35 m core + strap-on layout). Engine/timing parameters NOT transferred: LM-6A/8A fly YF-100/YF-115 (kerolox), no fitted vehicle shares them and no event sequence is published.",
+  "previous": {
+   "value": 0.4,
+   "assumption": "not published"
+  }
+ },
+ "glow_kg": {
+  "value": 530000,
+  "src": "https://en.wikipedia.org/wiki/Long_March_6A"
+ },
+ "stages": [
+  {
+   "name": "Solid boosters (4)",
+   "count": {
+    "value": 4,
+    "src": "https://en.wikipedia.org/wiki/Long_March_6A"
+   },
+   "parallel": true,
+   "diameter_m": {
+    "value": 2.0,
+    "src": "https://en.wikipedia.org/wiki/Long_March_6A"
+   },
+   "propellant_kg": {
+    "value": 64000,
+    "derived": "geometry: pi*(1.0 m)^2*15.1 m (W length) * 0.75 fill ASSUMED * 1.8 t/m3 HTPB ASSUMED"
+   },
+   "dry_kg": {
+    "value": 8000,
+    "assumption": "case ~11% ASSUMED"
+   },
+   "thrust_vac_N": {
+    "value": 1214000,
+    "src": "https://en.wikipedia.org/wiki/Long_March_6A",
+    "note": "per booster, single value used SL/vac"
+   },
+   "isp_vac_s": {
+    "value": 265,
+    "assumption": "typical HTPB booster, not published"
+   }
+  },
+  {
+   "name": "Stage 1",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://en.wikipedia.org/wiki/Long_March_6A"
+   },
+   "propellant_kg": {
+    "value": 185500,
+    "derived": "budget closure to GLOW 530 t (W): boosters 4x(64+8) t, core 185.5+14 t, S2 34+4 t, payload 3 t, fairing 1.5 t"
+   },
+   "dry_kg": {
+    "value": 14000,
+    "assumption": "not published"
+   },
+   "thrust_sl_N": {
+    "value": 2400000,
+    "src": "https://en.wikipedia.org/wiki/Long_March_8",
+    "note": "2x YF-100 SL (same engine as LM-8)"
+   },
+   "thrust_vac_N": {
+    "value": 2680000,
+    "src": "https://en.wikipedia.org/wiki/Long_March_8",
+    "note": "2x YF-100 vac"
+   },
+   "isp_vac_s": {
+    "value": 335,
+    "src": "https://en.wikipedia.org/wiki/Long_March_6A"
+   }
+  },
+  {
+   "name": "Stage 2",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://en.wikipedia.org/wiki/Long_March_6A"
+   },
+   "coast_before_s": {
+    "value": 3,
+    "assumption": "not published"
+   },
+   "propellant_kg": {
+    "value": 34000,
+    "derived": "budget closure to GLOW 530 t (W): boosters 4x(64+8) t, core 185.5+14 t, S2 34+4 t, payload 3 t, fairing 1.5 t (S2 ASSUMED)"
+   },
+   "dry_kg": {
+    "value": 4000,
+    "assumption": "not published"
+   },
+   "thrust_vac_N": {
+    "value": 180000,
+    "src": "https://en.wikipedia.org/wiki/Long_March_6A"
+   },
+   "isp_vac_s": {
+    "value": 341.5,
+    "src": "https://en.wikipedia.org/wiki/Long_March_6A"
+   }
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 1500,
+   "assumption": "not published"
+  },
+  "jettison_alt_km": {
+   "value": 110,
+   "assumption": "default rule"
+  }
+ },
+ "guidance": {
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "not published"
+  },
+  "linear_tangent_from_stage": 1,
+  "kick_grid": [
+   0.5,
+   1.5,
+   3
+  ],
+  "x0": [
+   2.5,
+   0.6,
+   0.002
+  ],
+  "vertical_rise_until_vrel_mps": {
+   "value": 60,
+   "assumption": "pitch-over once Earth-relative speed reaches 60 m/s; not published"
+  }
+ },
+ "header_notes": [
+  "LM-6A: thrust/Isp/GLOW/booster count+size from Wikipedia; ALL propellant/dry masses DERIVED by budget closure or ASSUMED (none published). LOW confidence."
+ ]
+}

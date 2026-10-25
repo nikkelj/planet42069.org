@@ -1,0 +1,152 @@
+{
+ "id": "falcon9",
+ "name": "SpaceX Falcon 9 Block 5 (reusable first stage, droneship recovery) — TIMELINE mode",
+ "stages": [
+  {
+   "name": "Stage 1 (9x Merlin 1D)",
+   "propellant_kg": {
+    "value": 410900,
+    "derived": "Block 5 LOX 287,400 kg + RP-1 123,500 kg tank capacities (https://en.wikipedia.org/wiki/Falcon_9_Block_5#Specifications, citing Espace & Exploration No.39)"
+   },
+   "dry_kg": {
+    "value": 22200,
+    "src": "https://en.wikipedia.org/wiki/Falcon_9_Block_5#Specifications (first stage empty mass)"
+   },
+   "thrust_sl_N": {
+    "value": 7607000,
+    "src": "https://en.wikipedia.org/wiki/Falcon_9#Specifications (7,607 kN SL); SpaceX Falcon User's Guide https://www.spacex.com/media/falcon-users-guide-2021-09.pdf"
+   },
+   "thrust_vac_N": {
+    "value": 8227000,
+    "src": "https://en.wikipedia.org/wiki/Falcon_9#Specifications (8,227 kN vac)"
+   },
+   "isp_vac_s": {
+    "value": 312,
+    "src": "https://en.wikipedia.org/wiki/Falcon_9#Specifications (312 s vac)"
+   },
+   "diameter_m": {
+    "value": 3.7,
+    "src": "https://en.wikipedia.org/wiki/Falcon_9"
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "https://www.spacex.com/launches/sl-15-16 (SpaceX mission timeline, also content.spacex.com/api/spacex-website/missions/sl-15-16)"
+   },
+   "cutoff_s": {
+    "value": 146,
+    "src": "https://www.spacex.com/launches/sl-15-16 (SpaceX mission timeline, also content.spacex.com/api/spacex-website/missions/sl-15-16) MECO T+00:02:26"
+   },
+   "separation_s": {
+    "value": 150,
+    "src": "https://www.spacex.com/launches/sl-15-16 (SpaceX mission timeline, also content.spacex.com/api/spacex-website/missions/sl-15-16) stage separation T+00:02:30"
+   },
+   "note": "TIMELINE: mdot = F_vac/(Isp_vac g0) = 2,689 kg/s at full published thrust; 146 s burns ~392.6 t of 410.9 t, the ~18 t residual stands in for entry/landing propellant (throttle profile unpublished)"
+  },
+  {
+   "name": "Stage 2 (1x Merlin Vacuum)",
+   "propellant_kg": {
+    "value": 107500,
+    "derived": "Block 5 LOX 75,200 kg + RP-1 32,300 kg tank capacities (https://en.wikipedia.org/wiki/Falcon_9_Block_5#Specifications)"
+   },
+   "dry_kg": {
+    "value": 4000,
+    "src": "https://en.wikipedia.org/wiki/Falcon_9_Block_5#Specifications (second stage empty mass)"
+   },
+   "thrust_vac_N": {
+    "value": 981000,
+    "src": "https://en.wikipedia.org/wiki/Falcon_9#Specifications (981 kN)"
+   },
+   "isp_vac_s": {
+    "value": 348,
+    "src": "https://en.wikipedia.org/wiki/Falcon_9#Specifications (348 s)"
+   },
+   "diameter_m": {
+    "value": 5.2,
+    "src": "fairing diameter 5.2 m (https://en.wikipedia.org/wiki/Falcon_9#Payload_fairing); used as drag reference diameter for whole stack"
+   },
+   "ignition_s": {
+    "value": 156,
+    "src": "https://www.spacex.com/launches/sl-15-16 (SpaceX mission timeline, also content.spacex.com/api/spacex-website/missions/sl-15-16) SES-1 T+00:02:36"
+   },
+   "cutoff_s": {
+    "value": 519,
+    "src": "https://www.spacex.com/launches/sl-15-16 (SpaceX mission timeline, also content.spacex.com/api/spacex-website/missions/sl-15-16) SECO-1 T+00:08:39 (overridden per launch by final_cutoff_s)"
+   },
+   "thrust_sl_N": {
+    "value": 981000,
+    "src": "https://en.wikipedia.org/wiki/Falcon_9#Specifications (981 kN)"
+   }
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 1900,
+   "src": "https://en.wikipedia.org/wiki/Falcon_9#Payload_fairing (~1,900 kg)"
+  },
+  "jettison_time_s": {
+   "value": 176,
+   "src": "https://www.spacex.com/launches/sl-15-16 (SpaceX mission timeline, also content.spacex.com/api/spacex-website/missions/sl-15-16) fairing separation T+00:02:56"
+  }
+ },
+ "guidance": {
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "not published"
+  },
+  "linear_tangent_from_stage": 1
+ },
+ "header_notes": [
+  "Falcon 9 Block 5 masses from Wikipedia 'Falcon 9 Block 5' spec table; thrust/Isp from Wikipedia 'Falcon 9' spec table (citing SpaceX).",
+  "TIMELINE mode (tuned 2026-10-25): MECO 146 s, stage sep 150 s, SES-1 156 s, fairing 176 s, SECO-1 (final cutoff) from SpaceX's sl-15-16 timeline are hard events.",
+  "Throttle profile not published: full published thrust throughout; unburned stage-1 residual stands in for entry/landing propellant."
+ ],
+ "timeline": true,
+ "fixed_params": {
+  "cd": {
+   "value": 0.4,
+   "assumption": "not published; generic slender-launcher Cd (same as Electron/previous F9 run). Not fitted: only first-stage family knots constrain drag, which would make Cd degenerate with the kick"
+  }
+ },
+ "fit": {
+  "vertical_rise_s": {
+   "x0": 12,
+   "bounds": [
+    4,
+    30
+   ],
+   "basis": "ASSUMPTION bound (F9 pitch-over time unpublished)"
+  },
+  "kick_deg": {
+   "x0": 1.5,
+   "bounds": [
+    0.2,
+    10
+   ],
+   "basis": "ASSUMPTION bound"
+  },
+  "payload_kg": {
+   "x0": 15525,
+   "bounds": [
+    13000,
+    21600
+   ],
+   "basis": "27 V2 Mini Optimized: ~575 kg each community-reported (spacex.com.pl) = 15.5 t; MaxQ lists 800 kg each = 21.6 t (upper bound). Mass not published by SpaceX"
+  },
+  "tan0": {
+   "x0": 0.5,
+   "bounds": [
+    -2,
+    5
+   ],
+   "basis": "guidance law"
+  },
+  "tan_rate": {
+   "x0": 0.002,
+   "bounds": [
+    -0.05,
+    0.05
+   ],
+   "basis": "guidance law"
+  }
+ }
+}

@@ -1,0 +1,91 @@
+{
+  "slug": "electron-hawkeye360",
+  "title": "Electron 'We're Not Hawking Around' (3x HawkEye 360)",
+  "vehicle": "electron",
+  "t0_utc": "2026-10-23T07:11:00Z",
+  "pad": {
+    "lat": -39.262833,
+    "lon": 177.864469,
+    "alt_m": 0,
+    "src": "https://ll.thespacedevs.com/2.3.0/launches/ (LC-1A)"
+  },
+  "azimuth_deg": {
+    "value": 189.06,
+    "derived": "180-asin(cos97/cos lat), i=97 SSO"
+  },
+  "payload_kg": {
+    "value": 180,
+    "assumption": "3 HawkEye 360 sats ~30 kg each (ASSUMED class value) + Kick Stage dry 40 kg (guide) + kick propellant ~50 kg (ASSUMED)"
+  },
+  "target": {
+    "insertion_alt_km": {
+      "value": 230,
+      "assumption": "S2 inserts Kick Stage into 'low elliptical orbit' (guide); perigee/insertion altitude ASSUMED"
+    },
+    "apoapsis_alt_km": {
+      "value": 520,
+      "assumption": "apoapsis at 520 km deployment altitude, Kick Stage circularizes"
+    },
+    "cutoff": "energy"
+  },
+  "header_notes": [
+    "Flown: LL2 Success. File ends at S2 cutoff (insertion); Kick Stage circularization not simulated."
+  ],
+  "post_cutoff_draft_unmerged": {
+    "drag": {
+      "cd": {
+        "value": 2.2,
+        "assumption": "free-molecular flat-plate Cd for the small Kick Stage stack"
+      },
+      "area_m2": {
+        "value": 1.13,
+        "derived": "pi*(1.2 m/2)^2, Electron diameter (vehicle config)"
+      }
+    },
+    "burns": [
+      {
+        "name": "Kick Stage (Curie) circularization",
+        "t_ign_s": "apoapsis",
+        "center_on_apoapsis": true,
+        "mass_after_drop_kg": {
+          "value": 180,
+          "derived": "Kick Stage + payload stack = launch payload_kg 180 (ASSUMED, see payload_kg) after S2 separation"
+        },
+        "thrust_N": {
+          "value": 120,
+          "src": "https://en.wikipedia.org/wiki/Rocket_Lab_Electron (Curie max thrust 0.12 kN, citing Popular Mechanics 2018)"
+        },
+        "duration_s": null,
+        "isp_s": {
+          "value": 310,
+          "assumption": "Curie Isp unpublished; HyperCurie's published 310 s used"
+        },
+        "target_perigee_km": {
+          "value": 520,
+          "src": "https://rocketlabcorp.com/missions/launches/hawkeye-360/ (520 km LEO, 97 deg)"
+        },
+        "basis": "Rocket Lab publishes the orbit (520 km, 97 deg) but not Curie burn timing; burn ASSUMED centred on apoapsis, duration solved at 120 N to circularize at 520 km."
+      }
+    ],
+    "deploy": {
+      "t_s": "after_last_burn",
+      "src": "modelled at Curie cutoff; Rocket Lab publishes no deploy time. Spacelaunchschedule's update log reports payload separation ~08:04Z (T+~53 min) https://www.spacelaunchschedule.com/launch/electron-were-not-hawking-around-3x-hawkeye-360/",
+      "label": "HAWK satellites deploy (modelled)"
+    },
+    "notes": [
+      "Third-party payload-separation report ~08:04Z = T+~3180 s is EARLIER than the modelled apoapsis: with the ASSUMED 230 km S2 perigee, apoapsis is ~T+55 min. Treat the deploy time as uncertain by several minutes; insertion perigee is an assumption, not a source.",
+      "Inclination is whatever the sim's azimuth gives; Rocket Lab states 97 deg."
+    ]
+  },
+  "post_cutoff": {
+    "deploy": {
+      "t_s": null,
+      "note": "Rocket Lab publishes no deploy or Curie burn time (third-party log: separation ~08:04Z), and this untuned energy-mode ascent ends in a ~216 x 590 km (osculating) orbit vs Rocket Lab's 520 km, so a Kick Stage coast would not match sources; deferred until Electron is re-tuned"
+    },
+    "drag": {
+      "cd": 2.2,
+      "area_m2": 1.13,
+      "basis": "ASSUMPTION: free-molecular Cd 2.2, frontal area of 1.2 m-diameter upper stage; drag negligible at these altitudes"
+    }
+  }
+}

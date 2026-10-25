@@ -1,0 +1,135 @@
+{
+ "id": "lm8a",
+ "name": "Long March 8A",
+ "cd": {
+  "value": 0.66658,
+  "derived": "FITTED LM-3B family Cd transferred (aero only: similar 3.35 m core + strap-on layout). Engine/timing parameters NOT transferred: LM-6A/8A fly YF-100/YF-115 (kerolox), no fitted vehicle shares them and no event sequence is published.",
+  "previous": {
+   "value": 0.4,
+   "assumption": "not published"
+  }
+ },
+ "glow_kg": {
+  "value": 371000,
+  "src": "https://en.wikipedia.org/wiki/Long_March_8"
+ },
+ "stages": [
+  {
+   "name": "Boosters (2)",
+   "count": 2,
+   "parallel": true,
+   "diameter_m": {
+    "value": 2.25,
+    "src": "https://en.wikipedia.org/wiki/Long_March_8"
+   },
+   "propellant_kg": {
+    "value": 71100,
+    "derived": "LM-8 GLOW 356 t vs core-only 198 t (W) => booster gross 79 t each; LM-8A GLOW 371 t => +15 t on larger 3.35 m S2; x0.90 fraction ASSUMED"
+   },
+   "dry_kg": {
+    "value": 7900,
+    "derived": "79 t gross - prop"
+   },
+   "thrust_sl_N": {
+    "value": 1200000,
+    "src": "https://en.wikipedia.org/wiki/Long_March_8"
+   },
+   "thrust_vac_N": {
+    "value": 1340000,
+    "src": "https://en.wikipedia.org/wiki/Long_March_8"
+   },
+   "isp_vac_s": {
+    "value": 335,
+    "src": "https://en.wikipedia.org/wiki/Long_March_8"
+   }
+  },
+  {
+   "name": "Stage 1",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://en.wikipedia.org/wiki/Long_March_8"
+   },
+   "propellant_kg": {
+    "value": 158700,
+    "derived": "core gross = 198 t - 3 t payload - 1.5 t fairing - 21 t LM-8 S2 (LM-3B S3-class 18.2+2.8 t ASSUMED) = 172.5 t; x0.92 ASSUMED"
+   },
+   "dry_kg": {
+    "value": 13800,
+    "derived": "172.5 - 158.7"
+   },
+   "thrust_sl_N": {
+    "value": 2400000,
+    "src": "https://en.wikipedia.org/wiki/Long_March_8"
+   },
+   "thrust_vac_N": {
+    "value": 2680000,
+    "src": "https://en.wikipedia.org/wiki/Long_March_8"
+   },
+   "isp_vac_s": {
+    "value": 335,
+    "src": "https://en.wikipedia.org/wiki/Long_March_8"
+   }
+  },
+  {
+   "name": "Stage 2 (2x YF-75H)",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://en.wikipedia.org/wiki/Long_March_8"
+   },
+   "coast_before_s": {
+    "value": 3,
+    "assumption": "not published"
+   },
+   "propellant_kg": {
+    "value": 31700,
+    "derived": "S2 gross 21+15=36 t (LM-8 GLOW 356 t vs core-only 198 t (W) => booster gross 79 t each; LM-8A GLOW 371 t => +15 t on larger 3.35 m S2); x0.88 ASSUMED"
+   },
+   "dry_kg": {
+    "value": 4300,
+    "derived": "36 - 31.7"
+   },
+   "thrust_vac_N": {
+    "value": 200000,
+    "src": "https://en.wikipedia.org/wiki/Long_March_8"
+   },
+   "isp_vac_s": {
+    "value": 442.6,
+    "src": "https://en.wikipedia.org/wiki/Long_March_8"
+   }
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 1500,
+   "assumption": "not published"
+  },
+  "jettison_alt_km": {
+   "value": 110,
+   "assumption": "default rule"
+  }
+ },
+ "guidance": {
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "not published"
+  },
+  "linear_tangent_from_stage": 1,
+  "kick_grid": [
+   0.5,
+   1.5,
+   3
+  ],
+  "x0": [
+   2.5,
+   0.6,
+   0.002
+  ],
+  "vertical_rise_until_vrel_mps": {
+   "value": 60,
+   "assumption": "pitch-over once Earth-relative speed reaches 60 m/s; not published"
+  }
+ },
+ "header_notes": [
+  "LM-8A: thrusts/Isp/GLOW from Wikipedia; stage masses DERIVED from LM-8 vs core-only GLOW differences plus ASSUMED propellant fractions."
+ ]
+}
