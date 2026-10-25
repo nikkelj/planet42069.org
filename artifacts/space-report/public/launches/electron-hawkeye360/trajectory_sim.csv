@@ -9,6 +9,7 @@
 # Target (see launch config): insertion 230 km, apoapsis 520 km, fpa 0, launch azimuth 189.06 deg; payload 180 kg.
 # Pad: -39.262833N 177.864469E. Frame: WGS-84 ECEF, positions km, velocities km/s (Earth-relative).
 # T0 used: 2026-10-23T07:11:00Z. Re-run with another T0 by shifting utc_iso only; ECEF geometry is Earth-fixed.
+# POST-CUTOFF: file ends at final cutoff T+534.5 s = orbit insertion (deploy time unpublished: Rocket Lab publishes no deploy or Curie burn time (third-party log: separation ~08:04Z), and this untuned energy-mode ascent ends in a ~216 x 590 km (osculating) orbit vs Rocket Lab's 520 km, so a Kick Stage coast would not match sources; deferred until Electron is re-tuned).
 elapsed_s,utc_iso,lat_deg,lon_deg,altitude_km,range_along_track_km,x_ecef_km,y_ecef_km,z_ecef_km,vx_ecef_km_s,vy_ecef_km_s,vz_ecef_km_s,rel_vel_km_s,source
 0.000,2026-10-23T07:11:00Z,-39.2628330,177.8644690,0.000,0.000,-4941.477978,184.264336,-4014.951315,0.000000,0.000000,0.000000,0.000000,sim3dof-electron
 5.000,2026-10-23T07:11:05Z,-39.2628279,177.8644689,0.050,0.001,-4941.517355,184.265813,-4014.982791,-0.015956,0.000601,-0.012757,0.020438,sim3dof-electron

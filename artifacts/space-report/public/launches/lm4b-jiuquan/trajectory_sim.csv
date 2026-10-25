@@ -10,6 +10,7 @@
 # Target (see launch config): insertion 500 km, apoapsis 500 km, fpa 0, launch azimuth 109.00 deg; payload 1571 kg.
 # Pad: 40.960482N 100.298059E. Frame: WGS-84 ECEF, positions km, velocities km/s (Earth-relative).
 # T0 used: 2026-10-23T19:25:00Z. Re-run with another T0 by shifting utc_iso only; ECEF geometry is Earth-fixed.
+# POST-CUTOFF: file ends at final cutoff T+648.7 s = orbit insertion (deploy time unpublished: CASC/SAST did not publish Y81's separation time; the Y51 sequence's 14 s velocity-trim burn to T+662.7 s is also not modelled (thrust unpublished)).
 elapsed_s,utc_iso,lat_deg,lon_deg,altitude_km,range_along_track_km,x_ecef_km,y_ecef_km,z_ecef_km,vx_ecef_km_s,vy_ecef_km_s,vz_ecef_km_s,rel_vel_km_s,source
 0.000,2026-10-23T19:25:00Z,40.9604820,100.2980590,0.000,0.000,-862.286182,4745.768256,4159.110080,0.000000,0.000000,0.000000,0.000000,sim3dof-lm4b
 5.000,2026-10-23T19:25:05Z,40.9604775,100.2980589,0.027,0.000,-862.289908,4745.788793,4159.127539,-0.001521,0.008388,0.007136,0.011117,sim3dof-lm4b
