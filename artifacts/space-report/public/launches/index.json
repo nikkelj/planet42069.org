@@ -6,7 +6,7 @@
     },
     "sim": {
       "title": "First-principles 3DOF sim",
-      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry. Long March vehicles run in timeline mode: published ignition/cutoff/separation times are hard events, burn rates from published thrust/Isp, and remaining free parameters fitted (bounded least squares) to the CALT manual LM-3B profile (altitude within 3.4 km at all events). Falcon 9: Block 5 masses and Merlin thrust/Isp from open sources, stage-1 cutoff at the published MECO with the unburned remainder standing in for landing propellant; checked against SpaceX's SECO-1 time and Falcon 9 webcast telemetry."
+      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry. Long March vehicles run in timeline mode: published ignition/cutoff/separation times are hard events, burn rates from published thrust/Isp, and remaining free parameters fitted (bounded least squares) to the CALT manual LM-3B profile (altitude within 3.4 km at all events). Falcon 9 also runs in timeline mode: SpaceX's published MECO, stage-separation, SES-1, fairing and SECO-1 times are hard events, Block 5 masses and Merlin thrust/Isp from open sources, and steering and payload are fitted (bounded least squares) to the parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP), along an azimuth inside the NAVAREA hazard corridor."
     },
     "methods_doc": "/launches/METHODS.md"
   },
@@ -145,6 +145,16 @@
       "id": "sfn-schedule",
       "title": "Spaceflight Now launch schedule",
       "url": "https://spaceflightnow.com/launch-schedule/"
+    },
+    {
+      "id": "celestrak-supgp-g15-16",
+      "title": "CelesTrak SupGP: Starlink G15-16 pre-launch elements (from a SpaceX-supplied state vector)",
+      "url": "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-16&FORMAT=json"
+    },
+    {
+      "id": "xinhua-lm8a-y12",
+      "title": "Xinhua: Long March 8A launches SatNet LEO Group 28 (25 Oct 2026)",
+      "url": "https://www.news.cn/politics/20261025/3573644b269e466f83510360cb84eff4/c.html"
     }
   ],
   "launches": [
@@ -250,11 +260,11 @@
     },
     {
       "slug": "lm8a-wenchang",
-      "name": "Unknown payload",
+      "name": "SatNet LEO Group 28",
       "vehicle": "Long March 8A",
-      "t0_utc": "2026-10-25T01:50:00Z",
-      "status": "Go",
-      "phase": "upcoming",
+      "t0_utc": "2026-10-25T02:03:00Z",
+      "status": "Success",
+      "phase": "recent",
       "files": {
         "csv": "/launches/lm8a-wenchang/trajectory.csv",
         "kml": "/launches/lm8a-wenchang/trajectory.kml",
@@ -267,20 +277,23 @@
       "sources": [
         "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
         "https://www.sealagom.com/navarea/11/message/25242/",
-        "https://ll.thespacedevs.com/2.3.0/launches/"
+        "https://ll.thespacedevs.com/2.3.0/launches/",
+        "https://www.news.cn/politics/20261025/3573644b269e466f83510360cb84eff4/c.html"
       ],
       "method": {
         "csv": "event-surrogate parametric (published event table + azimuth)",
         "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
       },
       "reference_ids": [
+        "xinhua-lm8a-y12",
         "calt-lm3a",
         "wp-lm3b",
         "wp-lm8",
         "navarea-xi-26-0481",
         "ll2",
         "kml"
-      ]
+      ],
+      "note": "Flown 2026-10-25T02:03Z (13 min after the planned 01:50Z); pre-flight ILLUSTRATIVE geometry re-timed to the actual liftoff."
     },
     {
       "slug": "starlink-15-16",
@@ -304,14 +317,16 @@
         "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
         "https://en.wikipedia.org/wiki/Falcon_9_Block_5",
         "https://ll.thespacedevs.com/2.3.0/launches/",
-        "https://spaceflightnow.com/launch-schedule/"
+        "https://spaceflightnow.com/launch-schedule/",
+        "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-16&FORMAT=json"
       ],
       "method": {
         "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX event timeline, NAVAREA XII 737/26 azimuth 154.56 deg)",
-        "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance; i=70 deg, azimuth 155.44 deg); ILLUSTRATIVE"
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX sl-15-16 event times (MECO 146 s, sep 150 s, SES-1 156 s, fairing 176 s, SECO-1 519 s) as hard events; steering/payload fitted to the 159 x 265 km, i=70.007 deg parking orbit derived from SpaceX's pre-launch state vector (CelesTrak SupGP); azimuth 155.45 deg (inside NAVAREA XII 737/26 Area A); ILLUSTRATIVE"
       },
       "reference_ids": [
         "spacex-sl-15-16",
+        "celestrak-supgp-g15-16",
         "navarea-xii-737-26",
         "uscg-lnm-56736",
         "mmfr-b3055-26",
