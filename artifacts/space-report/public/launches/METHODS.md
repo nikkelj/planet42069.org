@@ -2,7 +2,7 @@
 
 **Every trajectory here is ILLUSTRATIVE. None of it is telemetry or an official flight path.** Each launch gets two independent estimates, so you can compare them.
 
-## 1. Surrogate (published-profile): `trajectory.csv` / `trajectory.kml`
+## 1. Surrogate (published-profile): `<slug>_<YYYY-MM-DD>_trajectory.csv` / `.kml`
 - **Event knots:** time, altitude and velocity at key events (staging, fairing jettison, cutoff), taken from official vehicle brochures and user manuals (Rocket Lab Electron Payload User's Guide; CALT LM-3A Series User's Manual).
 - **Interpolation:** smooth interpolation between knots, sampled every 5 s.
 - **Ground path:** a constant-azimuth (rhumb) line from the pad. The azimuth comes from NOTAM/maritime hazard areas when available (LM-4B: ZJ385/26, RKRR D3252/26, RJJJ P5065/26; LM-8A: NAVAREA XI 26-0481), otherwise from the target inclination (Electron: 97° SSO → 189°).
@@ -10,7 +10,7 @@
 - **Family stand-in:** when a vehicle has no published profile (LM-4B, LM-6A, LM-8A), the LM-3B profile from the CALT manual is used. Each file's header says so.
 - **Falcon 9 (Starlink 15-16):** SpaceX publishes event times but no altitude profile, so the altitude and downrange-vs-time curve comes from SpaceX webcast telemetry of a past Falcon 9 Block 5 Vandenberg launch with a droneship landing (Iridium NEXT-7, 2018; MECO at 146 s, the same as 15-16), via shahar603/Telemetry-Data. It is lightly smoothed, and range is integrated from the horizontal speed. The azimuth is the bearing to the centre of the far edge of NAVAREA XII 737/26 Hazard Area A (154.6°). The last 11 s, from the end of the telemetry to SpaceX's published SECO-1 at T+8:39, are extrapolated.
 
-## 2. First-principles 3DOF sim: `trajectory_sim.csv` / `trajectory_sim.kml`
+## 2. First-principles 3DOF sim: `<slug>_<YYYY-MM-DD>_trajectory_sim.csv` / `.kml`
 A point-mass ascent simulator (`ascent3dof.py`):
 - Rotating WGS-84 Earth with J2 gravity, integrated with RK4 at a 0.5 s step (timeline-mode runs land every published event exactly, since cutoffs are hard events rather than energy triggers).
 - US Standard Atmosphere 1976 density for drag. Thrust is interpolated from sea-level to vacuum values using ambient pressure. Mass flow comes from Isp.

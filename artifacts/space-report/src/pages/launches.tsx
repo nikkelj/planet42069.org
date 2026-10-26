@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/table";
 import {
   emptyManifest,
-  fileNameFromPath,
   launchDownloadName,
   formatUtc,
   loadLaunchDesk,
@@ -45,11 +44,11 @@ function FileLink({ path, launch }: { path: string | null; launch: LaunchEntry }
   if (!path || !href) {
     return <span className="text-muted-foreground/60">—</span>;
   }
-  const filename = fileNameFromPath(path);
+  const filename = launchDownloadName(launch, path);
   return (
     <a
       href={href}
-      download={launchDownloadName(launch, path)}
+      download={filename}
       className="inline-flex items-center gap-1 text-accent underline underline-offset-2 hover:text-primary transition-colors"
     >
       <Download className="w-3 h-3" aria-hidden="true" />

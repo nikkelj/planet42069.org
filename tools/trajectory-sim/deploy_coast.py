@@ -7,10 +7,13 @@ derived or ASSUMPTION). Without a published deploy time (deploy.t_s null) the
 stage is propagated from insertion for TWO revolutions (osculating period at insertion) on the inferred insertion
 orbit, ending labelled 'inferred insertion orbit, +2 revs (deploy time unpublished)'. Idempotent: strips any previous coast rows first.
 Usage: python3 deploy_coast.py launches/<slug>.json [--outdir DIR]
+Writes the public copies as <slug>_<YYYY-MM-DD>_trajectory_sim.csv and .kml
+(date from the launch t0_utc) under artifacts/space-report/public/launches/<slug>/.
 """
 import json, math, os, sys, argparse, datetime as dt
 import numpy as np
 from ascent3dof import A, MU, WE, G0, val, ecef2geod, rotz, atmos, grav, write_kml
+from names import publish_sim
 
 W = np.array([0, 0, WE])
 
@@ -134,5 +137,7 @@ def main():
     pm = "".join(f"<Placemark><name>{x['event']} T+{x['t_s']:.0f}s (ILLUSTRATIVE)</name><description>alt {x['alt_km']} km, osculating {x['perigee_km']} x {x['apogee_km']} km, i {x['incl_deg']} deg{'; '+x.get('src','') if x.get('src') else ''}{'; '+x.get('note','') if x.get('note') else ''}</description><Point><altitudeMode>absolute</altitudeMode><coordinates>{x['lon']},{x['lat']},{x['alt_km']*1000:.0f}</coordinates></Point></Placemark>" for x in new_ev)
     open(kml, "w").write(k.replace("</Document>", f"<Folder><name>Post-cutoff events (ILLUSTRATIVE)</name>{pm}</Folder></Document>"))
     print(slug, "cutoff", t_cut); [print("  ", x) for x in new_ev]
+    published = publish_sim(slug, L["t0_utc"], fn, kml)
+    print("published", *published)
 
 if __name__ == "__main__": main()

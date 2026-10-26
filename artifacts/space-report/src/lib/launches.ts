@@ -112,6 +112,7 @@ export function fileNameFromPath(path: string): string {
 /**
  * Per-launch download name so files from different launches don't collide,
  * e.g. `starlink-15-16_2026-10-27_trajectory.csv`.
+ * Idempotent: a path that already uses that basename is returned unchanged.
  */
 export function launchDownloadName(
   launch: { slug: string; t0Utc: string },
@@ -120,7 +121,9 @@ export function launchDownloadName(
   const base = fileNameFromPath(path);
   const slug = launch.slug.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   const date = /^\d{4}-\d{2}-\d{2}/.exec(launch.t0Utc)?.[0] ?? "";
-  return [slug, date, base].filter(Boolean).join("_");
+  const prefix = [slug, date].filter(Boolean).join("_");
+  if (!prefix || base === prefix || base.startsWith(`${prefix}_`)) return base;
+  return `${prefix}_${base}`;
 }
 
 function asString(value: unknown): string | null {

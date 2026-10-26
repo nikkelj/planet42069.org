@@ -1,11 +1,13 @@
-import json,csv,matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
-R="/workspace/planet42069.org/artifacts/space-report/public/launches"
+import json,csv,os,matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
+from names import trajectory_basename
+R=os.path.normpath(os.path.join(os.path.dirname(__file__),"..","..","artifacts","space-report","public","launches"))
+DATES={"electron-hawkeye360":"2026-10-23","lm6a-yaogan50-03":"2026-10-23","lm4b-jiuquan":"2026-10-23","lm8a-wenchang":"2026-10-25"}
 def rd(fn):
     rows=[r for r in csv.DictReader(l for l in open(fn) if not l.startswith("#"))]
     return [float(r["elapsed_s"]) for r in rows],[float(r["altitude_km"]) for r in rows]
 fig,ax=plt.subplots(2,3,figsize=(16,9)); ax=ax.ravel()
 for i,s in enumerate(["electron-hawkeye360","lm6a-yaogan50-03","lm4b-jiuquan","lm8a-wenchang"]):
-    a=ax[i]; a.plot(*rd(f"{R}/{s}/trajectory.csv"),"--",label="surrogate (event-based)")
+    a=ax[i]; a.plot(*rd(f"{R}/{s}/{trajectory_basename(s, DATES[s]+'T00:00:00Z')}"),"--",label="surrogate (event-based)")
     a.plot(*rd(f"/tmp/out_before/{s}/{s}_ascent_ecef_5s_sim.csv"),":",c="gray",label="3DOF sim, before tuning")
     a.plot(*rd(f"out/{s}/{s}_ascent_ecef_5s_sim.csv"),label="3DOF sim, tuned")
     if s=="lm4b-jiuquan":

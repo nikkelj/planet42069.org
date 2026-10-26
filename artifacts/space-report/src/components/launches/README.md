@@ -16,7 +16,7 @@ Assets: `public/launches/globe/` holds the 512px placeholders (≈20 KB), which 
 `python3 scripts/build_launch_globe_assets.py [--textures day.jpg night.jpg]`. Run it after each new batch.
 
 Features: day/night shading with the real sun direction for now, city lights, ocean glint, atmosphere rim, and a starfield.
-Tracks are glowing fat lines (solid = recent, dashed = upcoming). Pad markers, an animated trace head, and a per-launch legend
+Tracks are glowing fat lines (solid = recent, dashed = upcoming). Each sim track is the full file, through payload deploy or two revolutions past insertion. Samples on the far side of the earth are drawn dimmer (they would otherwise vanish behind the limb, which for Starlink 15-16 is right at SECO-1). Pad markers, an animated trace head, and a per-launch legend
 toggle are included. You can switch between surrogate, 3DOF sim, or both, and between true altitude (default) and alt ×8. Hover or tap a track for its tooltip.
 Perf: renders on demand, pauses when the tab is hidden or the globe is offscreen, caps DPR at 2, disposes everything on unmount,
 and turns the trace off under prefers-reduced-motion.
