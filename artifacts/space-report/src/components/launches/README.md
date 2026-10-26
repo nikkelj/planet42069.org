@@ -17,7 +17,7 @@ Assets: `public/launches/globe/` holds the 512px placeholders (≈20 KB), which 
 
 Features: day/night shading with the real sun direction for now, city lights, ocean glint, atmosphere rim, and a starfield.
 Tracks are glowing fat lines (solid = recent, dashed = upcoming). Pad markers, an animated trace head, and a per-launch legend
-toggle are included. You can switch between surrogate, 3DOF sim, or both, and between alt ×8 and true altitude. Hover or tap a track for its tooltip.
+toggle are included. You can switch between surrogate, 3DOF sim, or both, and between true altitude (default) and alt ×8. Hover or tap a track for its tooltip.
 Perf: renders on demand, pauses when the tab is hidden or the globe is offscreen, caps DPR at 2, disposes everything on unmount,
 and turns the trace off under prefers-reduced-motion.
 Texture credits are in `index.json` references: `nasa-bluemarble`, `nasa-blackmarble`, `threejs`.

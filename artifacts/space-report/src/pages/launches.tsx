@@ -9,6 +9,7 @@ import {
 import {
   emptyManifest,
   fileNameFromPath,
+  launchDownloadName,
   formatUtc,
   loadLaunchDesk,
   partitionLaunches,
@@ -39,7 +40,7 @@ function statusClass(status: string): string {
   return "bg-muted text-muted-foreground border-muted-foreground/40";
 }
 
-function FileLink({ path }: { path: string | null }) {
+function FileLink({ path, launch }: { path: string | null; launch: LaunchEntry }) {
   const href = publicAssetHref(path);
   if (!path || !href) {
     return <span className="text-muted-foreground/60">—</span>;
@@ -48,7 +49,7 @@ function FileLink({ path }: { path: string | null }) {
   return (
     <a
       href={href}
-      download={filename}
+      download={launchDownloadName(launch, path)}
       className="inline-flex items-center gap-1 text-accent underline underline-offset-2 hover:text-primary transition-colors"
     >
       <Download className="w-3 h-3" aria-hidden="true" />
@@ -76,7 +77,9 @@ function DownloadSet({
   kml,
   note,
   illustrative,
+  launch,
 }: {
+  launch: LaunchEntry;
   id: "surrogate" | "sim";
   label: string;
   csv: string | null;
@@ -92,8 +95,8 @@ function DownloadSet({
         {illustrative && <IllustrativeBadge />}
       </div>
       <div className="mt-1 flex items-center gap-3 flex-wrap">
-        <FileLink path={csv} />
-        <FileLink path={kml} />
+        <FileLink path={csv} launch={launch} />
+        <FileLink path={kml} launch={launch} />
       </div>
       {note && (
         <p
@@ -171,6 +174,7 @@ function LaunchTable({
                     kml={launch.files.kml}
                     note={launch.method.csv}
                     illustrative={launch.illustrative}
+                    launch={launch}
                   />
                   <DownloadSet
                     id="sim"
@@ -179,6 +183,7 @@ function LaunchTable({
                     kml={launch.files.kmlSim}
                     note={launch.method.csvSim}
                     illustrative={launch.illustrative}
+                    launch={launch}
                   />
                   {canView && (
                     <button
