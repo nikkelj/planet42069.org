@@ -330,7 +330,7 @@ describe("Launches page", () => {
     );
     expect(within(surrogate).getByRole("link", { name: "trajectory.kml" })).toHaveAttribute(
       "download",
-      "trajectory.kml",
+      "lm8a-wenchang_2026-10-25_trajectory.kml",
     );
     expect(within(surrogate).getByTestId("method-note-surrogate")).toHaveTextContent(/event-surrogate parametric/i);
 

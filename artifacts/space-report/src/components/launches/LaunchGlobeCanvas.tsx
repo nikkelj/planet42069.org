@@ -99,7 +99,7 @@ export default function LaunchGlobeCanvas({ indexUrl }: { indexUrl: string }) {
   const [err, setErr] = useState<string | null>(null);
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
   const [method, setMethod] = useState<Method>("sim");
-  const [exag, setExag] = useState(true);
+  const [exag, setExag] = useState(false);
   const reduced = useMemo(() => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches, []);
   const [comet, setComet] = useState(!reduced);
   const [tip, setTip] = useState<{ x: number; y: number; html: string[] } | null>(null);
