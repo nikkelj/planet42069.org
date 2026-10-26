@@ -74,6 +74,8 @@ Insertion times moved 741.5→743.5 s (LM-6A) and 761.0→763.0 s (LM-8A).
 ## deploy_coast.py (post-cutoff, through deploy)
 `python3 deploy_coast.py launches/<slug>.json [--outdir DIR]` extends `out/<slug>/` past final cutoff using the launch's `post_cutoff` block
 (drag, burns[], deploy{t_s, src}). If `deploy.t_s` is null, it propagates TWO revolutions on the inferred insertion orbit, ending
-"inferred insertion orbit, +2 revs (deploy time unpublished)". Copy `<slug>_ascent_ecef_5s_sim.csv` / `_ascent_sim.kml` to
-`artifacts/space-report/public/launches/<slug>/trajectory_sim.{csv,kml}`, then run `scripts/build_launch_globe_assets.py`.
-Note: the site's LM-8A files use T0 2026-10-25T02:03Z (retimed); run with t0_utc overridden to that value.
+"inferred insertion orbit, +2 revs (deploy time unpublished)". `deploy_coast.py` then copies those out/ files to
+`artifacts/space-report/public/launches/<slug>/<slug>_<YYYY-MM-DD>_trajectory_sim.csv` and `.kml`
+(the date is the launch `t0_utc`; surrogate files use the same pattern without `_sim`).
+Point `launches/index.json` `files.csv_sim` / `files.kml_sim` at those paths, then run `scripts/build_launch_globe_assets.py`.
+Note: the site's LM-8A files use T0 2026-10-25T02:03Z (retimed); the public date is still 2026-10-25.

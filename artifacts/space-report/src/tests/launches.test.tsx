@@ -4,6 +4,8 @@
  * Current file: { methods, references, launches: [...] }, with surrogate
  * files (csv/kml) and 3DOF sim files (csv_sim/kml_sim). A bare array still loads.
  */
+import fs from "node:fs";
+import path from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { MethodsMarkdown } from "@/components/MethodsMarkdown";
@@ -15,6 +17,7 @@ import {
   loadLaunchIndex,
   parseLaunchIndex,
   partitionLaunches,
+  launchDownloadName,
   publicAssetHref,
   type LaunchManifest,
 } from "@/lib/launches";
@@ -29,8 +32,8 @@ const ARRAY_MANIFEST = [
     status: "Success",
     phase: "recent",
     files: {
-      csv: "/launches/electron-hawkeye360/trajectory.csv",
-      kml: "/launches/electron-hawkeye360/trajectory.kml",
+      csv: "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory.csv",
+      kml: "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory.kml",
     },
     illustrative: true,
     confidence: "low-medium",
@@ -44,8 +47,8 @@ const ARRAY_MANIFEST = [
     status: "Success",
     phase: "recent",
     files: {
-      csv: "/launches/lm6a-yaogan50-03/trajectory.csv",
-      kml: "/launches/lm6a-yaogan50-03/trajectory.kml",
+      csv: "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory.csv",
+      kml: "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory.kml",
     },
     illustrative: true,
     confidence: "low",
@@ -58,8 +61,8 @@ const ARRAY_MANIFEST = [
     status: "Success",
     phase: "recent",
     files: {
-      csv: "/launches/lm4b-jiuquan/trajectory.csv",
-      kml: "/launches/lm4b-jiuquan/trajectory.kml",
+      csv: "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory.csv",
+      kml: "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory.kml",
     },
     illustrative: true,
   },
@@ -71,8 +74,8 @@ const ARRAY_MANIFEST = [
     status: "Go",
     phase: "upcoming",
     files: {
-      csv: "/launches/lm8a-wenchang/trajectory.csv",
-      kml: "/launches/lm8a-wenchang/trajectory.kml",
+      csv: "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory.csv",
+      kml: "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory.kml",
     },
     illustrative: true,
   },
@@ -106,8 +109,8 @@ const OBJECT_MANIFEST = {
     ...launch,
     files: {
       ...launch.files,
-      csv_sim: `/launches/${launch.slug}/trajectory_sim.csv`,
-      kml_sim: `/launches/${launch.slug}/trajectory_sim.kml`,
+      csv_sim: `/launches/${launch.slug}/${launch.slug}_${launch.t0_utc.slice(0, 10)}_trajectory_sim.csv`,
+      kml_sim: `/launches/${launch.slug}/${launch.slug}_${launch.t0_utc.slice(0, 10)}_trajectory_sim.kml`,
     },
     method: {
       csv: "event-surrogate parametric (published event table + azimuth)",
@@ -151,10 +154,10 @@ describe("launch manifest parsing", () => {
       phase: "recent",
       illustrative: true,
       files: {
-        csv: "/launches/electron-hawkeye360/trajectory.csv",
-        kml: "/launches/electron-hawkeye360/trajectory.kml",
-        csvSim: "/launches/electron-hawkeye360/trajectory_sim.csv",
-        kmlSim: "/launches/electron-hawkeye360/trajectory_sim.kml",
+        csv: "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory.csv",
+        kml: "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory.kml",
+        csvSim: "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory_sim.csv",
+        kmlSim: "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory_sim.kml",
       },
       method: {
         csv: "event-surrogate parametric (published event table + azimuth)",
@@ -190,8 +193,8 @@ describe("launch manifest parsing", () => {
     expect(parsed.manifest.methods).toEqual([]);
     expect(parsed.manifest.references).toEqual([]);
     expect(parsed.manifest.launches[0].files).toEqual({
-      csv: "/launches/electron-hawkeye360/trajectory.csv",
-      kml: "/launches/electron-hawkeye360/trajectory.kml",
+      csv: "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory.csv",
+      kml: "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory.kml",
       csvSim: null,
       kmlSim: null,
     });
@@ -247,11 +250,50 @@ describe("launch manifest parsing", () => {
   });
 
   it("resolves manifest paths under the site base", () => {
-    expect(publicAssetHref("/launches/lm8a-wenchang/trajectory.csv")).toBe(
-      "/launches/lm8a-wenchang/trajectory.csv",
+    expect(publicAssetHref("/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory.csv")).toBe(
+      "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory.csv",
     );
     expect(publicAssetHref("")).toBeNull();
     expect(publicAssetHref(null)).toBeNull();
+  });
+
+  it("uses the slug and date once in the visible download name", () => {
+    const launch = { slug: "starlink-15-16", t0Utc: "2026-10-27T04:45:00Z" };
+    const named = "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory_sim.kml";
+    expect(launchDownloadName(launch, named)).toBe("starlink-15-16_2026-10-27_trajectory_sim.kml");
+    expect(launchDownloadName(launch, "/launches/starlink-15-16/trajectory.csv")).toBe(
+      "starlink-15-16_2026-10-27_trajectory.csv",
+    );
+  });
+
+  it("publishes every trajectory under the slug_date name and keeps the sim arc past insertion", () => {
+    const root = path.resolve(import.meta.dirname, "../../public");
+    const index = JSON.parse(fs.readFileSync(path.join(root, "launches/index.json"), "utf8")) as {
+      launches: { slug: string; t0_utc: string; files: Record<string, string> }[];
+    };
+    expect(index.launches.length).toBeGreaterThan(0);
+    for (const launch of index.launches) {
+      const date = launch.t0_utc.slice(0, 10);
+      const stem = `/launches/${launch.slug}/${launch.slug}_${date}`;
+      expect(launch.files.csv).toBe(`${stem}_trajectory.csv`);
+      expect(launch.files.kml).toBe(`${stem}_trajectory.kml`);
+      expect(launch.files.csv_sim).toBe(`${stem}_trajectory_sim.csv`);
+      expect(launch.files.kml_sim).toBe(`${stem}_trajectory_sim.kml`);
+      for (const rel of [launch.files.csv, launch.files.kml, launch.files.csv_sim, launch.files.kml_sim, launch.files.track_lite]) {
+        expect(fs.existsSync(path.join(root, rel.replace(/^\//, "")))).toBe(true);
+      }
+      const track = JSON.parse(fs.readFileSync(path.join(root, launch.files.track_lite.replace(/^\//, "")), "utf8")) as {
+        sim: [number, number, number, number][];
+        surrogate: [number, number, number, number][];
+      };
+      const simEnd = track.sim[track.sim.length - 1]?.[0] ?? 0;
+      const surEnd = track.surrogate[track.surrogate.length - 1]?.[0] ?? 0;
+      expect(simEnd).toBeGreaterThan(surEnd + 60);
+      const csv = fs.readFileSync(path.join(root, launch.files.csv_sim.replace(/^\//, "")), "utf8");
+      const rows = csv.split("\n").filter((line) => line && !line.startsWith("#") && !line.startsWith("elapsed_s"));
+      const last = Number(rows[rows.length - 1]?.split(",")[0]);
+      expect(Math.abs(last - simEnd)).toBeLessThan(1);
+    }
   });
 
   it("reads an empty body as an empty manifest and a 404 as unavailable", async () => {
@@ -324,11 +366,11 @@ describe("Launches page", () => {
     const surrogate = within(upcoming).getByTestId("download-set-surrogate");
     expect(within(surrogate).getByText("Surrogate")).toBeInTheDocument();
     expect(within(surrogate).getByTestId("illustrative-badge")).toBeInTheDocument();
-    expect(within(surrogate).getByRole("link", { name: "trajectory.csv" })).toHaveAttribute(
+    expect(within(surrogate).getByRole("link", { name: "lm8a-wenchang_2026-10-25_trajectory.csv" })).toHaveAttribute(
       "href",
-      "/launches/lm8a-wenchang/trajectory.csv",
+      "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory.csv",
     );
-    expect(within(surrogate).getByRole("link", { name: "trajectory.kml" })).toHaveAttribute(
+    expect(within(surrogate).getByRole("link", { name: "lm8a-wenchang_2026-10-25_trajectory.kml" })).toHaveAttribute(
       "download",
       "lm8a-wenchang_2026-10-25_trajectory.kml",
     );
@@ -337,13 +379,13 @@ describe("Launches page", () => {
     const sim = within(upcoming).getByTestId("download-set-sim");
     expect(within(sim).getByText("3DOF sim")).toBeInTheDocument();
     expect(within(sim).getByTestId("illustrative-badge")).toBeInTheDocument();
-    expect(within(sim).getByRole("link", { name: "trajectory_sim.csv" })).toHaveAttribute(
+    expect(within(sim).getByRole("link", { name: "lm8a-wenchang_2026-10-25_trajectory_sim.csv" })).toHaveAttribute(
       "href",
-      "/launches/lm8a-wenchang/trajectory_sim.csv",
+      "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory_sim.csv",
     );
-    expect(within(sim).getByRole("link", { name: "trajectory_sim.kml" })).toHaveAttribute(
+    expect(within(sim).getByRole("link", { name: "lm8a-wenchang_2026-10-25_trajectory_sim.kml" })).toHaveAttribute(
       "href",
-      "/launches/lm8a-wenchang/trajectory_sim.kml",
+      "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory_sim.kml",
     );
 
     expect(screen.getAllByTestId("illustrative-badge")).toHaveLength(8);
@@ -398,7 +440,7 @@ describe("Launches page", () => {
     expect(screen.queryByTestId("illustrative-badge")).not.toBeInTheDocument();
     expect(screen.queryByTestId("download-set-sim")).not.toBeInTheDocument();
     const recent = screen.getByTestId("launch-section-recent");
-    expect(within(recent).getByRole("link", { name: "trajectory.csv" })).toBeInTheDocument();
+    expect(within(recent).getByRole("link", { name: "real_2026-10-01_trajectory.csv" })).toBeInTheDocument();
     expect(within(recent).queryByRole("link", { name: "trajectory.kml" })).not.toBeInTheDocument();
     expect(screen.queryByTestId("launch-methods")).not.toBeInTheDocument();
     expect(screen.queryByTestId("launch-references")).not.toBeInTheDocument();

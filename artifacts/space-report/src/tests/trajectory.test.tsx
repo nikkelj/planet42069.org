@@ -121,10 +121,10 @@ describe("trajectory viewer", () => {
         phase: "upcoming",
         illustrative: true,
         files: {
-          csv: "/launches/lm8a-wenchang/trajectory.csv",
-          kml: "/launches/lm8a-wenchang/trajectory.kml",
-          csv_sim: "/launches/lm8a-wenchang/trajectory_sim.csv",
-          kml_sim: "/launches/lm8a-wenchang/trajectory_sim.kml",
+          csv: "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory.csv",
+          kml: "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory.kml",
+          csv_sim: "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory_sim.csv",
+          kml_sim: "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory_sim.kml",
         },
       },
     ]);

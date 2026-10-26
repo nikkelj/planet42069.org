@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, CanvasTexture, Color, Mesh, MeshBasicMaterial,
   PerspectiveCamera, Points, PointsMaterial, Scene, ShaderMaterial, SphereGeometry, Sprite, SpriteMaterial,
-  SRGBColorSpace, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer, Object3D,
+  GreaterDepth, SRGBColorSpace, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer, Object3D,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
@@ -207,32 +207,49 @@ export default function LaunchGlobeCanvas({ indexUrl }: { indexUrl: string }) {
         const upcoming = l.phase === "upcoming";
         sets.forEach(([m, pts], si) => {
           if (!pts?.length) return;
-          const v = pts.map((p) => llr(p[1], p[2], 1 + (p[3] / RE) * k + 0.0015));
-          const flat = v.flatMap((p) => [p.x, p.y, p.z]);
+          const positions = new Float32Array(pts.length * 3);
+          const v: Vector3[] = new Array(pts.length);
+          for (let i = 0; i < pts.length; i++) {
+            const p = pts[i];
+            const at = llr(p[1], p[2], 1 + (p[3] / RE) * k + 0.0015);
+            positions[i * 3] = at.x; positions[i * 3 + 1] = at.y; positions[i * 3 + 2] = at.z;
+            v[i] = at;
+          }
           const col = new Color(l.color);
           if (si === 1) col.lerp(new Color("#ffffff"), 0.45);
-          for (const [w, op, glow] of [[7, 0.2, true], [2.2, 1, false]] as const) {
-            const g = new LineGeometry(); g.setPositions(flat);
-            const mat = new LineMaterial({
-              color: col.getHex(), linewidth: si === 1 ? w * 0.6 : w, transparent: true, opacity: si === 1 ? op * 0.8 : op,
-              ...(glow ? { blending: AdditiveBlending } : {}), depthWrite: !glow,
-              dashed: upcoming && !glow, dashSize: 0.018, gapSize: 0.012, worldUnits: false,
-            });
-            mat.resolution.copy(res); mats.push(mat);
-            const line = new Line2(g, mat);
-            if (upcoming && !glow) line.computeLineDistances();
-            group.add(line);
+          // The post-insertion coast is often behind the earth from the default
+          // camera (Starlink 15-16 leaves the limb at SECO-1). A GreaterDepth
+          // pass draws that occluded arc over the disk; the near pass stays in front.
+          for (const far of [true, false]) {
+            for (const [w, op, glow] of [[7, 0.2, true], [2.2, 1, false]] as const) {
+              const g = new LineGeometry(); g.setPositions(positions);
+              const mat = new LineMaterial({
+                color: col.getHex(), linewidth: si === 1 ? w * 0.6 : w, transparent: true,
+                opacity: (si === 1 ? op * 0.8 : op) * (far ? 0.72 : 1),
+                ...(glow ? { blending: AdditiveBlending } : {}),
+                depthWrite: far ? false : !glow,
+                depthTest: true,
+                ...(far ? { depthFunc: GreaterDepth } : {}),
+                dashed: upcoming && !glow, dashSize: 0.018, gapSize: 0.012, worldUnits: false,
+              });
+              mat.resolution.copy(res); mats.push(mat);
+              const line = new Line2(g, mat);
+              line.frustumCulled = false;
+              line.renderOrder = far ? 1 : 2;
+              if (upcoming && !glow) line.computeLineDistances();
+              group.add(line);
+            }
           }
           v.forEach((p, i) => pick.push({ p, l, m, pt: pts[i] }));
           if (si === 0) {
             if (!sprites.has(l.color)) sprites.set(l.color, glowSprite(l.color));
             const s = new Sprite(new SpriteMaterial({ map: sprites.get(l.color)!, blending: AdditiveBlending, depthWrite: false, transparent: true }));
-            s.scale.setScalar(0.06); s.visible = opts.current.comet; s.position.copy(v[v.length - 1]);
+            s.scale.setScalar(0.06); s.visible = opts.current.comet; s.position.copy(v[v.length - 1]); s.renderOrder = 4;
             group.add(s); comets.push({ s, pts: v });
             const pad = new Mesh(new SphereGeometry(0.009, 16, 12), new MeshBasicMaterial({ color: l.color }));
-            pad.position.copy(llr(pts[0][1], pts[0][2], 1.002)); group.add(pad);
+            pad.position.copy(llr(pts[0][1], pts[0][2], 1.002)); pad.renderOrder = 4; group.add(pad);
             const halo = new Sprite(new SpriteMaterial({ map: sprites.get(l.color)!, blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.7 }));
-            halo.scale.setScalar(0.045); halo.position.copy(pad.position); group.add(halo);
+            halo.scale.setScalar(0.045); halo.position.copy(pad.position); halo.renderOrder = 4; group.add(halo);
           }
         });
       }
@@ -358,7 +375,7 @@ export default function LaunchGlobeCanvas({ indexUrl }: { indexUrl: string }) {
         </div>
       </div>
       <div className="absolute bottom-2 left-2 right-2 flex flex-wrap justify-between gap-2 font-mono text-[9px] uppercase tracking-widest text-muted-foreground pointer-events-none">
-        <span className="text-accent">ILLUSTRATIVE trajectories — not telemetry · solid = flown · dashed = upcoming</span>
+        <span className="text-accent">ILLUSTRATIVE trajectories — not telemetry · full arc through deploy or +2 revs · dim = far side · solid = flown · dashed = upcoming</span>
         <span>Day/night for now · Earth: NASA Blue Marble NG / Black Marble 2016</span>
       </div>
       {tip && (

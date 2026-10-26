@@ -1,8 +1,34 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import fs from "node:fs";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { contentDisposition, safePublicFile, trajectoryAttachmentName } from "./src/lib/trajectory-file.ts";
+
+function trajectoryDisposition(dirs: { dev: string; preview: string }): Plugin {
+  const attach = (publicDir: string) => {
+    return (req: { url?: string }, res: { setHeader: (k: string, v: string) => void }, next: () => void) => {
+      const name = trajectoryAttachmentName(req.url ?? "");
+      if (name) {
+        const abs = safePublicFile(publicDir, req.url ?? "");
+        if (abs && fs.existsSync(abs) && fs.statSync(abs).isFile()) {
+          res.setHeader("Content-Disposition", contentDisposition(name));
+        }
+      }
+      next();
+    };
+  };
+  return {
+    name: "trajectory-content-disposition",
+    configureServer(server) {
+      server.middlewares.use(attach(dirs.dev));
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(attach(dirs.preview));
+    },
+  };
+}
 
 const rawPort = process.env.PORT;
 
@@ -29,6 +55,10 @@ if (!basePath) {
 export default defineConfig({
   base: basePath,
   plugins: [
+    trajectoryDisposition({
+      dev: path.resolve(import.meta.dirname, "public"),
+      preview: path.resolve(import.meta.dirname, "dist/public"),
+    }),
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),

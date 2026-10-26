@@ -166,10 +166,10 @@
       "status": "Success",
       "phase": "recent",
       "files": {
-        "csv": "/launches/electron-hawkeye360/trajectory.csv",
-        "kml": "/launches/electron-hawkeye360/trajectory.kml",
-        "csv_sim": "/launches/electron-hawkeye360/trajectory_sim.csv",
-        "kml_sim": "/launches/electron-hawkeye360/trajectory_sim.kml",
+        "csv": "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory.csv",
+        "kml": "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory.kml",
+        "csv_sim": "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory_sim.csv",
+        "kml_sim": "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory_sim.kml",
         "track_lite": "/launches/electron-hawkeye360/track_lite.json"
       },
       "illustrative": true,
@@ -197,10 +197,10 @@
       "status": "Success",
       "phase": "recent",
       "files": {
-        "csv": "/launches/lm6a-yaogan50-03/trajectory.csv",
-        "kml": "/launches/lm6a-yaogan50-03/trajectory.kml",
-        "csv_sim": "/launches/lm6a-yaogan50-03/trajectory_sim.csv",
-        "kml_sim": "/launches/lm6a-yaogan50-03/trajectory_sim.kml",
+        "csv": "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory.csv",
+        "kml": "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory.kml",
+        "csv_sim": "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory_sim.csv",
+        "kml_sim": "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory_sim.kml",
         "track_lite": "/launches/lm6a-yaogan50-03/track_lite.json"
       },
       "illustrative": true,
@@ -229,10 +229,10 @@
       "status": "Success",
       "phase": "recent",
       "files": {
-        "csv": "/launches/lm4b-jiuquan/trajectory.csv",
-        "kml": "/launches/lm4b-jiuquan/trajectory.kml",
-        "csv_sim": "/launches/lm4b-jiuquan/trajectory_sim.csv",
-        "kml_sim": "/launches/lm4b-jiuquan/trajectory_sim.kml",
+        "csv": "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory.csv",
+        "kml": "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory.kml",
+        "csv_sim": "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory_sim.csv",
+        "kml_sim": "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory_sim.kml",
         "track_lite": "/launches/lm4b-jiuquan/track_lite.json"
       },
       "illustrative": true,
@@ -266,10 +266,10 @@
       "status": "Success",
       "phase": "recent",
       "files": {
-        "csv": "/launches/lm8a-wenchang/trajectory.csv",
-        "kml": "/launches/lm8a-wenchang/trajectory.kml",
-        "csv_sim": "/launches/lm8a-wenchang/trajectory_sim.csv",
-        "kml_sim": "/launches/lm8a-wenchang/trajectory_sim.kml",
+        "csv": "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory.csv",
+        "kml": "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory.kml",
+        "csv_sim": "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory_sim.csv",
+        "kml_sim": "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory_sim.kml",
         "track_lite": "/launches/lm8a-wenchang/track_lite.json"
       },
       "illustrative": true,
@@ -303,10 +303,10 @@
       "status": "Go",
       "phase": "upcoming",
       "files": {
-        "csv": "/launches/starlink-15-16/trajectory.csv",
-        "kml": "/launches/starlink-15-16/trajectory.kml",
-        "csv_sim": "/launches/starlink-15-16/trajectory_sim.csv",
-        "kml_sim": "/launches/starlink-15-16/trajectory_sim.kml",
+        "csv": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory.csv",
+        "kml": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory.kml",
+        "csv_sim": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory_sim.csv",
+        "kml_sim": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory_sim.kml",
         "track_lite": "/launches/starlink-15-16/track_lite.json"
       },
       "illustrative": true,

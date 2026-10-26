@@ -2,8 +2,11 @@
 """Build lightweight assets for the Launches 3D globe (LaunchGlobe.tsx).
 
 1. track_lite.json per launch: decimated [lat, lon, alt_km] (<=600 pts) for the
-   surrogate (trajectory.csv) and first-principles sim (trajectory_sim.csv),
-   plus elapsed seconds, so the browser never downloads the full CSVs.
+   surrogate (<slug>_<YYYY-MM-DD>_trajectory.csv) and 3DOF sim
+   (<slug>_<YYYY-MM-DD>_trajectory_sim.csv), plus elapsed seconds, so the
+   browser never downloads the full CSVs. Paths come from index.json files.csv
+   and files.csv_sim. Keep the post-cutoff coast (deploy, or +2 revs): the
+   globe draws every track_lite point, including the far side of the earth.
 2. (optional, --textures DAY NIGHT) Earth textures as WebP: 2048 / 512 px
    placeholders, from NASA Blue Marble (day) and Black Marble 2016 (night).
 Adds files.track_lite to public/launches/index.json.
