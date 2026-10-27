@@ -299,7 +299,7 @@
       "slug": "starlink-15-16",
       "name": "Starlink Group 15-16",
       "vehicle": "Falcon 9 Block 5",
-      "t0_utc": "2026-10-27T05:46:37Z",
+      "t0_utc": "2026-10-27T07:25:51Z",
       "status": "Go",
       "phase": "upcoming",
       "files": {
@@ -322,7 +322,7 @@
       ],
       "method": {
         "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX event timeline, NAVAREA XII 737/26 azimuth 154.56 deg)",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX sl-15-16 event times (MECO 146 s, sep 150 s, SES-1 156 s, fairing 176 s, SECO-1 519 s) as hard events; steering/payload fitted to the 159 x 265 km, i=70.007 deg parking orbit derived from SpaceX's pre-launch state vector (CelesTrak SupGP); azimuth 155.87 deg (inside NAVAREA XII 737/26 Area A); continues through SES-2/SECO-2 to deploy T+3713 s; retimed 26 Oct to LL2 T0 05:46:37Z (Earth-fixed track unchanged; RAAN 196.63 deg); ILLUSTRATIVE"
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX sl-15-16 event times (MECO 146 s, sep 150 s, SES-1 156 s, fairing 176 s, SECO-1 519 s) as hard events; steering/payload fitted to the 159 x 265 km, i=70.007 deg parking orbit derived from SpaceX's pre-launch state vector (CelesTrak SupGP); azimuth 155.87 deg (inside NAVAREA XII 737/26 Area A); continues through SES-2/SECO-2 to deploy T+3713 s; retimed 26 Oct to LL2 T0 07:25:51Z (Earth-fixed track unchanged; RAAN 221.51 deg); ILLUSTRATIVE"
       },
       "reference_ids": [
         "spacex-sl-15-16",
