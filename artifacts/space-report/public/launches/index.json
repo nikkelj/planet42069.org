@@ -6,7 +6,7 @@
     },
     "sim": {
       "title": "First-principles 3DOF sim",
-      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry. Long March vehicles run in timeline mode: published ignition/cutoff/separation times are hard events, burn rates from published thrust/Isp, and remaining free parameters fitted (bounded least squares) to the CALT manual LM-3B profile (altitude within 3.4 km at all events). Falcon 9 also runs in timeline mode: SpaceX's published MECO, stage-separation, SES-1, fairing and SECO-1 times are hard events, Block 5 masses and Merlin thrust/Isp from open sources, and steering and payload are fitted (bounded least squares) to the parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP), along an azimuth (155.87°) tuned so the orbit plane reaches the state vector's 70.007° inclination, inside the NAVAREA hazard corridor. Sims run through payload deploy: after final cutoff the stage coasts under the same WGS-84/J2/US76-drag model, with any published restart or kick-stage burn modelled from its published timing, to the provider's published deploy time (Starlink 15-16: SES-2/SECO-2 at T+53:01-53:03, deploy T+1:01:53). Where no deploy time is published (Electron HawkEye 360, LM-4B, LM-6A, LM-8A) the stage is propagated from insertion for two revolutions on the inferred insertion orbit (same J2 + drag model) and the file ends labelled 'inferred insertion orbit, +2 revs (deploy time unpublished)'."
+      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry. Long March vehicles run in timeline mode: published ignition/cutoff/separation times are hard events, burn rates from published thrust/Isp, and remaining free parameters fitted (bounded least squares) to the CALT manual LM-3B profile (altitude within 3.4 km at all events). Falcon 9 also runs in timeline mode: SpaceX's published MECO, stage-separation, SES-1, fairing and SECO-1 times are hard events, Block 5 masses and Merlin thrust/Isp from open sources, and steering and payload are fitted (bounded least squares) to the parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP), along an azimuth tuned so the orbit plane reaches the state vector's inclination (15-16: 155.87° for 70.007°; 15-18: 155.80° for 70.004°), inside the NAVAREA hazard corridor. Sims run through payload deploy: after final cutoff the stage coasts under the same WGS-84/J2/US76-drag model, with any published restart or kick-stage burn modelled from its published timing, to the provider's published deploy time (Starlink 15-16: SES-2/SECO-2 at T+53:01-53:03, deploy T+1:01:53; Starlink 15-18: SES-2/SECO-2 at T+53:07-53:08, deploy T+1:01:59). Where no deploy time is published (Electron HawkEye 360, LM-4B, LM-6A, LM-8A) the stage is propagated from insertion for two revolutions on the inferred insertion orbit (same J2 + drag model) and the file ends labelled 'inferred insertion orbit, +2 revs (deploy time unpublished)'."
     },
     "methods_doc": "/launches/METHODS.md"
   },
@@ -155,6 +155,21 @@
       "id": "xinhua-lm8a-y12",
       "title": "Xinhua: Long March 8A launches SatNet LEO Group 28 (25 Oct 2026)",
       "url": "https://www.news.cn/politics/20261025/3573644b269e466f83510360cb84eff4/c.html"
+    },
+    {
+      "id": "spacex-sl-15-18",
+      "title": "SpaceX: Starlink 15-18 mission page and timeline",
+      "url": "https://www.spacex.com/launches/sl-15-18"
+    },
+    {
+      "id": "celestrak-supgp-g15-18",
+      "title": "CelesTrak SupGP: Starlink G15-18 pre-launch elements (from a SpaceX-supplied state vector)",
+      "url": "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-18&FORMAT=json"
+    },
+    {
+      "id": "navarea-xii-747-26",
+      "title": "NAVAREA XII 747/26 (Starlink 15-18 hazard areas, eastern Pacific; USCG LNM 56848) via space-notices",
+      "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20747%2F26"
     }
   ],
   "launches": [
@@ -300,8 +315,8 @@
       "name": "Starlink Group 15-16",
       "vehicle": "Falcon 9 Block 5",
       "t0_utc": "2026-10-27T07:25:51Z",
-      "status": "Go",
-      "phase": "upcoming",
+      "status": "Success",
+      "phase": "recent",
       "files": {
         "csv": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory.csv",
         "kml": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory.kml",
@@ -331,6 +346,48 @@
         "uscg-lnm-56736",
         "mmfr-b3055-26",
         "faa-sl-15-16",
+        "shahar603-tel",
+        "wp-falcon9",
+        "wp-falcon9-b5",
+        "ll2",
+        "sfn-schedule",
+        "kml"
+      ],
+      "note": "Flown 2026-10-27T07:25:51Z (Tue 12:25:51 am PDT); SpaceX confirmed 27 satellites deployed. Pre-flight ILLUSTRATIVE geometry re-timed to the actual liftoff. Recheck 27 Oct vs CelesTrak SupGP refreshed after liftoff (epoch 08:28:08Z): 252 x 265 km, i 70.007 deg, RAAN 222.58 deg; sim at deploy RAAN 221.51 deg, i 70.04 deg (RAAN residual -1.1 deg; the earlier +36 deg came from a stale pre-slip vector)."
+    },
+    {
+      "slug": "starlink-15-18",
+      "name": "Starlink Group 15-18",
+      "vehicle": "Falcon 9 Block 5",
+      "t0_utc": "2026-10-30T04:02:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/starlink-15-18/starlink-15-18_2026-10-30_trajectory.csv",
+        "kml": "/launches/starlink-15-18/starlink-15-18_2026-10-30_trajectory.kml",
+        "csv_sim": "/launches/starlink-15-18/starlink-15-18_2026-10-30_trajectory_sim.csv",
+        "kml_sim": "/launches/starlink-15-18/starlink-15-18_2026-10-30_trajectory_sim.kml",
+        "track_lite": "/launches/starlink-15-18/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "medium",
+      "sources": [
+        "https://www.spacex.com/launches/sl-15-18",
+        "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20747%2F26",
+        "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
+        "https://en.wikipedia.org/wiki/Falcon_9_Block_5",
+        "https://ll.thespacedevs.com/2.3.0/launches/",
+        "https://spaceflightnow.com/launch-schedule/",
+        "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-18&FORMAT=json"
+      ],
+      "method": {
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX sl-15-18 event timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:58 / SECO-1 8:39, NAVAREA XII 747/26 Area A azimuth 154.56 deg)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX sl-15-18 event times (MECO 146 s, sep 149 s, SES-1 156 s, fairing 178 s, SECO-1 519 s) as hard events; steering/payload fitted (payload 16.8 t) to the 177 x 266 km parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP, 251 x 266 km, i=70.004 deg); azimuth 155.80 deg tuned to i=69.996 deg (inside NAVAREA XII 747/26 Area A); SES-2/SECO-2 T+53:07-53:08 raises perigee to 251 km; deploy row at T+3719 s (T+1:01:59, SpaceX); RAAN 173.39 deg vs SupGP 174.53 deg (-1.1 deg, same systematic as 15-16); ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "spacex-sl-15-18",
+        "celestrak-supgp-g15-18",
+        "navarea-xii-747-26",
         "shahar603-tel",
         "wp-falcon9",
         "wp-falcon9-b5",

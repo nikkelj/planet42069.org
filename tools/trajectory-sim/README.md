@@ -79,3 +79,8 @@ Insertion times moved 741.5→743.5 s (LM-6A) and 761.0→763.0 s (LM-8A).
 (the date is the launch `t0_utc`; surrogate files use the same pattern without `_sim`).
 Point `launches/index.json` `files.csv_sim` / `files.kml_sim` at those paths, then run `scripts/build_launch_globe_assets.py`.
 Note: the site's LM-8A files use T0 2026-10-25T02:03Z (retimed); the public date is still 2026-10-25.
+
+## Per-launch stage event overrides (timeline mode)
+A launch file may carry `stage_event_overrides`, keyed by stage index, to replace the vehicle file's event times with that
+mission's published ones, e.g. Starlink 15-18 (SpaceX sl-15-18: MECO 2:26, sep 2:29, SES-1 2:36):
+`"stage_event_overrides": {"0": {"cutoff_s": {"value": 146, "src": "..."}, "separation_s": {"value": 149, "src": "..."}}, "1": {"ignition_s": {"value": 156, "src": "..."}}}`. Without it the vehicle defaults apply.
