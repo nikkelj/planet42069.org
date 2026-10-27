@@ -43,7 +43,9 @@ class TimedSim:
     def __init__(s, V, L):
         s.V, s.L = V, L
         fc = val(L["final_cutoff_s"]) if "final_cutoff_s" in L else None
-        s.st = [TStage(d, fc if i == len(V["stages"])-1 else None) for i, d in enumerate(V["stages"])]
+        stages = [dict(d) for d in V["stages"]]   # per-launch published event times override the vehicle defaults
+        for k, ov in (L.get("stage_event_overrides") or {}).items(): stages[int(k)].update(ov)
+        s.st = [TStage(d, fc if i == len(stages)-1 else None) for i, d in enumerate(stages)]
         s.fairing = val(V["fairing"]["mass_kg"]); s.fair_t = val(L.get("fairing_jettison_s", V["fairing"]["jettison_time_s"]))
         s.lat0, s.lon0, s.h0 = L["pad"]["lat"], L["pad"]["lon"], val(L["pad"].get("alt_m", 0))
         s.az = math.radians(val(L["azimuth_deg"])); tg = L["target"]
