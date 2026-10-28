@@ -1,0 +1,293 @@
+{
+ "slug": "gslv-f18-nvs03",
+ "title": "GSLV-F18 / NVS-03 (IRNSS-1L), SDSC-SHAR Second Launch Pad",
+ "vehicle": "gslv_mk2",
+ "t0_utc": "2026-10-30T18:21:00Z",
+ "pad": {
+  "lat": 13.7199,
+  "lon": 80.2304,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/ (SDSC Second Launch Pad); NAVAREA VIII 1127/26 launch point 13-43.20N 080-13.80E agrees"
+ },
+ "azimuth_deg": {
+  "value": 105.75,
+  "derived": "inertial launch-plane azimuth tuned to ISRO's published inclination 20.75 deg (textbook acos(cos i / ... ) gives ~105.73 deg at lat 13.72); ISRO brochure 'launch azimuth 106 deg' and NAVAREA VIII 1127/26 zone-centroid bearings 106.1-106.7 deg from the pad are Earth-relative and agree within the rotation offset",
+  "src": "https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf"
+ },
+ "payload_kg": {
+  "value": 2250,
+  "src": "https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf",
+  "note": "'~2250 kg' (Wikipedia lists 2,232 kg)"
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 302.46,
+   "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf",
+   "note": "F15 CUS shut-off altitude (F18 value unpublished; analog)"
+  },
+  "insertion_alt_sigma_km": {
+   "value": 5,
+   "assumption": "analog altitude, loose"
+  },
+  "apoapsis_alt_km": {
+   "value": 37023,
+   "src": "https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf",
+   "note": "F18 target GTO 170 x 37023 km, i 20.75 +/- 0.1 deg, AoP 178 +/- 0.5 deg"
+  },
+  "sma_km": {
+   "value": 24974.637,
+   "derived": "(2*6378.137+170+37023)/2 from F18 brochure GTO"
+  },
+  "sma_sigma_km": {
+   "value": 50,
+   "assumption": "~0.2% of a (apogee dispersion order 100 km)"
+  },
+  "fpa_deg": {
+   "value": 7.453,
+   "derived": "inertial flight-path angle on the F18 170 x 37023 km GTO at r = 6378.137+302.46 km (injection after perigee, true anomaly 17.6 deg; F15 shut-off->burnout climb 6.7 km in 5 s confirms ~7-8 deg)"
+  },
+  "fpa_sigma_deg": {
+   "value": 0.1,
+   "assumption": ""
+  }
+ },
+ "final_cutoff_s": {
+  "value": 1135.38,
+  "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf",
+  "note": "CUS shut off (F15 analog)"
+ },
+ "knots": [
+  {
+   "event": "4L40H shut off (GSLV-F15 published)",
+   "t_s": 149.0,
+   "alt_km": 69.6,
+   "alt_sigma_km": 3,
+   "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf \u2014 F15/NVS-02 ANALOG, not this flight"
+  },
+  {
+   "event": "GS2 ignition (GSLV-F15 published)",
+   "t_s": 149.6,
+   "alt_km": 70.04,
+   "alt_sigma_km": 3,
+   "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf \u2014 F15/NVS-02 ANALOG, not this flight"
+  },
+  {
+   "event": "GS1/GS2 separation (GSLV-F15 published)",
+   "t_s": 151.2,
+   "alt_km": 71.21,
+   "alt_sigma_km": 3,
+   "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf \u2014 F15/NVS-02 ANALOG, not this flight"
+  },
+  {
+   "event": "PLF separation (GSLV-F15 published)",
+   "t_s": 237.42,
+   "alt_km": 114.97,
+   "alt_sigma_km": 3,
+   "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf \u2014 F15/NVS-02 ANALOG, not this flight"
+  },
+  {
+   "event": "GS2 shut off (GSLV-F15 published)",
+   "t_s": 291.16,
+   "alt_km": 131.36,
+   "alt_sigma_km": 3,
+   "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf \u2014 F15/NVS-02 ANALOG, not this flight"
+  },
+  {
+   "event": "GS2 separation (GSLV-F15 published)",
+   "t_s": 294.68,
+   "alt_km": 132.43,
+   "alt_sigma_km": 3,
+   "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf \u2014 F15/NVS-02 ANALOG, not this flight"
+  },
+  {
+   "event": "CUS ignition (GSLV-F15 published)",
+   "t_s": 295.68,
+   "alt_km": 132.72,
+   "alt_sigma_km": 3,
+   "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf \u2014 F15/NVS-02 ANALOG, not this flight"
+  }
+ ],
+ "post_cutoff": {
+  "drag": {
+   "cd": {
+    "value": 2.2,
+    "assumption": "free-molecular Cd for the coasting CUS+S/C stack"
+   },
+   "area_m2": {
+    "value": 6.16,
+    "derived": "pi*(2.8 m/2)^2 CUS diameter"
+   }
+  },
+  "burns": [],
+  "deploy": {
+   "t_s": null,
+   "note": "ISRO has not published the GSLV-F18 flight sequence (F15/NVS-02 analog: S/C separation T+1150.38 s, 15 s after CUS shut-off)"
+  },
+  "notes": [
+   "No post-cutoff burns: GSLV CUS15 is single-burn; the spent CUS stays in the ~170 x 37,000 km GTO (debris)."
+  ]
+ },
+ "header_notes": [
+  "Not flown: LL2 NET 2026-10-30T18:21:00Z (Fri Oct 30 11:21 am PDT; 23:51 IST), window 17:00-21:00Z, status Go (LL2 updated 2026-10-28T08:54Z). Spaceflight Now's schedule does not list it.",
+  "Hazard areas: NAVAREA VIII 1127/26 (rocket launching 301700-302100Z Oct; zones 2-4 centroids bear 106.1/106.3/106.7 deg from the pad at 601/1017/1768 km) and NOTAM A3241/26 (VOMF, 30 Oct-11 Nov 1700-2100Z).",
+  "EVENT TIMES ARE THE GSLV-F15/NVS-02 PUBLISHED SEQUENCE (ANALOG): ISRO's F18 brochure (27 Oct 2026) gives orbit, masses and azimuth but no event table."
+ ],
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "vertical_rise_s": {
+    "value": 4.828581,
+    "bounds": [
+     4,
+     20
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "kick_deg": {
+    "value": 8.179118,
+    "bounds": [
+     0.3,
+     15
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "cd": {
+    "value": 0.741684,
+    "bounds": [
+     0.2,
+     0.8
+    ],
+    "basis": "ASSUMPTION bound for slender LV mean Cd (reference area = 2.8 m core; 3.4 m PLF absorbed into Cd)"
+   },
+   "tan0": {
+    "value": 0.391937,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law parameter"
+   },
+   "tan_rate": {
+    "value": -7.2e-05,
+    "bounds": [
+     -0.05,
+     0.05
+    ],
+    "basis": "guidance law parameter"
+   }
+  },
+  "fixed": {
+   "payload_kg": 2250.0
+  },
+  "knot_residuals": [
+   {
+    "event": "4L40H shut off (GSLV-F15 published)",
+    "t_pub": 149.0,
+    "t_sim": 149.0,
+    "alt_pub": 69.6,
+    "alt_sim": 47.19,
+    "rng_pub": null,
+    "rng_sim": 148.9
+   },
+   {
+    "event": "GS2 ignition (GSLV-F15 published)",
+    "t_pub": 149.6,
+    "t_sim": 149.6,
+    "alt_pub": 70.04,
+    "alt_sim": 47.35,
+    "rng_pub": null,
+    "rng_sim": 150.5
+   },
+   {
+    "event": "GS1/GS2 separation (GSLV-F15 published)",
+    "t_pub": 151.2,
+    "t_sim": 151.2,
+    "alt_pub": 71.21,
+    "alt_sim": 47.78,
+    "rng_pub": null,
+    "rng_sim": 154.8
+   },
+   {
+    "event": "PLF separation (GSLV-F15 published)",
+    "t_pub": 237.42,
+    "t_sim": 237.42,
+    "alt_pub": 114.97,
+    "alt_sim": 61.31,
+    "rng_pub": null,
+    "rng_sim": 433.8
+   },
+   {
+    "event": "GS2 shut off (GSLV-F15 published)",
+    "t_pub": 291.16,
+    "t_sim": 291.16,
+    "alt_pub": 131.36,
+    "alt_sim": 72.07,
+    "rng_pub": null,
+    "rng_sim": 675.6
+   },
+   {
+    "event": "GS2 separation (GSLV-F15 published)",
+    "t_pub": 294.68,
+    "t_sim": 294.68,
+    "alt_pub": 132.43,
+    "alt_sim": 73.27,
+    "rng_pub": null,
+    "rng_sim": 694.0
+   },
+   {
+    "event": "CUS ignition (GSLV-F15 published)",
+    "t_pub": 295.68,
+    "t_sim": 295.68,
+    "alt_pub": 132.72,
+    "alt_sim": 73.59,
+    "rng_pub": null,
+    "rng_sim": 699.2
+   }
+  ],
+  "final": {
+   "alt_km": 310.09748256839254,
+   "fpa_deg": 11.56653392029173,
+   "sma_err_km": -179.87355530115963,
+   "mass_kg": 4950.0
+  },
+  "cost": 1684.6384376485184,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "L40H strap-ons (4)",
+     "loaded_kg": 165276,
+     "burned_kg": 165276,
+     "residual_kg": 0,
+     "dry_kg": 20400,
+     "flag": null
+    },
+    {
+     "name": "GS1 core S139",
+     "loaded_kg": 138200,
+     "burned_kg": 138200,
+     "residual_kg": 0,
+     "dry_kg": 22700,
+     "flag": "published load 138200 kg < burned 138200 kg; load raised to burned"
+    },
+    {
+     "name": "GS2 GL40HT (Vikas)",
+     "loaded_kg": 42100,
+     "burned_kg": 42100,
+     "residual_kg": 0,
+     "dry_kg": 5200,
+     "flag": "published load 42100 kg < burned 42100 kg; load raised to burned"
+    },
+    {
+     "name": "GS3 CUS15 (CE-7.5)",
+     "loaded_kg": 14400,
+     "burned_kg": 14400,
+     "residual_kg": 0,
+     "dry_kg": 2700,
+     "flag": null
+    }
+   ],
+   "glow_kg": 414676
+  }
+ }
+}

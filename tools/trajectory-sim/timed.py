@@ -51,6 +51,8 @@ class TimedSim:
         s.az = math.radians(val(L["azimuth_deg"])); tg = L["target"]
         s.h_t = val(tg["insertion_alt_km"])*1e3; s.ha_t = val(tg.get("apoapsis_alt_km", tg["insertion_alt_km"]))*1e3
         s.a_t = (2*A+s.h_t+s.ha_t)/2; s.a_sig = val(tg.get("sma_sigma_km", 5))*1e3
+        if "sma_km" in tg: s.a_t = val(tg["sma_km"])*1e3   # optional: published SMA when injection is off-perigee (e.g. GTO)
+        s.fpa_t = val(tg.get("fpa_deg", 0.0)); s.fpa_sig = val(tg.get("fpa_sigma_deg", 0.05)); s.h_sig = val(tg.get("insertion_alt_sigma_km", 1))*1e3
         g = V["guidance"]; s.t_kick = val(g["kick_duration_s"]); s.lt_from = g.get("linear_tangent_from_stage", 2)
         s.fit = V["fit"]; s.fixed = {k: val(v) for k, v in V.get("fixed_params", {}).items()}
         if not (isinstance(L.get("payload_kg"), dict) and L["payload_kg"].get("fit")): s.fixed["payload_kg"] = val(L["payload_kg"])
@@ -128,7 +130,7 @@ class TimedSim:
             rr = (e_["range_km"]-kn["range_km"])/kn.get("range_sigma_km", 5.0) if "range_km" in kn else 0.; res.append(rr)
             tab.append(dict(event=kn["event"], t_pub=kn["t_s"], t_sim=e_["t_s"], alt_pub=kn["alt_km"], alt_sim=e_["alt_km"],
                             rng_pub=kn.get("range_km"), rng_sim=e_["range_km"]))
-        res += [(h-s.h_t)/1e3, fpa/0.05, (a-s.a_t)/s.a_sig]
+        res += [(h-s.h_t)/s.h_sig, (fpa-s.fpa_t)/s.fpa_sig, (a-s.a_t)/s.a_sig]
         if detail: return np.array(res), tab, dict(alt_km=h/1e3, fpa_deg=fpa, sma_err_km=(a-s.a_t)/1e3, mass_kg=ev[-1]["mass_kg"])
         return np.array(res)
     def solve(s):
