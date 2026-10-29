@@ -102,13 +102,48 @@ console.log("Stage 1: screening yields the event loop");
   clearInterval(id);
   check("yielding screen lets timers fire (event loop not blocked)", ticks > 0, `ticks=${ticks}`);
 
-  let timedOut = false;
+  const expired = { truncated: false };
+  let threw = false;
+  let expiredPairs: { a: ScreenElset; b: ScreenElset }[] = [];
   try {
-    await screenCandidatePairs(many, DEFAULT_SCREEN, 20, Date.now() - 1);
-  } catch (err) {
-    timedOut = String(err).includes("timed out");
+    expiredPairs = await screenCandidatePairs(many, DEFAULT_SCREEN, 20, Date.now() - 1, undefined, expired);
+  } catch {
+    threw = true;
   }
-  check("expired screening deadline throws", timedOut);
+  check("expired screening deadline does not throw the hour away", !threw);
+  check("expired screening deadline returns before the walk", expiredPairs.length === 0, String(expiredPairs.length));
+  check("expired screening deadline marks the screen truncated", expired.truncated === true);
+
+  // now() is called once before the walk and once per yielded comparison.
+  // Expire on the third call so two accepted visits are kept and the rest stop.
+  let clockCalls = 0;
+  const mid: { truncated: boolean; now: () => number } = {
+    truncated: false,
+    now: () => {
+      clockCalls += 1;
+      return clockCalls >= 3 ? 10_000 : 0;
+    },
+  };
+  const tight = Array.from({ length: 8 }, (_, i) =>
+    makeElset({ norad: 7000 + i, incDeg: 53.2, raanDeg: 10 + i * 0.01, mm: 15.3, ecc: 0.0002 }),
+  );
+  const partial = await screenCandidatePairs(tight, DEFAULT_SCREEN, 1, 5_000, undefined, mid);
+  const fullTight = await screenCandidatePairs(tight, DEFAULT_SCREEN, 0);
+  check("a deadline mid-walk keeps pairs already accepted",
+    partial.length > 0 && partial.length < fullTight.length,
+    `partial=${partial.length} full=${fullTight.length} clock=${clockCalls}`);
+  check("a deadline mid-walk marks the screen truncated", mid.truncated === true);
+
+  const openStop = { truncated: false, now: () => 0 };
+  const open = await screenCandidatePairs(tight, DEFAULT_SCREEN, 1, 5_000, undefined, openStop);
+  check("a deadline with time remaining does not drop pairs",
+    open.length === fullTight.length && openStop.truncated === false,
+    `open=${open.length} full=${fullTight.length}`);
+
+  const coExpired = { truncated: false };
+  const coNone = await screenCoAlignedPairs(many, DEFAULT_COALIGNED, Date.parse("2026-07-30T00:00:00Z"), 20, Date.now() - 1, coExpired);
+  check("expired co-aligned deadline returns no pairs and does not throw",
+    coNone.length === 0 && coExpired.truncated === true);
 }
 
 console.log("J2 RAAN convergence");

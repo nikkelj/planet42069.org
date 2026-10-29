@@ -544,16 +544,15 @@ function asNumber(v: unknown): number {
   return n;
 }
 
-export async function loadStationKeepingSamples(
-  norads: number[],
-  sinceMs: number,
-  untilMs: number,
-  limit: number,
-  execute: (query: SQL) => Promise<unknown> = (query) => db.execute(query),
-): Promise<ElementSample[]> {
-  const query = stationKeepingHistorySql(norads, new Date(sinceMs), new Date(untilMs), limit);
-  if (!query) return [];
-  const rows = asRows(await execute(query));
+/**
+ * Cap on the station-keeping history seek. The scan only starts this read
+ * while the persist reserve is still intact; 20s is inside that reserve, so
+ * a slow plan is cancelled and the hour still persists conjunctions.
+ * Classification is unchanged when the seek finishes.
+ */
+export const STATION_KEEPING_HISTORY_TIMEOUT_MS = 20_000;
+
+function samplesFromRows(rows: Record<string, unknown>[]): ElementSample[] {
   const out: ElementSample[] = [];
   for (const r of rows) {
     const epoch = r.epoch instanceof Date ? r.epoch.getTime() : Date.parse(String(r.epoch));
@@ -571,6 +570,26 @@ export async function loadStationKeepingSamples(
     out.push(sample);
   }
   return out;
+}
+
+export async function loadStationKeepingSamples(
+  norads: number[],
+  sinceMs: number,
+  untilMs: number,
+  limit: number,
+  execute?: (query: SQL) => Promise<unknown>,
+): Promise<ElementSample[]> {
+  const query = stationKeepingHistorySql(norads, new Date(sinceMs), new Date(untilMs), limit);
+  if (!query) return [];
+  if (execute) return samplesFromRows(asRows(await execute(query)));
+  // Default path is the hourly scan's lock client. SET LOCAL dies with the
+  // transaction, so a cancelled seek cannot leave statement_timeout on the
+  // session that still has to persist.
+  return db.transaction(async (tx) => {
+    await tx.execute(sql.raw(`SET LOCAL statement_timeout = ${STATION_KEEPING_HISTORY_TIMEOUT_MS}`));
+    await tx.execute(sql.raw("SET LOCAL max_parallel_workers_per_gather = 0"));
+    return samplesFromRows(asRows(await tx.execute(query)));
+  });
 }
 
 /**
