@@ -170,6 +170,26 @@
       "id": "navarea-xii-747-26",
       "title": "NAVAREA XII 747/26 (Starlink 15-18 hazard areas, eastern Pacific; USCG LNM 56848) via space-notices",
       "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20747%2F26"
+    },
+    {
+      "id": "isro-f18-brochure",
+      "title": "ISRO GSLV-F18 / NVS-03 Mission Brochure (27 Oct 2026)",
+      "url": "https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf"
+    },
+    {
+      "id": "isro-f15-brochure",
+      "title": "ISRO GSLV-F15 / NVS-02 Mission Brochure (flight-sequence analog)",
+      "url": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf"
+    },
+    {
+      "id": "navarea-viii-1127-26",
+      "title": "NAVAREA VIII 1127/26 (GSLV-F18 hazard zones)",
+      "url": "https://www.maritime.dot.gov/msis/navigational-warnings"
+    },
+    {
+      "id": "isro-f18-mission",
+      "title": "ISRO GSLV-F18/NVS-03 mission page",
+      "url": "https://www.isro.gov.in/Mission_GSLVF18.html"
     }
   ],
   "launches": [
@@ -393,6 +413,41 @@
         "wp-falcon9-b5",
         "ll2",
         "sfn-schedule",
+        "kml"
+      ]
+    },
+    {
+      "slug": "gslv-f18-nvs03",
+      "name": "GSLV-F18 / NVS-03 (IRNSS-1L)",
+      "vehicle": "GSLV Mk II",
+      "t0_utc": "2026-10-30T18:21:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/gslv-f18-nvs03/gslv-f18-nvs03_2026-10-30_trajectory.csv",
+        "kml": "/launches/gslv-f18-nvs03/gslv-f18-nvs03_2026-10-30_trajectory.kml",
+        "csv_sim": "/launches/gslv-f18-nvs03/gslv-f18-nvs03_2026-10-30_trajectory_sim.csv",
+        "kml_sim": "/launches/gslv-f18-nvs03/gslv-f18-nvs03_2026-10-30_trajectory_sim.kml",
+        "track_lite": "/launches/gslv-f18-nvs03/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low-medium",
+      "sources": [
+        "https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf",
+        "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf",
+        "https://www.isro.gov.in/Mission_GSLVF18.html",
+        "https://ll.thespacedevs.com/2.3.0/launches/"
+      ],
+      "method": {
+        "csv": "event-surrogate: GSLV-F15/NVS-02 PUBLISHED flight-sequence knots (ANALOG — F18 brochure omits event table) + NAVAREA VIII 1127/26 / ISRO 106 deg azimuth; target GTO 170 x 37023 km, i 20.75 deg from F18 brochure; ILLUSTRATIVE",
+        "csv_sim": "first-principles 3DOF TIMELINE mode on F15 analog event times + F18 masses/orbit/azimuth; altitude residuals 22-60 km low vs F15 knots; insertion perigee ~-5 km (suborbital) vs target 170 km — two-rev coast WITHHELD; deploy.t_s null (F18 sequence unpublished). PR open, not auto-merged. ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "isro-f18-brochure",
+        "isro-f15-brochure",
+        "isro-f18-mission",
+        "navarea-viii-1127-26",
+        "ll2",
         "kml"
       ]
     }

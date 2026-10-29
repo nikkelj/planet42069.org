@@ -180,7 +180,7 @@ def write_outputs(sim,x,outdir,slug):
             f.write(f"#   pitch kick {x[0]:.3f} deg over {sim.t_kick:.0f} s, gravity turn, linear-tangent upper-stage steering tan(theta)={x[1]:.4f}-{x[2]:.6f}*(t-t_ign), solved by optimizer.\n")
         f.write(f"# Vehicle config: {sim.V['name']} (sim/vehicles/{sim.V['id']}.json; every number carries a source URL, derivation, or ASSUMPTION).\n")
         for l in sim.V.get("header_notes",[])+L.get("header_notes",[]): f.write("# "+l+"\n")
-        f.write(f"# Target (see launch config): insertion {sim.h_t/1e3:.0f} km, apoapsis {sim.ha_t/1e3:.0f} km, fpa 0, launch azimuth {math.degrees(sim.az):.2f} deg; payload {sim.payload:.0f} kg.\n")
+        f.write(f"# Target (see launch config): insertion {sim.h_t/1e3:.0f} km, apoapsis {sim.ha_t/1e3:.0f} km, fpa {getattr(sim,'fpa_t',0):g} deg, launch azimuth {math.degrees(sim.az):.2f} deg; payload {sim.payload:.0f} kg.\n")
         f.write(f"# Pad: {sim.lat0:.6f}N {sim.lon0:.6f}E. Frame: WGS-84 ECEF, positions km, velocities km/s (Earth-relative).\n")
         f.write(f"# T0 used: {L['t0_utc']}. Re-run with another T0 by shifting utc_iso only; ECEF geometry is Earth-fixed.\n")
         f.write("elapsed_s,utc_iso,lat_deg,lon_deg,altitude_km,range_along_track_km,x_ecef_km,y_ecef_km,z_ecef_km,vx_ecef_km_s,vy_ecef_km_s,vz_ecef_km_s,rel_vel_km_s,source\n")

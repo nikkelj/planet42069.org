@@ -1,0 +1,243 @@
+{
+ "id": "gslv_mk2",
+ "name": "GSLV Mk II (S139+4 L40H+GL40HT+CUS15)",
+ "timeline": true,
+ "cd": {
+  "value": 0.4,
+  "assumption": "not published"
+ },
+ "glow_kg": {
+  "value": 420000,
+  "src": "https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf",
+  "note": "'Lift off Mass ~420 t' (F18 brochure)"
+ },
+ "stages": [
+  {
+   "name": "L40H strap-ons (4)",
+   "count": 4,
+   "parallel": true,
+   "diameter_m": {
+    "value": 2.1,
+    "src": "https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf"
+   },
+   "propellant_kg": {
+    "value": 41319,
+    "derived": "F18 brochure 4 L40H load 170.6 t /4 = 42,650 kg, minus 1331 kg burned on the pad (strap-ons ignite T-4.8 s per GSLV-F15 sequence https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf) at the derived mdot"
+   },
+   "dry_kg": {
+    "value": 5100,
+    "derived": "(stage mass at lift-off 191 t - propellant 170.6 t)/4, F18 brochure https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf"
+   },
+   "thrust_vac_N": {
+    "value": 796803,
+    "derived": "mdot 277.3 kg/s (= 42,650 kg / 153.8 s burn, T-4.8 s to published shut-off T+149 s) x Isp_vac 293 s x g0; Vikas Isp https://en.wikipedia.org/wiki/Vikas_(rocket_engine)"
+   },
+   "thrust_sl_N": {
+    "value": 712500,
+    "derived": "same mdot x Isp_SL 262 s x g0 (https://en.wikipedia.org/wiki/Vikas_(rocket_engine)); Wikipedia lists 760 kN per L40H (https://en.wikipedia.org/wiki/Geosynchronous_Satellite_Launch_Vehicle)"
+   },
+   "isp_vac_s": {
+    "value": 293,
+    "src": "https://en.wikipedia.org/wiki/Vikas_(rocket_engine)"
+   },
+   "ignition_s": {
+    "value": 0,
+    "derived": "lifts off at S139 ignition T0 (strap-ons ignite at T-4.8 s; pad burn removed from load)"
+   },
+   "cutoff_s": {
+    "value": 149.0,
+    "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf",
+    "note": "GSLV-F15 published '4L40H shut off 149 s' (F18 sequence unpublished; F15 = same vehicle, same NVS GTO mission class)"
+   },
+   "separation_s": {
+    "value": 151.2,
+    "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf",
+    "note": "GS1/GS2 separation 151.2 s (strap-ons leave with GS1)"
+   }
+  },
+  {
+   "name": "GS1 core S139",
+   "diameter_m": {
+    "value": 2.8,
+    "src": "https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf"
+   },
+   "propellant_kg": {
+    "value": 138200,
+    "src": "https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf"
+   },
+   "dry_kg": {
+    "value": 22700,
+    "derived": "stage mass at lift-off 160.9 t - propellant 138.2 t, F18 brochure https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf"
+   },
+   "thrust_vac_N": {
+    "value": 3645701,
+    "derived": "average mdot 1,382 kg/s (= 138.2 t / 100 s nominal burn, https://en.wikipedia.org/wiki/Geosynchronous_Satellite_Launch_Vehicle) x Isp_vac 269 s (PSLV PS1 S139, https://en.wikipedia.org/wiki/PSLV) x g0; Wikipedia peak thrust 4,846.9 kN"
+   },
+   "thrust_sl_N": {
+    "value": 3212011,
+    "derived": "same mdot x Isp_SL 237 s (https://en.wikipedia.org/wiki/Geosynchronous_Satellite_Launch_Vehicle) x g0"
+   },
+   "isp_vac_s": {
+    "value": 269,
+    "src": "https://en.wikipedia.org/wiki/PSLV"
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf",
+    "note": "S139 ignition = T0"
+   },
+   "cutoff_s": {
+    "value": 100.0,
+    "assumption": "S139 nominal burn time 100 s (https://en.wikipedia.org/wiki/Geosynchronous_Satellite_Launch_Vehicle); not in the F15/F18 event tables; constant mdot (real solid thrust is regressive)"
+   },
+   "separation_s": {
+    "value": 151.2,
+    "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf",
+    "note": "GS1/GS2 separation 151.2 s"
+   }
+  },
+  {
+   "name": "GS2 GL40HT (Vikas)",
+   "diameter_m": {
+    "value": 2.8,
+    "src": "https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf"
+   },
+   "propellant_kg": {
+    "value": 42100,
+    "src": "https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf"
+   },
+   "dry_kg": {
+    "value": 5200,
+    "derived": "stage mass 47.3 t - propellant 42.1 t, F18 brochure https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf"
+   },
+   "thrust_vac_N": {
+    "value": 860368,
+    "derived": "full-depletion mdot 297.40 kg/s (= F18 load 42.1 t / F15 published burn 149.6->291.16 s) x Isp 295 s x g0; Wikipedia lists 846.8 kN (https://en.wikipedia.org/wiki/Geosynchronous_Satellite_Launch_Vehicle), +1.6%"
+   },
+   "isp_vac_s": {
+    "value": 295,
+    "src": "https://en.wikipedia.org/wiki/Geosynchronous_Satellite_Launch_Vehicle"
+   },
+   "ignition_s": {
+    "value": 149.6,
+    "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf",
+    "note": "GS2 ignition 149.6 s (hot staging)"
+   },
+   "cutoff_s": {
+    "value": 291.16,
+    "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf",
+    "note": "GS2 shut off 291.16 s"
+   },
+   "separation_s": {
+    "value": 294.68,
+    "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf",
+    "note": "GS2 separation 294.68 s"
+   }
+  },
+  {
+   "name": "GS3 CUS15 (CE-7.5)",
+   "diameter_m": {
+    "value": 2.8,
+    "src": "https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf"
+   },
+   "propellant_kg": {
+    "value": 14400,
+    "src": "https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf"
+   },
+   "dry_kg": {
+    "value": 2700,
+    "derived": "stage mass 17.1 t - propellant 14.4 t, F18 brochure https://www.isro.gov.in/media_isro/image/index/GSLVF18_NVS03/GSLV_F18_NVS03_Mission_Brouchure_27102026.pdf"
+   },
+   "thrust_vac_N": {
+    "value": 76351,
+    "derived": "full-depletion mdot 17.149 kg/s (= F18 load 14.4 t / F15 published burn 295.68->1135.38 s; F15 'CUS burn out' follows shut-off by 5 s) x Isp 454 s x g0; published CE-7.5 73.5 kN (https://en.wikipedia.org/wiki/CE-7.5) / 75 kN (https://en.wikipedia.org/wiki/Geosynchronous_Satellite_Launch_Vehicle)"
+   },
+   "isp_vac_s": {
+    "value": 454,
+    "src": "https://en.wikipedia.org/wiki/CE-7.5"
+   },
+   "ignition_s": {
+    "value": 295.68,
+    "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf",
+    "note": "CUS ignition 295.68 s"
+   },
+   "cutoff_s": {
+    "value": 1135.38,
+    "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf",
+    "note": "CUS shut off 1135.38 s (CUS burn out 1140.38 s, S/C separation 1150.38 s)"
+   }
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 1450,
+   "derived": "budget: F18 '~420 t' lift-off mass - stage masses (160.9+191+47.3+17.1 t) - payload 2.25 t = 1.45 t for 3.4 m metallic PLF + adapter (rough: lift-off mass is rounded)"
+  },
+  "jettison_time_s": {
+   "value": 237.42,
+   "src": "https://www.isro.gov.in/media_isro/pdf/GSLVF15/GSLV-F15_NVS-02_EngBrochure240125.pdf",
+   "note": "PLF separation 237.42 s"
+  }
+ },
+ "guidance": {
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "not published"
+  },
+  "linear_tangent_from_stage": 2
+ },
+ "fit": {
+  "vertical_rise_s": {
+   "x0": 5.04,
+   "bounds": [
+    4,
+    20
+   ],
+   "basis": "ASSUMPTION bound"
+  },
+  "kick_deg": {
+   "x0": 6.9,
+   "bounds": [
+    0.3,
+    15
+   ],
+   "basis": "ASSUMPTION bound"
+  },
+  "cd": {
+   "x0": 0.74,
+   "bounds": [
+    0.2,
+    0.8
+   ],
+   "basis": "ASSUMPTION bound for slender LV mean Cd (reference area = 2.8 m core; 3.4 m PLF absorbed into Cd)"
+  },
+  "payload_kg": {
+   "x0": 2250,
+   "bounds": [
+    2000,
+    2600
+   ],
+   "basis": "F18 brochure ~2,250 kg"
+  },
+  "tan0": {
+   "x0": 0.277,
+   "bounds": [
+    -2,
+    5
+   ],
+   "basis": "guidance law parameter"
+  },
+  "tan_rate": {
+   "x0": 0.0,
+   "bounds": [
+    -0.05,
+    0.05
+   ],
+   "basis": "guidance law parameter"
+  }
+ },
+ "header_notes": [
+  "GSLV Mk II TIMELINE mode: stage/fairing event times are ISRO's PUBLISHED GSLV-F15/NVS-02 sequence (same vehicle, same 2,250 kg NVS GTO class); ISRO has not published an F18 event table.",
+  "Stage loads and masses from the ISRO GSLV-F18/NVS-03 brochure (27 Oct 2026); thrust/Isp from Wikipedia (GSLV, Vikas, CE-7.5, PSLV) with derivations noted."
+ ]
+}
