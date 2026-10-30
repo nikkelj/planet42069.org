@@ -2,7 +2,7 @@
  "slug": "starlink-15-18",
  "title": "Falcon 9 Starlink Group 15-18 (27 V2 Mini Optimized, SLC-4E)",
  "vehicle": "falcon9",
- "t0_utc": "2026-10-31T03:48:00Z",
+ "t0_utc": "2026-10-31T04:02:22Z",
  "pad": {
   "lat": 34.632,
   "lon": -120.611,
@@ -12,8 +12,8 @@
  "azimuth_deg": {
   "value": 155.8,
   "derived": "launch-plane azimuth tuned to the SpaceX/CelesTrak SupGP inclination 70.004 deg: textbook 180-asin(cos i/cos lat)=155.44 deg; sim runs gave i=70.104 deg at 155.87 and 69.908 deg at 155.74 (di/daz ~1.5), interpolated to 155.80 deg",
-  "src": "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-18&FORMAT=json (CelesTrak SupGP 'STARLINK-G15-18 STACK', DATA_SOURCE SpaceX-SV, pre-launch state vector provided by SpaceX; epoch 2026-10-31T04:51:14.30Z (re-issued for the new T0; i 70.004 deg, RAAN 172.0052 deg, 251.1 x 266.2 km); fetched 2026-10-29 ~8:15a PDT)",
-  "check": "inside hazard corridor: NAVAREA XII 747/26 Hazard Area A (alternate window 300402Z-300827Z OCT covers T0) far edge 29-48N 117-39W / 29-35N 118-12W; same polygon as 737/26 used for 15-16 (far-edge bearings 151.8-157.3 deg, centre 154.56 deg used for the surrogate) https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20747%2F26"
+  "src": "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-18&FORMAT=json (CelesTrak SupGP 'STARLINK-G15-18 STACK', DATA_SOURCE SpaceX-SV, pre-launch state vector provided by SpaceX; epoch 2026-10-31T05:05:36.30Z (re-issued again for the T0 2026-10-31T04:02:22Z; i 70.004 deg, RAAN 175.6067 deg, mean motion 16.05699287 rev/day = 251.1 x 266.2 km); fetched 2026-10-30 ~8:20a PDT)",
+  "check": "inside hazard corridor: NAVAREA XII 747/26 Hazard Area A (window 310348Z-310831Z OCT covers T0 310402Z) far edge 29-48N 117-39W / 29-35N 118-12W; same polygon as 737/26 used for 15-16 (far-edge bearings 151.8-157.3 deg, centre 154.56 deg used for the surrogate) https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20747%2F26"
  },
  "payload_kg": {
   "fit": true,
@@ -27,16 +27,16 @@
   },
   "apoapsis_alt_km": {
    "value": 266.2,
-   "src": "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-18&FORMAT=json (CelesTrak SupGP 'STARLINK-G15-18 STACK', DATA_SOURCE SpaceX-SV, pre-launch state vector provided by SpaceX; epoch 2026-10-31T04:51:14.30Z (re-issued for the new T0; i 70.004 deg, RAAN 172.0052 deg, 251.1 x 266.2 km); fetched 2026-10-29 ~8:15a PDT): deploy orbit 251.1 x 266.2 km (mean elements, above equatorial radius), i 70.004 deg; SES-2 at apogee raises perigee only, so parking apogee = deploy apogee (DERIVED)"
+   "src": "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-18&FORMAT=json (CelesTrak SupGP 'STARLINK-G15-18 STACK', DATA_SOURCE SpaceX-SV, pre-launch state vector provided by SpaceX; epoch 2026-10-31T05:05:36.30Z (re-issued again for the T0 2026-10-31T04:02:22Z; i 70.004 deg, RAAN 175.6067 deg, mean motion 16.05699287 rev/day = 251.1 x 266.2 km); fetched 2026-10-30 ~8:20a PDT): deploy orbit 251.1 x 266.2 km (mean elements, above equatorial radius), i 70.004 deg; SES-2 at apogee raises perigee only, so parking apogee = deploy apogee (DERIVED)"
   },
   "cutoff": "energy",
   "sma_sigma_km": 2,
   "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude (~3 km difference at insertion latitude, accepted via 1 km-weight)"
  },
  "header_notes": [
-  "Not flown: LL2 NET 2026-10-31T03:48:00Z (Fri Oct 30 8:48 pm PDT), status Go (LL2 checked 2026-10-29 ~8:10a PDT); SpaceX launches page Oct 30 23:48 ET agrees; NAVAREA XII 747/26 window 310348Z-310831Z OCT covers it. Retimed from the earlier T0 2026-10-30T04:02:00Z (Thu Oct 29 9:02 pm PDT); SpaceX timeline unchanged. Spaceflight Now schedule not machine-readable from the box (JS/API-gated). File continues past SECO-1 through SES-2/SECO-2 to payload deploy (POST-CUTOFF lines).",
+  "Not flown: LL2 NET 2026-10-31T04:02:22Z (Fri Oct 30 9:02:22 pm PDT), window 03:48-07:48Z, status Go (LL2 update 2026-10-30T14:16Z 'Now targeting Oct 31 at 04:02 UTC'; checked 2026-10-30 ~8:15a PDT); SpaceX launches page currently shows no date/time for sl-15-18 (cannot confirm); NAVAREA XII 747/26 window 310348Z-310831Z OCT covers it; CelesTrak SupGP re-issued for this T0 (epoch = T0 + 1:03:14). Retimed from 2026-10-31T03:48:00Z (Fri 8:48 pm PDT), earlier 2026-10-30T04:02:00Z; SpaceX timeline unchanged. File continues past SECO-1 through SES-2/SECO-2 to payload deploy (POST-CUTOFF lines).",
   "Published timeline (SpaceX sl-15-18): Max-Q 1:08, MECO 2:26, stage sep 2:29, SES-1 2:36, fairing 2:58, SECO-1 8:39, SES-2 53:07, SECO-2 53:08, deploy 1:01:59. Booster: 18th flight (SpaceX), LL2/prior board B1093; OCISLY.",
-  "Target orbit: SpaceX pre-launch state vector (CelesTrak SupGP starlink-g15-18): deploy 251 x 266 km, i 70.004 deg. Deploy epoch 2026-10-31T04:51:14Z = T+1:03:14 vs SpaceX page 1:01:59 (75 s, noted)."
+  "Target orbit: SpaceX pre-launch state vector (CelesTrak SupGP starlink-g15-18): deploy 251 x 266 km, i 70.004 deg, RAAN 175.6067 deg. Deploy epoch 2026-10-31T05:05:36Z = T+1:03:14 vs SpaceX page 1:01:59 (75 s, noted)."
  ],
  "final_cutoff_s": {
   "value": 519,
@@ -114,7 +114,7 @@
    "label": "Starlink stack deploy"
   },
   "notes": [
-   "CelesTrak SupGP deploy-state epoch 2026-10-31T04:51:14Z = T+3794 s, 75 s after SpaceX's published deploy; SpaceX time used.",
+   "CelesTrak SupGP deploy-state epoch 2026-10-31T05:05:36Z = T+3794 s, 75 s after SpaceX's published deploy; SpaceX time used.",
    "Perigee/apogee are osculating (r - 6378.137 km) and will differ by a few km from CelesTrak mean elements."
   ]
  },
