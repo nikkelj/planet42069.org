@@ -4,14 +4,14 @@ import { sql, eq, and, inArray, lt, desc } from "drizzle-orm";
 import { logger } from "../logger";
 import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, retryOnceOnTransient, retryTransientConnection, isTransientConnectionError, ensureAdvisoryLockClient, DB_CONNECT_RETRY_ATTEMPTS, DB_CONNECT_RETRY_DELAYS_MS, type LatestElset } from "../obc/tleArchive";
 import { getSatcatFromStore } from "../obc/store";
-import { MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline, cancelScanAttempt, markScanLogged, sgp4ShouldStop } from "./scanPolicy";
+import { MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline, cancelScanAttempt, markScanLogged, sgp4ShouldStop, screenStopDeadlineMs } from "./scanPolicy";
 import {
   screenCandidatePairs, screenCoAlignedPairs, closeApproach, clusterPairs,
   DEFAULT_SCREEN, DEFAULT_COALIGNED, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S,
   COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, semiMajorAxisKm, minPhaseDiffDeg,
   hasUsableTleLines, tleEpochIsCurrent, yieldToEventLoop, SCREEN_YIELD_EVERY,
   alongTrackRulesOutRange,
-  type ScreenElset, type FlaggedPair, type ScreenOptions,
+  type ScreenElset, type FlaggedPair, type ScreenOptions, type ScreenStop,
 } from "./screen";
 import { selectEndedCoplanarIds, selectReopenCandidate, selectUnseenConjunctionIds, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS } from "./retire";
 import { isEscalation, type NewRpodEvent, type EscalatedRpodEvent } from "./alert";
@@ -35,7 +35,7 @@ import {
 
 export {
   rpodScanIsDue, RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_ERROR_RETRY_MS, RPOD_SCAN_CHECK_INTERVAL_MS, RPOD_SCAN_BOOT_DELAY_MS,
-  MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, RPOD_POST_SGP4_RESERVE_MS, sgp4ShouldStop,
+  MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, RPOD_POST_SGP4_RESERVE_MS, sgp4ShouldStop, screenStopDeadlineMs,
   withDeadline, cancelScanAttempt, markScanLogged,
 } from "./scanPolicy";
 export { DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry };
@@ -53,8 +53,9 @@ export { DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry };
  *  - same-plane pairs whose along-track phase cannot enter the range
  *    bubble are dropped before that budget (a Starlink plane otherwise
  *    fills it with approaches that are still thousands of km apart)
- *  - stage-2 stops RPOD_POST_SGP4_RESERVE_MS before the hard cap so a
- *    long hour still persists what it found instead of logging a timeout
+ *  - every pre-persist stage stops RPOD_POST_SGP4_RESERVE_MS before the
+ *    hard cap so a long hour still persists what it found instead of
+ *    logging "timed out before persist"
  *  - persist only interesting events (red paired with blue or neutral,
  *    exercise-flagged blue-on-blue, messy clusters, ultra-close
  *    near-misses) — see interest.ts
@@ -354,14 +355,15 @@ async function sgp4FlagPairs(
 ): Promise<FlaggedPair[]> {
   const flagged: FlaggedPair[] = [];
   for (let i = 0; i < pairs.length; i++) {
-    throwIfScanDeadline(deadlineMs, "during SGP4", abort);
     // Leave the reserve for cluster / persist / alerts / retire. Stopping
-    // here keeps pairs already flagged; the hard cap would discard them.
+    // here keeps pairs already flagged; throwing at the hard cap would
+    // discard them ("rpod-scan timed out before persist").
     if (sgp4ShouldStop(Date.now(), deadlineMs)) {
       if (truncated) truncated.current = true;
       logger.warn({ done: i, total: pairs.length }, "rpod-scan: stopping SGP4 to leave time for persist");
       break;
     }
+    throwIfScanDeadline(deadlineMs, "during SGP4", abort);
     const { a, b } = pairs[i];
     try {
       const ca = closeApproach(a, b, nowMs, DEFAULT_SCREEN.windowMs);
@@ -463,12 +465,21 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       });
     }
 
-    throwIfScanDeadline(deadlineMs, "before stage-1 screen", abort);
-    // Stage 1
+    // Stage 1. Screens stop at the persist reserve and return pairs already
+    // accepted. Throwing here used to drop the hour before persist.
     const planeScore = (p: { a: ScreenElset; b: ScreenElset }) =>
       Math.abs(p.a.incDeg - p.b.incDeg) + Math.abs(p.a.meanMotionRevPerDay - p.b.meanMotionRevPerDay) * 4;
     const sgp4Truncated = { current: false };
-    let candidates = (await screenCandidatePairs(elsets, DEFAULT_SCREEN, SCREEN_YIELD_EVERY, deadlineMs))
+    const stage1Stop: ScreenStop = { truncated: false };
+    const screenDeadlineMs = screenStopDeadlineMs(deadlineMs);
+    let stage1Pairs: { a: ScreenElset; b: ScreenElset }[] = [];
+    if (!sgp4ShouldStop(Date.now(), deadlineMs)) {
+      stage1Pairs = await screenCandidatePairs(elsets, DEFAULT_SCREEN, SCREEN_YIELD_EVERY, screenDeadlineMs, undefined, stage1Stop);
+    } else {
+      stage1Stop.truncated = true;
+    }
+    if (stage1Stop.truncated) sgp4Truncated.current = true;
+    let candidates = stage1Pairs
       .filter((p) => !isSameFreshLaunch(p.a.norad, p.b.norad, meta, nowMs))
       // Same-plane housekeeping never enters the 30 km bubble. Drop it
       // before the SGP4 cap so the budget is spent on pairs that can.
@@ -489,9 +500,18 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     // Co-aligned (coplanar shadowing) screen: same plane + same radial shell,
     // slowly drifting in phase. The 30 km bubble rarely closes for these, so
     // they're flagged on geometry with loose range/velocity caps instead.
-    throwIfScanDeadline(deadlineMs, "before co-aligned screen", abort);
+    // Skipped once the persist reserve is reached — running it into the hard
+    // cap is what stored "rpod-scan timed out before persist".
     const flaggedKeys = new Set(flagged.map((f) => pairKey(f.a, f.b)));
-    let coCandidates = (await screenCoAlignedPairs(elsets, DEFAULT_COALIGNED, nowMs, SCREEN_YIELD_EVERY, deadlineMs))
+    const coStop: ScreenStop = { truncated: false };
+    let coRaw: { a: ScreenElset; b: ScreenElset }[] = [];
+    if (!sgp4ShouldStop(Date.now(), deadlineMs)) {
+      coRaw = await screenCoAlignedPairs(elsets, DEFAULT_COALIGNED, nowMs, SCREEN_YIELD_EVERY, screenDeadlineMs, coStop);
+    } else {
+      coStop.truncated = true;
+    }
+    if (coStop.truncated) sgp4Truncated.current = true;
+    let coCandidates = coRaw
       .filter((p) => isPayloadPair(p.a.norad, p.b.norad, meta))
       .filter((p) => !isSameLaunch(p.a.norad, p.b.norad, meta))
       // Slow same-plane neighbor screen only. Same-constellation still
@@ -522,39 +542,45 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
 
     // Stage 3 + widened scan for capped clusters
     let events = clusterPairs(flagged, MEMBER_CAP);
-    for (const ev of events) {
-      if (!ev.hitCap) continue;
-      // Big messy event: re-screen every member against the FULL fresh-elset
-      // set with relaxed plane margins so no participant is missed.
-      const relaxed: ScreenOptions = { ...DEFAULT_SCREEN, maxIncDiffDeg: 1.2, maxRaanDiffDeg: 3, maxMeanMotionDiff: 0.8 };
-      const memberSet = new Set(ev.members);
-      const neighborhood = elsets.filter((e) => {
-        if (memberSet.has(e.norad)) return true;
-        return ev.members.some((m) => {
-          const me = byNorad.get(m);
-          return me != null &&
-            Math.abs(me.incDeg - e.incDeg) <= relaxed.maxIncDiffDeg &&
-            Math.abs(me.meanMotionRevPerDay - e.meanMotionRevPerDay) <= relaxed.maxMeanMotionDiff;
+    if (!sgp4ShouldStop(Date.now(), deadlineMs)) {
+      for (const ev of events) {
+        if (!ev.hitCap) continue;
+        // Big messy event: re-screen every member against the FULL fresh-elset
+        // set with relaxed plane margins so no participant is missed.
+        const relaxed: ScreenOptions = { ...DEFAULT_SCREEN, maxIncDiffDeg: 1.2, maxRaanDiffDeg: 3, maxMeanMotionDiff: 0.8 };
+        const memberSet = new Set(ev.members);
+        const neighborhood = elsets.filter((e) => {
+          if (memberSet.has(e.norad)) return true;
+          return ev.members.some((m) => {
+            const me = byNorad.get(m);
+            return me != null &&
+              Math.abs(me.incDeg - e.incDeg) <= relaxed.maxIncDiffDeg &&
+              Math.abs(me.meanMotionRevPerDay - e.meanMotionRevPerDay) <= relaxed.maxMeanMotionDiff;
+          });
         });
-      });
-      const flaggedKeys = new Set(flagged.map((f) => pairKey(f.a, f.b)));
-      const wideSlack = relaxed.maxRaanDiffDeg + relaxed.maxIncDiffDeg;
-      // Anchor on the event members. Screening the whole neighborhood
-      // all-pairs the shell (and any high-e elset in it) for a 5-craft cluster.
-      const widePairs = (await screenCandidatePairs(neighborhood, relaxed, SCREEN_YIELD_EVERY, deadlineMs, memberSet))
-        .filter((p) => memberSet.has(p.a.norad) || memberSet.has(p.b.norad))
-        .filter((p) => !isSameFreshLaunch(p.a.norad, p.b.norad, meta, nowMs))
-        .filter((p) => !flaggedKeys.has(pairKey(p.a.norad, p.b.norad)))
-        .filter((p) => !alongTrackRulesOutRange(
-          p.a, p.b, nowMs, relaxed.windowMs, RPOD_MAX_RANGE_KM, wideSlack,
-        ))
-        .slice(0, 400);
-      flagged.push(...await sgp4FlagPairs(
-        widePairs, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S, deadlineMs, abort, sgp4Truncated,
-      ));
-      // Re-cluster once after all widened pairs are in.
-      events = clusterPairs(flagged, MEMBER_CAP);
-      break;
+        const wideFlaggedKeys = new Set(flagged.map((f) => pairKey(f.a, f.b)));
+        const wideSlack = relaxed.maxRaanDiffDeg + relaxed.maxIncDiffDeg;
+        const wideStop: ScreenStop = { truncated: false };
+        // Anchor on the event members. Screening the whole neighborhood
+        // all-pairs the shell (and any high-e elset in it) for a 5-craft cluster.
+        const widePairs = (await screenCandidatePairs(neighborhood, relaxed, SCREEN_YIELD_EVERY, screenStopDeadlineMs(deadlineMs), memberSet, wideStop))
+          .filter((p) => memberSet.has(p.a.norad) || memberSet.has(p.b.norad))
+          .filter((p) => !isSameFreshLaunch(p.a.norad, p.b.norad, meta, nowMs))
+          .filter((p) => !wideFlaggedKeys.has(pairKey(p.a.norad, p.b.norad)))
+          .filter((p) => !alongTrackRulesOutRange(
+            p.a, p.b, nowMs, relaxed.windowMs, RPOD_MAX_RANGE_KM, wideSlack,
+          ))
+          .slice(0, 400);
+        if (wideStop.truncated) sgp4Truncated.current = true;
+        flagged.push(...await sgp4FlagPairs(
+          widePairs, nowMs, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S, deadlineMs, abort, sgp4Truncated,
+        ));
+        // Re-cluster once after all widened pairs are in.
+        events = clusterPairs(flagged, MEMBER_CAP);
+        break;
+      }
+    } else if (events.some((ev) => ev.hitCap)) {
+      sgp4Truncated.current = true;
     }
 
     const coEvents = clusterPairs(coFlagged, MEMBER_CAP, COALIGNED_MERGE_WINDOW_MS);
@@ -562,12 +588,14 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     // Station keeping uses the latest elsets already loaded, then one
     // bounded history seek for the red-versus-blue plane matches. It does
     // not relabel a pair this hour already flagged as conjunction or coplanar.
+    // The old 20s gate started the history read inside the persist reserve
+    // (alerts alone need 45s) and the seek had no statement timeout.
     const skOpts = stationKeepingOptions();
     let skEvents: ReturnType<typeof clusterPairs> = [];
     const skGeom = new Map<string, StationKeepingVerdict>();
     let skRan = false;
     const skNotes: string[] = [];
-    if (Date.now() + 20_000 < deadlineMs) {
+    if (!sgp4ShouldStop(Date.now(), deadlineMs)) {
       try {
         const samples: ElementSample[] = [];
         for (const e of elsets) {
@@ -617,7 +645,12 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       coplanar: coKept.stats,
     };
 
-    throwIfScanDeadline(deadlineMs, "before persist", abort);
+    // Persist what this hour already flagged. The hard cap used to throw
+    // here ("rpod-scan timed out before persist") and store lastScanEvents
+    // null after screening had finished. The outer withDeadline is the
+    // backstop if persist itself hangs; a cancelled attempt must not add
+    // a second sync-log row.
+    if (abort.cancelled) return;
     const crossTagPairs = new Set<string>();
     for (const p of [...flagged, ...coFlagged]) {
       const a = byNorad.get(p.a);
@@ -643,6 +676,9 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       stationKeepingSignificantKm: skOpts.significantChangeKm,
     });
     const warnings = [...conjResult.errors, ...coResult.errors, ...skResult.errors, ...skNotes];
+    if (stage1Stop.truncated || coStop.truncated) {
+      warnings.push("screen stopped early to leave time for persist");
+    }
     if (sgp4Truncated.current) {
       warnings.push("sgp4 stopped early to stay inside the scan deadline");
     }

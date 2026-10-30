@@ -42,21 +42,40 @@ export const MAX_RPOD_SCAN_MS = 25 * 60 * 1000;
 export const RPOD_ALERT_TIMEOUT_MS = 45 * 1000;
 
 /**
- * Stop stage-2 SGP4 this long before the hard cap so cluster, persist,
- * alerts, and retire still run. The outer deadline used to win while SGP4
- * was in a pair, log "rpod-scan timed out after 1500000ms", and drop the
- * hour (lastScanEvents null) even when pairs were already flagged.
- * Must outlast alert posting plus a short persist/retire tail.
+ * Stop every pre-persist stage this long before the hard cap so cluster,
+ * persist, alerts, and retire still run.
+ *
+ * Only the SGP4 loops used to honor it. After they stopped, the co-aligned
+ * screen, the widened rescreen, and the station-keeping history read kept
+ * going against the hard cap. The persist checkpoint then threw
+ * "rpod-scan timed out before persist" and stored lastScanEvents null
+ * (live 2026-10-29 13:53Z and 15:04Z, after an 11:32Z success on the same
+ * build). Must outlast alert posting plus a short persist/retire tail.
+ *
+ * Latest-elset pointer retries are not part of this reserve. They fail the
+ * hour before screening, and one extra 30s client deadline cannot spend a
+ * 25-minute scan.
  */
 export const RPOD_POST_SGP4_RESERVE_MS = 3 * 60 * 1000;
 
-/** True when stage-2 should stop so the rest of the scan can finish. */
+/**
+ * Deadline passed to catalog screens. Screening stops here and returns the
+ * pairs already accepted, leaving `RPOD_POST_SGP4_RESERVE_MS` for persist.
+ */
+export function screenStopDeadlineMs(
+  deadlineMs: number,
+  reserveMs: number = RPOD_POST_SGP4_RESERVE_MS,
+): number {
+  return deadlineMs - reserveMs;
+}
+
+/** True when a pre-persist stage should stop so persist can still finish. */
 export function sgp4ShouldStop(
   nowMs: number,
   deadlineMs: number,
   reserveMs: number = RPOD_POST_SGP4_RESERVE_MS,
 ): boolean {
-  return nowMs > deadlineMs - reserveMs;
+  return nowMs > screenStopDeadlineMs(deadlineMs, reserveMs);
 }
 
 export function rpodScanIsDue(

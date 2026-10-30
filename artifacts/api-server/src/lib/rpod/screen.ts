@@ -173,7 +173,7 @@ async function visitRaanPairs(
   windowDeg: number,
   visit: (i: number, j: number) => void,
   yieldEvery: number,
-  onTick: () => void | Promise<void>,
+  onTick: () => void | boolean | Promise<void | boolean>,
   seeds?: number[],
 ): Promise<void> {
   const n = idxs.length;
@@ -201,7 +201,7 @@ async function visitRaanPairs(
         for (const j of idxs) {
           if (j === i) continue;
           if (seedSet.has(j) && j < i) continue;
-          if (hit(i, j)) await onTick();
+          if (hit(i, j) && (await onTick()) === true) return;
         }
       }
       return;
@@ -212,24 +212,24 @@ async function visitRaanPairs(
       const ra = raanDeg[i];
       for (let k = p + 1; k < n; k++) {
         if (raanDeg[order[k]] - ra > windowDeg) break;
-        if (hit(i, order[k])) await onTick();
+        if (hit(i, order[k]) && (await onTick()) === true) return;
       }
       for (let k = p - 1; k >= 0; k--) {
         if (ra - raanDeg[order[k]] > windowDeg) break;
-        if (hit(i, order[k])) await onTick();
+        if (hit(i, order[k]) && (await onTick()) === true) return;
       }
       const wrapHi = ra + windowDeg - 360;
       if (wrapHi >= 0) {
         for (let k = 0; k < p; k++) {
           if (raanDeg[order[k]] > wrapHi) break;
-          if (hit(i, order[k])) await onTick();
+          if (hit(i, order[k]) && (await onTick()) === true) return;
         }
       }
       if (ra - windowDeg < 0) {
         const wrapLo = ra - windowDeg + 360;
         for (let k = n - 1; k > p; k--) {
           if (raanDeg[order[k]] < wrapLo) break;
-          if (hit(i, order[k])) await onTick();
+          if (hit(i, order[k]) && (await onTick()) === true) return;
         }
       }
     }
@@ -239,7 +239,7 @@ async function visitRaanPairs(
   if (!(windowDeg < 180)) {
     for (let a = 0; a < n; a++) {
       for (let b = a + 1; b < n; b++) {
-        if (hit(order[a], order[b])) await onTick();
+        if (hit(order[a], order[b]) && (await onTick()) === true) return;
       }
     }
     return;
@@ -248,13 +248,13 @@ async function visitRaanPairs(
     const ra = raanDeg[order[left]];
     for (let k = left + 1; k < n; k++) {
       if (raanDeg[order[k]] - ra > windowDeg) break;
-      if (hit(order[left], order[k])) await onTick();
+      if (hit(order[left], order[k]) && (await onTick()) === true) return;
     }
     const wrapLimit = ra + windowDeg - 360;
     if (wrapLimit < 0) continue;
     for (let k = 0; k < left; k++) {
       if (raanDeg[order[k]] > wrapLimit) break;
-      if (hit(order[left], order[k])) await onTick();
+      if (hit(order[left], order[k]) && (await onTick()) === true) return;
     }
   }
 }
@@ -282,6 +282,29 @@ export function yieldToEventLoop(): Promise<void> {
  * box still needs to yield so GET /api/rpod/status can flush.
  */
 export const SCREEN_YIELD_EVERY = 4_000;
+
+/**
+ * Early stop for a catalog walk. When the deadline has passed, the walk
+ * returns pairs already accepted and sets `truncated` instead of throwing.
+ * A throw used to fail the hour after those pairs were in hand
+ * ("rpod-scan timed out before persist", live 2026-10-29).
+ * `now` is for tests; the scan uses Date.now.
+ */
+export interface ScreenStop {
+  truncated: boolean;
+  now?: () => number;
+}
+
+function screenNow(stop?: ScreenStop): number {
+  return stop?.now?.() ?? Date.now();
+}
+
+/** True when the walk must return. Sets `truncated` when a stop flag was passed. */
+function screenDeadlineReached(deadlineMs: number | undefined, stop?: ScreenStop): boolean {
+  if (deadlineMs == null || screenNow(stop) <= deadlineMs) return false;
+  if (stop) stop.truncated = true;
+  return true;
+}
 
 /**
  * Objects whose nodal rates over the screen window stay inside this many
@@ -328,7 +351,9 @@ export async function screenCandidatePairs(
   yieldEvery: number = 0,
   deadlineMs?: number,
   anchorNorads?: ReadonlySet<number>,
+  stop?: ScreenStop,
 ): Promise<CandidatePair[]> {
+  if (screenDeadlineReached(deadlineMs, stop)) return [];
   const bandSize = Math.max(opts.maxIncDiffDeg, 0.1);
   const bands = new Map<number, ScreenElset[]>();
   for (const e of elsets) {
@@ -342,9 +367,10 @@ export async function screenCandidatePairs(
   }
   const pairs: CandidatePair[] = [];
   const seen = new Set<string>();
-  const onTick = async (): Promise<void> => {
-    if (deadlineMs != null && Date.now() > deadlineMs) throw new Error("rpod-scan timed out during screening");
+  const onTick = async (): Promise<boolean> => {
+    if (screenDeadlineReached(deadlineMs, stop)) return true;
     await yieldToEventLoop();
+    return false;
   };
   const accept = (arr: ScreenElset[], rates: number[], i: number, j: number): void => {
     const a = arr[i];
@@ -566,7 +592,9 @@ export async function screenCoAlignedPairs(
   nowMs: number = Date.now(),
   yieldEvery: number = 0,
   deadlineMs?: number,
+  stop?: ScreenStop,
 ): Promise<CandidatePair[]> {
+  if (screenDeadlineReached(deadlineMs, stop)) return [];
   const bandSize = Math.max(opts.maxIncDiffDeg, 0.1);
   const bands = new Map<number, ScreenElset[]>();
   for (const e of elsets) {
@@ -580,9 +608,10 @@ export async function screenCoAlignedPairs(
   }
   const pairs: CandidatePair[] = [];
   const seen = new Set<string>();
-  const onTick = async (): Promise<void> => {
-    if (deadlineMs != null && Date.now() > deadlineMs) throw new Error("rpod-scan timed out during co-aligned screen");
+  const onTick = async (): Promise<boolean> => {
+    if (screenDeadlineReached(deadlineMs, stop)) return true;
     await yieldToEventLoop();
+    return false;
   };
   // No convergence term: shadowers are already co-planar. The RAAN gate is
   // the current separation, so the neighbor window is that gate plus slack.
