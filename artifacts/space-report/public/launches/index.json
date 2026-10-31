@@ -6,7 +6,7 @@
     },
     "sim": {
       "title": "First-principles 3DOF sim",
-      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry. Long March vehicles run in timeline mode: published ignition/cutoff/separation times are hard events, burn rates from published thrust/Isp, and remaining free parameters fitted (bounded least squares) to the CALT manual LM-3B profile (altitude within 3.4 km at all events). Falcon 9 also runs in timeline mode: SpaceX's published MECO, stage-separation, SES-1, fairing and SECO-1 times are hard events, Block 5 masses and Merlin thrust/Isp from open sources, and steering and payload are fitted (bounded least squares) to the parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP), along an azimuth tuned so the orbit plane reaches the state vector's inclination (15-16: 155.87° for 70.007°; 15-18: 155.80° for 70.004°), inside the NAVAREA hazard corridor. Sims run through payload deploy: after final cutoff the stage coasts under the same WGS-84/J2/US76-drag model, with any published restart or kick-stage burn modelled from its published timing, to the provider's published deploy time (Starlink 15-16: SES-2/SECO-2 at T+53:01-53:03, deploy T+1:01:53; Starlink 15-18: SES-2/SECO-2 at T+53:07-53:08, deploy T+1:01:59). Where no deploy time is published (Electron HawkEye 360, LM-4B, LM-6A, LM-8A) the stage is propagated from insertion for two revolutions on the inferred insertion orbit (same J2 + drag model) and the file ends labelled 'inferred insertion orbit, +2 revs (deploy time unpublished)'."
+      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry. Long March vehicles run in timeline mode: published ignition/cutoff/separation times are hard events, burn rates from published thrust/Isp, and remaining free parameters fitted (bounded least squares) to the CALT manual LM-3B profile (altitude within 3.4 km at all events). Falcon 9 also runs in timeline mode: SpaceX's published MECO, stage-separation, SES-1, fairing and SECO-1 times are hard events, Block 5 masses and Merlin thrust/Isp from open sources, and steering and payload are fitted (bounded least squares) to the parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP), along an azimuth tuned so the orbit plane reaches the state vector's inclination (15-16: 155.87° for 70.007°; 15-18: 155.80° for 70.004°), inside the NAVAREA hazard corridor. Sims run through payload deploy: after final cutoff the stage coasts under the same WGS-84/J2/US76-drag model, with any published restart or kick-stage burn modelled from its published timing, to the provider's published deploy time (Starlink 15-16: SES-2/SECO-2 at T+53:01-53:03, deploy T+1:01:53; Starlink 15-18: SES-2/SECO-2 at T+53:07-53:08, deploy T+1:01:59). Where no deploy time is published (Electron HawkEye 360, USSF-432, LM-4B, LM-6A, LM-8A) the stage is propagated from insertion for two revolutions on the inferred insertion orbit (same J2 + drag model) and the file ends labelled 'inferred insertion orbit, +2 revs (deploy time unpublished)'."
     },
     "methods_doc": "/launches/METHODS.md"
   },
@@ -170,6 +170,16 @@
       "id": "navarea-xii-747-26",
       "title": "NAVAREA XII 747/26 (Starlink 15-18 hazard areas, eastern Pacific; USCG LNM 56848) via space-notices",
       "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20747%2F26"
+    },
+    {
+      "id": "spacex-ussf432",
+      "title": "SpaceX: USSF-432 mission page and timeline",
+      "url": "https://www.spacex.com/launches/ussf432"
+    },
+    {
+      "id": "zla-carf-10-377",
+      "title": "FAA ZLA CARF NOTAM 10/377 & 10/378 (USSF-432 hazard areas A/B) and MMFR B3553 via space-notices",
+      "url": "https://www.space-notices.com/"
     }
   ],
   "launches": [
@@ -393,6 +403,44 @@
         "wp-falcon9-b5",
         "ll2",
         "sfn-schedule",
+        "kml"
+      ]
+    },
+    {
+      "slug": "ussf-432",
+      "name": "USSF-432",
+      "vehicle": "Falcon 9 Block 5",
+      "t0_utc": "2026-11-03T01:42:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/ussf-432/ussf-432_2026-11-03_trajectory.csv",
+        "kml": "/launches/ussf-432/ussf-432_2026-11-03_trajectory.kml",
+        "csv_sim": "/launches/ussf-432/ussf-432_2026-11-03_trajectory_sim.csv",
+        "kml_sim": "/launches/ussf-432/ussf-432_2026-11-03_trajectory_sim.kml",
+        "track_lite": "/launches/ussf-432/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://www.spacex.com/launches/ussf432",
+        "https://www.space-notices.com/",
+        "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
+        "https://ll.thespacedevs.com/2.3.0/launches/",
+        "https://www.spacex.com/launches/sl-15-18"
+      ],
+      "method": {
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX ussf432 timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:55; ZLA CARF 10/377 Area A azimuth 153.56 deg); ends at T+508 s (telemetry end) because SECO is unpublished",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf432 MECO 146 s, sep 149 s, SES-1 156 s, fairing 175 s as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are an ASSUMED Starlink Group 15 analog (LL2 notes drop zones match Group 15), not USSF-432 sources; azimuth 153.56 deg from ZLA NOTAM (untuned, inclination unpublished) gives i=68.28 deg; payload fitted 16.85 t (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "spacex-ussf432",
+        "zla-carf-10-377",
+        "shahar603-tel",
+        "spacex-sl-15-18",
+        "wp-falcon9",
+        "wp-falcon9-b5",
+        "ll2",
         "kml"
       ]
     }
