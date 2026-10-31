@@ -6,7 +6,7 @@
     },
     "sim": {
       "title": "First-principles 3DOF sim",
-      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry. Long March vehicles run in timeline mode: published ignition/cutoff/separation times are hard events, burn rates from published thrust/Isp, and remaining free parameters fitted (bounded least squares) to the CALT manual LM-3B profile (altitude within 3.4 km at all events). Falcon 9 also runs in timeline mode: SpaceX's published MECO, stage-separation, SES-1, fairing and SECO-1 times are hard events, Block 5 masses and Merlin thrust/Isp from open sources, and steering and payload are fitted (bounded least squares) to the parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP), along an azimuth tuned so the orbit plane reaches the state vector's inclination (15-16: 155.87° for 70.007°; 15-18: 155.80° for 70.004°), inside the NAVAREA hazard corridor. Sims run through payload deploy: after final cutoff the stage coasts under the same WGS-84/J2/US76-drag model, with any published restart or kick-stage burn modelled from its published timing, to the provider's published deploy time (Starlink 15-16: SES-2/SECO-2 at T+53:01-53:03, deploy T+1:01:53; Starlink 15-18: SES-2/SECO-2 at T+53:07-53:08, deploy T+1:01:59). Where no deploy time is published (Electron HawkEye 360, LM-4B, LM-6A, LM-8A) the stage is propagated from insertion for two revolutions on the inferred insertion orbit (same J2 + drag model) and the file ends labelled 'inferred insertion orbit, +2 revs (deploy time unpublished)'."
+      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry. Long March vehicles run in timeline mode: published ignition/cutoff/separation times are hard events, burn rates from published thrust/Isp, and remaining free parameters fitted (bounded least squares) to the CALT manual LM-3B profile (altitude within 3.4 km at all events). Falcon 9 also runs in timeline mode: SpaceX's published MECO, stage-separation, SES-1, fairing and SECO-1 times are hard events, Block 5 masses and Merlin thrust/Isp from open sources, and steering and payload are fitted (bounded least squares) to the parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP), along an azimuth tuned so the orbit plane reaches the state vector's inclination (15-16: 155.87° for 70.007°; 15-18: 155.80° for 70.004°), inside the NAVAREA hazard corridor. Sims run through payload deploy: after final cutoff the stage coasts under the same WGS-84/J2/US76-drag model, with any published restart or kick-stage burn modelled from its published timing, to the provider's published deploy time (Starlink 15-16: SES-2/SECO-2 at T+53:01-53:03, deploy T+1:01:53; Starlink 15-18: SES-2/SECO-2 at T+53:07-53:08, deploy T+1:01:59). Where no deploy time is published (Electron HawkEye 360, Electron iQPS 9, LM-4B, LM-6A, LM-8A) the stage is propagated from insertion for two revolutions on the inferred insertion orbit (same J2 + drag model) and the file ends labelled 'inferred insertion orbit, +2 revs (deploy time unpublished)'."
     },
     "methods_doc": "/launches/METHODS.md"
   },
@@ -170,6 +170,21 @@
       "id": "navarea-xii-747-26",
       "title": "NAVAREA XII 747/26 (Starlink 15-18 hazard areas, eastern Pacific; USCG LNM 56848) via space-notices",
       "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20747%2F26"
+    },
+    {
+      "id": "rl-sea-god",
+      "title": "Rocket Lab: The Sea God Surveys (iQPS Launch 9) mission page",
+      "url": "https://rocketlabcorp.com/missions/launches/iqps-the-sea-god-surveys/"
+    },
+    {
+      "id": "iqps-4118",
+      "title": "iQPS news: QPS-SAR-20 launch (575 km, mid-inclined orbit)",
+      "url": "https://i-qps.net/en/news/4118/"
+    },
+    {
+      "id": "notam-b5324-b5325",
+      "title": "NOTAM B5324/26, B5325/26 and HYDROPAC 3128/26, 3129/26 (Electron iQPS 9 debris areas NZD032/NZD033) via space-notices",
+      "url": "https://www.space-notices.com/"
     }
   ],
   "launches": [
@@ -393,6 +408,43 @@
         "wp-falcon9-b5",
         "ll2",
         "sfn-schedule",
+        "kml"
+      ]
+    },
+    {
+      "slug": "electron-iqps9",
+      "name": "The Sea God Surveys (iQPS Launch 9, QPS-SAR-20)",
+      "vehicle": "Electron",
+      "t0_utc": "2026-11-02T16:41:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/electron-iqps9/electron-iqps9_2026-11-02_trajectory.csv",
+        "kml": "/launches/electron-iqps9/electron-iqps9_2026-11-02_trajectory.kml",
+        "csv_sim": "/launches/electron-iqps9/electron-iqps9_2026-11-02_trajectory_sim.csv",
+        "kml_sim": "/launches/electron-iqps9/electron-iqps9_2026-11-02_trajectory_sim.kml",
+        "track_lite": "/launches/electron-iqps9/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://rocketlabcorp.com/missions/launches/iqps-the-sea-god-surveys/",
+        "https://i-qps.net/en/news/4118/",
+        "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+        "https://www.space-notices.com/",
+        "https://ll.thespacedevs.com/2.3.0/launches/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric (Electron User Guide 8.0 GENERIC event profile - no mission timeline published; S2 cutoff altitude assumed = iQPS 575 km orbit; NOTAM B5324/B5325 debris-area azimuth 107.4 deg); T0 LL2 2026-11-02T16:41Z",
+        "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance), Electron energy-cutoff mode (UNTUNED: no published mission timeline/inclination); azimuth 107.4 deg from NOTAM debris areas; target 230 km (assumed) x 575 km (iQPS); cutoff T+526 s into 221 x 616 km, i=39.96 deg; deploy time unpublished, so propagated 2 revs on the inferred insertion orbit; ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "rl-sea-god",
+        "iqps-4118",
+        "rl-ug",
+        "notam-b5324-b5325",
+        "wp-electron",
+        "ll2",
         "kml"
       ]
     }

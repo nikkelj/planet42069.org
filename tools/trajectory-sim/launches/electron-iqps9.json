@@ -1,0 +1,48 @@
+{
+  "slug": "electron-iqps9",
+  "title": "Electron 'The Sea God Surveys' (iQPS Launch 9, QPS-SAR-20)",
+  "vehicle": "electron",
+  "t0_utc": "2026-11-02T16:41:00Z",
+  "t0_note": "LL2 NET 2026-11-02T16:41Z (Mon Nov 2 8:41a PST), window 16:00-18:20Z; Rocket Lab: NET 3 Nov (NZDT), launch time TBD. https://ll.thespacedevs.com/2.3.0/launches/upcoming/ , https://rocketlabcorp.com/missions/launches/iqps-the-sea-god-surveys/",
+  "pad": {
+    "lat": -39.262833,
+    "lon": 177.864469,
+    "alt_m": 0,
+    "src": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/ (Rocket Lab LC-1, Mahia; same pad coords as electron-hawkeye360)"
+  },
+  "azimuth_deg": {
+    "value": 107.4,
+    "derived": "mean great-circle bearing from LC-1 to centroids of NOTAM B5324/26 (NZD032, 108.3 deg) and B5325/26 (NZD033, 106.4 deg) debris areas (also HYDROPAC 3128/26, 3129/26); implies i ~42-43 deg, consistent with iQPS 'mid-inclined orbit'. https://www.space-notices.com/"
+  },
+  "payload_kg": {
+    "value": 190,
+    "assumption": "QPS-SAR ~100 kg (nextspaceflight listing, unofficial) + Kick Stage dry 40 kg (Electron guide) + kick propellant ~50 kg (ASSUMED)"
+  },
+  "target": {
+    "insertion_alt_km": {
+      "value": 230,
+      "assumption": "S2 inserts Kick Stage into 'low elliptical orbit' (Electron guide); perigee ASSUMED, same as electron-hawkeye360"
+    },
+    "apoapsis_alt_km": {
+      "value": 575,
+      "src": "https://i-qps.net/en/news/4118/ (iQPS: 575 km, mid-inclined orbit)"
+    },
+    "cutoff": "energy"
+  },
+  "header_notes": [
+    "UNTUNED: Rocket Lab has published no mission timeline for this flight; Electron Payload User Guide 8.0 generic event times used.",
+    "Inclination not published (iQPS: 'mid-inclined'); azimuth from NOTAM debris areas.",
+    "File ends 2 revs after S2 cutoff on the inferred insertion orbit; Kick Stage (Curie) circularization not modelled (timing unpublished)."
+  ],
+  "post_cutoff": {
+    "deploy": {
+      "t_s": null,
+      "note": "Rocket Lab publishes no deploy or Kick Stage burn time for The Sea God Surveys (mission page: launch time TBD, no timeline as of 2026-10-31); propagated 2 revs on inferred insertion orbit"
+    },
+    "drag": {
+      "cd": 2.2,
+      "area_m2": 1.13,
+      "basis": "ASSUMPTION: free-molecular Cd 2.2, frontal area of 1.2 m-diameter upper stage"
+    }
+  }
+}
