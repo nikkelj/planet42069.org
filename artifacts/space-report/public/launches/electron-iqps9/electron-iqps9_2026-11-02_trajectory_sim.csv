@@ -11,7 +11,7 @@
 # Target (see launch config): insertion 230 km, apoapsis 575 km, fpa 0, launch azimuth 107.40 deg; payload 190 kg.
 # Pad: -39.262833N 177.864469E. Frame: WGS-84 ECEF, positions km, velocities km/s (Earth-relative).
 # T0 used: 2026-11-02T16:41:00Z. Re-run with another T0 by shifting utc_iso only; ECEF geometry is Earth-fixed.
-# POST-CUTOFF: deploy time unpublished (Rocket Lab publishes no deploy or Kick Stage burn time for The Sea God Surveys (mission page: launch time TBD, no timeline as of 2026-10-31); propagated 2 revs on inferred insertion orbit). From insertion T+526.0 s the stage is propagated for TWO revolutions (osculating period 92.94 min) on the inferred insertion orbit (same WGS-84/J2/US76-drag model); rows tagged -coast.
+# POST-CUTOFF: deploy time unpublished (Rocket Lab publishes no deploy or Kick Stage burn time for The Sea God Surveys (mission page: no timeline; launch-safety page gives T0 and hazard areas only, as of 2026-11-01); propagated 2 revs on inferred insertion orbit). From insertion T+526.0 s the stage is propagated for TWO revolutions (osculating period 92.94 min) on the inferred insertion orbit (same WGS-84/J2/US76-drag model); rows tagged -coast.
 # POST-CUTOFF end T+11679 s: inferred insertion orbit, +2 revs (deploy time unpublished): alt 230.0 km, osculating 221.2 x 616.0 km, i 39.955 deg.
 elapsed_s,utc_iso,lat_deg,lon_deg,altitude_km,range_along_track_km,x_ecef_km,y_ecef_km,z_ecef_km,vx_ecef_km_s,vy_ecef_km_s,vz_ecef_km_s,rel_vel_km_s,source
 0.000,2026-11-02T16:41:00Z,-39.2628330,177.8644690,0.000,0.000,-4941.477978,184.264336,-4014.951315,0.000000,0.000000,0.000000,0.000000,sim3dof-electron
