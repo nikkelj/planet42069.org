@@ -1,0 +1,119 @@
+{
+ "slug": "lm2c-xichang",
+ "title": "Long March 2C / unknown payload (Xichang LC-3)",
+ "vehicle": "lm2c",
+ "t0_utc": "2026-11-05T16:00:00Z",
+ "pad": {
+  "lat": 28.247059,
+  "lon": 102.029008,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/ (Xichang LC-3)"
+ },
+ "azimuth_deg": {
+  "value": 136.38,
+  "src": "https://www.space-notices.com/",
+  "note": "great-circle bearing from pad to centroid of NOTAM ZJSA A5624/26 danger area (18.379N 111.575E, 1466 km; window to 2026-11-05T16:16Z); only notice found; implies i ~52.6 deg"
+ },
+ "payload_kg": {
+  "fit": true,
+  "value": null,
+  "note": "FITTED to reach the assumed orbit at the published typical vernier cutoff; payload unknown (LL2)"
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 500,
+   "assumption": "orbit unknown (LL2); 500 km circular ASSUMED"
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 5
+ },
+ "header_notes": [
+  "T0 = LL2 NET 2026-11-05T16:00:00Z (window 15:52-16:16Z). Payload and orbit unknown. Event times = CALT typical LM-2C sequence (huijiwiki), not this flight's. UNTUNED: no altitude/range knots published."
+ ],
+ "post_cutoff": {
+  "deploy": {
+   "t_s": {
+    "value": 545.7,
+    "src": "https://sat.huijiwiki.com/wiki/\u957f\u5f81\u4e8c\u53f7\u4e19 typical sequence '\u661f\u7bad\u5206\u79bb 545.7 s'"
+   },
+   "src": "CALT typical LM-2C sequence via huijiwiki: payload separation T+545.7 s (TYPICAL, not flight-specific)",
+   "label": "Payload separation (typical sequence)"
+  },
+  "drag": {
+   "cd": 2.2,
+   "area_m2": 8.8,
+   "basis": "ASSUMPTION: free-molecular Cd 2.2, frontal area of 3.35 m-diameter stage 2"
+  }
+ },
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "kick_deg": {
+    "value": 0.92812,
+    "bounds": [
+     0.3,
+     15
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "payload_kg": {
+    "value": 322.297257,
+    "bounds": [
+     300,
+     4700
+    ],
+    "basis": "upper bound LM-2C Ph.3 LEO capability 4.7 t (huijiwiki); payload unknown"
+   },
+   "tan0": {
+    "value": 1.126903,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": 0.00699,
+    "bounds": [
+     -0.05,
+     0.05
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "vertical_rise_s": 15.0,
+   "cd": 0.66658
+  },
+  "knot_residuals": [],
+  "final": {
+   "alt_km": 499.9999999991618,
+   "fpa_deg": 1.3784807104222211e-10,
+   "sma_err_km": -2.794899046421051e-09,
+   "mass_kg": 4840.3
+  },
+  "cost": 4.307928855491313e-18,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "Stage 1",
+     "loaded_kg": 173000,
+     "burned_kg": 169668,
+     "residual_kg": 3332,
+     "dry_kg": 10000,
+     "flag": null
+    },
+    {
+     "name": "Stage 2",
+     "loaded_kg": 55000,
+     "burned_kg": 54482,
+     "residual_kg": 518,
+     "dry_kg": 4000,
+     "flag": null
+    }
+   ],
+   "glow_kg": 243322
+  }
+ }
+}

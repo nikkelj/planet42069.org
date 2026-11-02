@@ -1,0 +1,123 @@
+{
+ "slug": "kinetica2-y2",
+ "title": "Kinetica-2 Y2 / Qianfan polar group (Jiuquan LA-140)",
+ "vehicle": "kinetica2",
+ "t0_utc": "2026-11-03T00:10:00Z",
+ "pad": {
+  "lat": 40.81748,
+  "lon": 100.21939,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/ (Jiuquan Launch Area 140)"
+ },
+ "azimuth_deg": {
+  "value": 186.58,
+  "src": "https://www.space-notices.com/",
+  "note": "mean great-circle bearing from pad to centroids of NOTAM ZLHW A5561/26 danger area (32.625N 99.042E, 186.93 deg, 917 km) and ZPKM A5562/26 (30.367N 98.904E, 186.24 deg, 1168 km), both valid 2026-11-03 ~00:05-00:46Z; implies i ~95.0 deg (retrograde near-polar)"
+ },
+ "payload_kg": {
+  "fit": true,
+  "value": null,
+  "note": "FITTED to reach the assumed orbit at the published typical S2 first cutoff; 18 Qianfan sats is an UNOFFICIAL count (https://satnet.news/item/76103), mass unpublished"
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 500,
+   "assumption": "insertion orbit unpublished (LL2: polar); 500 km circular ASSUMED = CAS Space's published SSO capability reference orbit (8 t to 500 km SSO, https://sat.huijiwiki.com/wiki/\u529b\u7bad\u4e8c\u53f7)"
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 5
+ },
+ "header_notes": [
+  "T0 = LL2 NET 2026-11-03T00:10:00Z (window 00:05-00:33Z, Go); SatNet News (unofficial) window BJT 3 Nov 08:00-09:00 (https://satnet.news/item/76103, /item/70043). LL2: 'payload and LV identities highly uncertain'.",
+  "Event times = CAS Space TYPICAL Kinetica-2 sequence (Y1 documentary via huijiwiki), not this flight's; S1 burn/sep ASSUMED. UNTUNED: no altitude/range knots exist to tune against."
+ ],
+ "post_cutoff": {
+  "deploy": {
+   "t_s": {
+    "value": 514.71,
+    "src": "https://sat.huijiwiki.com/wiki/\u529b\u7bad\u4e8c\u53f7 typical sequence '\u661f\u7bad\u5206\u79bb 514.710 s' (CAS Space Y1 documentary)"
+   },
+   "src": "CAS Space typical sequence via huijiwiki: payload separation T+514.710 s (TYPICAL, not Y2-specific)",
+   "label": "Payload separation (typical sequence)"
+  },
+  "drag": {
+   "cd": 2.2,
+   "area_m2": 8.8,
+   "basis": "ASSUMPTION: free-molecular Cd 2.2, frontal area of 3.35 m-diameter stage 2"
+  },
+  "notes": [
+   "S2 second burn (restart 806.71 s, cutoff 811.71 s in the typical sequence) is after payload separation (disposal-class) and is not modelled."
+  ]
+ },
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "kick_deg": {
+    "value": 0.415454,
+    "bounds": [
+     0.3,
+     15
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "payload_kg": {
+    "value": 6735.722381,
+    "bounds": [
+     500,
+     12000
+    ],
+    "basis": "upper bound LEO capability 12 t (huijiwiki/W); 18 Qianfan sats (unofficial count) mass not published"
+   },
+   "tan0": {
+    "value": 1.788436,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": 0.008109,
+    "bounds": [
+     -0.05,
+     0.05
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "vertical_rise_s": 15.0,
+   "cd": 0.66658
+  },
+  "knot_residuals": [],
+  "final": {
+   "alt_km": 500.00000006101374,
+   "fpa_deg": -4.2297271742630755e-09,
+   "sma_err_km": -9.745359420776368e-09,
+   "mass_kg": 12664.0
+  },
+  "cost": 5.44135581435904e-15,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "Stage 1 (CBC core + 2 CBC boosters, 9x YF-102)",
+     "loaded_kg": 492042,
+     "burned_kg": 492042,
+     "residual_kg": 0,
+     "dry_kg": 42786,
+     "flag": null
+    },
+    {
+     "name": "Stage 2 (1x YF-102V)",
+     "loaded_kg": 68168,
+     "burned_kg": 68168,
+     "residual_kg": 0,
+     "dry_kg": 5928,
+     "flag": null
+    }
+   ],
+   "glow_kg": 617660
+  }
+ }
+}
