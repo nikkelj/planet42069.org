@@ -2,7 +2,7 @@
  "slug": "ussf-432",
  "title": "Falcon 9 USSF-432 (SLC-4E)",
  "vehicle": "falcon9",
- "t0_utc": "2026-11-03T01:42:00Z",
+ "t0_utc": "2026-11-04T01:28:00Z",
  "pad": {
   "lat": 34.632,
   "lon": -120.611,
@@ -11,7 +11,7 @@
  },
  "azimuth_deg": {
   "value": 153.56,
-  "derived": "great-circle bearing from LL2 pad to far-edge midpoint (32.733N 119.492W) of FAA/ZLA CARF NOTAM 10/377 Area A (valid 2611030142-0604Z, covers T0); ZLA 10/378 Area B centroid 153.98 deg and MMFR B3553 stage-1 area ~155.2 deg consistent. Inclination NOT published (classified); used as launch-plane azimuth without tuning.",
+  "derived": "great-circle bearing from LL2 pad to far-edge midpoint (32.733N 119.492W) of FAA/ZLA CARF NOTAM 10/377 Area A (originally valid 2611030142-0604Z for the Nov 3 T0); carried over for the Nov 4 slip (backup day). ZLA 10/378 Area B centroid 153.98 deg and MMFR B3553 stage-1 area ~155.2 deg consistent. Inclination NOT published (classified); used as launch-plane azimuth without tuning. ASSUMED azimuth still applies on the slipped day.",
   "src": "https://www.space-notices.com/ (ZLA CARF 10/377, 10/378; MMFR B3553; CGD-SW BNM 9134-26)"
  },
  "payload_kg": {
@@ -33,9 +33,9 @@
   "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude (~3 km difference at insertion latitude, accepted via 1 km-weight)"
  },
  "header_notes": [
-  "Not flown: SpaceX ussf432 page and LL2: Mon Nov 2 5:42 pm PST = 2026-11-03T01:42:00Z, 4 h window, backup Tue Nov 3 5:28 pm PST; booster 8th flight (LL2 B1095 -> OCISLY). Checked 2026-10-31 ~8:30a PDT.",
+  "Not flown: LL2 NET 2026-11-04T01:28:00Z (Tue Nov 3 5:28 pm PST), window to 05:28Z, status Go (LL2 update 2026-11-01T20:07Z; RocketLaunch.live agrees). Retimed 2026-11-01 from T0 2026-11-03T01:42:00Z (Mon Nov 2 5:42 pm PST); SpaceX ussf432 page previously listed that as primary with backup Tue Nov 3 5:28 pm PST. Booster 8th flight (LL2 B1095 -> OCISLY). Checked 2026-11-01 ~12:36p PST.",
   "Published timeline (SpaceX ussf432): Max-Q 1:07, MECO 2:26, stage sep 2:29, SES-1 2:36, fairing 2:55, entry burn 6:06-6:30, landing burn 8:04, landing 8:26. SECO, orbit, deploy NOT published.",
-  "INFERRED/ASSUMED: SECO-1 time and parking orbit are a Starlink Group 15 analog (starlink-15-18), not USSF-432 sources. Azimuth from ZLA NOTAM hazard area. File ends 2 revs after cutoff (deploy unpublished)."
+  "INFERRED/ASSUMED: SECO-1 time and parking orbit are a Starlink Group 15 analog (starlink-15-18), not USSF-432 sources. Azimuth from prior-day ZLA NOTAM hazard area (carried over for the day slip). File ends 2 revs after cutoff (deploy unpublished)."
  ],
  "final_cutoff_s": {
   "value": 519,

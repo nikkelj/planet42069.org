@@ -410,14 +410,14 @@
       "slug": "ussf-432",
       "name": "USSF-432",
       "vehicle": "Falcon 9 Block 5",
-      "t0_utc": "2026-11-03T01:42:00Z",
+      "t0_utc": "2026-11-04T01:28:00Z",
       "status": "Go",
       "phase": "upcoming",
       "files": {
-        "csv": "/launches/ussf-432/ussf-432_2026-11-03_trajectory.csv",
-        "kml": "/launches/ussf-432/ussf-432_2026-11-03_trajectory.kml",
-        "csv_sim": "/launches/ussf-432/ussf-432_2026-11-03_trajectory_sim.csv",
-        "kml_sim": "/launches/ussf-432/ussf-432_2026-11-03_trajectory_sim.kml",
+        "csv": "/launches/ussf-432/ussf-432_2026-11-04_trajectory.csv",
+        "kml": "/launches/ussf-432/ussf-432_2026-11-04_trajectory.kml",
+        "csv_sim": "/launches/ussf-432/ussf-432_2026-11-04_trajectory_sim.csv",
+        "kml_sim": "/launches/ussf-432/ussf-432_2026-11-04_trajectory_sim.kml",
         "track_lite": "/launches/ussf-432/track_lite.json"
       },
       "illustrative": true,
@@ -430,8 +430,8 @@
         "https://www.spacex.com/launches/sl-15-18"
       ],
       "method": {
-        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX ussf432 timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:55; ZLA CARF 10/377 Area A azimuth 153.56 deg); ends at T+508 s (telemetry end) because SECO is unpublished",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf432 MECO 146 s, sep 149 s, SES-1 156 s, fairing 175 s as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are an ASSUMED Starlink Group 15 analog (LL2 notes drop zones match Group 15), not USSF-432 sources; azimuth 153.56 deg from ZLA NOTAM (untuned, inclination unpublished) gives i=68.28 deg; payload fitted 16.85 t (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; ILLUSTRATIVE"
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX ussf432 timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:55; ZLA CARF 10/377 Area A azimuth 153.56 deg, ASSUMED carried over from Nov 3 NOTAM after day slip); ends at T+508 s (telemetry end) because SECO is unpublished",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf432 MECO 146 s, sep 149 s, SES-1 156 s, fairing 175 s as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are an ASSUMED Starlink Group 15 analog (LL2 notes drop zones match Group 15), not USSF-432 sources; azimuth 153.56 deg from prior-day ZLA NOTAM (ASSUMED still applies after slip to Nov 4; inclination unpublished) gives i=68.28 deg; payload fitted 16.85 t (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; ILLUSTRATIVE; retimed 2026-11-01 to LL2 NET 2026-11-04T01:28:00Z"
       },
       "reference_ids": [
         "spacex-ussf432",
