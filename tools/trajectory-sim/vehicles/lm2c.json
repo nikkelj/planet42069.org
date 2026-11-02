@@ -1,0 +1,183 @@
+{
+ "id": "lm2c",
+ "name": "Long March 2C (Ph.3, two-stage)",
+ "timeline": true,
+ "cd": {
+  "value": null,
+  "note": "transferred from LM-3B fit (same 3.35 m YF-21C/YF-24 CALT core; LM-2C = LM-3 minus stage 3 per huijiwiki), see fixed_params"
+ },
+ "glow_kg": {
+  "value": 242500,
+  "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+  "note": "242.5 t (CALT); check only"
+ },
+ "stages": [
+  {
+   "name": "Stage 1",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://sat.huijiwiki.com/wiki/长征二号丙"
+   },
+   "propellant_kg": {
+    "value": 173000,
+    "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+    "note": "S1 propellant 173 t (World Launch Vehicles 2nd ed. 2007 via huijiwiki)"
+   },
+   "dry_kg": {
+    "value": 10000,
+    "derived": "huijiwiki S1 mass 183 t - propellant 173 t"
+   },
+   "thrust_sl_N": {
+    "value": 2962000,
+    "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+    "note": "YF-21C SL 2962 kN"
+   },
+   "thrust_vac_N": {
+    "value": 3305373,
+    "derived": "SL 2962 kN x YF-20 vac/SL thrust ratio 816.3/731.5 (https://en.wikipedia.org/wiki/YF-20), same method as lm4b.json"
+   },
+   "isp_vac_s": {
+    "value": 291.03,
+    "derived": "SL Isp 260.8 s (2556 m/s, huijiwiki) x same ratio, so mdot unchanged from the published SL pair"
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "https://sat.huijiwiki.com/wiki/长征二号丙"
+   },
+   "cutoff_s": {
+    "value": 146.5,
+    "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+    "note": "typical sequence: 一级发动机关机 146.5 s"
+   },
+   "separation_s": {
+    "value": 148.0,
+    "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+    "note": "typical sequence: 一二级分离 148.0 s"
+   }
+  },
+  {
+   "name": "Stage 2",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://sat.huijiwiki.com/wiki/长征二号丙"
+   },
+   "propellant_kg": {
+    "value": 55000,
+    "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+    "note": "S2 propellant 55 t"
+   },
+   "dry_kg": {
+    "value": 4000,
+    "derived": "huijiwiki S2 mass 59 t - 55 t"
+   },
+   "thrust_vac_N": {
+    "value": 742000,
+    "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+    "note": "YF-22C main vac 742 kN"
+   },
+   "isp_vac_s": {
+    "value": 300.2,
+    "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+    "note": "2942 m/s"
+   },
+   "ignition_s": {
+    "value": 148.0,
+    "assumption": "ignition at S1/S2 separation (only separation published)"
+   },
+   "cutoff_s": {
+    "value": 338.1,
+    "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+    "note": "typical sequence: 二级主机关机 338.1 s"
+   },
+   "separation_s": {
+    "value": 545.7,
+    "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+    "note": "typical sequence: 星箭分离 545.7 s (payload separation)"
+   },
+   "tail": {
+    "thrust_vac_N": {
+     "value": 47200,
+     "derived": "4 x 11.8 kN YF-23C vernier vac (huijiwiki)"
+    },
+    "isp_vac_s": {
+     "value": 289.2,
+     "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+     "note": "2834 m/s"
+    },
+    "cutoff_s": {
+     "value": 542.7,
+     "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+     "note": "typical sequence: 二级游机关机 542.7 s"
+    },
+    "runs_with_main": true
+   }
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 1000,
+   "assumption": "not published (3350M/3350L/4200C types exist; type for this flight unknown)"
+  },
+  "jettison_time_s": {
+   "value": 161.3,
+   "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+   "note": "typical sequence: 整流罩分离 161.3 s"
+  }
+ },
+ "guidance": {
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "not published"
+  },
+  "linear_tangent_from_stage": 1
+ },
+ "fixed_params": {
+  "vertical_rise_s": {
+   "value": 15,
+   "src": "https://sat.huijiwiki.com/wiki/长征二号丙",
+   "note": "typical sequence: 程序转弯 15 s"
+  },
+  "cd": {
+   "value": null,
+   "derived": "FITTED LM-3B value transferred (same 3.35 m CALT hypergolic core); filled at run time from vehicles/lm3b.json fitted_family"
+  }
+ },
+ "fit": {
+  "kick_deg": {
+   "x0": 2,
+   "bounds": [
+    0.3,
+    15
+   ],
+   "basis": "ASSUMPTION bound"
+  },
+  "payload_kg": {
+   "x0": 2500,
+   "bounds": [
+    300,
+    4700
+   ],
+   "basis": "upper bound LM-2C Ph.3 LEO capability 4.7 t (huijiwiki); payload unknown"
+  },
+  "tan0": {
+   "x0": 0.4,
+   "bounds": [
+    -2,
+    5
+   ],
+   "basis": "guidance law"
+  },
+  "tan_rate": {
+   "x0": 0.001,
+   "bounds": [
+    -0.05,
+    0.05
+   ],
+   "basis": "guidance law"
+  }
+ },
+ "header_notes": [
+  "LM-2C TIMELINE mode: Ph.3 stage data (World Launch Vehicles 2nd ed. 2007) + CALT TYPICAL flight sequence from huijiwiki; all event times hard constraints. Typical sequence, not this flight's."
+ ],
+ "family_from": "lm3b"
+}

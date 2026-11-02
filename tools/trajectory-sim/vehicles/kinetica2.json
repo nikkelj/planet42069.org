@@ -1,0 +1,156 @@
+{
+ "id": "kinetica2",
+ "name": "Kinetica-2 (Lijian-2, CAS Space)",
+ "timeline": true,
+ "cd": {
+  "value": null,
+  "note": "aero only: LM-3B family fitted Cd transferred (3.35 m core + 2 side modules), see fixed_params; ASSUMPTION"
+ },
+ "glow_kg": {
+  "value": 625000,
+  "src": "https://sat.huijiwiki.com/wiki/力箭二号",
+  "note": "625 t (also https://en.wikipedia.org/wiki/Kinetica-2); used as a CHECK only (sim GLOW reported in mass_budget)"
+ },
+ "stages": [
+  {
+   "name": "Stage 1 (CBC core + 2 CBC boosters, 9x YF-102)",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://sat.huijiwiki.com/wiki/力箭二号"
+   },
+   "propellant_kg": {
+    "value": 492042,
+    "derived": "= burned: 9-engine mdot 2733.6 kg/s (7380 kN / (275.3 s x g0)) x 180 s burn; no load published"
+   },
+   "dry_kg": {
+    "value": 42786,
+    "derived": "prop x (1/0.92 - 1): CAS Space Y1 report 'structure coefficient not below 0.92' for the tanks (huijiwiki quoting CAS Space Y1 release); applied to whole stage = ASSUMPTION"
+   },
+   "thrust_sl_N": {
+    "value": 7380000.0,
+    "src": "https://sat.huijiwiki.com/wiki/力箭二号",
+    "note": "liftoff thrust 7380 kN from 9x YF-102 (= 820 kN rated each, 2024-10-15 test, same page)"
+   },
+   "thrust_vac_N": {
+    "value": 7982627,
+    "derived": "SL 7380 kN x Merlin 1D vac/SL thrust ratio 914/845 (https://en.wikipedia.org/wiki/SpaceX_Merlin): ASSUMPTION (YF-102 vac thrust unpublished; analogous open-cycle kerolox engine)"
+   },
+   "isp_vac_s": {
+    "value": 297.78,
+    "derived": "SL Isp 275.3 s (https://zh.wikipedia.org/wiki/YF-102; huijiwiki YF-102 'not below 275 s') x same ratio, so mdot = F/(Isp g0) is unchanged from the published SL pair"
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "https://sat.huijiwiki.com/wiki/力箭二号"
+   },
+   "cutoff_s": {
+    "value": 180.0,
+    "derived": "upper bound: 720 s cumulative engine test time 'meets not less than 4x flight operating time' (huijiwiki 2024-08-13 entry) -> flight burn <= 180 s; burn to the bound ASSUMED. Booster and core cutoff/separation together = ASSUMPTION (booster sep unpublished; CBC 'bundled recovery' concept)"
+   },
+   "separation_s": {
+    "value": 181.0,
+    "assumption": "1 s after cutoff; S1/S2 separation time left BLANK in the published typical sequence (https://sat.huijiwiki.com/wiki/力箭二号)"
+   }
+  },
+  {
+   "name": "Stage 2 (1x YF-102V)",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://sat.huijiwiki.com/wiki/力箭二号"
+   },
+   "propellant_kg": {
+    "value": 68168,
+    "derived": "= burned: mdot 219.4 kg/s (710 kN / (330 s x g0)) x (493.71 - 183.0) s; no load published"
+   },
+   "dry_kg": {
+    "value": 5928,
+    "derived": "prop x (1/0.92 - 1), same structure-coefficient ASSUMPTION as S1"
+   },
+   "thrust_vac_N": {
+    "value": 710000.0,
+    "src": "https://sat.huijiwiki.com/wiki/YF-102",
+    "note": "YF-102V 710 kN vac (huijiwiki, citing CALT/AALPT engine sheet); unofficial table, 55-100% throttle unmodelled (full thrust ASSUMED)"
+   },
+   "isp_vac_s": {
+    "value": 330.0,
+    "src": "https://sat.huijiwiki.com/wiki/YF-102",
+    "note": "YF-102V 320 (throttled) - 330 s; full-thrust 330 s used"
+   },
+   "ignition_s": {
+    "value": 183.0,
+    "assumption": "2 s after the assumed separation"
+   },
+   "cutoff_s": {
+    "value": 493.71,
+    "src": "https://sat.huijiwiki.com/wiki/力箭二号",
+    "note": "'二级发动机一次关机 493.710 s', typical flight sequence (CAS Space Y1 documentary, ref 52)"
+   }
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 2000,
+   "assumption": "not published; carbon-composite 4.2 m x 12.19 m fairing (https://sat.huijiwiki.com/wiki/力箭二号), mass ASSUMED"
+  },
+  "jettison_time_s": {
+   "value": 217.73,
+   "src": "https://sat.huijiwiki.com/wiki/力箭二号",
+   "note": "'整流罩分离 217.730 s' typical sequence"
+  }
+ },
+ "guidance": {
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "not published"
+  },
+  "linear_tangent_from_stage": 1
+ },
+ "fixed_params": {
+  "vertical_rise_s": {
+   "value": 15,
+   "assumption": "not published for Kinetica-2; 15 s = LM-2C published programme-turn time (https://sat.huijiwiki.com/wiki/长征二号丙), borrowed"
+  },
+  "cd": {
+   "value": null,
+   "derived": "FITTED LM-3B value transferred (aero only); filled at run time from vehicles/lm3b.json fitted_family; ASSUMPTION"
+  }
+ },
+ "fit": {
+  "kick_deg": {
+   "x0": 2,
+   "bounds": [
+    0.3,
+    15
+   ],
+   "basis": "ASSUMPTION bound"
+  },
+  "payload_kg": {
+   "x0": 5000,
+   "bounds": [
+    500,
+    12000
+   ],
+   "basis": "upper bound LEO capability 12 t (huijiwiki/W); 18 Qianfan sats (unofficial count) mass not published"
+  },
+  "tan0": {
+   "x0": 0.4,
+   "bounds": [
+    -2,
+    5
+   ],
+   "basis": "guidance law"
+  },
+  "tan_rate": {
+   "x0": 0.001,
+   "bounds": [
+    -0.05,
+    0.05
+   ],
+   "basis": "guidance law"
+  }
+ },
+ "header_notes": [
+  "Kinetica-2 TIMELINE mode: thrust/Isp/GLOW/fairing/typical event times from huijiwiki (CAS Space sources) + zh.wikipedia YF-102; ALL propellant/dry masses DERIVED from burn x mdot and the published 0.92 structure coefficient. S1 burn 180 s is the derived upper bound (ASSUMED). UNTUNED: no altitude/range knots published; LOW confidence."
+ ],
+ "family_from": "lm3b"
+}
