@@ -29,7 +29,11 @@ import {
 } from "../lib/rpod/alertPolicy";
 import { formatStationKeepingCitation, weightedTweetLength, TWEET_MAX_WEIGHTED } from "../lib/rpod/alert";
 import { isSuspectedCrossTag } from "../lib/rpod/maneuver";
-import { COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, DEFAULT_COALIGNED, raanRateDegPerDay } from "../lib/rpod/screen";
+import { db, pool } from "@workspace/db";
+import { rpodEvents, rpodEventMembers } from "@workspace/db/schema";
+import { eq } from "drizzle-orm";
+import { persistEvents } from "../lib/rpod/scan";
+import { COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, DEFAULT_COALIGNED, argPerigeeRateDegPerDay, raanRateDegPerDay } from "../lib/rpod/screen";
 import {
   COPLANAR_REOPEN_WINDOW_MS,
   CONJUNCTION_REOPEN_WINDOW_MS,
@@ -49,8 +53,10 @@ import {
   stationKeepingHistorySql,
   stationKeepingLedgerKey,
   stationKeepingOptions,
+  stationPairKey,
   type ElementSample,
   type StationKeepingCatalog,
+  type StationKeepingHit,
   type StationKeepingOptions,
 } from "../lib/rpod/stationKeeping";
 
@@ -91,6 +97,18 @@ function historyFrom(base: ElementSample, daysAgo: number[]): ElementSample[] {
     epochMs: base.epochMs - d * DAY,
     meanAnomalyDeg: wrap360(base.meanAnomalyDeg - base.meanMotionRevPerDay * 360 * d),
   }));
+}
+
+/** Move an elset to `toMs` at the TLE mean motion and the J2 secular node and perigee rates. */
+function propagateTo(base: ElementSample, toMs: number): ElementSample {
+  const dtDays = (toMs - base.epochMs) / DAY;
+  return {
+    ...base,
+    epochMs: toMs,
+    raanDeg: wrap360(base.raanDeg + raanRateDegPerDay(base) * dtDays),
+    argPerigeeDeg: wrap360(base.argPerigeeDeg + argPerigeeRateDegPerDay(base) * dtDays),
+    meanAnomalyDeg: wrap360(base.meanAnomalyDeg + base.meanMotionRevPerDay * 360 * dtDays),
+  };
 }
 
 function cat(norad: number, force: StationKeepingCatalog["force"], launchTag: string | null, payload = true): [number, StationKeepingCatalog] {
@@ -408,6 +426,7 @@ console.log("Kosmos 2612 vs ICEYE-X36 with a 17.5 h epoch stagger");
     epochMs: kosmos2612.epochMs - skewMs,
     meanAnomalyDeg: wrap360(kosmos2612.meanAnomalyDeg - kosmos2612.meanMotionRevPerDay * 360 * dtDays),
     raanDeg: wrap360(kosmos2612.raanDeg - rate * dtDays),
+    argPerigeeDeg: wrap360(kosmos2612.argPerigeeDeg - argPerigeeRateDegPerDay(kosmos2612) * dtDays),
   };
   const nowMs = Date.parse("2026-10-21T12:00:00Z");
   const catalog = new Map<number, StationKeepingCatalog>([
@@ -478,6 +497,121 @@ console.log("ended station-keeping reopens; a hollow screen does not retire");
     stationKeepingRetireAllowed(0, 0) === false);
   check("a screen that saw a pair may retire the holds it missed",
     stationKeepingRetireAllowed(2, 2) === true && stationKeepingRetireAllowed(1, 0) === true);
+}
+
+console.log("live 68762/59103 elsets survive history and reopen the ended hold");
+{
+  // CelesTrak GP on 2026-11-03. Epochs are 17.50 h apart (2026-306.914 and
+  // 2026-307.643). Raw ΔRAAN is −0.744°; the epoch-aligned gate is +0.0025°.
+  // Same-epoch history holds Kosmos about 556 km behind ICEYE. Leaving
+  // argument of perigee at the catalog epoch makes that staggered latest
+  // point read ~254 km, the wander check fails, and the ended case never
+  // reopens. Test NORADs carry those elements so the seed cannot touch a
+  // live case file.
+  const K = 99999261;
+  const I = 99999591;
+  const yearStart = Date.UTC(2026, 0, 1);
+  const liveK = el({
+    norad: K,
+    epochMs: yearStart + (306.91405603 - 1) * DAY,
+    incDeg: 97.8564,
+    raanDeg: 87.7298,
+    eccentricity: 0.0006911,
+    argPerigeeDeg: 209.6245,
+    meanAnomalyDeg: 150.4592,
+    meanMotionRevPerDay: 15.07891549,
+  });
+  const liveI = el({
+    norad: I,
+    epochMs: yearStart + (307.64316294 - 1) * DAY,
+    incDeg: 97.8552,
+    raanDeg: 88.4735,
+    eccentricity: 0.0005464,
+    argPerigeeDeg: 194.6477,
+    meanAnomalyDeg: 165.4592,
+    meanMotionRevPerDay: 15.07921939,
+  });
+  const nowMs = Date.parse("2026-11-03T20:13:00Z");
+  const catalog = new Map<number, StationKeepingCatalog>([
+    cat(K, "red", "2026-083"),
+    cat(I, "blue", "2024-043"),
+  ]);
+  const commonK = propagateTo(liveK, liveI.epochMs);
+  const history = [2, 4, 6, 8].flatMap((d) => [
+    propagateTo(commonK, commonK.epochMs - d * DAY),
+    propagateTo(liveI, liveI.epochMs - d * DAY),
+  ]);
+  const screened = await screenStationKeeping({
+    latest: [liveK, liveI],
+    catalog,
+    nowMs,
+    loadHistory: async (norads) => {
+      check("history seek is only the staggered pair",
+        norads.length === 2 && norads.includes(K) && norads.includes(I), norads.join(","));
+      return history;
+    },
+  });
+  const hit = screened.hits.find((h) => h.a === K && h.b === I);
+  check("the live stagger still screens once argument of perigee is propagated",
+    hit != null, JSON.stringify(screened.hits.map((h) => h.verdict)));
+  check("the aligned offset stays near 556 km",
+    hit != null && hit.verdict.offsetKm >= 500 && hit.verdict.offsetKm <= 650, String(hit?.verdict.offsetKm));
+  check("aligned |ΔRAAN| stays under 0.01°",
+    hit != null && Math.abs(hit.verdict.dRaanDeg) < 0.01, String(hit?.verdict.dRaanDeg));
+  check("the mean-motion drift stays inside the 25 km/day gate",
+    hit != null && Math.abs(hit.verdict.driftKmPerDay) <= DEFAULT_STATION_KEEPING.maxDriftKmPerDay,
+    String(hit?.verdict.driftKmPerDay));
+  if (hit) await reopenSeededHold(hit);
+}
+
+async function reopenSeededHold(hit: StationKeepingHit): Promise<void> {
+  const nowMs = Date.now();
+  const [ended] = await db.insert(rpodEvents).values({
+    status: "ended",
+    kind: "station-keeping",
+    windowStart: new Date(nowMs - 20 * DAY),
+    windowEnd: new Date(nowMs - 3 * DAY),
+    tca: new Date(nowMs - 3 * DAY),
+    minRangeKm: 556,
+    relVelKmS: 0.001,
+    memberCount: 2,
+    endedAt: new Date(nowMs - 2 * DAY),
+    lastSeenAt: new Date(nowMs - 3 * DAY),
+    reopenCount: 0,
+  }).returning({ id: rpodEvents.id });
+  const extraIds: number[] = [];
+  try {
+    await db.insert(rpodEventMembers).values([
+      { eventId: ended.id, norad: hit.a, minRangeKm: 556, relVelKmS: 0.001 },
+      { eventId: ended.id, norad: hit.b, minRangeKm: 556, relVelKmS: 0.001 },
+    ]);
+    const v = hit.verdict;
+    const rel = Math.abs(v.driftKmPerDay) / 86400;
+    const result = await persistEvents([{
+      members: [hit.a, hit.b].sort((a, b) => a - b),
+      pairs: [{ a: hit.a, b: hit.b, minRangeKm: v.offsetKm, relVelKmS: rel, tcaMs: v.latestEpochMs }],
+      minRangeKm: v.offsetKm,
+      relVelKmS: rel,
+      tcaMs: v.latestEpochMs,
+      windowStartMs: v.spanStartMs,
+      windowEndMs: v.latestEpochMs + 6 * 3600_000,
+      hitCap: false,
+    }], "station-keeping", {
+      stationKeeping: new Map([[stationPairKey(hit.a, hit.b), v]]),
+    });
+    extraIds.push(...result.inserted.map((row) => row.eventId));
+    const [row] = await db.select().from(rpodEvents).where(eq(rpodEvents.id, ended.id));
+    check("the ended hold reopens under the same id",
+      row?.status === "active" && row.reopenCount === 1 && row.endedAt == null,
+      `status=${row?.status} reopenCount=${row?.reopenCount} endedAt=${String(row?.endedAt)}`);
+    check("reopen does not file a second station-keeping case",
+      result.inserted.length === 0, result.inserted.map((row) => row.eventId).join(","));
+  } finally {
+    const ids = [ended.id, ...extraIds];
+    for (const id of ids) {
+      await db.delete(rpodEvents).where(eq(rpodEvents.id, id));
+    }
+  }
 }
 
 console.log("alerts");
@@ -564,6 +698,7 @@ console.log("history query");
     /reopenWindowMsForKind\(/.test(scanSrc));
 }
 
+await pool.end();
 if (failures > 0) {
   console.error(`\n${failures} check(s) FAILED`);
   process.exit(1);

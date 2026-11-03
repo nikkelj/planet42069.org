@@ -10,7 +10,7 @@
  * Run with: pnpm --filter @workspace/api-server run test:rpod
  */
 import {
-  screenCandidatePairs, screenCoAlignedPairs, minRaanDiffDeg, minPhaseDiffDeg, raanRateDegPerDay, closeApproach, clusterPairs,
+  screenCandidatePairs, screenCoAlignedPairs, minRaanDiffDeg, minPhaseDiffDeg, raanRateDegPerDay, argPerigeeRateDegPerDay, closeApproach, clusterPairs,
   DEFAULT_SCREEN, DEFAULT_COALIGNED, hasUsableTleLines, tleEpochMs, tleEpochIsCurrent, MAX_SGP4_PAIR_MS, SCREEN_YIELD_EVERY,
   semiMajorAxisKm, alongTrackRulesOutRange, COALIGNED_MAX_RANGE_KM, RPOD_MAX_RANGE_KM,
   type ScreenElset, type FlaggedPair,
@@ -120,6 +120,8 @@ console.log("J2 RAAN convergence");
   // Sun-sync-ish orbit: precession rate ~0.98 deg/day at inc 97.5.
   const rate = raanRateDegPerDay({ incDeg: 97.5, eccentricity: 0.0002, meanMotionRevPerDay: 15.1 });
   check("SSO precession rate ≈ +1 deg/day", rate > 0.6 && rate < 1.4, `got ${rate.toFixed(3)}`);
+  const argp = argPerigeeRateDegPerDay({ incDeg: 97.5, eccentricity: 0.0002, meanMotionRevPerDay: 15.1 });
+  check("SSO argument of perigee rate ≈ −3.4 deg/day", argp < -2.5 && argp > -4.5, `got ${argp.toFixed(3)}`);
   // Different inclinations → different rates → planes converge.
   const a = makeElset({ norad: 200, incDeg: 97.5, raanDeg: 10.0, mm: 15.1 });
   const b = makeElset({ norad: 201, incDeg: 90.0, raanDeg: 10.8, mm: 15.1 }); // rate ~0 vs ~+1/day
