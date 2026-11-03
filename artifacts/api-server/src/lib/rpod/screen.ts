@@ -89,13 +89,31 @@ const J2 = 1.08262668e-3;
 const MU = 398600.4418; // km^3/s^2
 const D2R = Math.PI / 180;
 
-/** J2 secular nodal precession rate, deg/day. */
-export function raanRateDegPerDay(e: Pick<ScreenElset, "incDeg" | "eccentricity" | "meanMotionRevPerDay">): number {
+function j2Secular(
+  e: Pick<ScreenElset, "incDeg" | "eccentricity" | "meanMotionRevPerDay">,
+): { n: number; factor: number } | null {
   const n = (e.meanMotionRevPerDay * 2 * Math.PI) / 86400; // rad/s
+  if (!Number.isFinite(n) || n <= 0) return null;
   const a = Math.cbrt(MU / (n * n)); // km
   const p = a * (1 - e.eccentricity * e.eccentricity);
-  if (p <= 0) return 0;
-  const rate = -1.5 * n * J2 * (EARTH_R_KM / p) ** 2 * Math.cos(e.incDeg * D2R); // rad/s
+  if (!(p > 0)) return null;
+  return { n, factor: J2 * (EARTH_R_KM / p) ** 2 };
+}
+
+/** J2 secular nodal precession rate, deg/day. */
+export function raanRateDegPerDay(e: Pick<ScreenElset, "incDeg" | "eccentricity" | "meanMotionRevPerDay">): number {
+  const s = j2Secular(e);
+  if (!s) return 0;
+  const rate = -1.5 * s.n * s.factor * Math.cos(e.incDeg * D2R); // rad/s
+  return (rate / D2R) * 86400;
+}
+
+/** J2 secular argument-of-perigee rate, deg/day. */
+export function argPerigeeRateDegPerDay(e: Pick<ScreenElset, "incDeg" | "eccentricity" | "meanMotionRevPerDay">): number {
+  const s = j2Secular(e);
+  if (!s) return 0;
+  const cosI = Math.cos(e.incDeg * D2R);
+  const rate = 0.75 * s.n * s.factor * (5 * cosI * cosI - 1); // rad/s
   return (rate / D2R) * 86400;
 }
 

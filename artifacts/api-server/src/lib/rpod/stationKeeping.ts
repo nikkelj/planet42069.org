@@ -1,6 +1,6 @@
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { raanRateDegPerDay, semiMajorAxisKm } from "./screen";
+import { argPerigeeRateDegPerDay, raanRateDegPerDay, semiMajorAxisKm } from "./screen";
 import type { Force } from "./force";
 
 /**
@@ -16,13 +16,15 @@ import type { Force } from "./force";
  * the same plane match as the 0.5° RAAN prefilter, a matched semi-major
  * axis, and an along-track offset inside the configured cap. Both RAANs
  * are propagated to the later of the two epochs with that object's J2
- * secular nodal rate before any RAAN gate. A sun-synchronous shell moves
- * about a degree per day, so raw catalog RAAN across a staggered epoch
- * is not the plane difference. The hourly scan still pre-filters
- * red-versus-blue pairs on the latest elsets in memory, then reads a
- * bounded history only for those NORADs (index seek
- * per id, LIMIT per object). It does not walk the TLE archive. When that
- * history has two or more samples, the along-track drift must also stay
+ * secular nodal rate before any RAAN gate. Argument of perigee uses the
+ * same object's J2 secular rate before the along-track offset is measured.
+ * A sun-synchronous shell moves about a degree per day in node and about
+ * three degrees per day in argument of perigee, so a staggered elset is
+ * not a plane split and not an along-track jump. The hourly scan still
+ * pre-filters red-versus-blue pairs on the latest elsets in memory, then
+ * reads a bounded history only for those NORADs (index seek per id, LIMIT
+ * per object). It does not walk the TLE archive. When that history has
+ * two or more samples, the along-track drift must also stay
  * under 25 km/day. A single sample has no rate, so the drift check is
  * skipped.
  */
@@ -158,13 +160,18 @@ function usableSample(e: ElementSample, opts: StationKeepingOptions): boolean {
     && e.incDeg <= 175;
 }
 
-/** Argument of latitude at `atMs`, plus the first-order equation of the center. */
+/**
+ * Argument of latitude at `atMs`. Mean anomaly advances at the elset mean
+ * motion. Argument of perigee advances at this object's J2 secular rate.
+ * The first-order equation of the center is applied at the propagated anomaly.
+ */
 export function trueArgLatDeg(e: ElementSample, atMs: number): number {
   const dtDays = (atMs - e.epochMs) / 86400_000;
   const ma = e.meanAnomalyDeg + e.meanMotionRevPerDay * 360 * dtDays;
   const maRad = wrap360(ma) * Math.PI / 180;
   const eqcDeg = 2 * e.eccentricity * Math.sin(maRad) * (180 / Math.PI);
-  return wrap360(e.argPerigeeDeg + ma + eqcDeg);
+  const argp = e.argPerigeeDeg + argPerigeeRateDegPerDay(e) * dtDays;
+  return wrap360(argp + ma + eqcDeg);
 }
 
 export interface AlongTrack {
