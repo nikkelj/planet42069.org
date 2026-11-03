@@ -2,7 +2,7 @@
  "slug": "starlink-15-18",
  "title": "Falcon 9 Starlink Group 15-18 (27 V2 Mini Optimized, SLC-4E)",
  "vehicle": "falcon9",
- "t0_utc": "2026-10-31T04:02:22Z",
+ "t0_utc": "2026-10-31T04:04:34Z",
  "pad": {
   "lat": 34.632,
   "lon": -120.611,
@@ -34,9 +34,9 @@
   "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude (~3 km difference at insertion latitude, accepted via 1 km-weight)"
  },
  "header_notes": [
-  "Not flown: LL2 NET 2026-10-31T04:02:22Z (Fri Oct 30 9:02:22 pm PDT), window 03:48-07:48Z, status Go (LL2 update 2026-10-30T14:16Z 'Now targeting Oct 31 at 04:02 UTC'; checked 2026-10-30 ~8:15a PDT); SpaceX launches page currently shows no date/time for sl-15-18 (cannot confirm); NAVAREA XII 747/26 window 310348Z-310831Z OCT covers it; CelesTrak SupGP re-issued for this T0 (epoch = T0 + 1:03:14). Retimed from 2026-10-31T03:48:00Z (Fri 8:48 pm PDT), earlier 2026-10-30T04:02:00Z; SpaceX timeline unchanged. File continues past SECO-1 through SES-2/SECO-2 to payload deploy (POST-CUTOFF lines).",
+  "FLOWN: liftoff 2026-10-31T04:04:34Z (Fri Oct 30 9:04:34 pm PDT) per LL2 (Launch Successful, second precision), 2 min 12 s after the filed NET 04:02:22Z; SpaceX confirmed all 27 satellites deployed (~10:08 pm PDT); LL2: B1093 landed on OCISLY. Retimed 2026-11-03 to actual liftoff from pre-flight T0 04:02:22Z (earlier 03:48:00Z, 10-30T04:02:00Z); SpaceX timeline unchanged. File continues past SECO-1 through SES-2/SECO-2 to payload deploy (POST-CUTOFF lines).",
   "Published timeline (SpaceX sl-15-18): Max-Q 1:08, MECO 2:26, stage sep 2:29, SES-1 2:36, fairing 2:58, SECO-1 8:39, SES-2 53:07, SECO-2 53:08, deploy 1:01:59. Booster: 18th flight (SpaceX), LL2/prior board B1093; OCISLY.",
-  "Target orbit: SpaceX pre-launch state vector (CelesTrak SupGP starlink-g15-18): deploy 251 x 266 km, i 70.004 deg, RAAN 175.6067 deg. Deploy epoch 2026-10-31T05:05:36Z = T+1:03:14 vs SpaceX page 1:01:59 (75 s, noted)."
+  "Target orbit: SpaceX pre-launch state vector (CelesTrak SupGP starlink-g15-18): deploy 251 x 266 km, i 70.004 deg, RAAN 175.6067 deg. Deploy epoch 2026-10-31T05:05:36Z = T+1:03:14 vs SpaceX page 1:01:59 (75 s, noted). NOTE: that vector was issued for the 04:02:22Z T0; after the 132 s later liftoff the Earth-fixed geometry is unchanged but the inertial RAAN shifts ~+0.55 deg (not re-checked against post-launch elements)."
  ],
  "final_cutoff_s": {
   "value": 519,
