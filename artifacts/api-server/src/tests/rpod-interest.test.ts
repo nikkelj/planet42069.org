@@ -343,8 +343,19 @@ console.log("Docked geometry and known stations stay on the board");
     shouldStoreDocked(0, 0, [44625, 44476], ["blue", "blue"]));
   check("a cross-tag is not labeled docked",
     !shouldStoreDocked(0, 0, [44625, 44476], ["blue", "blue"], true));
+  check("a cross-tag of a known station is still docked",
+    shouldStoreDocked(0, 0, [48274, 54216], ["red", "red"], true));
   check("coplanar-range geometry is not labeled docked",
     !shouldStoreDocked(8, 0.02, [25544, 66664], ["neutral", "blue"]));
+  check("1.6 km at docked speed next to Tiangong is docked",
+    shouldStoreDocked(1.6, 0.002, [48274, 53239], ["red", "red"]));
+  check("1.6 km at docked speed without a station is not docked",
+    !shouldStoreDocked(1.6, 0.002, [44625, 44476], ["blue", "blue"]));
+  const visitors = new Set([25544, 68837, 100882]);
+  check("red-vs-blue visitors are not docked from elsets alone",
+    !shouldStoreDocked(0, 0, [68837, 100882], ["red", "blue"], true));
+  check("red-vs-blue visitors the scan attached to a station are docked",
+    shouldStoreDocked(0, 0, [68837, 100882], ["red", "blue"], true, visitors));
 }
 
 console.log("selectInterestingEvents drops boring before persist");

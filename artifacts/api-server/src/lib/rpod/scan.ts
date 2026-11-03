@@ -23,6 +23,7 @@ import { isEscalation, type NewRpodEvent, type EscalatedRpodEvent } from "./aler
 import { deliverPolicyAlerts, type TrackedRpodEvent } from "./alertDispatch";
 import { designatorFromTleLine1 } from "../obc/designator";
 import { forceOf, type Force } from "./force";
+import { KNOWN_STATION_NORADS } from "./alertPolicy";
 import { isSuspectedCrossTag, type ElsetSnap } from "./maneuver";
 import {
   DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry,
@@ -31,7 +32,8 @@ import {
 } from "./interest";
 import {
   argumentAndAnomaly, loadStationKeepingSamples, readStationKeepingAlertState,
-  rpodKindsShareAFile, screenStationKeeping, stationKeepingAlertStep,
+  rpodKindsShareAFile, screenStationAttachments, screenStationKeeping, stationKeepingAlertStep,
+  stationKeepingPairIsDocked,
   stationKeepingLedgerKey, stationKeepingOptions, stationPairKey,
   type ElementSample, type StationKeepingCatalog, type StationKeepingHit,
   type StationKeepingQueuedAlert, type StationKeepingVerdict,
@@ -452,6 +454,31 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       return;
     }
     const byNorad = new Map(elsets.map((e) => [e.norad, e]));
+    // Known stations are screened on their own, before the catalog budget.
+    // Same-force Tiangong pairs never win an SGP4 slot, and the coplanar
+    // screen skips same-operator pairs. ISS visitors also miss the raw-RAAN
+    // plane gate (their node is published at a different epoch) and were
+    // landing in station keeping at range 0.
+    const stationPayload = (norad: number): boolean => {
+      const row = meta.get(norad);
+      return !row || row.objectClass == null || row.objectClass === "P";
+    };
+    let stationAttached = new Set<number>();
+    let stationClusters: ReturnType<typeof clusterPairs> = [];
+    try {
+      const found = screenStationAttachments(elsets, KNOWN_STATION_NORADS, nowMs, stationPayload);
+      stationAttached = found.attached;
+      stationClusters = found.events;
+      if (stationClusters.length) {
+        logger.info(
+          { events: stationClusters.map((e) => ({ members: e.members, minRangeKm: e.minRangeKm })) },
+          "rpod-scan: station attachments",
+        );
+      }
+    } catch (err) {
+      logger.warn({ err }, "rpod-scan: station attachment screen failed");
+    }
+    const bothStationAttached = (a: number, b: number) => stationAttached.has(a) && stationAttached.has(b);
     // Catalog intl_des is often null until the GCAT piece backfill. The TLE
     // line carries the same designator, which is what co-launch filtering needs.
     for (const e of elsets) {
@@ -522,7 +549,9 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       coCandidates, nowMs, COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, deadlineMs, abort, sgp4Truncated,
     );
 
-    // Stage 3 + widened scan for capped clusters
+    // Stage 3 + widened scan for capped clusters. Station-attached pairs stay
+    // in these screens so an existing visitor file (the Dragons' coplanar
+    // case) is relabeled docked instead of being left behind.
     let events = clusterPairs(flagged, MEMBER_CAP);
     for (const ev of events) {
       if (!ev.hitCap) continue;
@@ -597,6 +626,8 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
           const a = sampleByNorad.get(hit.a);
           const b = sampleByNorad.get(hit.b);
           if (a && b && isSuspectedCrossTag(a, b)) continue;
+          if (bothStationAttached(hit.a, hit.b)) continue;
+          if (stationKeepingPairIsDocked(hit.verdict.offsetKm, hit.verdict.driftKmPerDay, hit.verdict.crossTrackKm)) continue;
           skEvents.push(stationKeepingCluster(hit));
           skGeom.set(stationPairKey(hit.a, hit.b), hit.verdict);
         }
@@ -615,6 +646,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     // Persist only interesting encounters. Boring same-operator routine
     // RPOD must not land in rpod_events or on the public board.
     const conjKept = selectInterestingEvents(events, meta);
+    if (stationClusters.length) conjKept.kept.push(...stationClusters);
     const coKept = selectInterestingEvents(coEvents, meta);
     const interestStats = {
       conjunction: conjKept.stats,
@@ -638,7 +670,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     };
     const forceByNorad = new Map<number, Force>();
     for (const norad of meta.keys()) forceByNorad.set(norad, forceOfNorad(norad));
-    const persistOpts = { crossTagPairs, elsetEpochs, forceOfNorad };
+    const persistOpts = { crossTagPairs, elsetEpochs, forceOfNorad, stationAttached };
     const conjResult = await persistEvents(conjKept.kept, "conjunction", persistOpts);
     const coResult = await persistEvents(coKept.kept, "coplanar", persistOpts);
     const skResult = await persistEvents(skEvents, "station-keeping", {
@@ -811,6 +843,12 @@ export interface PersistOptions {
   crossTagPairs?: Set<string>;
   elsetEpochs?: Map<number, number>;
   forceOfNorad?: (norad: number) => Force;
+  /**
+   * NORADs this scan found sitting on a known station, including the station.
+   * A cluster made entirely of these may be labeled docked even when the
+   * core NORAD is not one of the members (ISS visitors share one copied elset).
+   */
+  stationAttached?: ReadonlySet<number>;
   /** Verdicts for this hour's station-keeping pairs, keyed by stationPairKey. */
   stationKeeping?: Map<string, StationKeepingVerdict>;
   stationKeepingSignificantKm?: number;
@@ -1058,7 +1096,7 @@ export async function persistEvents(
     const forces = ev.members.map((n) => opts.forceOfNorad?.(n) ?? "neutral");
     const geometryDocked = isDockedGeometry(ev.minRangeKm, ev.relVelKmS);
     const labelDocked = kind !== "station-keeping"
-      && shouldStoreDocked(ev.minRangeKm, ev.relVelKmS, ev.members, forces, cross);
+      && shouldStoreDocked(ev.minRangeKm, ev.relVelKmS, ev.members, forces, cross, opts.stationAttached);
     let storedKind: "conjunction" | "coplanar" | "docked" | "station-keeping" =
       kind === "station-keeping" ? "station-keeping"
       : labelDocked ? "docked"

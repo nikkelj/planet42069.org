@@ -29,7 +29,7 @@ import {
 } from "../lib/rpod/alertPolicy";
 import { formatStationKeepingCitation, weightedTweetLength, TWEET_MAX_WEIGHTED } from "../lib/rpod/alert";
 import { isSuspectedCrossTag } from "../lib/rpod/maneuver";
-import { COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, DEFAULT_COALIGNED, raanRateDegPerDay } from "../lib/rpod/screen";
+import { COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, DEFAULT_COALIGNED, raanRateDegPerDay, tleEpochMs, type ScreenElset } from "../lib/rpod/screen";
 import {
   COPLANAR_REOPEN_WINDOW_MS,
   CONJUNCTION_REOPEN_WINDOW_MS,
@@ -44,8 +44,11 @@ import {
   classifyStationKeeping,
   prefilterStationKeepingPairs,
   rpodKindsShareAFile,
+  screenStationAttachments,
   screenStationKeeping,
   stationKeepingAlertStep,
+  stationKeepingPairIsDocked,
+  stationNeighborPairs,
   stationKeepingHistorySql,
   stationKeepingLedgerKey,
   stationKeepingOptions,
@@ -323,6 +326,9 @@ console.log("Kosmos 2612 vs ICEYE-X36 (CelesTrak GP, epoch 2026-10-21)");
   });
   const dragon = { ...iss, norad: 100882 };
   check("an ISS docked pair sharing one elset is a cross-tag, not a new case", isSuspectedCrossTag(iss, dragon));
+  check("a 0 km hold is docked geometry, not station keeping", stationKeepingPairIsDocked(0, 0, 0));
+  check("a few hundred km of along-track offset is still station keeping",
+    !stationKeepingPairIsDocked(476, 1.5, 0.2));
 
   const screened = await screenStationKeeping({
     latest: [iceye, ...pack],
@@ -562,6 +568,89 @@ console.log("history query");
     /stationKeepingRetireAllowed\(/.test(scanSrc));
   check("the scan reopens station-keeping on the kind's window",
     /reopenWindowMsForKind\(/.test(scanSrc));
+  check("the scan screens known stations outside the catalog budget",
+    /screenStationAttachments\(/.test(scanSrc));
+  check("the scan drops docked geometry from station keeping",
+    /stationKeepingPairIsDocked\(/.test(scanSrc));
+}
+
+console.log("station attachments: ISS visitors and Tiangong are screened even when the catalog gates miss them");
+{
+  function tle(norad: number, line1: string, line2: string): ScreenElset {
+    const epochMs = tleEpochMs(line1);
+    if (epochMs == null) throw new Error(`epoch ${norad}`);
+    return {
+      norad,
+      epochMs,
+      line1,
+      line2,
+      incDeg: parseFloat(line2.slice(8, 16)),
+      raanDeg: parseFloat(line2.slice(17, 25)),
+      eccentricity: parseFloat(`0.${line2.slice(26, 33)}`),
+      meanMotionRevPerDay: parseFloat(line2.slice(52, 63)),
+    };
+  }
+  // Published 2026-11-03 elements. Raw RAAN of Progress vs Zarya is ~3.8°
+  // because the epochs differ; SGP4 range is ~0.6 km. Tiangong's two fits
+  // are ~1.6 km apart. Both must attach.
+  const zaryaL1 = "1 25544U 98067A   26307.53092409  .00005389  00000-0  10530-3 0  9996";
+  const zaryaL2 = "2 25544  51.6330 330.5488 0007153 343.6919  16.3838 15.49164192593358";
+  const progL1 = "1 68837U 26093A   26306.75682168  .00005437  00000-0  10620-3 0  9992";
+  const progL2 = "2 68837  51.6331 334.3796 0007123 340.7366  19.3352 15.49154261587641";
+  const zarya = tle(25544, zaryaL1, zaryaL2);
+  const progress = tle(68837, progL1, progL2);
+  // Dragon Grace 2 publishes the same visitor elset under an Alpha-5 catalog number.
+  const dragon = tle(100882, progL1.replace("68837", "A0882"), progL2.replace("68837", "A0882"));
+  const tianhe = tle(48274,
+    "1 48274U 21035A   26307.18040154  .00013017  00000-0  15232-3 0  9994",
+    "2 48274  41.4681 197.5067 0004308 252.0264 108.0106 15.61329054314877");
+  const mengtian = tle(54216,
+    "1 54216U 22143A   26307.18040154  .00013017  00000-0  15232-3 0  9998",
+    "2 54216  41.4681 197.5067 0004308 252.0264 108.0106 15.61329054308558");
+  const wentian = tle(53239,
+    "1 53239U 22085A   26306.92454403  .00012567  00000-0  14725-3 0  9999",
+    "2 53239  41.4680 199.0653 0004267 250.7119 109.3259 15.61319606288234");
+  const tianzhou = tle(69049,
+    "1 69049U 26102A   26306.92454403  .00012567  00000-0  14725-3 0  9999",
+    "2 69049  41.4680 199.0653 0004267 250.7119 109.3259 15.61319606311439");
+  const shenzhou = tle(69180,
+    "1 69180U 26113A   26306.92454403  .00012567  00000-0  14725-3 0  9997",
+    "2 69180  41.4680 199.0653 0004267 250.7119 109.3259 15.61319606308217");
+  const ahead = tle(99901, zaryaL1.replace("25544", "99901"), zaryaL2.replace("25544", "99901").replace(" 16.3838", " 46.3838"));
+  const nowMs = Date.parse("2026-11-03T20:13:00Z");
+  const elsets = [zarya, progress, dragon, tianhe, mengtian, wentian, tianzhou, shenzhou, ahead];
+  const neighbors = stationNeighborPairs(
+    elsets.map((e) => ({
+      norad: e.norad,
+      epochMs: e.epochMs,
+      incDeg: e.incDeg,
+      raanDeg: e.raanDeg,
+      eccentricity: e.eccentricity,
+      argPerigeeDeg: parseFloat(e.line2.slice(34, 42)),
+      meanAnomalyDeg: parseFloat(e.line2.slice(43, 51)),
+      meanMotionRevPerDay: e.meanMotionRevPerDay,
+    })),
+    new Set([25544, 48274]),
+  );
+  const issNeighbors = new Set(neighbors.filter((p) => p.station === 25544).map((p) => p.other));
+  const tgNeighbors = new Set(neighbors.filter((p) => p.station === 48274).map((p) => p.other));
+  check("epoch-aligned RAAN still neighbors Progress with Zarya", issNeighbors.has(68837));
+  check("a copied visitor elset neighbors Zarya", issNeighbors.has(100882));
+  check("Tiangong's other fit neighbors Tianhe despite the raw RAAN split", tgNeighbors.has(53239) && tgNeighbors.has(69049) && tgNeighbors.has(69180));
+  check("Mengtian neighbors Tianhe", tgNeighbors.has(54216));
+  const found = screenStationAttachments(elsets, new Set([25544, 48274]), nowMs);
+  const iss = found.events.find((e) => e.members.includes(25544));
+  const tg = found.events.find((e) => e.members.includes(48274));
+  check("ISS visitors at ~0 km are attached",
+    iss != null && [68837, 100882].every((n) => iss.members.includes(n)) && !iss.members.includes(99901),
+    JSON.stringify(iss?.members));
+  check("the far along-track decoy is not attached to the ISS", !found.attached.has(99901));
+  check("Tiangong, both modules, and both visitors are one docked cluster",
+    tg != null && [48274, 54216, 53239, 69049, 69180].every((n) => tg.members.includes(n)),
+    JSON.stringify(tg?.members));
+  check("station clusters are inside the attached-range gate",
+    found.events.every((e) => e.minRangeKm <= 3 && e.relVelKmS <= 0.01),
+    found.events.map((e) => e.minRangeKm).join(","));
 }
 
 if (failures > 0) {

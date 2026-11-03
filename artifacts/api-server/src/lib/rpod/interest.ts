@@ -99,18 +99,32 @@ export const CLUSTER_MIN_FREE_BODIES = 6;
 export const DOCKED_MAX_RANGE_KM = 0.5;
 export const DOCKED_MAX_RELVEL_KM_S = 0.01;
 
+/**
+ * "About 0" for a known station. Independent TLE fits of one docked stack
+ * disagree by 1–2 km (Tiangong's two published sets are ~1.6 km under SGP4;
+ * an ISS visitor versus Zarya is ~0.6 km) even though the vehicles are joined.
+ * Wider than the 0.5 km global dock gate, and only used when a known station
+ * or an object this scan already attached to one is in the pair.
+ */
+export const STATION_ATTACHED_RANGE_KM = 3;
+
 export function isDockedGeometry(minRangeKm: number, relVelKmS: number): boolean {
   return minRangeKm <= DOCKED_MAX_RANGE_KM && relVelKmS <= DOCKED_MAX_RELVEL_KM_S;
+}
+
+export function isStationAttachedGeometry(minRangeKm: number, relVelKmS: number): boolean {
+  return minRangeKm <= STATION_ATTACHED_RANGE_KM && relVelKmS <= DOCKED_MAX_RELVEL_KM_S;
 }
 
 /**
  * Store this geometry as kind "docked".
  *
- * Same gate the scan uses at persist and reclassify time: docked range and
- * relative velocity, not a cross-tag, and mayLabelDocked. A known station
- * may be labeled docked. A red-versus-blue or red-versus-neutral pair that
- * is not a station stays unlabeled (Kosmos 1638). Same-force pairs follow
- * the geometry.
+ * Same gate the scan uses at persist and reclassify time. A known station,
+ * or a cluster this scan attached to one (`attached`), may be docked out to
+ * STATION_ATTACHED_RANGE_KM. A copied station elset is the dock, so a
+ * cross-tag does not block that. Every other pair still needs the 0.5 km
+ * gate and mayLabelDocked: a red-versus-blue pair that is not at a station
+ * stays unlabeled (Kosmos 1638).
  */
 export function shouldStoreDocked(
   minRangeKm: number,
@@ -118,9 +132,18 @@ export function shouldStoreDocked(
   norads: number[],
   forces: readonly Force[],
   crossTag = false,
+  attached: ReadonlySet<number> = new Set(),
 ): boolean {
-  if (crossTag || norads.length < 2) return false;
-  if (!isDockedGeometry(minRangeKm, relVelKmS)) return false;
+  if (norads.length < 2) return false;
+  const onKnown = norads.some((n) => KNOWN_STATION_NORADS.has(n));
+  const allAttached = attached.size > 0 && norads.every((n) => attached.has(n) || KNOWN_STATION_NORADS.has(n));
+  const onStation = onKnown || allAttached;
+  if (crossTag && !onStation) return false;
+  const geom = onStation
+    ? isStationAttachedGeometry(minRangeKm, relVelKmS)
+    : isDockedGeometry(minRangeKm, relVelKmS);
+  if (!geom) return false;
+  if (onStation) return true;
   return mayLabelDocked(norads, [...forces]);
 }
 

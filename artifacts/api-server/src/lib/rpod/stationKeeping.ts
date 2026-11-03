@@ -1,7 +1,11 @@
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { raanRateDegPerDay, semiMajorAxisKm } from "./screen";
+import {
+  closeApproach, raanRateDegPerDay, semiMajorAxisKm,
+  type ClusteredEvent, type FlaggedPair, type ScreenElset,
+} from "./screen";
 import type { Force } from "./force";
+import { isDockedGeometry, isStationAttachedGeometry } from "./interest";
 
 /**
  * Station keeping — a red-versus-blue (or blue-versus-red) pair that holds
@@ -285,6 +289,137 @@ export function prefilterStationKeepingPairs(
     (Math.abs(x.dIncDeg) + Math.abs(x.dRaanDeg) + Math.abs(x.dSmaKm) / 10)
     - (Math.abs(y.dIncDeg) + Math.abs(y.dRaanDeg) + Math.abs(y.dSmaKm) / 10));
   return out;
+}
+
+/** Plane gate for the station-attachment screen. Epoch-aligned RAAN, not the raw catalog node. */
+export const STATION_NEIGHBOR_INC_DEG = 0.6;
+export const STATION_NEIGHBOR_RAAN_DEG = 1;
+export const STATION_NEIGHBOR_SMA_KM = 30;
+export const STATION_NEIGHBOR_CAP = 400;
+
+/**
+ * Objects in the same shell as a known station, judged on epoch-aligned
+ * RAAN. The conjunction and coplanar screens compare raw RAAN, so a visitor
+ * whose node was published at a different epoch (ISS visitors sit ~4° of
+ * raw RAAN from Zarya, ~0° once both nodes share an epoch) never becomes a
+ * candidate. Same-force stacks (Tiangong) also lose the SGP4 budget and are
+ * skipped by the coplanar same-operator filter. This list is the set that
+ * must always be propagated.
+ */
+export function stationNeighborPairs(
+  samples: ElementSample[],
+  stationNorads: ReadonlySet<number>,
+  include: (norad: number) => boolean = () => true,
+): { station: number; other: number }[] {
+  const out: { station: number; other: number }[] = [];
+  const cores = samples.filter((s) => stationNorads.has(s.norad) && usableSample(s, DEFAULT_STATION_KEEPING));
+  for (const core of cores) {
+    const scored: { other: number; score: number }[] = [];
+    for (const other of samples) {
+      if (other.norad === core.norad || !include(other.norad)) continue;
+      if (!usableSample(other, DEFAULT_STATION_KEEPING)) continue;
+      if (Math.abs(core.incDeg - other.incDeg) > STATION_NEIGHBOR_INC_DEG) continue;
+      const dRaan = Math.abs(alignedRaanDeltaDeg(core, other));
+      if (dRaan > STATION_NEIGHBOR_RAAN_DEG) continue;
+      const smaCore = semiMajorAxisKm(core.meanMotionRevPerDay);
+      const smaOther = semiMajorAxisKm(other.meanMotionRevPerDay);
+      const dSma = Math.abs(smaCore - smaOther);
+      if (!Number.isFinite(dSma) || dSma > STATION_NEIGHBOR_SMA_KM) continue;
+      scored.push({
+        other: other.norad,
+        score: dRaan + Math.abs(core.incDeg - other.incDeg) + dSma / 10,
+      });
+    }
+    scored.sort((a, b) => a.score - b.score);
+    for (const row of scored.slice(0, STATION_NEIGHBOR_CAP)) out.push({ station: core.norad, other: row.other });
+  }
+  return out;
+}
+
+function sampleFromScreen(e: ScreenElset): ElementSample | null {
+  const ang = argumentAndAnomaly(e.line2);
+  if (!ang) return null;
+  if (!Number.isFinite(e.epochMs) || !Number.isFinite(e.incDeg) || !Number.isFinite(e.raanDeg)) return null;
+  if (!Number.isFinite(e.eccentricity) || !Number.isFinite(e.meanMotionRevPerDay)) return null;
+  return {
+    norad: e.norad,
+    epochMs: e.epochMs,
+    incDeg: e.incDeg,
+    raanDeg: e.raanDeg,
+    eccentricity: e.eccentricity,
+    argPerigeeDeg: ang.argPerigeeDeg,
+    meanAnomalyDeg: ang.meanAnomalyDeg,
+    meanMotionRevPerDay: e.meanMotionRevPerDay,
+  };
+}
+
+/**
+ * SGP4 every station neighbor and keep the ones sitting on the station.
+ * One docked cluster per station, uncapped, so the whole stack is filed
+ * even when the catalog screen never paired them.
+ */
+export function screenStationAttachments(
+  elsets: ScreenElset[],
+  stationNorads: ReadonlySet<number>,
+  nowMs: number,
+  include: (norad: number) => boolean = () => true,
+): { attached: Set<number>; events: ClusteredEvent[] } {
+  const byNorad = new Map(elsets.map((e) => [e.norad, e]));
+  const samples: ElementSample[] = [];
+  for (const e of elsets) {
+    const sample = sampleFromScreen(e);
+    if (sample) samples.push(sample);
+  }
+  const neighbors = stationNeighborPairs(samples, stationNorads, include);
+  const byStation = new Map<number, FlaggedPair[]>();
+  const attached = new Set<number>();
+  for (const pair of neighbors) {
+    const a = byNorad.get(pair.station);
+    const b = byNorad.get(pair.other);
+    if (!a || !b) continue;
+    const ca = closeApproach(a, b, nowMs, 48 * 3600_000);
+    if (!ca || !isStationAttachedGeometry(ca.minRangeKm, ca.relVelKmS)) continue;
+    const flagged: FlaggedPair = {
+      a: pair.station,
+      b: pair.other,
+      minRangeKm: ca.minRangeKm,
+      relVelKmS: ca.relVelKmS,
+      tcaMs: ca.tcaMs,
+    };
+    const arr = byStation.get(pair.station) ?? [];
+    arr.push(flagged);
+    byStation.set(pair.station, arr);
+    attached.add(pair.station);
+    attached.add(pair.other);
+  }
+  const events: ClusteredEvent[] = [];
+  for (const [station, pairs] of byStation) {
+    if (pairs.length === 0) continue;
+    const tightest = pairs.reduce((m, p) => (p.minRangeKm < m.minRangeKm ? p : m), pairs[0]);
+    const members = [station, ...pairs.map((p) => p.b)].sort((x, y) => x - y);
+    events.push({
+      members,
+      pairs,
+      minRangeKm: tightest.minRangeKm,
+      relVelKmS: tightest.relVelKmS,
+      tcaMs: tightest.tcaMs,
+      windowStartMs: tightest.tcaMs - 1800_000,
+      windowEndMs: tightest.tcaMs + 1800_000,
+      hitCap: members.length > 5,
+    });
+  }
+  return { attached, events };
+}
+
+/**
+ * Station keeping is a held along-track offset, not a joined stack.
+ * A ~0 km pair (copied station elsets, or SGP4 range inside the station
+ * gate) is docked geometry and must not become a station-keeping case.
+ */
+export function stationKeepingPairIsDocked(offsetKm: number, driftKmPerDay: number, crossTrackKm: number): boolean {
+  const rel = Math.abs(driftKmPerDay) / 86400;
+  if (isDockedGeometry(offsetKm, rel)) return true;
+  return isStationAttachedGeometry(Math.hypot(offsetKm, crossTrackKm), rel);
 }
 
 interface TrackPoint extends AlongTrack {}
