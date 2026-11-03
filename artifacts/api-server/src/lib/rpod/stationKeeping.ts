@@ -23,8 +23,8 @@ import type { Force } from "./force";
  * not a plane split and not an along-track jump. The hourly scan still
  * pre-filters red-versus-blue pairs on the latest elsets in memory, then
  * reads a bounded history only for those NORADs (index seek per id, LIMIT
- * per object). It does not walk the TLE archive. When that
- * history has two or more samples, the along-track drift must also stay
+ * per object). It does not walk the TLE archive. When that history has
+ * two or more samples, the along-track drift must also stay
  * under 25 km/day. A single sample has no rate, so the drift check is
  * skipped.
  */
