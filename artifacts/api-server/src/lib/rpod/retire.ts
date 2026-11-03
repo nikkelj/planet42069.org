@@ -10,8 +10,9 @@
 export const COPLANAR_END_AFTER_MS = 48 * 3600_000;
 
 /**
- * Conjunction (and elset-docked) cases that no scan has re-seen for a day
- * are retired. A discrete approach that isn't refreshed is not still happening.
+ * Conjunction cases that no scan has re-seen for a day are retired.
+ * A discrete approach that isn't refreshed is not still happening.
+ * Docked stacks are not discrete approaches — see DOCKED_UNSEEN_MS.
  */
 export const CONJUNCTION_UNSEEN_MS = 24 * 3600_000;
 
@@ -20,8 +21,45 @@ export function selectUnseenConjunctionIds(
   nowMs: number,
 ): number[] {
   return events
-    .filter((e) => (e.kind === "conjunction" || e.kind === "docked")
+    .filter((e) => e.kind === "conjunction"
       && nowMs - e.lastSeenAt.getTime() > CONJUNCTION_UNSEEN_MS)
+    .map((e) => e.id);
+}
+
+/**
+ * A docked stack no scan has re-seen for this long has undocked or lost
+ * its elsets. About 14 days: long enough to ride out an elset gap, short
+ * of leaving a departed vehicle on the docked board forever. Geometry that
+ * breaks on a later scan drops the docked label immediately; this window
+ * is only the "we stopped seeing them" end.
+ */
+export const DOCKED_UNSEEN_MS = 14 * 86400_000;
+
+export function selectUnseenDockedIds(
+  events: { id: number; kind: string; lastSeenAt: Date }[],
+  nowMs: number,
+): number[] {
+  return events
+    .filter((e) => e.kind === "docked"
+      && nowMs - e.lastSeenAt.getTime() > DOCKED_UNSEEN_MS)
+    .map((e) => e.id);
+}
+
+/**
+ * Active events whose predicted window ended this long ago are archived
+ * as stale. Docked stacks inherit a short TCA-style window (~1 h) and must
+ * not take this path — an attached stack stays active until its geometry
+ * breaks or DOCKED_UNSEEN_MS passes without a re-detection.
+ */
+export const WINDOW_STALE_AFTER_MS = 3 * 86400_000;
+
+export function selectWindowStaleIds(
+  events: { id: number; kind: string; windowEnd: Date }[],
+  nowMs: number,
+): number[] {
+  return events
+    .filter((e) => e.kind !== "docked"
+      && nowMs - e.windowEnd.getTime() > WINDOW_STALE_AFTER_MS)
     .map((e) => e.id);
 }
 
@@ -53,6 +91,16 @@ export const COPLANAR_REOPEN_WINDOW_MS = 90 * 86400_000;
  * case file instead of splitting its history across two case numbers.
  */
 export const CONJUNCTION_REOPEN_WINDOW_MS = 30 * 86400_000;
+
+/**
+ * How long a lapsed docked case (stale or ended) stays eligible when a
+ * later scan still sees docked geometry. The old 24 h retire and the 3-day
+ * window archive froze these files for weeks or months. 180 days lets that
+ * confirming scan resume the same case number. Ordinary conjunctions stay
+ * on CONJUNCTION_REOPEN_WINDOW_MS. A blind status flip is not used: the
+ * pair has to show up again with docked geometry.
+ */
+export const DOCKED_REOPEN_WINDOW_MS = 180 * 86400_000;
 
 /**
  * Pure reopen decision: given recently-ENDED coplanar events (with their

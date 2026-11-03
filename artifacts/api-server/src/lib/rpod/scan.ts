@@ -13,16 +13,19 @@ import {
   alongTrackRulesOutRange,
   type ScreenElset, type FlaggedPair, type ScreenOptions,
 } from "./screen";
-import { selectEndedCoplanarIds, selectReopenCandidate, selectUnseenConjunctionIds, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS } from "./retire";
+import {
+  selectEndedCoplanarIds, selectReopenCandidate, selectUnseenConjunctionIds, selectUnseenDockedIds,
+  selectWindowStaleIds, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS,
+  DOCKED_REOPEN_WINDOW_MS, WINDOW_STALE_AFTER_MS,
+} from "./retire";
 import { isEscalation, type NewRpodEvent, type EscalatedRpodEvent } from "./alert";
 import { deliverPolicyAlerts, type TrackedRpodEvent } from "./alertDispatch";
 import { designatorFromTleLine1 } from "../obc/designator";
 import { forceOf, type Force } from "./force";
-import { mayLabelDocked } from "./alertPolicy";
 import { isSuspectedCrossTag, type ElsetSnap } from "./maneuver";
 import {
   DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry,
-  isProvenSamePair, prioritizeSgp4Pairs, selectInterestingEvents,
+  isProvenSamePair, prioritizeSgp4Pairs, selectInterestingEvents, shouldStoreDocked,
   type InterestCatalogMeta,
 } from "./interest";
 import {
@@ -57,7 +60,7 @@ export { DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry };
  *    long hour still persists what it found instead of logging a timeout
  *  - persist only interesting events (red paired with blue or neutral,
  *    exercise-flagged blue-on-blue, messy clusters, ultra-close
- *    near-misses) — see interest.ts
+ *    near-misses, docked geometry, known stations) — see interest.ts
  *  - station keeping is a separate kind: a plane-matched red-versus-blue
  *    pair whose along-track offset stays inside the configured cap
  *    (default 1000 km). One elset per object is enough. History is sought
@@ -74,8 +77,6 @@ const MAX_COALIGNED_SGP4_PAIRS = 1200;
 /** Coplanar events merge on a wider window — they evolve over days, not hours. */
 const COALIGNED_MERGE_WINDOW_MS = 24 * 3600_000;
 const MEMBER_CAP = 5;
-/** Events whose window ended this long ago get marked stale. */
-const STALE_AFTER_MS = 3 * 86400_000;
 
 let scanInFlight: Promise<void> | null = null;
 
@@ -784,6 +785,14 @@ async function logScanRow(
  * TCA proximity is deliberately NOT required on this path: a stale case is
  * by definition days past its window, so membership alone identifies the
  * continuing pair.
+ *
+ * A scan that still sees docked geometry also reactivates a stale or ended
+ * docked row of the same pair out to DOCKED_REOPEN_WINDOW_MS (longer than
+ * the conjunction window, because the old 24 h retire froze those files
+ * for weeks or months). The geometry has to come back; nothing flips a
+ * lapsed dock to active on its own. An active file of the same members
+ * wins, so a live coplanar stack is relabeled in place instead of also
+ * resurrecting an older docked id.
  */
 export interface PersistOptions {
   crossTagPairs?: Set<string>;
@@ -822,6 +831,66 @@ export function formatRpodScanStatus(row?: {
   };
 }
 
+interface LapsedRpodCase {
+  id: number;
+  endedAt: Date | null;
+  members: number[];
+  firstDetectedAt: Date;
+  lastSeenAt: Date;
+  lastReopenedAt: Date | null;
+  closedSpells: { start: string; lastSeenAt: string; endedAt: string }[];
+  screeningMeta?: Record<string, unknown> | null;
+}
+
+/** Stale or ended docked rows still inside the docked reopen window. */
+async function loadLapsedDockedCases(): Promise<LapsedRpodCase[]> {
+  const rows = await retryOnceOnTransient("rpod lapsed docked", () =>
+    db
+      .select({
+        id: rpodEvents.id,
+        endedAt: rpodEvents.endedAt,
+        firstDetectedAt: rpodEvents.firstDetectedAt,
+        lastSeenAt: rpodEvents.lastSeenAt,
+        lastReopenedAt: rpodEvents.lastReopenedAt,
+        closedSpells: rpodEvents.closedSpells,
+        screeningMeta: rpodEvents.screeningMeta,
+      })
+      .from(rpodEvents)
+      .where(and(
+        inArray(rpodEvents.status, ["stale", "ended"]),
+        eq(rpodEvents.kind, "docked"),
+        sql`COALESCE(${rpodEvents.endedAt}, ${rpodEvents.lastSeenAt}) > now() - make_interval(secs => ${DOCKED_REOPEN_WINDOW_MS / 1000})`,
+      )),
+  );
+  if (rows.length === 0) return [];
+  const memberRows = await retryOnceOnTransient("rpod lapsed docked members", () =>
+    db.select().from(rpodEventMembers).where(inArray(rpodEventMembers.eventId, rows.map((e) => e.id))),
+  );
+  const byId = new Map<number, number[]>();
+  for (const m of memberRows) {
+    const arr = byId.get(m.eventId) ?? [];
+    arr.push(m.norad);
+    byId.set(m.eventId, arr);
+  }
+  return rows.map((e) => ({
+    id: e.id,
+    endedAt: e.endedAt ?? e.lastSeenAt,
+    members: byId.get(e.id) ?? [],
+    firstDetectedAt: e.firstDetectedAt,
+    lastSeenAt: e.lastSeenAt,
+    lastReopenedAt: e.lastReopenedAt,
+    closedSpells: e.closedSpells ?? [],
+    screeningMeta: (e.screeningMeta ?? null) as Record<string, unknown> | null,
+  }));
+}
+
+function withLapsedDocks(pool: LapsedRpodCase[], extra: LapsedRpodCase[]): LapsedRpodCase[] {
+  if (extra.length === 0) return pool;
+  const seen = new Set(pool.map((e) => e.id));
+  const add = extra.filter((e) => !seen.has(e.id));
+  return add.length === 0 ? pool : [...pool, ...add];
+}
+
 export async function persistEvents(
   events: ReturnType<typeof clusterPairs>,
   kind: "conjunction" | "coplanar" | "station-keeping",
@@ -858,12 +927,7 @@ export async function persistEvents(
   // Recently-ended coplanar cases (and recently-stale conjunction-track
   // cases) stay eligible for reopening.
   const reopenWindowMs = kind === "coplanar" ? COPLANAR_REOPEN_WINDOW_MS : CONJUNCTION_REOPEN_WINDOW_MS;
-  let endedWithMembers: {
-    id: number; endedAt: Date | null; members: number[];
-    firstDetectedAt: Date; lastSeenAt: Date; lastReopenedAt: Date | null;
-    closedSpells: { start: string; lastSeenAt: string; endedAt: string }[];
-    screeningMeta?: Record<string, unknown> | null;
-  }[] = [];
+  let endedWithMembers: LapsedRpodCase[] = [];
   if (kind === "coplanar" || kind === "station-keeping") {
     const ended = await retryOnceOnTransient(`rpod ended ${kind}`, () =>
       db
@@ -932,6 +996,10 @@ export async function persistEvents(
       lastReopenedAt: e.lastReopenedAt, closedSpells: e.closedSpells ?? [],
     }));
   }
+  // Docked files the 24 h retire or the window archive already closed.
+  // Only a later pass that still looks docked may resume them, and only
+  // inside DOCKED_REOPEN_WINDOW_MS. Station keeping does not share a file.
+  let lapsedDocked: LapsedRpodCase[] = kind === "station-keeping" ? [] : await loadLapsedDockedCases();
 
   for (const ev of events) {
     if (
@@ -972,16 +1040,22 @@ export async function persistEvents(
 
     const cross = ev.members.length >= 2 && (opts.crossTagPairs?.has(pairKey(ev.members[0], ev.members[1])) ?? false);
     const forces = ev.members.map((n) => opts.forceOfNorad?.(n) ?? "neutral");
-    const geometryDocked = kind === "conjunction" && isDockedGeometry(ev.minRangeKm, ev.relVelKmS);
-    const labelDocked = geometryDocked && !cross && mayLabelDocked(ev.members, forces);
+    const geometryDocked = isDockedGeometry(ev.minRangeKm, ev.relVelKmS);
+    const labelDocked = kind !== "station-keeping"
+      && shouldStoreDocked(ev.minRangeKm, ev.relVelKmS, ev.members, forces, cross);
     let storedKind: "conjunction" | "coplanar" | "docked" | "station-keeping" =
       kind === "station-keeping" ? "station-keeping"
+      : labelDocked ? "docked"
       : kind === "coplanar" ? "coplanar"
-      : (labelDocked ? "docked" : "conjunction");
+      : "conjunction";
     // One file per pair among conjunction / coplanar / docked. A coplanar
     // shadow stays coplanar when a later conjunction of the same objects is
-    // all this hour re-detected. Station keeping keeps its own file.
+    // all this hour re-detected, unless this hour is docked geometry the
+    // policy allows to label. Station keeping keeps its own file.
     if (match?.kind === "coplanar" && storedKind === "conjunction") storedKind = "coplanar";
+    const dockedFrom: "coplanar" | "conjunction" | null = storedKind !== "docked"
+      ? null
+      : (kind === "coplanar" || match?.kind === "coplanar" ? "coplanar" : "conjunction");
     // A cross-tag, or a red-vs-blue "dock" invented from elsets, reports ~0 km.
     // Don't let that overwrite a real range already on the case.
     const keepPriorRange = match != null && match.minRangeKm > 1 && ev.minRangeKm < 1
@@ -1054,7 +1128,10 @@ export async function persistEvents(
       relVelKmS: Math.round((keepPriorRange ? match!.relVelKmS : ev.relVelKmS) * 10000) / 10000,
       memberCount: ev.members.length,
       widenedScan: ev.hitCap,
-      screeningMeta: skMeta ?? { pairs: ev.pairs.length },
+      screeningMeta: skMeta ?? {
+        pairs: ev.pairs.length,
+        ...(dockedFrom ? { dockedFrom } : {}),
+      },
       status: "active",
       lastSeenAt: new Date(),
     };
@@ -1106,9 +1183,11 @@ export async function persistEvents(
         }
         await tx.delete(rpodEventMembers).where(eq(rpodEventMembers.eventId, eventId));
       } else {
-        const reopenId = selectReopenCandidate(endedWithMembers, ev.members, Date.now(), reopenWindowMs);
+        const reopenPool = labelDocked ? withLapsedDocks(endedWithMembers, lapsedDocked) : endedWithMembers;
+        const reopenFor = labelDocked ? Math.max(reopenWindowMs, DOCKED_REOPEN_WINDOW_MS) : reopenWindowMs;
+        const reopenId = selectReopenCandidate(reopenPool, ev.members, Date.now(), reopenFor);
         if (reopenId != null) {
-          const prior = endedWithMembers.find((e) => e.id === reopenId)!;
+          const prior = reopenPool.find((e) => e.id === reopenId)!;
           const spellStart = prior.lastReopenedAt ?? prior.firstDetectedAt;
           const closedSpells = [
             ...prior.closedSpells,
@@ -1190,6 +1269,7 @@ export async function persistEvents(
     }
     if (persisted.reopened) {
       endedWithMembers = endedWithMembers.filter((e) => e.id !== persisted.eventId);
+      lapsedDocked = lapsedDocked.filter((e) => e.id !== persisted.eventId);
       logger.info({ eventId: persisted.eventId, kind }, "rpod-scan: reopened lapsed case (same pair re-detected)");
     }
     } catch (err) {
@@ -1213,11 +1293,14 @@ function epochRecord(members: number[], epochs: Map<number, number> | undefined)
 }
 
 /**
- * Sweep conjunction-track rows so the label matches the policy, not just
- * the range reading. Near-zero range and relative velocity is "docked" only
- * for a known station/stack or a same-force pair. A red object next to a
- * blue or neutral one is never docked from elsets (event 1638). Geometry
- * that no longer qualifies flips back to "conjunction".
+ * Sweep conjunction, coplanar, and docked rows so the label matches the
+ * policy, not just the range reading. Near-zero range and relative velocity
+ * is "docked" only for a known station/stack or a same-force pair. A red
+ * object next to a blue or neutral one is never docked from elsets (event
+ * 1638). Coplanar rows (ISS modules that never passed through the
+ * conjunction label) can become docked. Geometry that no longer qualifies
+ * flips a coplanar-origin dock back to "coplanar" and every other dock
+ * back to "conjunction".
  *
  * `knownForces` is the scan's catalog map. Omitted, the sweep loads the
  * catalog itself (the flip test, and a manual re-run). A NORAD with no
@@ -1231,9 +1314,10 @@ export async function reclassifyDockedEvents(knownForces?: Map<number, Force>): 
       kind: rpodEvents.kind,
       minRangeKm: rpodEvents.minRangeKm,
       relVelKmS: rpodEvents.relVelKmS,
+      screeningMeta: rpodEvents.screeningMeta,
     })
     .from(rpodEvents)
-    .where(inArray(rpodEvents.kind, ["conjunction", "docked"]));
+    .where(inArray(rpodEvents.kind, ["conjunction", "coplanar", "docked"]));
   if (rows.length === 0) return;
 
   const memberRows = await db
@@ -1259,34 +1343,68 @@ export async function reclassifyDockedEvents(knownForces?: Map<number, Force>): 
     }
   }
 
-  const toDocked: number[] = [];
+  const toDockedCoplanar: number[] = [];
+  const toDockedOther: number[] = [];
+  const toCoplanar: number[] = [];
   const toConjunction: number[] = [];
   for (const row of rows) {
     const norads = membersByEvent.get(row.id) ?? [];
-    const geometry = isDockedGeometry(row.minRangeKm, row.relVelKmS);
     const memberForces = norads.map((n) => forces!.get(n) ?? "neutral");
-    const dock = geometry && mayLabelDocked(norads, memberForces);
-    if (dock && row.kind !== "docked") toDocked.push(row.id);
-    else if (!dock && row.kind === "docked") toConjunction.push(row.id);
+    const dock = shouldStoreDocked(row.minRangeKm, row.relVelKmS, norads, memberForces);
+    if (dock && row.kind !== "docked") {
+      if (row.kind === "coplanar") toDockedCoplanar.push(row.id);
+      else toDockedOther.push(row.id);
+    } else if (!dock && row.kind === "docked") {
+      const fromCoplanar = row.screeningMeta != null
+        && typeof row.screeningMeta === "object"
+        && (row.screeningMeta as { dockedFrom?: unknown }).dockedFrom === "coplanar";
+      if (fromCoplanar) toCoplanar.push(row.id);
+      else toConjunction.push(row.id);
+    }
   }
-  if (toDocked.length) {
-    await db.update(rpodEvents).set({ kind: "docked", updatedAt: sql`now()` }).where(inArray(rpodEvents.id, toDocked));
+  const stampDocked = async (ids: number[], from: "coplanar" | "conjunction") => {
+    if (ids.length === 0) return;
+    await db.update(rpodEvents).set({
+      kind: "docked",
+      screeningMeta: sql`coalesce(${rpodEvents.screeningMeta}, '{}'::jsonb) || ${JSON.stringify({ dockedFrom: from })}::jsonb`,
+      updatedAt: sql`now()`,
+    }).where(inArray(rpodEvents.id, ids));
+  };
+  await stampDocked(toDockedCoplanar, "coplanar");
+  await stampDocked(toDockedOther, "conjunction");
+  if (toCoplanar.length) {
+    await db.update(rpodEvents).set({ kind: "coplanar", updatedAt: sql`now()` }).where(inArray(rpodEvents.id, toCoplanar));
   }
   if (toConjunction.length) {
     await db.update(rpodEvents).set({ kind: "conjunction", updatedAt: sql`now()` }).where(inArray(rpodEvents.id, toConjunction));
   }
-  if (toDocked.length || toConjunction.length) {
-    logger.info({ toDocked: toDocked.length, toConjunction: toConjunction.length }, "rpod-scan: reclassified docked stacks");
+  const toDocked = toDockedCoplanar.length + toDockedOther.length;
+  if (toDocked || toConjunction.length || toCoplanar.length) {
+    logger.info(
+      { toDocked, toConjunction: toConjunction.length, toCoplanar: toCoplanar.length },
+      "rpod-scan: reclassified docked stacks",
+    );
   }
 }
 
-/** Active events whose window has long passed become stale (kept for history). */
+/**
+ * Active events whose window has long passed become stale (kept for history).
+ * Docked stacks are excluded: their window is a short TCA, and an attached
+ * stack stays active until the geometry breaks or the long unseen retire.
+ */
 async function markStaleEvents(): Promise<void> {
   await ensureAdvisoryLockClient();
+  const nowMs = Date.now();
+  const active = await db
+    .select({ id: rpodEvents.id, kind: rpodEvents.kind, windowEnd: rpodEvents.windowEnd })
+    .from(rpodEvents)
+    .where(and(eq(rpodEvents.status, "active"), lt(rpodEvents.windowEnd, new Date(nowMs - WINDOW_STALE_AFTER_MS))));
+  const ids = selectWindowStaleIds(active, nowMs);
+  if (ids.length === 0) return;
   await db
     .update(rpodEvents)
     .set({ status: "stale", updatedAt: sql`now()` })
-    .where(and(eq(rpodEvents.status, "active"), lt(rpodEvents.windowEnd, new Date(Date.now() - STALE_AFTER_MS))));
+    .where(and(inArray(rpodEvents.id, ids), eq(rpodEvents.status, "active")));
 }
 
 /**
@@ -1332,8 +1450,10 @@ async function retireDriftedStationKeepingEvents(): Promise<void> {
 }
 
 /**
- * Conjunction and elset-docked cases that no scan has re-seen for 24 h are
- * ended. A discrete approach that is not refreshed is not still happening.
+ * Conjunction cases unseen for 24 h are ended. Docked stacks are not:
+ * they stay active until a later scan's geometry is no longer docked
+ * (the label flips off) or until no scan has re-seen them for
+ * DOCKED_UNSEEN_MS (~14 days).
  */
 async function retireUnseenConjunctions(): Promise<void> {
   await ensureAdvisoryLockClient();
@@ -1341,11 +1461,17 @@ async function retireUnseenConjunctions(): Promise<void> {
     .select({ id: rpodEvents.id, kind: rpodEvents.kind, lastSeenAt: rpodEvents.lastSeenAt })
     .from(rpodEvents)
     .where(and(eq(rpodEvents.status, "active"), inArray(rpodEvents.kind, ["conjunction", "docked"])));
-  const ids = selectUnseenConjunctionIds(active, Date.now());
+  const now = Date.now();
+  const conjunctionIds = selectUnseenConjunctionIds(active, now);
+  const dockedIds = selectUnseenDockedIds(active, now);
+  const ids = [...conjunctionIds, ...dockedIds];
   if (ids.length === 0) return;
   await db
     .update(rpodEvents)
     .set({ status: "ended", endedAt: sql`now()`, updatedAt: sql`now()` })
     .where(inArray(rpodEvents.id, ids));
-  logger.info({ ended: ids.length }, "rpod-scan: retired unseen conjunction events");
+  logger.info(
+    { ended: ids.length, conjunction: conjunctionIds.length, docked: dockedIds.length },
+    "rpod-scan: retired unseen conjunction and docked events",
+  );
 }
