@@ -2,7 +2,7 @@
  "slug": "kinetica2-y2",
  "title": "Kinetica-2 Y2 / Qianfan polar group (Jiuquan LA-140)",
  "vehicle": "kinetica2",
- "t0_utc": "2026-11-03T00:10:00Z",
+ "t0_utc": "2026-11-03T00:15:00Z",
  "pad": {
   "lat": 40.81748,
   "lon": 100.21939,
@@ -17,7 +17,7 @@
  "payload_kg": {
   "fit": true,
   "value": null,
-  "note": "FITTED to reach the assumed orbit at the published typical S2 first cutoff; 18 Qianfan sats is an UNOFFICIAL count (https://satnet.news/item/76103), mass unpublished"
+  "note": "FITTED to reach the assumed orbit at the published typical S2 first cutoff; 18 Qianfan sats now confirmed by Chinese state/commercial media after launch (e.g. https://x.com/DailyBeijing/status/2117514278206898575); mass unpublished, fitted value is NOT an estimate"
  },
  "target": {
   "insertion_alt_km": {
@@ -28,7 +28,7 @@
   "sma_sigma_km": 5
  },
  "header_notes": [
-  "T0 = LL2 NET 2026-11-03T00:10:00Z (window 00:05-00:33Z, Go); SatNet News (unofficial) window BJT 3 Nov 08:00-09:00 (https://satnet.news/item/76103, /item/70043). LL2: 'payload and LV identities highly uncertain'.",
+  "FLOWN: liftoff 2026-11-03T00:15Z (Mon 2 Nov 4:15 pm PST) per LL2 (status Launch Successful, update 2026-11-03T00:55Z citing https://m.weibo.cn/detail/5361090570488447); Chinese media (e.g. Ke Chuang Ban Daily via X https://x.com/najoygo/status/2117424232691056846) give 08:15:25 BJT = 00:15:25Z, 25 s after LL2's minute-precision time (not adopted). Payload: 18 SpaceSail/Qianfan polar 'group 21' satellites sent to the preset orbit (Beijing Daily https://x.com/DailyBeijing/status/2117514278206898575; LL2 calls it 'Polar Group #17' - group-number conflict). Retimed 2026-11-03 from pre-flight NET 2026-11-03T00:10:00Z. Geometry remains the pre-flight ILLUSTRATIVE build (orbit still unpublished).",
   "Event times = CAS Space TYPICAL Kinetica-2 sequence (Y1 documentary via huijiwiki), not this flight's; S1 burn/sep ASSUMED. UNTUNED: no altitude/range knots exist to tune against."
  ],
  "post_cutoff": {
