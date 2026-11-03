@@ -1,6 +1,6 @@
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { semiMajorAxisKm } from "./screen";
+import { raanRateDegPerDay, semiMajorAxisKm } from "./screen";
 import type { Force } from "./force";
 
 /**
@@ -14,9 +14,13 @@ import type { Force } from "./force";
  *
  * One elset per object is enough. Current geometry classifies the pair:
  * the same plane match as the 0.5° RAAN prefilter, a matched semi-major
- * axis, and an along-track offset inside the configured cap. The hourly
- * scan still pre-filters red-versus-blue pairs on the latest elsets in
- * memory, then reads a bounded history only for those NORADs (index seek
+ * axis, and an along-track offset inside the configured cap. Both RAANs
+ * are propagated to the later of the two epochs with that object's J2
+ * secular nodal rate before any RAAN gate. A sun-synchronous shell moves
+ * about a degree per day, so raw catalog RAAN across a staggered epoch
+ * is not the plane difference. The hourly scan still pre-filters
+ * red-versus-blue pairs on the latest elsets in memory, then reads a
+ * bounded history only for those NORADs (index seek
  * per id, LIMIT per object). It does not walk the TLE archive. When that
  * history has two or more samples, the along-track drift must also stay
  * under 25 km/day. A single sample has no rate, so the drift check is
@@ -51,13 +55,17 @@ export interface StationKeepingOptions {
   pairCap: number;
   /** Offset change since the last alert that queues another review row. */
   significantChangeKm: number;
-  /** Elsets further apart than this are not one geometry sample. */
+  /**
+   * Elsets further apart than this are not one geometry sample.
+   * Mean anomaly and RAAN are propagated to the later epoch, so the limit
+   * is catalog lag. 36 h keeps a ~18 h sun-synchronous stagger as one sample.
+   */
   maxEpochSkewMs: number;
   /** Latest paired sample must be at least this fresh. */
   maxLatestAgeMs: number;
   /** Plane match, shared by the prefilter and classification. */
   prefilterIncDiffDeg: number;
-  /** Plane match. The 0.5° RAAN gate, shared by the prefilter and classification. */
+  /** Plane match. The 0.5° RAAN gate, applied after both nodes share an epoch. */
   prefilterRaanDiffDeg: number;
   /** Candidate shell gate, wider than the matched-SMA confirm. */
   prefilterSmaDiffKm: number;
@@ -74,7 +82,7 @@ export const DEFAULT_STATION_KEEPING: StationKeepingOptions = {
   maxSamplesPerObject: 12,
   pairCap: 60,
   significantChangeKm: 100,
-  maxEpochSkewMs: 12 * 3600_000,
+  maxEpochSkewMs: 36 * 3600_000,
   maxLatestAgeMs: 3 * 86400_000,
   prefilterIncDiffDeg: 0.3,
   prefilterRaanDiffDeg: 0.5,
@@ -114,8 +122,23 @@ function signedDeltaDeg(a: number, b: number): number {
   return wrap360(a - b + 180) - 180;
 }
 
-function angDiffDeg(a: number, b: number): number {
-  return Math.abs(signedDeltaDeg(a, b));
+/**
+ * RAAN at `atMs` from this elset's own mean motion, eccentricity, and
+ * inclination. Analytic J2 secular nodal rate, same model as the coplanar
+ * screen.
+ */
+export function propagatedRaanDeg(
+  e: Pick<ElementSample, "epochMs" | "raanDeg" | "incDeg" | "eccentricity" | "meanMotionRevPerDay">,
+  atMs: number,
+): number {
+  const dtDays = (atMs - e.epochMs) / 86400_000;
+  return e.raanDeg + raanRateDegPerDay(e) * dtDays;
+}
+
+/** Signed ΔRAAN (a − b) with both nodes at the later elset epoch. */
+export function alignedRaanDeltaDeg(a: ElementSample, b: ElementSample): number {
+  const at = Math.max(a.epochMs, b.epochMs);
+  return signedDeltaDeg(propagatedRaanDeg(a, at), propagatedRaanDeg(b, at));
 }
 
 function usableSample(e: ElementSample, opts: StationKeepingOptions): boolean {
@@ -163,7 +186,7 @@ export function alongTrackAt(a: ElementSample, b: ElementSample, atMs: number): 
   const meanA = (smaA + smaB) / 2;
   const signedOffsetKm = meanA * signedDeg * Math.PI / 180;
   const dIncDeg = a.incDeg - b.incDeg;
-  const dRaanDeg = signedDeltaDeg(a.raanDeg, b.raanDeg);
+  const dRaanDeg = alignedRaanDeltaDeg(a, b);
   const dSmaKm = smaA - smaB;
   const incRad = ((a.incDeg + b.incDeg) / 2) * Math.PI / 180;
   const crossTrackKm = meanA * Math.hypot(
@@ -196,6 +219,7 @@ export interface StationKeepingCandidate {
 /**
  * Cheap latest-elset gate. Only red-versus-blue payload pairs from
  * different launches, already close in plane, shell, and along-track.
+ * The RAAN check uses both nodes at the later epoch.
  */
 export function prefilterStationKeepingPairs(
   elsets: ElementSample[],
@@ -237,7 +261,7 @@ export function prefilterStationKeepingPairs(
         if (!metaA || !metaB || !isRedVersusBlue(metaA.force, metaB.force)) continue;
         if (metaA.launchTag && metaA.launchTag === metaB.launchTag) continue;
         if (Math.abs(a.incDeg - b.incDeg) > opts.prefilterIncDiffDeg) continue;
-        if (angDiffDeg(a.raanDeg, b.raanDeg) > opts.prefilterRaanDiffDeg) continue;
+        if (Math.abs(alignedRaanDeltaDeg(a, b)) > opts.prefilterRaanDiffDeg) continue;
         const smaA = semiMajorAxisKm(a.meanMotionRevPerDay);
         const smaB = semiMajorAxisKm(b.meanMotionRevPerDay);
         if (!Number.isFinite(smaA) || !Number.isFinite(smaB)) continue;
@@ -318,7 +342,8 @@ function linearDriftKmPerDay(points: TrackPoint[]): number {
   return num / den;
 }
 
-/** Plane match is the prefilter: inclination band and the 0.5° RAAN gate. */
+/** Plane match is the prefilter: inclination band and the 0.5° RAAN gate.
+ *  `dRaanDeg` is the epoch-aligned difference from `alongTrackAt`. */
 function planeMatched(p: TrackPoint, opts: StationKeepingOptions): boolean {
   return Math.abs(p.dIncDeg) <= opts.prefilterIncDiffDeg
     && Math.abs(p.dRaanDeg) <= opts.prefilterRaanDiffDeg;

@@ -15,7 +15,8 @@ import {
 } from "./screen";
 import {
   selectEndedCoplanarIds, selectReopenCandidate, selectUnseenConjunctionIds, selectUnseenDockedIds,
-  selectWindowStaleIds, COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS,
+  selectWindowStaleIds, stationKeepingRetireAllowed, reopenWindowMsForKind,
+  COPLANAR_REOPEN_WINDOW_MS, CONJUNCTION_REOPEN_WINDOW_MS,
   DOCKED_REOPEN_WINDOW_MS, WINDOW_STALE_AFTER_MS,
 } from "./retire";
 import { isEscalation, type NewRpodEvent, type EscalatedRpodEvent } from "./alert";
@@ -567,6 +568,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     let skEvents: ReturnType<typeof clusterPairs> = [];
     const skGeom = new Map<string, StationKeepingVerdict>();
     let skRan = false;
+    let skScreenHits = 0;
     const skNotes: string[] = [];
     if (Date.now() + 20_000 < deadlineMs) {
       try {
@@ -598,6 +600,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
           skEvents.push(stationKeepingCluster(hit));
           skGeom.set(stationPairKey(hit.a, hit.b), hit.verdict);
         }
+        skScreenHits = screened.hits.length;
         skRan = true;
         if (screened.capped) skNotes.push(`station-keeping history capped at ${skOpts.pairCap} pairs`);
       } catch (err) {
@@ -704,7 +707,10 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     }
     // Station keeping does not use the SGP4 budget. Retire it only on an
     // hour that actually screened it, so a skipped hour cannot end a hold.
-    if (skRan) {
+    // Zero hits and zero persisted events is a hollow success: lastSeenAt
+    // was not refreshed, and ending holds from it is how a plane-gate miss
+    // closed event 2575.
+    if (skRan && stationKeepingRetireAllowed(skScreenHits, skResult.tracked.length)) {
       try {
         await retireDriftedStationKeepingEvents();
       } catch (err) {
@@ -712,6 +718,8 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
         warnings.push(`retireStationKeeping: ${String(err)}`.slice(0, 300));
         logger.warn({ err }, "rpod-scan: retireStationKeeping failed (scan otherwise ok)");
       }
+    } else if (skRan) {
+      warnings.push("skipped station-keeping retire after an empty screen");
     }
     await logScanRow(
       "success",
@@ -793,6 +801,11 @@ async function logScanRow(
  * lapsed dock to active on its own. An active file of the same members
  * wins, so a live coplanar stack is relabeled in place instead of also
  * resurrecting an older docked id.
+ *
+ * An ended station-keeping hold uses the same reactivation as that docked
+ * path: when the pair passes the screen again inside the shadowing window,
+ * the old id goes active, reopenCount increments, and the lapsed spell is
+ * archived. Nothing reopens a hold the screen did not see.
  */
 export interface PersistOptions {
   crossTagPairs?: Set<string>;
@@ -924,9 +937,12 @@ export async function persistEvents(
     membersByEvent.set(m.eventId, s);
   }
 
-  // Recently-ended coplanar cases (and recently-stale conjunction-track
-  // cases) stay eligible for reopening.
-  const reopenWindowMs = kind === "coplanar" ? COPLANAR_REOPEN_WINDOW_MS : CONJUNCTION_REOPEN_WINDOW_MS;
+  // Ended coplanar and station-keeping cases use the shadowing window.
+  // Conjunction uses the shorter stale window. Docked geometry widens
+  // that further when the incoming pass is still docked. An ended
+  // station-keeping hold reopens on this same path when the pair passes
+  // again: same id, reopen count incremented, the lapsed spell archived.
+  const reopenWindowMs = reopenWindowMsForKind(kind);
   let endedWithMembers: LapsedRpodCase[] = [];
   if (kind === "coplanar" || kind === "station-keeping") {
     const ended = await retryOnceOnTransient(`rpod ended ${kind}`, () =>
@@ -1389,8 +1405,10 @@ export async function reclassifyDockedEvents(knownForces?: Map<number, Force>): 
 
 /**
  * Active events whose window has long passed become stale (kept for history).
- * Docked stacks are excluded: their window is a short TCA, and an attached
- * stack stays active until the geometry breaks or the long unseen retire.
+ * Docked stacks and station-keeping holds are excluded: both inherit a short
+ * window (a TCA, or the latest elset plus six hours). A dock stays active
+ * until the geometry breaks or the long unseen retire. A station-keeping
+ * hold stays active until the 48 h unseen retire.
  */
 async function markStaleEvents(): Promise<void> {
   await ensureAdvisoryLockClient();

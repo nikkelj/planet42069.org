@@ -2,7 +2,10 @@
  * Station keeping: a plane-matched red-versus-blue pair holding an
  * along-track offset. Pure checks (no database):
  *  - one elset per object classifies from current geometry (0.5° RAAN
- *    plane match, matched SMA, offset inside the cap)
+ *    plane match after both nodes share an epoch, matched SMA, offset
+ *    inside the cap)
+ *  - a ~17.5 h epoch stagger on the Kosmos 2612 / ICEYE-X36 shell still
+ *    passes; a true plane split still fails
  *  - drift under 25 km/day is required only when 2+ samples exist
  *  - blue-blue, red-neutral, and same-launch pairs never enter the prefilter
  *  - Kosmos 2612 (68762) trailing ICEYE-X36 (59103) by ~476 km classifies
@@ -26,10 +29,18 @@ import {
 } from "../lib/rpod/alertPolicy";
 import { formatStationKeepingCitation, weightedTweetLength, TWEET_MAX_WEIGHTED } from "../lib/rpod/alert";
 import { isSuspectedCrossTag } from "../lib/rpod/maneuver";
-import { COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, DEFAULT_COALIGNED } from "../lib/rpod/screen";
+import { COALIGNED_MAX_RANGE_KM, COALIGNED_MAX_RELVEL_KM_S, DEFAULT_COALIGNED, raanRateDegPerDay } from "../lib/rpod/screen";
+import {
+  COPLANAR_REOPEN_WINDOW_MS,
+  CONJUNCTION_REOPEN_WINDOW_MS,
+  reopenWindowMsForKind,
+  selectReopenCandidate,
+  stationKeepingRetireAllowed,
+} from "../lib/rpod/retire";
 import {
   DEFAULT_STATION_KEEPING,
   STATION_KEEPING_LEDGER_BASE,
+  alignedRaanDeltaDeg,
   classifyStationKeeping,
   prefilterStationKeepingPairs,
   rpodKindsShareAFile,
@@ -364,6 +375,111 @@ console.log("Kosmos 2612 vs ICEYE-X36 (CelesTrak GP, epoch 2026-10-21)");
   check("a pair already filed as conjunction/coplanar is left alone", excluded.hits.length === 0 && excluded.candidates === 0);
 }
 
+console.log("Kosmos 2612 vs ICEYE-X36 with a 17.5 h epoch stagger");
+{
+  // Event 2575. The published planes match. Kosmos's elset is 17.5 h older,
+  // and its RAAN is the node at that earlier epoch (SSO rate ~1 deg/day).
+  // Raw ΔRAAN is about −0.74°. At the later epoch the planes still match.
+  const iceye = el({
+    norad: 59103,
+    epochMs: Date.parse("2026-10-21T07:19:02.618688Z"),
+    incDeg: 97.8535,
+    raanDeg: 74.8455,
+    eccentricity: 0.00046118,
+    argPerigeeDeg: 247.1663,
+    meanAnomalyDeg: 112.9077,
+    meanMotionRevPerDay: 15.07843995,
+  });
+  const kosmos2612 = el({
+    norad: 68762,
+    epochMs: Date.parse("2026-10-21T07:20:05.404704Z"),
+    incDeg: 97.8544,
+    raanDeg: 74.8448,
+    eccentricity: 0.00063337,
+    argPerigeeDeg: 259.8673,
+    meanAnomalyDeg: 100.184,
+    meanMotionRevPerDay: 15.07844969,
+  });
+  const skewMs = 17.5 * 3600_000;
+  const dtDays = skewMs / DAY;
+  const rate = raanRateDegPerDay(kosmos2612);
+  const lagged = {
+    ...kosmos2612,
+    epochMs: kosmos2612.epochMs - skewMs,
+    meanAnomalyDeg: wrap360(kosmos2612.meanAnomalyDeg - kosmos2612.meanMotionRevPerDay * 360 * dtDays),
+    raanDeg: wrap360(kosmos2612.raanDeg - rate * dtDays),
+  };
+  const nowMs = Date.parse("2026-10-21T12:00:00Z");
+  const catalog = new Map<number, StationKeepingCatalog>([
+    cat(59103, "blue", "2024-043"),
+    cat(68762, "red", "2026-083"),
+  ]);
+  const rawRaan = Math.abs(((lagged.raanDeg - iceye.raanDeg + 540) % 360) - 180);
+  const aligned = alignedRaanDeltaDeg(lagged, iceye);
+  check("17.5 h of SSO nodal motion puts raw |ΔRAAN| past the 0.5° gate",
+    rawRaan > 0.5 && rawRaan < 1.2, rawRaan.toFixed(4));
+  check("aligned ΔRAAN stays on the published plane",
+    Math.abs(aligned) < 0.01, aligned.toFixed(6));
+  check("epoch skew of 36 h still accepts this stagger",
+    DEFAULT_STATION_KEEPING.maxEpochSkewMs >= skewMs);
+
+  const candidates = prefilterStationKeepingPairs([iceye, lagged], catalog, nowMs);
+  check("the staggered pair passes the RAAN prefilter",
+    candidates.length === 1 && candidates[0].a.norad === 68762 && candidates[0].b.norad === 59103,
+    candidates.map((c) => `${c.a.norad}:${c.b.norad} draan=${c.dRaanDeg.toFixed(4)}`).join(", "));
+  check("prefilter reports the aligned RAAN, not the raw catalog values",
+    candidates.length === 1 && Math.abs(candidates[0].dRaanDeg) < 0.01, String(candidates[0]?.dRaanDeg));
+
+  const once = classifyStationKeeping([lagged], [iceye], nowMs);
+  check("one staggered elset per object still classifies",
+    once != null && once.samples === 1 && once.trailNorad === 68762 && once.leadNorad === 59103,
+    JSON.stringify(once));
+  check("the staggered offset stays a few hundred km",
+    once != null && once.offsetKm >= 400 && once.offsetKm <= 560, String(once?.offsetKm));
+  check("classification RAAN is the aligned difference",
+    once != null && Math.abs(once.dRaanDeg) < 0.01, String(once?.dRaanDeg));
+
+  const screened = await screenStationKeeping({
+    latest: [iceye, lagged],
+    catalog,
+    nowMs,
+    loadHistory: async () => [],
+  });
+  check("an empty archive still screens the staggered pair",
+    screened.hits.length === 1 && screened.hits[0].a === 68762 && screened.hits[0].b === 59103,
+    JSON.stringify(screened.hits.map((h) => h.verdict.dRaanDeg)));
+
+  // Same stagger, but the earlier node is 2° off the propagated plane.
+  const separated = { ...lagged, raanDeg: wrap360(lagged.raanDeg + 2) };
+  const separatedAligned = alignedRaanDeltaDeg(separated, iceye);
+  check("a 2° true plane split is still about 2° after alignment",
+    Math.abs(Math.abs(separatedAligned) - 2) < 0.05, separatedAligned.toFixed(4));
+  check("a genuinely separated plane fails the staggered prefilter",
+    prefilterStationKeepingPairs([iceye, separated], catalog, nowMs).length === 0);
+  check("a genuinely separated plane does not classify",
+    classifyStationKeeping([separated], [iceye], nowMs) == null);
+}
+
+console.log("ended station-keeping reopens; a hollow screen does not retire");
+{
+  const now = Date.parse("2026-11-03T18:00:00Z");
+  check("station-keeping reopens on the 90-day shadowing window",
+    reopenWindowMsForKind("station-keeping") === COPLANAR_REOPEN_WINDOW_MS
+    && reopenWindowMsForKind("coplanar") === COPLANAR_REOPEN_WINDOW_MS);
+  check("conjunction keeps the 30-day window",
+    reopenWindowMsForKind("conjunction") === CONJUNCTION_REOPEN_WINDOW_MS);
+  const recent = [{ id: 2575, endedAt: new Date(now - 2 * DAY), members: [68762, 59103] }];
+  check("event 2575 reopens when the pair passes again",
+    selectReopenCandidate(recent, [59103, 68762], now, reopenWindowMsForKind("station-keeping")) === 2575);
+  const older = [{ id: 2575, endedAt: new Date(now - 40 * DAY), members: [68762, 59103] }];
+  check("a hold ended 40 days ago still reopens on the shadowing window",
+    selectReopenCandidate(older, [68762, 59103], now, reopenWindowMsForKind("station-keeping")) === 2575);
+  check("an empty screen with nothing persisted must not retire holds",
+    stationKeepingRetireAllowed(0, 0) === false);
+  check("a screen that saw a pair may retire the holds it missed",
+    stationKeepingRetireAllowed(2, 2) === true && stationKeepingRetireAllowed(1, 0) === true);
+}
+
 console.log("alerts");
 {
   const onset = stationKeepingAlertStep(479, null, 0, 100);
@@ -442,6 +558,10 @@ console.log("history query");
   const scanSrc = readFileSync(join(here, "../lib/rpod/scan.ts"), "utf8");
   check("the scan loads station-keeping history through the bounded seek", /loadStationKeepingSamples\(/.test(scanSrc));
   check("the scan does not call getRecentSamples", !/getRecentSamples\(/.test(scanSrc));
+  check("the scan retires station-keeping only when the screen saw or wrote something",
+    /stationKeepingRetireAllowed\(/.test(scanSrc));
+  check("the scan reopens station-keeping on the kind's window",
+    /reopenWindowMsForKind\(/.test(scanSrc));
 }
 
 if (failures > 0) {

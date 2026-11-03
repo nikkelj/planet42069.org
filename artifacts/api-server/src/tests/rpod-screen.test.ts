@@ -348,7 +348,7 @@ console.log("Co-aligned (coplanar shadowing) screen");
 }
 
 {
-  console.log("\nWindow staleness (docked stacks are not archived on a short TCA window):");
+  console.log("\nWindow staleness (docked stacks and station-keeping holds are not archived on a short window):");
   const now = Date.parse("2026-11-02T00:00:00Z");
   const rows = [
     { id: 1, kind: "conjunction", windowEnd: new Date(now - WINDOW_STALE_AFTER_MS - 1) },
@@ -356,6 +356,7 @@ console.log("Co-aligned (coplanar shadowing) screen");
     { id: 3, kind: "coplanar", windowEnd: new Date(now - WINDOW_STALE_AFTER_MS - 1) },
     { id: 4, kind: "conjunction", windowEnd: new Date(now - WINDOW_STALE_AFTER_MS) },
     { id: 5, kind: "docked", windowEnd: new Date(now - 3600_000) },
+    { id: 6, kind: "station-keeping", windowEnd: new Date(now - 30 * 86400_000) },
   ];
   const stale = selectWindowStaleIds(rows, now);
   check("a conjunction past the 3-day window is stale", stale.includes(1));
@@ -363,7 +364,8 @@ console.log("Co-aligned (coplanar shadowing) screen");
   check("a conjunction exactly at 3 days stays active", !stale.includes(4));
   check("a docked row with a months-old window is not archived", !stale.includes(2));
   check("a docked row with a fresh short window is not archived", !stale.includes(5));
-  check("only the non-docked lapsed windows are stale", stale.length === 2, JSON.stringify(stale));
+  check("a station-keeping hold with an old short window is not archived", !stale.includes(6));
+  check("only conjunction and coplanar lapsed windows are stale", stale.length === 2, JSON.stringify(stale));
 }
 
 // ── coplanar reopen rule ────────────────────────────────────────────────────
