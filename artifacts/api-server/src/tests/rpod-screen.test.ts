@@ -15,7 +15,11 @@ import {
   semiMajorAxisKm, alongTrackRulesOutRange, COALIGNED_MAX_RANGE_KM, RPOD_MAX_RANGE_KM,
   type ScreenElset, type FlaggedPair,
 } from "../lib/rpod/screen";
-import { selectEndedCoplanarIds, COPLANAR_END_AFTER_MS, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS, selectUnseenConjunctionIds, CONJUNCTION_UNSEEN_MS } from "../lib/rpod/retire";
+import {
+  selectEndedCoplanarIds, COPLANAR_END_AFTER_MS, selectReopenCandidate, COPLANAR_REOPEN_WINDOW_MS,
+  selectUnseenConjunctionIds, selectUnseenDockedIds, selectWindowStaleIds,
+  CONJUNCTION_UNSEEN_MS, DOCKED_UNSEEN_MS, WINDOW_STALE_AFTER_MS,
+} from "../lib/rpod/retire";
 
 let failures = 0;
 function check(name: string, cond: boolean, detail?: string): void {
@@ -320,19 +324,46 @@ console.log("Co-aligned (coplanar shadowing) screen");
 }
 
 {
-  console.log("\nConjunction retirement (unseen for 24 h ends; coplanar is left to its own rule):");
+  console.log("\nConjunction retirement (unseen for 24 h ends; docked and coplanar are left alone):");
   const now = Date.parse("2026-10-19T00:00:00Z");
   const rows = [
     { id: 10, kind: "conjunction", lastSeenAt: new Date(now - CONJUNCTION_UNSEEN_MS - 1) },
     { id: 11, kind: "docked", lastSeenAt: new Date(now - 25 * 3600_000) },
     { id: 12, kind: "conjunction", lastSeenAt: new Date(now - 23 * 3600_000) },
     { id: 13, kind: "coplanar", lastSeenAt: new Date(now - 30 * 3600_000) },
+    { id: 14, kind: "docked", lastSeenAt: new Date(now - DOCKED_UNSEEN_MS) },
+    { id: 15, kind: "docked", lastSeenAt: new Date(now - DOCKED_UNSEEN_MS - 1) },
   ];
   const unseen = selectUnseenConjunctionIds(rows, now);
+  const unseenDocks = selectUnseenDockedIds(rows, now);
   check("a conjunction unseen for 24 h is retired", unseen.includes(10));
-  check("an elset-docked case unseen for 24 h is retired", unseen.includes(11));
+  check("a dock unseen for 25 h is not retired as a conjunction", !unseen.includes(11));
   check("a conjunction re-seen inside 24 h stays", !unseen.includes(12));
   check("coplanar is not retired by the conjunction rule", !unseen.includes(13));
+  check("a dock unseen for 25 h stays (14-day window)", !unseenDocks.includes(11));
+  check("a dock exactly at 14 days stays", !unseenDocks.includes(14));
+  check("a dock unseen past 14 days is retired", unseenDocks.includes(15));
+  check("conjunction and coplanar are not retired by the dock rule",
+    !unseenDocks.includes(10) && !unseenDocks.includes(13));
+}
+
+{
+  console.log("\nWindow staleness (docked stacks are not archived on a short TCA window):");
+  const now = Date.parse("2026-11-02T00:00:00Z");
+  const rows = [
+    { id: 1, kind: "conjunction", windowEnd: new Date(now - WINDOW_STALE_AFTER_MS - 1) },
+    { id: 2, kind: "docked", windowEnd: new Date(now - 30 * 86400_000) },
+    { id: 3, kind: "coplanar", windowEnd: new Date(now - WINDOW_STALE_AFTER_MS - 1) },
+    { id: 4, kind: "conjunction", windowEnd: new Date(now - WINDOW_STALE_AFTER_MS) },
+    { id: 5, kind: "docked", windowEnd: new Date(now - 3600_000) },
+  ];
+  const stale = selectWindowStaleIds(rows, now);
+  check("a conjunction past the 3-day window is stale", stale.includes(1));
+  check("a coplanar past the 3-day window is stale", stale.includes(3));
+  check("a conjunction exactly at 3 days stays active", !stale.includes(4));
+  check("a docked row with a months-old window is not archived", !stale.includes(2));
+  check("a docked row with a fresh short window is not archived", !stale.includes(5));
+  check("only the non-docked lapsed windows are stale", stale.length === 2, JSON.stringify(stale));
 }
 
 // ── coplanar reopen rule ────────────────────────────────────────────────────

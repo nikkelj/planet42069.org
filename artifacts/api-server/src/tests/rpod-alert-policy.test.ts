@@ -321,6 +321,18 @@ console.log("alert selection");
   }), NOW);
   check("a real station stack is docked, not an alert", !station.eligible && station.reason === "docked", station.reason);
 
+  const sameForceDock = evaluateAlert(base({
+    eventId: 3,
+    kind: "docked",
+    members: [member(48274, "CN", { name: "CSS (TIANHE)" }), member(52894, "CN", { name: "TIANZHOU" })],
+    minRangeKm: 0,
+    relVelKmS: 0,
+  }), NOW);
+  check("a same-force docked stack still does not alert",
+    !sameForceDock.eligible && sameForceDock.reason === "docked", sameForceDock.reason);
+  check("red-vs-blue without a station is still not dockable",
+    !mayLabelDocked([68762, 59103], ["red", "blue"]));
+
   const crossed = evaluateAlert(base({
     suspectedCrossTag: true,
   }), NOW);

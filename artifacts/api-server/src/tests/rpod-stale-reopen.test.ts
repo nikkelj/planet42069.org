@@ -25,7 +25,7 @@ import { db, pool } from "@workspace/db";
 import { rpodEvents, rpodEventMembers } from "@workspace/db/schema";
 import { inArray, eq } from "drizzle-orm";
 import { persistEvents } from "../lib/rpod/scan";
-import { CONJUNCTION_REOPEN_WINDOW_MS } from "../lib/rpod/retire";
+import { CONJUNCTION_REOPEN_WINDOW_MS, DOCKED_REOPEN_WINDOW_MS } from "../lib/rpod/retire";
 import type { ClusteredEvent } from "../lib/rpod/screen";
 
 let failures = 0;
@@ -42,7 +42,14 @@ const PAIR = [99999301, 99999302];
 const DOCKED_PAIR = [99999303, 99999304];
 const EXPIRED_PAIR = [99999305, 99999306];
 const FRESH_PAIR = [99999307, 99999308];
-const ALL_NORADS = [...PAIR, ...DOCKED_PAIR, ...EXPIRED_PAIR, ...FRESH_PAIR];
+const ENDED_DOCK = [99999321, 99999322];
+const ANCIENT_DOCK = [99999323, 99999324];
+const PLAIN_ENDED_DOCK = [99999325, 99999326];
+const COPLANAR_STALE_DOCK = [99999327, 99999328];
+const ALL_NORADS = [
+  ...PAIR, ...DOCKED_PAIR, ...EXPIRED_PAIR, ...FRESH_PAIR,
+  ...ENDED_DOCK, ...ANCIENT_DOCK, ...PLAIN_ENDED_DOCK, ...COPLANAR_STALE_DOCK,
+];
 
 function makeCluster(members: number[], nowMs: number, minRangeKm = 8.4, relVelKmS = 0.12): ClusteredEvent {
   const [a, b] = members;
@@ -158,6 +165,66 @@ async function main(): Promise<void> {
     const [freshRow] = await db.select().from(rpodEvents).where(eq(rpodEvents.id, freshIds[0]));
     check("brand-new case starts with reopenCount=0", freshRow?.reopenCount === 0,
       `reopenCount=${freshRow?.reopenCount}`);
+
+    console.log("Lapsed docks: geometry within 180 days resumes the same file");
+    const day = 86400_000;
+    async function seedLapsedDock(status: "stale" | "ended", pair: number[], ageMs: number): Promise<number> {
+      const seen = new Date(nowMs - ageMs);
+      const [row] = await db.insert(rpodEvents).values({
+        status, kind: "docked",
+        windowStart: new Date(seen.getTime() - day),
+        windowEnd: new Date(seen.getTime() - 3600_000),
+        tca: seen,
+        minRangeKm: 0.05, relVelKmS: 0.001, memberCount: 2,
+        lastSeenAt: seen,
+        endedAt: status === "ended" ? seen : null,
+      }).returning({ id: rpodEvents.id });
+      await db.insert(rpodEventMembers).values(pair.map((norad) => ({ eventId: row.id, norad })));
+      return row.id;
+    }
+
+    const endedId = await seedLapsedDock("ended", ENDED_DOCK, 60 * day);
+    const ancientId = await seedLapsedDock("ended", ANCIENT_DOCK, DOCKED_REOPEN_WINDOW_MS + day);
+    const plainId = await seedLapsedDock("ended", PLAIN_ENDED_DOCK, 60 * day);
+    const coplanarStaleId = await seedLapsedDock("stale", COPLANAR_STALE_DOCK, 45 * day);
+    cleanupIds.push(endedId, ancientId, plainId, coplanarStaleId);
+
+    await persistEvents([makeCluster(ENDED_DOCK, nowMs, 0.02, 0.001)], "conjunction");
+    const endedIds = await eventIdsForNorads(ENDED_DOCK);
+    check("ended dock inside 180 days and outside 30 days reactivates",
+      endedIds.length === 1 && endedIds[0] === endedId, JSON.stringify(endedIds));
+    const [endedRow] = await db.select().from(rpodEvents).where(eq(rpodEvents.id, endedId));
+    check("reactivated ended dock is active and still docked",
+      endedRow?.status === "active" && endedRow?.kind === "docked" && endedRow?.reopenCount === 1,
+      `status=${endedRow?.status} kind=${endedRow?.kind} reopen=${endedRow?.reopenCount}`);
+
+    await persistEvents([makeCluster(ANCIENT_DOCK, nowMs, 0.02, 0.001)], "conjunction");
+    const ancientIds = await eventIdsForNorads(ANCIENT_DOCK);
+    check("ended dock older than 180 days opens a new case",
+      ancientIds.length === 2 && ancientIds.includes(ancientId), JSON.stringify(ancientIds));
+    const ancientFresh = ancientIds.find((i) => i !== ancientId);
+    if (ancientFresh != null) cleanupIds.push(ancientFresh);
+    const [ancientRow] = await db.select().from(rpodEvents).where(eq(rpodEvents.id, ancientId));
+    check("ancient ended dock stays ended", ancientRow?.status === "ended", `status=${ancientRow?.status}`);
+
+    await persistEvents([makeCluster(PLAIN_ENDED_DOCK, nowMs, 8.4, 0.12)], "conjunction");
+    const plainIds = await eventIdsForNorads(PLAIN_ENDED_DOCK);
+    check("a non-docked conjunction does not resume a 60-day ended dock",
+      plainIds.length === 2 && plainIds.includes(plainId), JSON.stringify(plainIds));
+    const plainFresh = plainIds.find((i) => i !== plainId);
+    if (plainFresh != null) cleanupIds.push(plainFresh);
+    const [plainRow] = await db.select().from(rpodEvents).where(eq(rpodEvents.id, plainId));
+    check("that ended dock stays ended", plainRow?.status === "ended" && plainRow?.kind === "docked",
+      `status=${plainRow?.status} kind=${plainRow?.kind}`);
+
+    await persistEvents([makeCluster(COPLANAR_STALE_DOCK, nowMs, 0, 0)], "coplanar");
+    const coIds = await eventIdsForNorads(COPLANAR_STALE_DOCK);
+    check("coplanar dock geometry reactivates a stale dock past 30 days",
+      coIds.length === 1 && coIds[0] === coplanarStaleId, JSON.stringify(coIds));
+    const [coRow] = await db.select().from(rpodEvents).where(eq(rpodEvents.id, coplanarStaleId));
+    check("coplanar reactivation is an active dock",
+      coRow?.status === "active" && coRow?.kind === "docked",
+      `status=${coRow?.status} kind=${coRow?.kind}`);
   } finally {
     if (cleanupIds.length) await db.delete(rpodEvents).where(inArray(rpodEvents.id, cleanupIds)); // members cascade
     // Safety net: remove any leftover test rows keyed by our NORAD range.

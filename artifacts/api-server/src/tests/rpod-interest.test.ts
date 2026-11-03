@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import {
   classifyEvent, classifyPairByNorad, countFreeBodies, selectInterestingEvents,
   prioritizeSgp4Pairs, constellationTag, nameFamily, isCrossingTrackGeometry,
+  shouldStoreDocked,
   SAME_OPERATOR_NEAR_MISS_KM, SAME_OPERATOR_CROSSING_RELVEL_KM_S,
   CLUSTER_MIN_FREE_BODIES, CLUSTER_MAX_RANGE_KM,
   MIXED_OPERATOR_MAX_RANGE_KM, DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S,
@@ -148,9 +149,14 @@ console.log("Class 1: red vs blue/neutral — not 'any catalog field differs'");
     [25544, meta({ name: "ISS (ZARYA)", owner: "ISS", state: "ISS" })],
     [58000, meta({ name: "DRAGON CRS-32", owner: "SPX", state: "US" })],
   ]);
-  check("ISS + Dragon is not a red-blue alert (international station, docked)",
-    classifyEvent(issDragon, station).reason === "boring"
+  check("ISS + Dragon is kept as docked, not as a red-blue alert",
+    classifyEvent(issDragon, station).keep
+    && classifyEvent(issDragon, station).reason === "docked"
     && countFreeBodies(issDragon) === 0);
+  const issFlyby = event([25544, 58001], [pair(25544, 58001, 8, 0.05)]);
+  check("a known station member is kept even when the approach is not docked",
+    classifyEvent(issFlyby, station).keep
+    && classifyEvent(issFlyby, station).reason === "station");
 }
 
 console.log("Class 2: fast crossings are out of scope");
@@ -194,9 +200,9 @@ console.log("Class 3: ultra-close same-operator near-miss (Starlink allowed)");
     && classifyEvent(nearMiss, twoStarlink).reason === "same-operator-near-miss");
 
   const attached = event([30, 31], [pair(30, 31, 0.1, DOCKED_MAX_RELVEL_KM_S)]);
-  check("same-operator at 0.1 km AND docked velocity is attached, not a fuckup",
-    !classifyEvent(attached, twoStarlink).keep
-    && classifyEvent(attached, twoStarlink).reason === "boring");
+  check("same-operator at 0.1 km AND docked velocity is a docked stack, not a near-miss",
+    classifyEvent(attached, twoStarlink).keep
+    && classifyEvent(attached, twoStarlink).reason === "docked");
 }
 
 console.log("Class 4: messy cluster of many free-flyers, not a dense-shell trio");
@@ -239,9 +245,9 @@ console.log("Class 4: messy cluster of many free-flyers, not a dense-shell trio"
   ]);
   check("docked same-operator station stack has zero free bodies",
     countFreeBodies(dockedStack) === 0);
-  check("docked same-operator stack is NOT a cluster and is dropped",
-    classifyEvent(dockedStack, tianhe).reason === "boring"
-    && !classifyEvent(dockedStack, tianhe).keep);
+  check("docked same-operator stack is kept as docked, not as a cluster",
+    classifyEvent(dockedStack, tianhe).reason === "docked"
+    && classifyEvent(dockedStack, tianhe).keep);
 
   const farTrio = event(
     [10, 11, 12],
@@ -304,6 +310,41 @@ console.log("Boring: typical same-plane km-scale housekeeping / fail-closed");
     classifyEvent(event([1, 2], [pair(1, 2, 0.1, 0.04)]), empty).reason === "same-operator-near-miss");
   check("empty catalog: km-scale crossing-track is dropped",
     classifyEvent(event([1, 2], [pair(1, 2, 8, 0.5)]), empty).reason === "boring");
+}
+
+console.log("Docked geometry and known stations stay on the board");
+{
+  const tiangong = event([48274, 52894], [pair(48274, 52894, 0.02, 0.001)]);
+  const cn = catalog([
+    [48274, meta({ name: "CSS (TIANHE)", owner: "PRC", state: "CN" })],
+    [52894, meta({ name: "TIANZHOU 8", owner: "PRC", state: "CN" })],
+  ]);
+  check("Tiangong-style all-CN 0 km dock is kept",
+    classifyEvent(tiangong, cn).keep && classifyEvent(tiangong, cn).reason === "docked");
+
+  const mev = event([44625, 44476], [pair(44625, 44476, 0, 0)]);
+  const us = catalog([
+    [44625, meta({ name: "MEV-2", owner: "US", state: "US" })],
+    [44476, meta({ name: "INTELSAT 10-02", owner: "US", state: "US" })],
+  ]);
+  check("MEV + Intelsat US-US 0 km dock is kept",
+    classifyEvent(mev, us).keep && classifyEvent(mev, us).reason === "docked");
+  check("ordinary same-force flyby is still dropped",
+    !classifyEvent(event([44625, 44476], [pair(44625, 44476, 12, 0.05)]), us).keep
+    && classifyEvent(event([44625, 44476], [pair(44625, 44476, 12, 0.05)]), us).reason === "boring");
+
+  check("red-vs-blue non-station geometry is not labeled docked",
+    !shouldStoreDocked(0.01, 0.0001, [68762, 59103], ["red", "blue"]));
+  check("red-vs-neutral non-station geometry is not labeled docked",
+    !shouldStoreDocked(0.01, 0.0001, [68762, 99901], ["red", "neutral"]));
+  check("a station NORAD may still be labeled docked",
+    shouldStoreDocked(0.01, 0.0001, [25544, 66664], ["neutral", "red"]));
+  check("same-force dock geometry may be labeled docked",
+    shouldStoreDocked(0, 0, [44625, 44476], ["blue", "blue"]));
+  check("a cross-tag is not labeled docked",
+    !shouldStoreDocked(0, 0, [44625, 44476], ["blue", "blue"], true));
+  check("coplanar-range geometry is not labeled docked",
+    !shouldStoreDocked(8, 0.02, [25544, 66664], ["neutral", "blue"]));
 }
 
 console.log("selectInterestingEvents drops boring before persist");

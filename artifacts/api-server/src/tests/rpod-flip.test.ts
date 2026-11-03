@@ -135,6 +135,59 @@ async function main(): Promise<void> {
 
     ids = await eventIdsForPair();
     check("sweep never changes the case id", ids.length === 1 && ids[0] === conj.id, JSON.stringify(ids));
+
+    console.log("Coplanar path: ISS geometry becomes docked; red-vs-blue does not");
+    const ISS_PAIR = [25544, 99999471];
+    const RED_BLUE = [99999481, 99999482];
+    const issInsert = await persistEvents(
+      [makeCluster(ISS_PAIR, nowMs, 0, 0)],
+      "coplanar",
+      { forceOfNorad: (n) => (n === 25544 ? "neutral" : "blue") },
+    );
+    check("coplanar ISS dock geometry is stored as docked",
+      issInsert.inserted.length === 1 && issInsert.inserted[0].kind === "docked",
+      JSON.stringify(issInsert.inserted));
+    if (issInsert.inserted[0]) cleanupIds.push(issInsert.inserted[0].eventId);
+    const [issRow] = issInsert.inserted[0]
+      ? await db.select().from(rpodEvents).where(eq(rpodEvents.id, issInsert.inserted[0].eventId))
+      : [];
+    const issMeta = issRow?.screeningMeta as { dockedFrom?: string } | null | undefined;
+    check("ISS dock remembers it came from the coplanar path", issMeta?.dockedFrom === "coplanar",
+      JSON.stringify(issMeta));
+
+    const redInsert = await persistEvents(
+      [makeCluster(RED_BLUE, nowMs, 0.05, 0.001)],
+      "coplanar",
+      { forceOfNorad: (n) => (n === RED_BLUE[0] ? "red" : "blue") },
+    );
+    check("red-vs-blue coplanar dock geometry stays coplanar",
+      redInsert.inserted.length === 1 && redInsert.inserted[0].kind === "coplanar",
+      JSON.stringify(redInsert.inserted));
+    if (redInsert.inserted[0]) cleanupIds.push(redInsert.inserted[0].eventId);
+
+    const [coplanarIss] = await db.insert(rpodEvents).values({
+      status: "active", kind: "coplanar",
+      windowStart: new Date(nowMs - 3600_000), windowEnd: new Date(nowMs + 3600_000),
+      tca: new Date(nowMs), minRangeKm: 0, relVelKmS: 0, memberCount: 2,
+    }).returning({ id: rpodEvents.id });
+    cleanupIds.push(coplanarIss.id);
+    await db.insert(rpodEventMembers).values([
+      { eventId: coplanarIss.id, norad: 25544, minRangeKm: 0, relVelKmS: 0 },
+      { eventId: coplanarIss.id, norad: 99999484, minRangeKm: 0, relVelKmS: 0 },
+    ]);
+    await reclassifyDockedEvents();
+    let [swept] = await db.select().from(rpodEvents).where(eq(rpodEvents.id, coplanarIss.id));
+    check("sweep relabels coplanar ISS geometry to docked", swept?.kind === "docked", `kind=${swept?.kind}`);
+    const sweptMeta = swept?.screeningMeta as { dockedFrom?: string } | null;
+    check("sweep records coplanar origin", sweptMeta?.dockedFrom === "coplanar", JSON.stringify(sweptMeta));
+
+    await db.update(rpodEvents)
+      .set({ minRangeKm: 2.1, relVelKmS: 0.02 })
+      .where(eq(rpodEvents.id, coplanarIss.id));
+    await reclassifyDockedEvents();
+    [swept] = await db.select().from(rpodEvents).where(eq(rpodEvents.id, coplanarIss.id));
+    check("sweep returns a coplanar-origin dock to coplanar when geometry breaks",
+      swept?.kind === "coplanar", `kind=${swept?.kind}`);
   } finally {
     if (cleanupIds.length) await db.delete(rpodEvents).where(inArray(rpodEvents.id, cleanupIds)); // members cascade
     await pool.end();

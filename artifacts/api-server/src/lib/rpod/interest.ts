@@ -1,9 +1,9 @@
 import { RPOD_MAX_RANGE_KM, type ClusteredEvent, type FlaggedPair } from "./screen";
 import {
-  exerciseCovers, relVelLimits, usesRedBlueVelCap,
+  exerciseCovers, KNOWN_STATION_NORADS, mayLabelDocked, relVelLimits, usesRedBlueVelCap,
   type ExerciseFlag,
 } from "./alertPolicy";
-import { forceOf, forcesWarrantAlert, type ForceObject } from "./force";
+import { forceOf, forcesWarrantAlert, type Force, type ForceObject } from "./force";
 
 /**
  * RPOD "is this interesting?" policy — the single place Space Police retunes
@@ -30,6 +30,11 @@ import { forceOf, forcesWarrantAlert, type ForceObject } from "./force";
  *      Three Starlinks in a dense-shell 30 km bubble is just density;
  *      a real mess is many free-flyers. Docked ISS/Tiangong stacks are
  *      one attached body, not a cluster.
+ *   4. Docked geometry (near-zero range and relative velocity). Attached
+ *      hardware is kept even when both objects are the same force
+ *      (Tiangong, MEV on Intelsat). It is not a near-miss.
+ *   5. A known station member (ISS, Tiangong). A station stack is stored
+ *      even when the catalog force is not red-versus-blue.
  *
  * Fast crossings (relative velocity above ~100 m/s) are out of scope.
  * The old "any catalog field differs" mixed-operator rule and the
@@ -54,9 +59,9 @@ export const MIXED_OPERATOR_MAX_RANGE_KM = RPOD_MAX_RANGE_KM; // 30 km
  * AND not docked (relative velocity too high to be physically joined).
  * ~150× tighter than the mixed-operator 30 km bubble.
  *
- * Docked geometry (≤0.5 km AND ≤1 cm/s) is attached hardware, not a
- * fuckup — same-operator docked stacks stay boring. Ultra-close
- * Starlink-on-Starlink that is NOT docked still qualifies.
+ * Docked geometry (≤0.5 km AND ≤1 cm/s) is attached hardware. It is kept
+ * as its own class (reason "docked"), not scored as a near-miss.
+ * Ultra-close Starlink-on-Starlink that is NOT docked still qualifies.
  */
 export const SAME_OPERATOR_NEAR_MISS_KM = 0.2;
 
@@ -96,6 +101,27 @@ export const DOCKED_MAX_RELVEL_KM_S = 0.01;
 
 export function isDockedGeometry(minRangeKm: number, relVelKmS: number): boolean {
   return minRangeKm <= DOCKED_MAX_RANGE_KM && relVelKmS <= DOCKED_MAX_RELVEL_KM_S;
+}
+
+/**
+ * Store this geometry as kind "docked".
+ *
+ * Same gate the scan uses at persist and reclassify time: docked range and
+ * relative velocity, not a cross-tag, and mayLabelDocked. A known station
+ * may be labeled docked. A red-versus-blue or red-versus-neutral pair that
+ * is not a station stays unlabeled (Kosmos 1638). Same-force pairs follow
+ * the geometry.
+ */
+export function shouldStoreDocked(
+  minRangeKm: number,
+  relVelKmS: number,
+  norads: number[],
+  forces: readonly Force[],
+  crossTag = false,
+): boolean {
+  if (crossTag || norads.length < 2) return false;
+  if (!isDockedGeometry(minRangeKm, relVelKmS)) return false;
+  return mayLabelDocked(norads, [...forces]);
 }
 
 /** Crossing-track / high-relvel flyby inside the conjunction bubble, not attached. */
@@ -314,6 +340,8 @@ export type InterestReason =
   | "same-operator-near-miss"
   | "same-operator-crossing"
   | "exercise"
+  | "docked"
+  | "station"
   | "boring";
 
 export interface InterestContext {
@@ -379,8 +407,9 @@ function eventIsDockedNearMiss(ev: Pick<ClusteredEvent, "minRangeKm" | "relVelKm
  * that is not that pack, blue-on-blue, near-misses, and clusters use the
  * single 70 m/s ceiling. Red-red is dropped. Blue-on-blue is dropped
  * unless an exercise flag covers the object or the pair. Same-operator
- * traffic is kept only for a ≤200 m non-docked miss or a messy free-flyer
- * cluster. Pack-on-pack formation is not kept.
+ * traffic is kept for a ≤200 m non-docked miss, a messy free-flyer
+ * cluster, docked geometry, or a known station member. Pack-on-pack
+ * formation is not kept.
  */
 export function classifyEvent(
   ev: Pick<ClusteredEvent, "members" | "pairs" | "minRangeKm" | "relVelKmS">,
@@ -413,6 +442,14 @@ export function classifyEvent(
     && exerciseCovers(ev.members, ctx.exerciseFlags ?? [], ctx.nowMs ?? Date.now())
   ) {
     return { keep: true, reason: "exercise" };
+  }
+  // Attached hardware is the docked board, not housekeeping. Same-force
+  // Tiangong and MEV/Intelsat stacks used to die here and then age out.
+  if (ev.members.length >= 2 && eventIsDockedNearMiss(ev)) {
+    return { keep: true, reason: "docked" };
+  }
+  if (ev.members.length >= 2 && ev.members.some((n) => KNOWN_STATION_NORADS.has(n))) {
+    return { keep: true, reason: "station" };
   }
   return { keep: false, reason: "boring" };
 }
