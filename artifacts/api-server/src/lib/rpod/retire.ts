@@ -47,9 +47,12 @@ export function selectUnseenDockedIds(
 
 /**
  * Active events whose predicted window ended this long ago are archived
- * as stale. Docked stacks inherit a short TCA-style window (~1 h) and must
- * not take this path — an attached stack stays active until its geometry
- * breaks or DOCKED_UNSEEN_MS passes without a re-detection.
+ * as stale. Docked stacks and station-keeping holds inherit a short
+ * TCA-style window (about an hour, or the latest elset plus six hours)
+ * and must not take this path. A dock stays active until its geometry
+ * breaks or DOCKED_UNSEEN_MS passes without a re-detection. A station-keeping
+ * hold stays active until the 48 h unseen retire, which only runs after a
+ * screen that actually saw pairs.
  */
 export const WINDOW_STALE_AFTER_MS = 3 * 86400_000;
 
@@ -59,6 +62,7 @@ export function selectWindowStaleIds(
 ): number[] {
   return events
     .filter((e) => e.kind !== "docked"
+      && e.kind !== "station-keeping"
       && nowMs - e.windowEnd.getTime() > WINDOW_STALE_AFTER_MS)
     .map((e) => e.id);
 }
@@ -131,4 +135,23 @@ export function selectReopenCandidate(
     if (!best || endedAtMs > best.endedAtMs) best = { id: ev.id, endedAtMs };
   }
   return best?.id ?? null;
+}
+
+/**
+ * Conjunction reopens on the short window. Coplanar and station-keeping
+ * share the shadowing window: a pair that resumes station-keeping keeps
+ * the same case number. Docked geometry widens this further at the call
+ * site when the incoming pass is still docked.
+ */
+export function reopenWindowMsForKind(kind: "conjunction" | "coplanar" | "station-keeping"): number {
+  return kind === "conjunction" ? CONJUNCTION_REOPEN_WINDOW_MS : COPLANAR_REOPEN_WINDOW_MS;
+}
+
+/**
+ * A station-keeping pass that found no hits and persisted no events did not
+ * refresh lastSeenAt. Retiring on that hollow success ends holds the screen
+ * never confirmed were gone.
+ */
+export function stationKeepingRetireAllowed(screenHits: number, persistedEvents: number): boolean {
+  return screenHits > 0 || persistedEvents > 0;
 }
