@@ -1,0 +1,150 @@
+{
+ "slug": "lm12-wenchang",
+ "title": "Long March 12 / SatNet LEO group (Hainan Commercial LC-2, Wenchang)",
+ "vehicle": "lm12",
+ "t0_utc": "2026-11-08T20:25:00Z",
+ "pad": {
+  "lat": 19.59755,
+  "lon": 110.936481,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/ (Wenchang Commercial LC-2)"
+ },
+ "azimuth_deg": {
+  "value": 109.33,
+  "src": "https://space-notices.com/entry/launch-long-march-12-satnet-leo-group-tbd",
+  "note": "NOTAM RPHI B5920/26 + HYDROPAC 3200/26 danger-area centroid 9.108N 119.275E lies 1471 km from the pad at great-circle bearing 141.27 deg (i~53.9 deg). The sim INPUT azimuth 109.33 deg is COMPENSATED for a known sim ground-track bias (input 141.27 gave a track bearing ~165.7 deg); with 109.33 the sim track passes ~38 km from the centroid at 1468 km range (bearing 139.8 deg). The surrogate uses 141.27 directly."
+ },
+ "payload_kg": {
+  "fit": true,
+  "value": null,
+  "note": "FITTED to reach the assumed orbit at the published typical S2 first cutoff; 9 SatNet satellites (LL2), mass unpublished; fitted value is NOT an estimate"
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 300,
+   "assumption": "insertion orbit unpublished; 300 km circular ASSUMED = LM-12 published 10 t / 300 km LEO reference orbit (https://en.wikipedia.org/wiki/Long_March_12)"
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 5
+ },
+ "header_notes": [
+  "T0 = LL2 NET 2026-11-08T20:25:00Z (Sun 8 Nov 12:25 pm PST; window 20:17-20:47Z), delayed per NOTAMs. Payload: SatNet LEO group, 9 satellites (LL2). Event times = CALT TYPICAL LM-12 Y7 sequence (huijiwiki), not this flight's. UNTUNED: no altitude/range knots exist to tune against."
+ ],
+ "post_cutoff": {
+  "drag": {
+   "cd": {
+    "value": 2.2,
+    "assumption": "free-molecular Cd 2.2"
+   },
+   "area_m2": {
+    "value": 11.34,
+    "derived": "pi x (3.8 m / 2)^2, LM-12 diameter (W)"
+   }
+  },
+  "burns": [
+   {
+    "name": "S2 restart (2x YF-115B)",
+    "t_ign_s": {
+     "value": 1622.505,
+     "src": "https://sat.huijiwiki.com/wiki/长征十二号 typical sequence '二级发动机二次起动 1622.505 s'"
+    },
+    "duration_s": {
+     "value": 18.0,
+     "src": "https://sat.huijiwiki.com/wiki/长征十二号 typical sequence second cutoff 1640.505 s"
+    },
+    "thrust_N": {
+     "value": 360000.0,
+     "src": "https://sat.huijiwiki.com/wiki/长征十二号 2x YF-115B 180 kN"
+    },
+    "isp_s": {
+     "value": 341.5,
+     "src": "https://en.wikipedia.org/wiki/YF-115"
+    },
+    "target_perigee_km": null,
+    "basis": "published TYPICAL timing and full published thrust, flown open-loop prograde; purpose (orbit raise vs. other) and this flight's actual restart timing unpublished, so the resulting orbit is ILLUSTRATIVE only"
+   }
+  ],
+  "deploy": {
+   "t_s": {
+    "value": 1730.505,
+    "src": "https://sat.huijiwiki.com/wiki/长征十二号 typical sequence first satellite batch separation 1730.505 s (second batch 1780.505 s)"
+   },
+   "src": "CALT typical LM-12 Y7 sequence via huijiwiki: first satellite batch separation T+1730.505 s (TYPICAL, not flight-specific)",
+   "label": "Satellite separation, first batch (typical sequence)"
+  },
+  "notes": [
+   "Second satellite batch separation 1780.505 s in the typical sequence is not drawn separately (50 s later on the same coast)."
+  ]
+ },
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "kick_deg": {
+    "value": 0.750468,
+    "bounds": [
+     0.1,
+     5
+    ],
+    "basis": "ASSUMPTION bound; liftoff T/W ~1.18 (5000 kN / 433 t) needs a small kick (larger kicks crash in probes)"
+   },
+   "payload_kg": {
+    "value": 8320.045002,
+    "bounds": [
+     500,
+     12000
+    ],
+    "basis": "upper bound LEO capability 12 t (W); 9 SatNet sats (LL2), mass not published"
+   },
+   "tan0": {
+    "value": 0.390355,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": 0.000811,
+    "bounds": [
+     -0.05,
+     0.05
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "vertical_rise_s": 15.0,
+   "cd": 0.66658
+  },
+  "knot_residuals": [],
+  "final": {
+   "alt_km": 300.00094219838735,
+   "fpa_deg": 4.2851767840350084e-06,
+   "sma_err_km": 0.014783017203211785,
+   "mass_kg": 14370.4
+  },
+  "cost": 4.818293401182993e-06,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "Stage 1 (4x YF-100K)",
+     "loaded_kg": 331609,
+     "burned_kg": 331604,
+     "residual_kg": 5,
+     "dry_kg": 28836,
+     "flag": null
+    },
+    {
+     "name": "Stage 2 (2x YF-115B)",
+     "loaded_kg": 47319,
+     "burned_kg": 45384,
+     "residual_kg": 1935,
+     "dry_kg": 4115,
+     "flag": null
+    }
+   ],
+   "glow_kg": 422699
+  }
+ }
+}

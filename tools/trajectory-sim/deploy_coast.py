@@ -57,7 +57,10 @@ def apo_time(r, v, m, t0, cfg):
         if t-t0 > 20000: raise RuntimeError("no apoapsis")
 
 def solve_burn(r, v, m, t_ign, b, cfg):
-    """returns (F, duration). Either duration fixed & thrust solved, or thrust fixed & duration solved, to hit target perigee."""
+    """returns (F, duration). Either duration fixed & thrust solved, or thrust fixed & duration solved, to hit target perigee.
+    If target_perigee_km is absent/null and BOTH thrust_N and duration_s are given, the burn is flown open-loop as published."""
+    if b.get("target_perigee_km") is None and b.get("thrust_N") is not None and b.get("duration_s") is not None:
+        return val(b["thrust_N"]), val(b["duration_s"])
     tgt = val(b["target_perigee_km"]); isp = val(b["isp_s"])
     def perigee(F, d):
         r2, v2, _ = propagate(r, v, m, t_ign, t_ign+d, cfg, burn=(F, isp), dt_=0.25); return kep(r2, v2)[3]
