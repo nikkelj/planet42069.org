@@ -270,6 +270,26 @@
       "id": "kcb-k2y2",
       "title": "Ke Chuang Ban Daily via X @najoygo: Kinetica-2 Y2 liftoff 08:15:25 BJT",
       "url": "https://x.com/najoygo/status/2117424232691056846"
+    },
+    {
+      "id": "huiji-lm12",
+      "title": "Huiji Wiki: 长征十二号 LM-12 (YF-100K/YF-115B thrust; CALT typical Y7 flight sequence)",
+      "url": "https://sat.huijiwiki.com/wiki/长征十二号"
+    },
+    {
+      "id": "wp-lm12",
+      "title": "Wikipedia: Long March 12 (GLOW, 10 t to 300 km LEO)",
+      "url": "https://en.wikipedia.org/wiki/Long_March_12"
+    },
+    {
+      "id": "wp-yf115",
+      "title": "Wikipedia: YF-115 (vacuum Isp)",
+      "url": "https://en.wikipedia.org/wiki/YF-115"
+    },
+    {
+      "id": "notam-b5920",
+      "title": "NOTAM RPHI B5920/26 + HYDROPAC 3200/26 (LM-12 downrange area) via space-notices",
+      "url": "https://space-notices.com/entry/launch-long-march-12-satnet-leo-group-tbd"
     }
   ],
   "launches": [
@@ -657,6 +677,43 @@
         "huiji-lm2c",
         "wp-yf20",
         "notam-a5624",
+        "wp-lm3b",
+        "ll2",
+        "kml"
+      ]
+    },
+    {
+      "slug": "lm12-wenchang",
+      "name": "SatNet LEO group (Long March 12, Wenchang)",
+      "vehicle": "Long March 12",
+      "t0_utc": "2026-11-08T20:25:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory.csv",
+        "kml": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory.kml",
+        "csv_sim": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory_sim.csv",
+        "kml_sim": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory_sim.kml",
+        "track_lite": "/launches/lm12-wenchang/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://sat.huijiwiki.com/wiki/长征十二号",
+        "https://en.wikipedia.org/wiki/Long_March_12",
+        "https://en.wikipedia.org/wiki/YF-115",
+        "https://space-notices.com/entry/launch-long-march-12-satnet-leo-group-tbd",
+        "https://ll.thespacedevs.com/2.3.0/launches/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: CALT TYPICAL LM-12 Y7 sequence times (S1 cutoff 196.315 s, sep 198.315 s, fairing 209.015 s, S2 first cutoff 622.505 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; 300 km final altitude ASSUMED; NOTAM RPHI B5920/26 azimuth 141.27 deg; UNTUNED",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: CALT typical sequence as hard events; thrust from huijiwiki, YF-115 Isp from Wikipedia (B variant ASSUMED same); stage masses DERIVED from burn times with ASSUMED 0.92 structure coefficient; fairing 2.5 t ASSUMED; Cd from LM-3B fit; 300 km circular ASSUMED; sim input azimuth 109.33 deg COMPENSATED for sim track bias so the track passes ~38 km from the NOTAM centroid; fitted payload ~8.3 t; typical 18 s S2 restart at T+1622.5 s flown open-loop prograde (purpose unpublished) giving ILLUSTRATIVE 294 x 2276 km at first-batch separation T+1730.5 s, i=36.8 deg (sim inclination does not match the ~53.9 deg the NOTAM bearing implies); UNTUNED; ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "huiji-lm12",
+        "wp-lm12",
+        "wp-yf115",
+        "notam-b5920",
         "wp-lm3b",
         "ll2",
         "kml"

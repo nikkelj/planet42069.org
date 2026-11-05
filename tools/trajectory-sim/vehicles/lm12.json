@@ -1,0 +1,161 @@
+{
+ "id": "lm12",
+ "name": "Long March 12 (CZ-12, CALT)",
+ "timeline": true,
+ "family_from": "lm3b",
+ "cd": {
+  "value": null,
+  "note": "aero only: LM-3B family fitted Cd transferred, see fixed_params; ASSUMPTION"
+ },
+ "glow_kg": {
+  "value": 433000,
+  "src": "https://en.wikipedia.org/wiki/Long_March_12",
+  "note": "433 t (huijiwiki: ~430 t); used as a CHECK only (sim GLOW reported in mass_budget)"
+ },
+ "stages": [
+  {
+   "name": "Stage 1 (4x YF-100K)",
+   "count": 1,
+   "diameter_m": {
+    "value": 3.8,
+    "src": "https://en.wikipedia.org/wiki/Long_March_12"
+   },
+   "propellant_kg": {
+    "value": 331609,
+    "derived": "= burned: 4-engine mdot 1689.2 kg/s (4 x 1250 kN / (301.84 s x g0)) x 196.315 s; no load published"
+   },
+   "dry_kg": {
+    "value": 28836,
+    "derived": "prop x (1/0.92 - 1): structure coefficient 0.92 ASSUMED (same as Kinetica-2 config; LM-12 stage masses unpublished); YF-100K dry 1820 kg each (huijiwiki) is inside this"
+   },
+   "thrust_sl_N": {
+    "value": 5000000.0,
+    "src": "https://sat.huijiwiki.com/wiki/长征十二号",
+    "note": "YF-100K sea-level 1250 kN x4 = 5000 kN liftoff thrust (also W); throttling unmodelled (full thrust ASSUMED)"
+   },
+   "thrust_vac_N": {
+    "value": 5600078,
+    "derived": "4 x (1250 kN + P0 x Ae), Ae = pi x (1.373 m / 2)^2 = 1.4806 m^2 from published nozzle exit diameter 1.373 m (huijiwiki YF-100K); = 1400.0 kN per engine"
+   },
+   "isp_vac_s": {
+    "value": 338.07,
+    "derived": "SL Isp 301.84 s (huijiwiki YF-100K) x Fvac/Fsl, so mdot = F/(Isp g0) is unchanged from the published SL pair"
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "https://sat.huijiwiki.com/wiki/长征十二号"
+   },
+   "cutoff_s": {
+    "value": 196.315,
+    "src": "https://sat.huijiwiki.com/wiki/长征十二号",
+    "note": "'一级发动机关机 196.315 s', Y7 typical flight sequence (Hainan Commercial SF-18 mission handbook via huijiwiki), TYPICAL not this flight's"
+   },
+   "separation_s": {
+    "value": 198.315,
+    "src": "https://sat.huijiwiki.com/wiki/长征十二号",
+    "note": "S1/S2 separation 198.315 s, same typical sequence"
+   }
+  },
+  {
+   "name": "Stage 2 (2x YF-115B)",
+   "count": 1,
+   "diameter_m": {
+    "value": 3.8,
+    "src": "https://en.wikipedia.org/wiki/Long_March_12"
+   },
+   "propellant_kg": {
+    "value": 47319,
+    "derived": "= burned: mdot 107.50 kg/s (2 x 180 kN / (341.5 s x g0)) x (622.505 - 200.315) s = 45384 kg first burn + 1935 kg for the published 18 s restart (1622.505-1640.505 s); no load published"
+   },
+   "dry_kg": {
+    "value": 4115,
+    "derived": "prop x (1/0.92 - 1), same structure-coefficient ASSUMPTION as S1"
+   },
+   "thrust_vac_N": {
+    "value": 360000.0,
+    "src": "https://sat.huijiwiki.com/wiki/长征十二号",
+    "note": "2x YF-115B, 180 kN each (huijiwiki); Wikipedia lists base YF-115 176.5 kN vac"
+   },
+   "isp_vac_s": {
+    "value": 341.5,
+    "src": "https://en.wikipedia.org/wiki/YF-115",
+    "note": "base YF-115 vacuum Isp; YF-115B value unpublished, base value ASSUMED"
+   },
+   "ignition_s": {
+    "value": 200.315,
+    "src": "https://sat.huijiwiki.com/wiki/长征十二号",
+    "note": "S2 ignition 200.315 s, typical sequence"
+   },
+   "cutoff_s": {
+    "value": 622.505,
+    "src": "https://sat.huijiwiki.com/wiki/长征十二号",
+    "note": "'二级发动机一次关机 622.505 s', typical sequence"
+   }
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 2500,
+   "assumption": "not published; 5.2 m diameter fairing (huijiwiki), mass ASSUMED"
+  },
+  "jettison_time_s": {
+   "value": 209.015,
+   "src": "https://sat.huijiwiki.com/wiki/长征十二号",
+   "note": "fairing separation 209.015 s, typical sequence"
+  }
+ },
+ "guidance": {
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "not published"
+  },
+  "linear_tangent_from_stage": 1
+ },
+ "fixed_params": {
+  "vertical_rise_s": {
+   "value": 15,
+   "assumption": "not published for LM-12; 15 s = LM-2C published programme-turn time (https://sat.huijiwiki.com/wiki/长征二号丙), borrowed (as Kinetica-2)"
+  },
+  "cd": {
+   "value": null,
+   "derived": "FITTED LM-3B value transferred (aero only); filled at run time from vehicles/lm3b.json fitted_family; ASSUMPTION"
+  }
+ },
+ "fit": {
+  "kick_deg": {
+   "x0": 0.6,
+   "bounds": [
+    0.1,
+    5
+   ],
+   "basis": "ASSUMPTION bound; liftoff T/W ~1.18 (5000 kN / 433 t) needs a small kick (larger kicks crash in probes)"
+  },
+  "payload_kg": {
+   "x0": 7000,
+   "bounds": [
+    500,
+    12000
+   ],
+   "basis": "upper bound LEO capability 12 t (W); 9 SatNet sats (LL2), mass not published"
+  },
+  "tan0": {
+   "x0": 0.8,
+   "bounds": [
+    -2,
+    5
+   ],
+   "basis": "guidance law"
+  },
+  "tan_rate": {
+   "x0": 0.001,
+   "bounds": [
+    -0.05,
+    0.05
+   ],
+   "basis": "guidance law"
+  }
+ },
+ "header_notes": [
+  "LM-12: thrust/Isp from huijiwiki (YF-100K SL pair, YF-115B thrust) + Wikipedia (YF-115 Isp, GLOW); stage masses DERIVED from published burn times with an ASSUMED 0.92 structure coefficient; event times = CALT TYPICAL Y7 sequence (huijiwiki), not this flight's."
+ ]
+}
