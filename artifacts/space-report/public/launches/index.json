@@ -521,7 +521,7 @@
       "slug": "ussf-432",
       "name": "USSF-432",
       "vehicle": "Falcon 9 Block 5",
-      "t0_utc": "2026-11-07T00:46:00Z",
+      "t0_utc": "2026-11-07T00:48:42Z",
       "status": "Go",
       "phase": "upcoming",
       "files": {
@@ -542,8 +542,8 @@
         "https://space-notices.com/entry/launch-f9-ussf-432"
       ],
       "method": {
-        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX ussf432 timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:55; ZLA CARF 11/032-26 Area A azimuth 153.56 deg, valid for the Nov 6 PT window, same polygon as 10/377); ends at T+508 s (telemetry end) because SECO is unpublished; retimed 2026-11-03 to SpaceX/LL2 T0 2026-11-07T00:46:00Z (Fri Nov 6 4:46 pm PST)",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf432 MECO 146 s, sep 149 s, SES-1 156 s, fairing 175 s as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are an ASSUMED Starlink Group 15 analog (LL2 notes drop zones match Group 15), not USSF-432 sources; azimuth 153.56 deg from ZLA CARF 11/032-26 Area A (inclination unpublished) gives i=68.28 deg; payload fitted 16.85 t (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; ILLUSTRATIVE; retimed 2026-11-03 to SpaceX/LL2 NET 2026-11-07T00:46:00Z (Fri Nov 6 4:46 pm PST; backup Sat Nov 7 4:32 pm PST)"
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX ussf432 timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:55; ZLA CARF 11/032-26 Area A azimuth 153.56 deg, valid for the Nov 6 PT window, same polygon as 10/377); ends at T+508 s (telemetry end) because SECO is unpublished; retimed 2026-11-06 to LL2 NET 2026-11-07T00:48:42Z (Fri Nov 6 4:48:42 pm PST; SpaceX window still opens 4:46 pm PT / 00:46Z, backup Sat Nov 7 4:32 pm PT)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf432 MECO 146 s, sep 149 s, SES-1 156 s, fairing 175 s as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are an ASSUMED Starlink Group 15 analog (LL2 notes drop zones match Group 15), not USSF-432 sources; azimuth 153.56 deg from ZLA CARF 11/032-26 Area A (inclination unpublished) gives i=68.28 deg; payload fitted 16.85 t (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; ILLUSTRATIVE; retimed 2026-11-06 to LL2 NET 2026-11-07T00:48:42Z (Fri Nov 6 4:48:42 pm PST; SpaceX window opens 4:46 pm PT)"
       },
       "reference_ids": [
         "spacex-ussf432",
@@ -555,7 +555,7 @@
         "ll2",
         "kml"
       ],
-      "note": "Slipped from Tue Nov 3 to Fri Nov 6 4:46 pm PST (SpaceX ussf432 page and LL2 agree, checked 2026-11-03). Pre-flight ILLUSTRATIVE; SECO/orbit/deploy unpublished."
+      "note": "LL2 NET refined 2026-11-06T12:05Z to 2026-11-07T00:48:42Z (was 00:46:00Z); SpaceX ussf432 page still says window opens Fri Nov 6 4:46 pm PT (backup Sat Nov 7 4:32 pm PT). Pre-flight ILLUSTRATIVE; SECO/orbit/deploy unpublished. Known sim ground-track azimuth residual noted on board (~F9 family)."
     },
     {
       "slug": "electron-iqps9",
@@ -649,11 +649,11 @@
     },
     {
       "slug": "lm2c-xichang",
-      "name": "Unknown payload (Long March 2C, Xichang)",
+      "name": "Yaogan-51 07–09 (Long March 2C, Xichang)",
       "vehicle": "Long March 2C",
-      "t0_utc": "2026-11-05T16:00:00Z",
-      "status": "Go",
-      "phase": "upcoming",
+      "t0_utc": "2026-11-05T15:58:00Z",
+      "status": "Success",
+      "phase": "flown",
       "files": {
         "csv": "/launches/lm2c-xichang/lm2c-xichang_2026-11-05_trajectory.csv",
         "kml": "/launches/lm2c-xichang/lm2c-xichang_2026-11-05_trajectory.kml",
@@ -670,8 +670,8 @@
         "https://ll.thespacedevs.com/2.3.0/launches/"
       ],
       "method": {
-        "csv": "event-surrogate parametric: CALT TYPICAL LM-2C sequence times (S1 cutoff 146.5 s ... vernier cutoff 542.7 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; 500 km final altitude ASSUMED; NOTAM A5624 azimuth 136.38 deg; UNTUNED",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: CALT typical sequence as hard events, Ph.3 stage data (World Launch Vehicles 2007 via huijiwiki), S1 vac via YF-20 ratio, verniers to 542.7 s; fairing mass 1000 kg ASSUMED; Cd from LM-3B fit (UNTUNED); payload/orbit unknown, 500 km circular ASSUMED; payload separation at typical T+545.7 s into 499 x 501 km, i=54.17 deg; fitted payload only ~0.3 t; ILLUSTRATIVE"
+        "csv": "event-surrogate parametric: CALT TYPICAL LM-2C sequence times (S1 cutoff 146.5 s ... vernier cutoff 542.7 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; 500 km final altitude ASSUMED; NOTAM A5624 azimuth 136.38 deg; UNTUNED; retimed 2026-11-06 to LL2 actual liftoff 2026-11-05T15:58:00Z (Thu Nov 5 7:58 am PST; was NET 16:00Z)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: CALT typical sequence as hard events, Ph.3 stage data (World Launch Vehicles 2007 via huijiwiki), S1 vac via YF-20 ratio, verniers to 542.7 s; fairing mass 1000 kg ASSUMED; Cd from LM-3B fit (UNTUNED); payload/orbit unknown, 500 km circular ASSUMED; payload separation at typical T+545.7 s into 499 x 501 km, i=54.17 deg; fitted payload only ~0.3 t; ILLUSTRATIVE; known sim ground-track drift vs commanded azimuth ~+9 deg (board note); retimed 2026-11-06 to LL2 actual liftoff 2026-11-05T15:58:00Z"
       },
       "reference_ids": [
         "huiji-lm2c",
@@ -680,7 +680,8 @@
         "wp-lm3b",
         "ll2",
         "kml"
-      ]
+      ],
+      "note": "FLOWN: LL2 Launch Successful at 2026-11-05T15:58:00Z (Thu Nov 5 7:58 am PST) from Xichang LC-3; Yaogan-51 07–09 reached planned orbit (Xinhua/China News/LL2; Long March flight 675). Pre-flight ILLUSTRATIVE files retimed to actual liftoff; geometry unchanged."
     },
     {
       "slug": "lm12-wenchang",
