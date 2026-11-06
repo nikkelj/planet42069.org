@@ -1,8 +1,8 @@
 {
  "slug": "lm2c-xichang",
- "title": "Long March 2C / unknown payload (Xichang LC-3)",
+ "title": "Long March 2C / Yaogan-51 07–09 (Xichang LC-3)",
  "vehicle": "lm2c",
- "t0_utc": "2026-11-05T16:00:00Z",
+ "t0_utc": "2026-11-05T15:58:00Z",
  "pad": {
   "lat": 28.247059,
   "lon": 102.029008,
@@ -28,13 +28,14 @@
   "sma_sigma_km": 5
  },
  "header_notes": [
-  "T0 = LL2 NET 2026-11-05T16:00:00Z (window 15:52-16:16Z). Payload and orbit unknown. Event times = CALT typical LM-2C sequence (huijiwiki), not this flight's. UNTUNED: no altitude/range knots published."
+  "FLOWN / Retimed 2026-11-06: LL2 Launch Successful 2026-11-05T15:58:00Z (Thu Nov 5 7:58 am PST) Yaogan-51 07–09 to planned orbit (Xinhua/China News/LL2; LM flight 675). Prior NET was 16:00:00Z. ECEF geometry unchanged (Earth-fixed). ILLUSTRATIVE.",
+  "T0 = LL2 NET 2026-11-05T15:58:00Z (window 15:52-16:16Z). Payload and orbit unknown. Event times = CALT typical LM-2C sequence (huijiwiki), not this flight's. UNTUNED: no altitude/range knots published."
  ],
  "post_cutoff": {
   "deploy": {
    "t_s": {
     "value": 545.7,
-    "src": "https://sat.huijiwiki.com/wiki/\u957f\u5f81\u4e8c\u53f7\u4e19 typical sequence '\u661f\u7bad\u5206\u79bb 545.7 s'"
+    "src": "https://sat.huijiwiki.com/wiki/长征二号丙 typical sequence '星箭分离 545.7 s'"
    },
    "src": "CALT typical LM-2C sequence via huijiwiki: payload separation T+545.7 s (TYPICAL, not flight-specific)",
    "label": "Payload separation (typical sequence)"

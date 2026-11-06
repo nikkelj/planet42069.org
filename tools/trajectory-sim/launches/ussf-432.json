@@ -2,7 +2,7 @@
  "slug": "ussf-432",
  "title": "Falcon 9 USSF-432 (SLC-4E)",
  "vehicle": "falcon9",
- "t0_utc": "2026-11-07T00:46:00Z",
+ "t0_utc": "2026-11-07T00:48:42Z",
  "pad": {
   "lat": 34.632,
   "lon": -120.611,
@@ -33,7 +33,8 @@
   "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude (~3 km difference at insertion latitude, accepted via 1 km-weight)"
  },
  "header_notes": [
-  "Not flown: SpaceX ussf432 page (checked 2026-11-03 ~8:06a PST): 'targeting Friday, November 6 ... four-hour launch window opens at 4:46 p.m. PT', backup Sat Nov 7 4:32 p.m. PT. LL2 NET 2026-11-07T00:46:00Z (window to 04:46Z, status Go; LL2 update 2026-11-03T00:31Z citing spacex.com). Retimed 2026-11-03 from T0 2026-11-04T01:28:00Z (prior slips: 11-03T01:42Z, 11-04T01:28Z, 11-05T01:14Z). Booster B1095 8th flight -> OCISLY (SpaceX/LL2).",
+  "Retimed 2026-11-06: LL2 NET 2026-11-07T00:48:42Z (update 2026-11-06T12:05Z 'Now targeting Nov 07 at 00:48 UTC'); window still 00:46-04:46Z per SpaceX ussf432 page (opens 4:46 pm PT Fri Nov 6; backup Sat Nov 7 4:32 pm PT). Prior board T0 was 00:46:00Z. ECEF geometry unchanged (Earth-fixed).",
+  "Not flown: SpaceX ussf432 page (checked 2026-11-03 ~8:06a PST): 'targeting Friday, November 6 ... four-hour launch window opens at 4:46 p.m. PT', backup Sat Nov 7 4:32 p.m. PT. LL2 NET 2026-11-07T00:48:42Z (window to 04:46Z, status Go; LL2 update 2026-11-03T00:31Z citing spacex.com). Retimed 2026-11-03 from T0 2026-11-04T01:28:00Z (prior slips: 11-03T01:42Z, 11-04T01:28Z, 11-05T01:14Z). Booster B1095 8th flight -> OCISLY (SpaceX/LL2).",
   "Published timeline (SpaceX ussf432): Max-Q 1:07, MECO 2:26, stage sep 2:29, SES-1 2:36, fairing 2:55, entry burn 6:06-6:30, landing burn 8:04, landing 8:26. SECO, orbit, deploy NOT published.",
   "INFERRED/ASSUMED: SECO-1 time and parking orbit are a Starlink Group 15 analog (starlink-15-18), not USSF-432 sources. Azimuth from FAA/ZLA CARF NOTAM 11/032-26 Area A (valid for the Nov 7 UTC window; identical geometry to 10/377). File ends 2 revs after cutoff (deploy unpublished)."
  ],
