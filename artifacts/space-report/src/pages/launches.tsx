@@ -8,11 +8,14 @@ import {
 } from "@/components/ui/table";
 import {
   emptyManifest,
+  launchClock,
+  launchClockIsLive,
   launchDownloadName,
   formatUtc,
   loadLaunchDesk,
   partitionLaunches,
   publicAssetHref,
+  type LaunchClock,
   type LaunchEntry,
   type LaunchIndexResult,
   type LaunchManifest,
@@ -37,6 +40,87 @@ function statusClass(status: string): string {
     return "bg-destructive/15 text-destructive border-destructive/70";
   }
   return "bg-muted text-muted-foreground border-muted-foreground/40";
+}
+
+/** One shared timeout, aligned to the UTC second, cleared on unmount and when nothing is live. */
+function useSecondClock(enabled: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!enabled) return;
+    let alive = true;
+    let timer = 0;
+    const schedule = () => {
+      const delay = 1000 - (Date.now() % 1000);
+      timer = window.setTimeout(() => {
+        if (!alive) return;
+        setNow(Date.now());
+        schedule();
+      }, delay);
+    };
+    schedule();
+    return () => {
+      alive = false;
+      window.clearTimeout(timer);
+    };
+  }, [enabled]);
+  return now;
+}
+
+function LaunchCountdown({ clock, slug }: { clock: LaunchClock; slug: string }) {
+  if (clock.mode === "absolute") return null;
+  const live = clock.ticking;
+  return (
+    <div
+      data-testid={`launch-countdown-${slug}`}
+      className="mt-1.5 max-w-[18rem] border-l-2 border-secondary pl-2"
+    >
+      <div className="text-[10px] font-bold uppercase tracking-widest text-secondary">{clock.label}</div>
+      <div
+        role={live ? "timer" : undefined}
+        aria-live="off"
+        aria-atomic="true"
+        aria-label={`${clock.label} ${clock.readout}`}
+        className={`whitespace-nowrap font-mono text-lg font-bold tabular-nums tracking-wide ${
+          clock.mode === "tbd" ? "text-muted-foreground" : "text-secondary"
+        }`}
+      >
+        {clock.readout}
+      </div>
+      {clock.notice && (
+        <p className="mt-0.5 text-[10px] leading-snug normal-case tracking-normal text-muted-foreground">
+          {clock.notice}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function LaunchInstant({ clock }: { clock: LaunchClock }) {
+  return (
+    <div className="whitespace-normal leading-snug">
+      <div className="text-[10px] font-bold uppercase tracking-widest text-secondary">{clock.label}</div>
+      <div className="text-foreground">{clock.utc}</div>
+      {clock.pacific !== "—" && (
+        <div className="text-[11px] text-muted-foreground">{clock.pacific}</div>
+      )}
+      {clock.windowOpen && (
+        <div className="mt-1 text-[10px] normal-case tracking-normal text-muted-foreground">
+          <div className="font-bold uppercase tracking-widest text-secondary">Window opens</div>
+          <div>{clock.windowOpen.utc}</div>
+          <div>{clock.windowOpen.pacific}</div>
+        </div>
+      )}
+      {clock.windowClose && (
+        <div className="mt-1 text-[10px] normal-case tracking-normal text-muted-foreground">
+          <span className="font-bold uppercase tracking-widest text-secondary">Window closes</span>
+          {" "}
+          {clock.windowClose.utc}
+          {" · "}
+          {clock.windowClose.pacific}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function FileLink({ path, launch }: { path: string | null; launch: LaunchEntry }) {
@@ -113,11 +197,15 @@ function DownloadSet({
 function LaunchTable({
   launches,
   timeHeader,
+  liveClock = false,
 }: {
   launches: LaunchEntry[];
   timeHeader: string;
+  liveClock?: boolean;
 }) {
   const [openSlug, setOpenSlug] = useState<string | null>(null);
+  const ticking = liveClock && launches.some((launch) => launchClockIsLive(launch));
+  const nowMs = useSecondClock(ticking);
 
   return (
     <div className="overflow-x-auto relative z-10">
@@ -135,6 +223,7 @@ function LaunchTable({
           {launches.map((launch) => {
             const canView = Boolean(launch.files.csv || launch.files.csvSim);
             const open = openSlug === launch.slug;
+            const clock = liveClock ? launchClock(launch, nowMs) : null;
             return (
             <Fragment key={launch.slug}>
             <TableRow
@@ -144,6 +233,7 @@ function LaunchTable({
             >
               <TableCell className="py-3 align-top whitespace-normal">
                 <div className="text-foreground font-bold">{launch.name}</div>
+                {clock && <LaunchCountdown clock={clock} slug={launch.slug} />}
                 {launch.referenceIds.length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-[10px] normal-case tracking-normal text-muted-foreground">
                     {launch.referenceIds.map((id) => (
@@ -155,7 +245,9 @@ function LaunchTable({
                 )}
               </TableCell>
               <TableCell className="align-top text-accent whitespace-nowrap">{launch.vehicle}</TableCell>
-              <TableCell className="align-top text-foreground whitespace-nowrap">{formatUtc(launch.t0Utc)}</TableCell>
+              <TableCell className={`align-top text-foreground ${clock ? "whitespace-normal" : "whitespace-nowrap"}`}>
+                {clock ? <LaunchInstant clock={clock} /> : formatUtc(launch.t0Utc)}
+              </TableCell>
               <TableCell className="align-top">
                 <Badge
                   variant="outline"
@@ -258,7 +350,7 @@ function LaunchSection({
           {empty}
         </p>
       ) : (
-        <LaunchTable launches={launches} timeHeader={timeHeader} />
+        <LaunchTable launches={launches} timeHeader={timeHeader} liveClock={id === "upcoming"} />
       )}
     </section>
   );
@@ -409,7 +501,7 @@ export function LaunchesBoard({ state }: { state: BoardState }) {
           <LaunchSection
             id="upcoming"
             title="Upcoming"
-            timeHeader="NET (UTC)"
+            timeHeader="T-0"
             launches={sections.upcoming}
             empty="No upcoming launches on the board."
           />
