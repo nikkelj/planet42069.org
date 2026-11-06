@@ -522,6 +522,9 @@
       "name": "USSF-432",
       "vehicle": "Falcon 9 Block 5",
       "t0_utc": "2026-11-07T00:48:42Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-07T00:46:00Z",
+      "window_close_utc": "2026-11-07T04:46:00Z",
       "status": "Go",
       "phase": "upcoming",
       "files": {
@@ -688,6 +691,9 @@
       "name": "SatNet LEO group (Long March 12, Wenchang)",
       "vehicle": "Long March 12",
       "t0_utc": "2026-11-08T20:25:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-08T20:17:00Z",
+      "window_close_utc": "2026-11-08T20:47:00Z",
       "status": "Go",
       "phase": "upcoming",
       "files": {

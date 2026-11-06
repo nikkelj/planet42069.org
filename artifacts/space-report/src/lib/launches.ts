@@ -20,14 +20,23 @@ export interface LaunchMethodNotes {
   csvSim: string | null;
 }
 
+/** What the authoritative `t0_utc` instant means. Absent when the manifest does not say. */
+export type LaunchTimeKind = "net" | "target" | "window_open";
+
 export interface LaunchEntry {
   slug: string;
   name: string;
   vehicle: string;
   /** ISO-8601 UTC instant from `t0_utc`. Empty when the manifest omitted it. */
   t0Utc: string;
+  /** `t0_kind` from the manifest: net, target, or window_open. */
+  t0Kind: LaunchTimeKind | null;
+  /** Separate window-open instant, when the manifest publishes one besides T-0. */
+  windowOpenUtc: string | null;
+  /** Separate window-close instant, when the manifest publishes one. */
+  windowCloseUtc: string | null;
   status: string;
-  /** "upcoming" or "recent" in the published manifest. */
+  /** "upcoming", "recent", or "flown" in the published manifest. */
   phase: string;
   files: LaunchFiles;
   illustrative: boolean;
@@ -178,6 +187,9 @@ function parseLaunch(item: unknown): LaunchEntry | null {
     name: name ?? slug!,
     vehicle: asString(row.vehicle) ?? "—",
     t0Utc: asString(row.t0_utc) ?? "",
+    t0Kind: parseLaunchTimeKind(row.t0_kind),
+    windowOpenUtc: asString(row.window_open_utc),
+    windowCloseUtc: asString(row.window_close_utc),
     status: asString(row.status) ?? "—",
     phase: asString(row.phase) ?? "",
     files: parseFiles(row.files),
@@ -279,9 +291,10 @@ function compareByTime(a: LaunchEntry, b: LaunchEntry, direction: "asc" | "desc"
 
 /**
  * Split the manifest into the two boards. Upcoming is soonest NET first.
- * Recent is latest T-0 first. An unrecognized phase is filed by the clock
- * so a row is never dropped: a future instant joins Upcoming, everything
- * else joins Recent.
+ * Recent is latest T-0 first. `flown` is recent even when the client clock
+ * is still before that T-0, so a recorded flight never grows a countdown.
+ * An unrecognized phase is filed by the clock so a row is never dropped:
+ * a future instant joins Upcoming, everything else joins Recent.
  */
 export function partitionLaunches(launches: LaunchEntry[], nowMs = Date.now()): LaunchSections {
   const upcoming: LaunchEntry[] = [];
@@ -289,7 +302,7 @@ export function partitionLaunches(launches: LaunchEntry[], nowMs = Date.now()): 
   for (const launch of launches) {
     if (launch.phase === "upcoming") {
       upcoming.push(launch);
-    } else if (launch.phase === "recent") {
+    } else if (launch.phase === "recent" || launch.phase === "flown") {
       recent.push(launch);
     } else {
       const ms = timeMs(launch.t0Utc);
@@ -302,16 +315,188 @@ export function partitionLaunches(launches: LaunchEntry[], nowMs = Date.now()): 
   return { upcoming, recent };
 }
 
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
 /** `2026-10-23T07:11:00Z` → `2026-10-23 07:11:00 UTC`. */
 export function formatUtc(iso: string): string {
   const ms = timeMs(iso);
   if (ms == null) return "—";
   const d = new Date(ms);
-  const pad = (n: number) => String(n).padStart(2, "0");
   return (
     `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ` +
     `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} UTC`
   );
+}
+
+const PACIFIC_TZ = "America/Los_Angeles";
+
+/** `2026-11-07T00:48:42Z` → `Fri Nov 6, 4:48:42 pm PST`. */
+export function formatPacific(iso: string): string {
+  const ms = timeMs(iso);
+  if (ms == null) return "—";
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: PACIFIC_TZ,
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h12",
+    timeZoneName: "short",
+  }).formatToParts(new Date(ms));
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  const dayPeriod = get("dayPeriod").replace(/\./g, "").toLowerCase();
+  return `${get("weekday")} ${get("month")} ${get("day")}, ${get("hour")}:${get("minute")}:${get("second")} ${dayPeriod} ${get("timeZoneName")}`;
+}
+
+export function parseLaunchTimeKind(value: unknown): LaunchTimeKind | null {
+  const raw = asString(value);
+  if (!raw) return null;
+  const kind = raw.toLowerCase().replace(/[\s-]+/g, "_");
+  if (kind === "net" || kind === "no_earlier_than") return "net";
+  if (kind === "target" || kind === "targeted") return "target";
+  if (kind === "window_open" || kind === "window") return "window_open";
+  return null;
+}
+
+export function launchTimeKindLabel(kind: LaunchTimeKind | null): string {
+  if (kind === "net") return "NET";
+  if (kind === "target") return "Target";
+  if (kind === "window_open") return "Window opens";
+  return "T-0";
+}
+
+/** Whole seconds of a span. Days appear only once the span reaches 24h. */
+export function formatCountdownSpan(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const days = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const hms = `${pad(h)}:${pad(m)}:${pad(s)}`;
+  return days > 0 ? `${days}d ${hms}` : hms;
+}
+
+export interface CivilInstant {
+  utc: string;
+  pacific: string;
+}
+
+export interface LaunchClock {
+  mode: "countdown" | "elapsed" | "tbd" | "absolute";
+  label: string;
+  readout: string;
+  utc: string;
+  pacific: string;
+  windowOpen: CivilInstant | null;
+  windowClose: CivilInstant | null;
+  notice: string | null;
+  /** True when the readout must advance every second. */
+  ticking: boolean;
+}
+
+type ClockStatus = "success" | "tbd" | "slip" | "hold" | "closed" | "open";
+
+function clockStatus(status: string): ClockStatus {
+  const s = status.trim().toLowerCase();
+  if (s === "success" || s === "successful") return "success";
+  if (s === "tbd" || s === "tba") return "tbd";
+  if (s === "slip" || s === "slipped" || s === "scrub" || s === "scrubbed") return "slip";
+  if (s === "hold") return "hold";
+  if (s === "failure" || s === "failed" || s === "abort" || s === "aborted") return "closed";
+  return "open";
+}
+
+function civilInstant(iso: string | null): CivilInstant | null {
+  if (!iso || timeMs(iso) == null) return null;
+  return { utc: formatUtc(iso), pacific: formatPacific(iso) };
+}
+
+/** A window instant that is the same moment as T-0 is already the countdown label. */
+function distinctInstant(iso: string | null, t0Utc: string): CivilInstant | null {
+  const instant = civilInstant(iso);
+  if (!instant) return null;
+  const ms = timeMs(iso ?? "");
+  const t0 = timeMs(t0Utc);
+  if (ms != null && t0 != null && ms === t0) return null;
+  return instant;
+}
+
+function liveNotice(mode: "countdown" | "elapsed", status: ClockStatus): string | null {
+  if (mode === "countdown") {
+    if (status === "slip") return "Slipped. Counting the current published instant.";
+    if (status === "hold") return "Hold. Counting the current published instant.";
+    if (status === "closed") return "Not a confirmed liftoff. Counting the current published instant.";
+    return null;
+  }
+  if (status === "slip") return "T-0 passed. Slipped, not marked flown.";
+  if (status === "hold") return "T-0 passed. Hold, not marked flown.";
+  return "T-0 passed. Not marked flown.";
+}
+
+/**
+ * Clock for one launch. `t0_utc` is the only countdown target.
+ * Success and flown rows stay absolute times: a passed T-0 on an upcoming
+ * row counts up and says so, without calling the flight flown.
+ */
+export function launchClock(launch: LaunchEntry, nowMs: number): LaunchClock {
+  const utc = formatUtc(launch.t0Utc);
+  const pacific = formatPacific(launch.t0Utc);
+  const status = clockStatus(launch.status);
+  const ms = timeMs(launch.t0Utc);
+
+  if (launch.phase === "flown" || launch.phase === "recent" || status === "success") {
+    return {
+      mode: "absolute",
+      label: "T-0",
+      readout: utc,
+      utc,
+      pacific,
+      windowOpen: null,
+      windowClose: null,
+      notice: null,
+      ticking: false,
+    };
+  }
+
+  if (status === "tbd" || ms == null) {
+    return {
+      mode: "tbd",
+      label: "TBD",
+      readout: "TBD",
+      utc,
+      pacific,
+      windowOpen: null,
+      windowClose: null,
+      notice: ms == null
+        ? "No authoritative T-0 in the manifest."
+        : "Published instant is not a fixed liftoff.",
+      ticking: false,
+    };
+  }
+
+  const delta = ms - nowMs;
+  const mode = delta >= 0 ? "countdown" : "elapsed";
+  const seconds = delta > 0 ? Math.ceil(delta / 1000) : delta === 0 ? 0 : Math.floor(-delta / 1000);
+  return {
+    mode,
+    label: launchTimeKindLabel(launch.t0Kind),
+    readout: `${mode === "countdown" ? "T-" : "T+"} ${formatCountdownSpan(seconds)}`,
+    utc,
+    pacific,
+    windowOpen: distinctInstant(launch.windowOpenUtc, launch.t0Utc),
+    windowClose: distinctInstant(launch.windowCloseUtc, launch.t0Utc),
+    notice: liveNotice(mode, status),
+    ticking: true,
+  };
+}
+
+/** Whether an upcoming row needs a one-second timer. Independent of the current instant. */
+export function launchClockIsLive(launch: LaunchEntry): boolean {
+  return launchClock(launch, 0).ticking;
 }
 
 /** Vite's SPA fallback answers a missing static file with index.html and HTTP 200. */
