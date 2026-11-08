@@ -1,0 +1,127 @@
+{
+ "slug": "lm2d-jiuquan",
+ "title": "Long March 2D / unknown payload (Jiuquan LA-94, SLS-2 / 603)",
+ "vehicle": "lm2d",
+ "t0_utc": "2026-11-11T11:40:00Z",
+ "pad": {
+  "lat": 40.960482,
+  "lon": 100.298059,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.2.0/launch/d66590ab-b273-47ff-b85a-608b62851b4b/ (Launch Area 94, SLS-2 / 603)"
+ },
+ "azimuth_deg": {
+  "value": 192.23,
+  "src": "https://space-notices.com/notice/notam-ZLHW-A5728%2F26",
+  "note": "great-circle bearing from pad to centroid 35.554N 98.863E (614 km) of NOTAM ZLHW A5728/26 temporary danger area, SFC-UNL, valid 2026-11-11 11:32-12:05Z (= LL2 window exactly); only notice found for this window; area is INFERRED to be the stage-1 impact zone; implies i~99.2 deg (non-rotating) i.e. SSO-class"
+ },
+ "payload_kg": {
+  "fit": true,
+  "value": null,
+  "note": "FITTED to reach the assumed orbit at the published typical vernier cutoff; payload unknown (LL2 'Unknown Payload'); fitted value is NOT an estimate"
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 500,
+   "assumption": "orbit unpublished (LL2 orbit 'Unknown'); 500 km circular ASSUMED = LM-2D published 1.9 t / 500 km SSO reference orbit (huijiwiki); SSO class inferred from NOTAM bearing"
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 5
+ },
+ "header_notes": [
+  "T0 = LL2 NET 2026-11-11T11:40:00Z (Wed 11 Nov 3:40 am PST; window 11:32-12:05Z; NOTAM ZLHW A5728/26 window identical). Payload and orbit unknown. Event times = SAST TYPICAL LM-2D sequence (huijiwiki), not this flight's. UNTUNED: no altitude/range knots published."
+ ],
+ "post_cutoff": {
+  "deploy": {
+   "t_s": {
+    "value": 737.1,
+    "src": "https://sat.huijiwiki.com/wiki/\u957f\u5f81\u4e8c\u53f7\u4e01 typical sequence '\u661f\u7bad\u5206\u79bb 737.1 s'"
+   },
+   "src": "SAST typical LM-2D sequence via huijiwiki: payload separation T+737.1 s (TYPICAL, not flight-specific)",
+   "label": "Payload separation (typical sequence)"
+  },
+  "drag": {
+   "cd": {
+    "value": 2.2,
+    "assumption": "free-molecular Cd 2.2"
+   },
+   "area_m2": {
+    "value": 8.81,
+    "derived": "pi x (3.35 m / 2)^2, LM-2D S2 diameter"
+   }
+  },
+  "notes": [
+   "Typical-sequence residual-propellant venting at T+1152.1 s (deorbit of S2 after separation) is not modelled; it does not affect the payload orbit."
+  ]
+ },
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "kick_deg": {
+    "value": 1.050322,
+    "bounds": [
+     0.3,
+     15
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "payload_kg": {
+    "value": 620.579512,
+    "bounds": [
+     200,
+     4000
+    ],
+    "basis": "upper bound LM-2D LEO capability 4 t (huijiwiki); payload unknown"
+   },
+   "tan0": {
+    "value": 0.745729,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": 0.002823,
+    "bounds": [
+     -0.05,
+     0.05
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "vertical_rise_s": 17.0,
+   "cd": 0.66658
+  },
+  "knot_residuals": [],
+  "final": {
+   "alt_km": 500.00000008471125,
+   "fpa_deg": -1.0176898911005069e-08,
+   "sma_err_km": 6.291475147008896e-07,
+   "mass_kg": 5856.4
+  },
+  "cost": 3.22183831786408e-14,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "Stage 1",
+     "loaded_kg": 182000,
+     "burned_kg": 178742,
+     "residual_kg": 3258,
+     "dry_kg": 11000,
+     "flag": null
+    },
+    {
+     "name": "Stage 2",
+     "loaded_kg": 53000,
+     "burned_kg": 51764,
+     "residual_kg": 1236,
+     "dry_kg": 4000,
+     "flag": null
+    }
+   ],
+   "glow_kg": 251481
+  }
+ }
+}

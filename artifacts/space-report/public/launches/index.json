@@ -305,6 +305,21 @@
       "id": "hydropac-3207",
       "title": "HYDROPAC 3207/26 (USSF-627 / SX R-5 downrange debris hazard)",
       "url": "https://space-notices.com/notice/nav-warning-HYDROPAC%203207%2F26"
+    },
+    {
+      "id": "huiji-lm2d",
+      "title": "卫星百科 (huijiwiki): 长征二号丁 — stage data (World Launch Vehicles 2nd ed. 2007) and SAST typical flight sequence",
+      "url": "https://sat.huijiwiki.com/wiki/长征二号丁"
+    },
+    {
+      "id": "wp-lm2d",
+      "title": "Wikipedia: Long March 2D",
+      "url": "https://en.wikipedia.org/wiki/Long_March_2D"
+    },
+    {
+      "id": "notam-a5728",
+      "title": "NOTAM ZLHW A5728/26 temporary danger area, 2026-11-11 11:32-12:05Z (via Space Notices / FAA NOTAM search)",
+      "url": "https://space-notices.com/notice/notam-ZLHW-A5728%2F26"
     }
   ],
   "launches": [
@@ -792,6 +807,57 @@
         "Known sim ground-track azimuth residual (~F9 family; board-noted) still present"
       ],
       "note": "Pre-flight ILLUSTRATIVE. SpaceX ussf627: Mon Nov 9 window opens 7:03 pm PT (backup Tue Nov 10 6:49 pm PT); LL2 NET 2026-11-10T03:03:00Z Go, window to 07:03Z. SLC-4E; B1103 → OCISLY. SECO/orbit/deploy unpublished."
+    },
+    {
+      "slug": "lm2d-jiuquan",
+      "name": "Unknown payload (Long March 2D, Jiuquan)",
+      "vehicle": "Long March 2D",
+      "t0_utc": "2026-11-11T11:40:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-11T11:32:00Z",
+      "window_close_utc": "2026-11-11T12:05:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/lm2d-jiuquan/lm2d-jiuquan_2026-11-11_trajectory.csv",
+        "kml": "/launches/lm2d-jiuquan/lm2d-jiuquan_2026-11-11_trajectory.kml",
+        "csv_sim": "/launches/lm2d-jiuquan/lm2d-jiuquan_2026-11-11_trajectory_sim.csv",
+        "kml_sim": "/launches/lm2d-jiuquan/lm2d-jiuquan_2026-11-11_trajectory_sim.kml",
+        "track_lite": "/launches/lm2d-jiuquan/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://sat.huijiwiki.com/wiki/长征二号丁",
+        "https://en.wikipedia.org/wiki/Long_March_2D",
+        "https://en.wikipedia.org/wiki/YF-20",
+        "https://space-notices.com/notice/notam-ZLHW-A5728%2F26",
+        "https://ll.thespacedevs.com/2.2.0/launch/d66590ab-b273-47ff-b85a-608b62851b4b/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: SAST TYPICAL LM-2D sequence times (pitch-over 17.0 s, S1 cutoff 153.9 s, sep 155.1 s, fairing 185.1 s, S2 main cutoff 324.1 s, vernier cutoff 705.1 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; 500 km final altitude ASSUMED; NOTAM ZLHW A5728/26 azimuth 192.23 deg; ends at vernier cutoff; UNTUNED",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SAST typical sequence as hard events; configuration-2 stage data (World Launch Vehicles 2007 via huijiwiki), S1 vac via YF-20 ratio; verniers ASSUMED to run from S2 ignition to 705.1 s (huijiwiki 382 s vernier working time conflicts, see assumptions); 3.35 m fairing 860 kg ASSUMED type; Cd from LM-3B fit (UNTUNED); payload/orbit unknown, 500 km circular SSO-class ASSUMED; azimuth 192.23 deg from NOTAM ZLHW A5728/26 gives i=97.76 deg; payload separation at typical T+737.1 s into 499 x 502 km; fitted payload ~0.62 t (NOT an estimate; published 500 km SSO capability 1.9 t); sim track bearing at 627 km range 192.74 deg (+0.5 deg vs commanded), passes ~14 km from the NOTAM centroid; ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "huiji-lm2d",
+        "wp-lm2d",
+        "wp-yf20",
+        "notam-a5728",
+        "wp-lm3b",
+        "ll2",
+        "kml"
+      ],
+      "assumptions": [
+        "Orbit unpublished (LL2 orbit 'Unknown'): 500 km circular ASSUMED = LM-2D published 500 km SSO reference orbit; SSO class INFERRED from NOTAM bearing (i~99 deg non-rotating)",
+        "NOTAM ZLHW A5728/26 (11:32-12:05Z, SFC-UNL, 614 km SSW of pad) INFERRED to be the stage-1 impact area; it is the only notice found for this window; azimuth = great-circle bearing pad -> area centroid",
+        "Event times are the SAST TYPICAL LM-2D sequence (huijiwiki), not this flight's",
+        "Verniers modelled firing from S2 ignition (155.1 s) to typical vernier cutoff 705.1 s; huijiwiki lists vernier working time 382 s (~vernier-only after 324.1 s), but that model leaves ~4.1 t of the 53 t load unburned and cannot reach orbit at 705.1 s",
+        "Fairing type unknown (2.9-4.2 m options exist): 3.35 m, 860 kg ASSUMED; drag Cd transferred from LM-3B fit",
+        "Payload mass FITTED (~621 kg) so the assumed orbit is reached at typical vernier cutoff - NOT an estimate of the real payload",
+        "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed; surrogate knot altitudes taken from this sim",
+        "Deploy at typical-sequence payload separation T+737.1 s (not flight-specific); post-cutoff coast uses Cd 2.2 / 8.81 m2 ASSUMED"
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. LL2 NET 2026-11-11T11:40:00Z Go (Wed 11 Nov 3:40 am PST), window 11:32-12:05Z, Jiuquan LA-94 (SLS-2 / 603). Payload unknown; NOTAM ZLHW A5728/26 window matches LL2."
     }
   ],
   "globe": {
