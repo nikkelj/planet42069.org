@@ -2,7 +2,7 @@
  "slug": "ussf-627",
  "title": "Falcon 9 USSF-627 (SLC-4E)",
  "vehicle": "falcon9",
- "t0_utc": "2026-11-10T03:03:00Z",
+ "t0_utc": "2026-11-10T03:07:15Z",
  "pad": {
   "lat": 34.632,
   "lon": -120.611,
@@ -33,6 +33,7 @@
   "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude (~3 km difference at insertion latitude, accepted via 1 km-weight)"
  },
  "header_notes": [
+  "RETIMED 2026-11-09: SpaceX ussf627 page now 'four-hour launch window opens at 7:07 p.m. PT' (backup Tue Nov 10 6:49 p.m. PT); LL2 NET 2026-11-10T03:07:15Z Go (update 2026-11-09T13:52Z 'Now targeting Nov 10 at 03:07 UTC'), LL2 window_start still 03:03Z. Prior T0 03:03:00Z. ECEF geometry unchanged (Earth-fixed). ILLUSTRATIVE.",
   "Pre-flight ILLUSTRATIVE. SpaceX ussf627 page (checked 2026-11-07 ~8:15a PST): targeting Monday November 9, four-hour window opens 7:03 p.m. PT (= 2026-11-10T03:03:00Z); backup Tue Nov 10 6:49 p.m. PT. LL2 NET 2026-11-10T03:03:00Z, window to 07:03Z, status Go. Pad SLC-4E; booster B1103 7th flight -> OCISLY (SpaceX/LL2).",
   "Published timeline (SpaceX ussf627): Max-Q 1:07, MECO 2:26, stage sep 2:29, SES-1 2:36, fairing 2:58, entry burn 6:06-6:30, landing burn 7:52, landing 8:11. SECO, orbit, deploy NOT published (classified USSF mission).",
   "INFERRED/ASSUMED: SECO-1 time and parking orbit are a Starlink Group 15 analog (starlink-15-18), not USSF-627 sources (LL2: drop zones exact fits with Group 15). Azimuth 153.56 deg from FAA/ZLA CARF NOTAM 11/067-26 Area A. File ends 2 revs after cutoff (deploy unpublished)."

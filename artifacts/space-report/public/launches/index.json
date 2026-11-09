@@ -320,6 +320,11 @@
       "id": "notam-a5728",
       "title": "NOTAM ZLHW A5728/26 temporary danger area, 2026-11-11 11:32-12:05Z (via Space Notices / FAA NOTAM search)",
       "url": "https://space-notices.com/notice/notam-ZLHW-A5728%2F26"
+    },
+    {
+      "id": "xinhua-lm12-y11",
+      "title": "Xinhua: 我国成功发射卫星互联网低轨29组卫星 (LM-12, Hainan commercial site, 2026-11-09 04:24 BJT)",
+      "url": "https://www.news.cn/20261109/c59381337ab24106a800be4d3baac43f/c.html"
     }
   ],
   "launches": [
@@ -718,14 +723,14 @@
     },
     {
       "slug": "lm12-wenchang",
-      "name": "SatNet LEO group (Long March 12, Wenchang)",
+      "name": "SatNet LEO Group 29 (Long March 12, Wenchang)",
       "vehicle": "Long March 12",
-      "t0_utc": "2026-11-08T20:25:00Z",
-      "t0_kind": "net",
+      "t0_utc": "2026-11-08T20:24:00Z",
+      "t0_kind": "actual",
       "window_open_utc": "2026-11-08T20:17:00Z",
       "window_close_utc": "2026-11-08T20:47:00Z",
-      "status": "Go",
-      "phase": "upcoming",
+      "status": "Success",
+      "phase": "recent",
       "files": {
         "csv": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory.csv",
         "kml": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory.kml",
@@ -740,7 +745,9 @@
         "https://en.wikipedia.org/wiki/Long_March_12",
         "https://en.wikipedia.org/wiki/YF-115",
         "https://space-notices.com/entry/launch-long-march-12-satnet-leo-group-tbd",
-        "https://ll.thespacedevs.com/2.3.0/launches/"
+        "https://ll.thespacedevs.com/2.3.0/launches/",
+        "https://www.news.cn/20261109/c59381337ab24106a800be4d3baac43f/c.html",
+        "https://www.chinanews.com.cn/gn/2026/11-09/10728684.shtml"
       ],
       "method": {
         "csv": "event-surrogate parametric: CALT TYPICAL LM-12 Y7 sequence times (S1 cutoff 196.315 s, sep 198.315 s, fairing 209.015 s, S2 first cutoff 622.505 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; 300 km final altitude ASSUMED; NOTAM RPHI B5920/26 azimuth 141.27 deg; UNTUNED",
@@ -753,14 +760,16 @@
         "notam-b5920",
         "wp-lm3b",
         "ll2",
-        "kml"
-      ]
+        "kml",
+        "xinhua-lm12-y11"
+      ],
+      "note": "FLOWN: liftoff 2026-11-08T20:24Z (Sun Nov 8 12:24 pm PST; 04:24 BJT Nov 9) from Hainan Commercial LC-2; SatNet LEO Group 29 entered planned orbit, mission a complete success, Long March flight 676 (Xinhua, China News/CASC; LL2 Launch Successful). Pre-flight ILLUSTRATIVE files retimed -60 s from the 20:25Z NET; geometry unchanged. Orbit still unpublished."
     },
     {
       "slug": "ussf-627",
       "name": "USSF-627",
       "vehicle": "Falcon 9 Block 5",
-      "t0_utc": "2026-11-10T03:03:00Z",
+      "t0_utc": "2026-11-10T03:07:15Z",
       "t0_kind": "net",
       "window_open_utc": "2026-11-10T03:03:00Z",
       "window_close_utc": "2026-11-10T07:03:00Z",
@@ -806,7 +815,7 @@
         "Family Iridium NEXT-7 webcast telemetry used for surrogate loft altitudes/ranges (not this flight)",
         "Known sim ground-track azimuth residual (~F9 family; board-noted) still present"
       ],
-      "note": "Pre-flight ILLUSTRATIVE. SpaceX ussf627: Mon Nov 9 window opens 7:03 pm PT (backup Tue Nov 10 6:49 pm PT); LL2 NET 2026-11-10T03:03:00Z Go, window to 07:03Z. SLC-4E; B1103 → OCISLY. SECO/orbit/deploy unpublished."
+      "note": "Pre-flight ILLUSTRATIVE. RETIMED 2026-11-09: SpaceX ussf627 now says the four-hour window opens 7:07 pm PT Mon Nov 9 (backup Tue Nov 10 6:49 pm PT); LL2 NET 2026-11-10T03:07:15Z Go (LL2 window_start still 03:03Z, close 07:03Z). Files shifted +255 s from 03:03:00Z; geometry unchanged. SLC-4E; booster 7th flight → OCISLY. SECO/orbit/deploy unpublished."
     },
     {
       "slug": "lm2d-jiuquan",
