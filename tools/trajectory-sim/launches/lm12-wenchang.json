@@ -1,8 +1,8 @@
 {
  "slug": "lm12-wenchang",
- "title": "Long March 12 / SatNet LEO group (Hainan Commercial LC-2, Wenchang)",
+ "title": "Long March 12 / SatNet LEO Group 29 (Hainan Commercial LC-2, Wenchang)",
  "vehicle": "lm12",
- "t0_utc": "2026-11-08T20:25:00Z",
+ "t0_utc": "2026-11-08T20:24:00Z",
  "pad": {
   "lat": 19.59755,
   "lon": 110.936481,
@@ -28,6 +28,7 @@
   "sma_sigma_km": 5
  },
  "header_notes": [
+  "FLOWN / RETIMED 2026-11-09: liftoff 2026-11-08T20:24Z (Mon 9 Nov 04:24 BJT = Sun 8 Nov 12:24 pm PST); SatNet LEO Group 29 entered planned orbit, mission a complete success, Long March flight 676 (Xinhua news.cn 2026-11-09; China News/CASC; LL2 Launch Successful). Prior T0 = NET 20:25:00Z. ECEF geometry unchanged (Earth-fixed). ILLUSTRATIVE.",
   "T0 = LL2 NET 2026-11-08T20:25:00Z (Sun 8 Nov 12:25 pm PST; window 20:17-20:47Z), delayed per NOTAMs. Payload: SatNet LEO group, 9 satellites (LL2). Event times = CALT TYPICAL LM-12 Y7 sequence (huijiwiki), not this flight's. UNTUNED: no altitude/range knots exist to tune against."
  ],
  "post_cutoff": {
@@ -46,15 +47,15 @@
     "name": "S2 restart (2x YF-115B)",
     "t_ign_s": {
      "value": 1622.505,
-     "src": "https://sat.huijiwiki.com/wiki/长征十二号 typical sequence '二级发动机二次起动 1622.505 s'"
+     "src": "https://sat.huijiwiki.com/wiki/\u957f\u5f81\u5341\u4e8c\u53f7 typical sequence '\u4e8c\u7ea7\u53d1\u52a8\u673a\u4e8c\u6b21\u8d77\u52a8 1622.505 s'"
     },
     "duration_s": {
      "value": 18.0,
-     "src": "https://sat.huijiwiki.com/wiki/长征十二号 typical sequence second cutoff 1640.505 s"
+     "src": "https://sat.huijiwiki.com/wiki/\u957f\u5f81\u5341\u4e8c\u53f7 typical sequence second cutoff 1640.505 s"
     },
     "thrust_N": {
      "value": 360000.0,
-     "src": "https://sat.huijiwiki.com/wiki/长征十二号 2x YF-115B 180 kN"
+     "src": "https://sat.huijiwiki.com/wiki/\u957f\u5f81\u5341\u4e8c\u53f7 2x YF-115B 180 kN"
     },
     "isp_s": {
      "value": 341.5,
@@ -67,7 +68,7 @@
   "deploy": {
    "t_s": {
     "value": 1730.505,
-    "src": "https://sat.huijiwiki.com/wiki/长征十二号 typical sequence first satellite batch separation 1730.505 s (second batch 1780.505 s)"
+    "src": "https://sat.huijiwiki.com/wiki/\u957f\u5f81\u5341\u4e8c\u53f7 typical sequence first satellite batch separation 1730.505 s (second batch 1780.505 s)"
    },
    "src": "CALT typical LM-12 Y7 sequence via huijiwiki: first satellite batch separation T+1730.505 s (TYPICAL, not flight-specific)",
    "label": "Satellite separation, first batch (typical sequence)"
