@@ -325,6 +325,11 @@
       "id": "xinhua-lm12-y11",
       "title": "Xinhua: 我国成功发射卫星互联网低轨29组卫星 (LM-12, Hainan commercial site, 2026-11-09 04:24 BJT)",
       "url": "https://www.news.cn/20261109/c59381337ab24106a800be4d3baac43f/c.html"
+    },
+    {
+      "id": "zla-carf-11-071",
+      "title": "FAA/ZLA CARF NOTAM 11/071-26 \"SX R-5 26-72\" (USSF-627, Nov 10 PT window; Area A polygon identical to 11/067-26)",
+      "url": "https://space-notices.com/entry/launch-f9-ussf-627"
     }
   ],
   "launches": [
@@ -769,17 +774,17 @@
       "slug": "ussf-627",
       "name": "USSF-627",
       "vehicle": "Falcon 9 Block 5",
-      "t0_utc": "2026-11-10T03:07:15Z",
+      "t0_utc": "2026-11-11T02:49:00Z",
       "t0_kind": "net",
-      "window_open_utc": "2026-11-10T03:03:00Z",
-      "window_close_utc": "2026-11-10T07:03:00Z",
+      "window_open_utc": "2026-11-11T02:49:00Z",
+      "window_close_utc": "2026-11-11T06:49:00Z",
       "status": "Go",
       "phase": "upcoming",
       "files": {
-        "csv": "/launches/ussf-627/ussf-627_2026-11-10_trajectory.csv",
-        "kml": "/launches/ussf-627/ussf-627_2026-11-10_trajectory.kml",
-        "csv_sim": "/launches/ussf-627/ussf-627_2026-11-10_trajectory_sim.csv",
-        "kml_sim": "/launches/ussf-627/ussf-627_2026-11-10_trajectory_sim.kml",
+        "csv": "/launches/ussf-627/ussf-627_2026-11-11_trajectory.csv",
+        "kml": "/launches/ussf-627/ussf-627_2026-11-11_trajectory.kml",
+        "csv_sim": "/launches/ussf-627/ussf-627_2026-11-11_trajectory_sim.csv",
+        "kml_sim": "/launches/ussf-627/ussf-627_2026-11-11_trajectory_sim.kml",
         "track_lite": "/launches/ussf-627/track_lite.json"
       },
       "illustrative": true,
@@ -793,12 +798,13 @@
         "https://www.spacex.com/launches/sl-15-18"
       ],
       "method": {
-        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX ussf627 timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:58; ZLA CARF 11/067-26 Area A azimuth 153.56 deg, valid for the Nov 9 PT window); ends at T+508 s (telemetry end) because SECO is unpublished; T0 LL2/SpaceX NET 2026-11-10T03:03:00Z (Mon Nov 9 7:03 pm PST; window to 07:03Z; backup Tue Nov 10 6:49 pm PT)",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf627 MECO 146 s, sep 149 s, SES-1 156 s, fairing 178 s as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are an ASSUMED Starlink Group 15 analog (LL2 notes drop zones match Group 15), not USSF-627 sources; azimuth 153.56 deg from ZLA CARF 11/067-26 Area A (inclination unpublished) gives i≈68.27 deg; payload fitted ~16.87 t (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; ILLUSTRATIVE"
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX ussf627 timeline MECO 2:25 / sep 2:29 / SES-1 2:36 / fairing 2:56 (revised 2026-11-10; surrogate knots still at the earlier 2:26/2:58 marks, 1-2 s); ZLA CARF 11/067-26 Area A azimuth 153.56 deg, polygon re-issued unchanged as 11/071-26 for the Nov 10 PT window); ends at T+508 s (telemetry end) because SECO is unpublished; T0 LL2/SpaceX NET 2026-11-11T02:49:00Z (Tue Nov 10 6:49 pm PST; window to 06:49Z; backup Wed Nov 11 6:35 pm PT)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf627 MECO 145 s, sep 149 s, SES-1 156 s, fairing 176 s (revised timeline, checked 2026-11-10) as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are an ASSUMED Starlink Group 15 analog (LL2 notes drop zones match Group 15), not USSF-627 sources; azimuth 153.56 deg from ZLA CARF 11/067-26 / 11/071-26 Area A (inclination unpublished) gives i≈68.23 deg; payload fitted ~16.42 t (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; sim ground track runs ~+5° east of the commanded azimuth (pad→insertion bearing 158.8° vs 153.56°, known sim bug); ILLUSTRATIVE"
       },
       "reference_ids": [
         "spacex-ussf627",
         "zla-carf-11-067",
+        "zla-carf-11-071",
         "hydropac-3207",
         "shahar603-tel",
         "spacex-sl-15-18",
@@ -810,12 +816,12 @@
       "assumptions": [
         "SECO-1 time T+519 s and parking orbit 177×266 km ASSUMED from Starlink Group 15-18 analog (LL2: drop zones match Group 15; possible Starshield); not USSF-627 sources",
         "Azimuth 153.56° from ZLA CARF 11/067-26 Area A far-edge midpoint (inclination unpublished/classified; used as launch-plane azimuth without tuning)",
-        "Payload mass FITTED (~16.87 t) within F9 bounds so assumed SECO delivers assumed orbit — NOT an estimate of the real payload",
+        "Payload mass FITTED (~16.42 t) within F9 bounds so assumed SECO delivers assumed orbit — NOT an estimate of the real payload",
         "Deploy time unpublished (classified) → deploy.t_s null; coast +2 revs on inferred insertion orbit",
         "Family Iridium NEXT-7 webcast telemetry used for surrogate loft altitudes/ranges (not this flight)",
-        "Known sim ground-track azimuth residual (~F9 family; board-noted) still present"
+        "Known sim ground-track azimuth residual still present: pad→insertion bearing 158.8° vs commanded 153.56° (+5.2°)"
       ],
-      "note": "Pre-flight ILLUSTRATIVE. RETIMED 2026-11-09: SpaceX ussf627 now says the four-hour window opens 7:07 pm PT Mon Nov 9 (backup Tue Nov 10 6:49 pm PT); LL2 NET 2026-11-10T03:07:15Z Go (LL2 window_start still 03:03Z, close 07:03Z). Files shifted +255 s from 03:03:00Z; geometry unchanged. SLC-4E; booster 7th flight → OCISLY. SECO/orbit/deploy unpublished."
+      "note": "Pre-flight ILLUSTRATIVE. RETIMED 2026-11-10: did not fly Mon Nov 9 (LL2 moved it to Nov 10 04:59Z, then Nov 11 02:49Z; no attempt or reason published). SpaceX ussf627 now targets Tue Nov 10, four-hour window opens 6:49 pm PT (backup Wed Nov 11 6:35 pm PT); LL2 NET 2026-11-11T02:49:00Z Go, window to 06:49Z. Surrogate shifted +85305 s from 03:07:15Z; 3DOF sim re-run for the revised SpaceX timeline (MECO 2:25, fairing 2:56). Files renamed to the new UTC date 2026-11-11. SLC-4E; booster → OCISLY. SECO/orbit/deploy unpublished."
     },
     {
       "slug": "lm2d-jiuquan",
@@ -866,7 +872,7 @@
         "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed; surrogate knot altitudes taken from this sim",
         "Deploy at typical-sequence payload separation T+737.1 s (not flight-specific); post-cutoff coast uses Cd 2.2 / 8.81 m2 ASSUMED"
       ],
-      "note": "Pre-flight ILLUSTRATIVE. LL2 NET 2026-11-11T11:40:00Z Go (Wed 11 Nov 3:40 am PST), window 11:32-12:05Z, Jiuquan LA-94 (SLS-2 / 603). Payload unknown; NOTAM ZLHW A5728/26 window matches LL2."
+      "note": "Pre-flight ILLUSTRATIVE. LL2 NET 2026-11-11T11:40:00Z Go (Wed 11 Nov 3:40 am PST), window 11:32-12:05Z, Jiuquan LA-94 (SLS-2 / 603). Payload unknown; NOTAM ZLHW A5728/26 window matches LL2. Rechecked 2026-11-10: LL2 NET 2026-11-11T11:40Z (window 11:32-12:05Z) Go, unchanged; no retime."
     }
   ],
   "globe": {

@@ -2,7 +2,7 @@
  "slug": "ussf-627",
  "title": "Falcon 9 USSF-627 (SLC-4E)",
  "vehicle": "falcon9",
- "t0_utc": "2026-11-10T03:07:15Z",
+ "t0_utc": "2026-11-11T02:49:00Z",
  "pad": {
   "lat": 34.632,
   "lon": -120.611,
@@ -11,8 +11,8 @@
  },
  "azimuth_deg": {
   "value": 153.56,
-  "derived": "great-circle bearing from LL2 pad to far-edge midpoint (32.733N 119.492W) of FAA/ZLA CARF NOTAM 11/067-26 Area A 'SX R-5 26-72' (expires 2026-11-10T07:25Z, i.e. the Nov 9 PT window). Polygon essentially identical to USSF-432's 11/032 Area A. ZLA 11/068-26 Area B far-edge mid bearing ~154.2 deg consistent. Inclination NOT published (classified); used as launch-plane azimuth without tuning. LL2 notes drop zones match Starlink Group 15.",
-  "src": "https://space-notices.com/notice/notam-ZLA-11%2F067-26 (also 11/068-26 Area B; HYDROPAC 3207/26 downrange debris; entry https://space-notices.com/entry/launch-f9-ussf-627)"
+  "derived": "great-circle bearing from LL2 pad to far-edge midpoint (32.733N 119.492W) of FAA/ZLA CARF NOTAM 11/067-26 Area A 'SX R-5 26-72' (expires 2026-11-10T07:25Z, i.e. the Nov 9 PT window). Polygon essentially identical to USSF-432's 11/032 Area A. ZLA 11/068-26 Area B far-edge mid bearing ~154.2 deg consistent. Inclination NOT published (classified); used as launch-plane azimuth without tuning. LL2 notes drop zones match Starlink Group 15. RECHECKED 2026-11-10: replacement ZLA NOTAMs 11/071-26 (Area A, expires 2026-11-11T07:11Z) and 11/072-26 (Area B) carry the identical polygons, so azimuth unchanged; backup 11/080-26/11/081-26 also identical.",
+  "src": "https://space-notices.com/notice/notam-ZLA-11%2F067-26 (also 11/068-26 Area B; HYDROPAC 3207/26 downrange debris; entry https://space-notices.com/entry/launch-f9-ussf-627); Nov 10 window: ZLA 11/071-26, 11/072-26 (space-notices entry launch-f9-ussf-627)"
  },
  "payload_kg": {
   "fit": true,
@@ -33,10 +33,9 @@
   "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude (~3 km difference at insertion latitude, accepted via 1 km-weight)"
  },
  "header_notes": [
-  "RETIMED 2026-11-09: SpaceX ussf627 page now 'four-hour launch window opens at 7:07 p.m. PT' (backup Tue Nov 10 6:49 p.m. PT); LL2 NET 2026-11-10T03:07:15Z Go (update 2026-11-09T13:52Z 'Now targeting Nov 10 at 03:07 UTC'), LL2 window_start still 03:03Z. Prior T0 03:03:00Z. ECEF geometry unchanged (Earth-fixed). ILLUSTRATIVE.",
-  "Pre-flight ILLUSTRATIVE. SpaceX ussf627 page (checked 2026-11-07 ~8:15a PST): targeting Monday November 9, four-hour window opens 7:03 p.m. PT (= 2026-11-10T03:03:00Z); backup Tue Nov 10 6:49 p.m. PT. LL2 NET 2026-11-10T03:03:00Z, window to 07:03Z, status Go. Pad SLC-4E; booster B1103 7th flight -> OCISLY (SpaceX/LL2).",
-  "Published timeline (SpaceX ussf627): Max-Q 1:07, MECO 2:26, stage sep 2:29, SES-1 2:36, fairing 2:58, entry burn 6:06-6:30, landing burn 7:52, landing 8:11. SECO, orbit, deploy NOT published (classified USSF mission).",
-  "INFERRED/ASSUMED: SECO-1 time and parking orbit are a Starlink Group 15 analog (starlink-15-18), not USSF-627 sources (LL2: drop zones exact fits with Group 15). Azimuth 153.56 deg from FAA/ZLA CARF NOTAM 11/067-26 Area A. File ends 2 revs after cutoff (deploy unpublished)."
+  "RETIMED 2026-11-10: SpaceX ussf627 page now 'targeting Tuesday, November 10 ... four-hour launch window opens at 6:49 p.m. PT' (backup Wed Nov 11 6:35 p.m. PT); LL2 NET 2026-11-11T02:49:00Z Go, window to 06:49Z (LL2 updates 2026-11-09T16:35Z 'Nov 10 at 04:59 UTC', then 21:11Z 'Nov 11 at 02:49 UTC'). Did not fly Mon Nov 9; no attempt reported, reason unpublished. Prior T0 2026-11-10T03:07:15Z. SpaceX timeline revised: MECO 2:25 (was 2:26), fairing 2:56 (was 2:58); sim re-run. ILLUSTRATIVE.",
+  "Published timeline (SpaceX ussf627, checked 2026-11-10): Max-Q 1:07, MECO 2:25, stage sep 2:29, SES-1 2:36, fairing 2:56, entry burn 6:03-6:26, landing burn 8:00, landing 8:22. SECO, orbit, deploy NOT published (classified USSF mission).",
+  "INFERRED/ASSUMED: SECO-1 time and parking orbit are a Starlink Group 15 analog (starlink-15-18), not USSF-627 sources (LL2: drop zones exact fits with Group 15). Azimuth 153.56 deg from FAA/ZLA CARF NOTAM 11/067-26 Area A (identical polygon re-issued as 11/071-26 for the Nov 10 PT window). File ends 2 revs after cutoff (deploy unpublished)."
  ],
  "final_cutoff_s": {
   "value": 519,
@@ -88,24 +87,24 @@
   }
  },
  "fairing_jettison_s": {
-  "value": 178,
-  "src": "https://www.spacex.com/launches/ussf627 fairing deploy T+00:02:58"
+  "value": 176,
+  "src": "https://www.spacex.com/launches/ussf627 fairing separation T+00:02:56 (timeline revised, checked 2026-11-10)"
  },
  "stage_event_overrides": {
   "0": {
    "cutoff_s": {
-    "value": 146,
-    "src": "https://www.spacex.com/launches/ussf627 MECO T+00:02:26"
+    "value": 145,
+    "src": "https://www.spacex.com/launches/ussf627 MECO T+00:02:25 (timeline revised, checked 2026-11-10)"
    },
    "separation_s": {
     "value": 149,
-    "src": "https://www.spacex.com/launches/ussf627 stage separation T+00:02:29"
+    "src": "https://www.spacex.com/launches/ussf627 stage separation T+00:02:29 (checked 2026-11-10)"
    }
   },
   "1": {
    "ignition_s": {
     "value": 156,
-    "src": "https://www.spacex.com/launches/ussf627 SES-1 T+00:02:36"
+    "src": "https://www.spacex.com/launches/ussf627 SES-1 T+00:02:36 (checked 2026-11-10)"
    }
   }
  },
@@ -114,7 +113,7 @@
   "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
   "params": {
    "vertical_rise_s": {
-    "value": 9.895913,
+    "value": 9.933613,
     "bounds": [
      4,
      30
@@ -122,7 +121,7 @@
     "basis": "ASSUMPTION bound (F9 pitch-over time unpublished)"
    },
    "kick_deg": {
-    "value": 3.657169,
+    "value": 3.679031,
     "bounds": [
      0.2,
      10
@@ -130,7 +129,7 @@
     "basis": "ASSUMPTION bound"
    },
    "payload_kg": {
-    "value": 16869.001316,
+    "value": 16417.984858,
     "bounds": [
      13000,
      21600
@@ -138,7 +137,7 @@
     "basis": "27 V2 Mini Optimized: ~575 kg each community-reported (spacex.com.pl) = 15.5 t; MaxQ lists 800 kg each = 21.6 t (upper bound). Mass not published by SpaceX"
    },
    "tan0": {
-    "value": 0.5564,
+    "value": 0.561655,
     "bounds": [
      -2,
      5
@@ -146,7 +145,7 @@
     "basis": "guidance law"
    },
    "tan_rate": {
-    "value": 0.001378,
+    "value": 0.001392,
     "bounds": [
      -0.05,
      0.05
@@ -161,45 +160,45 @@
    {
     "event": "MECO (F9 family telemetry, Iridium NEXT-7)",
     "t_pub": 146,
-    "t_sim": 146.0,
+    "t_sim": 145.0,
     "alt_pub": 63.98,
-    "alt_sim": 66.3,
+    "alt_sim": 65.93,
     "rng_pub": 58.6,
-    "rng_sim": 85.9
+    "rng_sim": 83.4
    },
    {
     "event": "SES-1 (F9 family telemetry)",
     "t_pub": 156,
     "t_sim": 156.0,
     "alt_pub": 73.78,
-    "alt_sim": 76.26,
+    "alt_sim": 76.91,
     "rng_pub": 74.8,
-    "rng_sim": 107.8
+    "rng_sim": 106.9
    },
    {
     "event": "Fairing sep (F9 family telemetry)",
     "t_pub": 176,
-    "t_sim": 178.0,
+    "t_sim": 176.0,
     "alt_pub": 91.15,
-    "alt_sim": 96.01,
+    "alt_sim": 94.9,
     "rng_pub": 108.7,
-    "rng_sim": 157.3
+    "rng_sim": 150.8
    }
   ],
   "final": {
-   "alt_km": 177.2964803304579,
-   "fpa_deg": -0.0002602546598940025,
-   "sma_err_km": -0.01606328584719449,
-   "mass_kg": 24023.0
+   "alt_km": 177.2965481355451,
+   "fpa_deg": 8.608935111036463e-05,
+   "sma_err_km": -0.0006703331246972085,
+   "mass_kg": 23572.0
   },
-  "cost": 22.934213105289587,
+  "cost": 18.62607971834992,
   "mass_budget": {
    "stages": [
     {
      "name": "Stage 1 (9x Merlin 1D)",
      "loaded_kg": 410900,
-     "burned_kg": 392572,
-     "residual_kg": 18328,
+     "burned_kg": 389883,
+     "residual_kg": 21017,
      "dry_kg": 22200,
      "flag": null
     },
@@ -212,7 +211,7 @@
      "flag": null
     }
    ],
-   "glow_kg": 563369
+   "glow_kg": 562918
   }
  }
 }
