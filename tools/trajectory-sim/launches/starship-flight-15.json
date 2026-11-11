@@ -17,25 +17,35 @@
  "payload_kg": {
   "fit": true,
   "value": null,
-  "note": "FITTED within 20\u201380 t so the published 489 s ship ascent cutoff delivers the ASSUMED pre-insertion transfer. 26 Starlink V3 mass unpublished; result is NOT an estimate of the real stack."
+  "note": "FITTED within 20\u201380 t so the published 489 s ship ascent cutoff delivers the ASSUMED passively safe \u221240 \u00d7 275 km ellipse 1081 s before apogee. 26 Starlink V3 mass unpublished; result is NOT an estimate of the real stack."
  },
  "target": {
   "insertion_alt_km": {
-   "value": 180,
-   "assumption": "SpaceX publishes ~275 km as the orbital altitude after the T+26:10 insertion burn, not the T+08:09 ascent cutoff. Flight 14 (same 26-sat profile) used a passively safe trajectory, then a short insertion burn. 180 \u00d7 275 km is a labelled pre-insertion transfer stand-in (apogee = the published ~275 km; perigee ASSUMED 180 km) so the 20 s insertion burn can raise perigee. Tuned if needed."
+   "value": 162.59,
+   "derived": "Two-body equatorial-radius altitude on a \u221240 \u00d7 275 km ellipse, 1081 s before apogee (the published interval from Starship engine cutoff T+489 s to insertion start T+1570 s). Mid-arc, not perigee. See sma_km and fpa_deg."
   },
   "apoapsis_alt_km": {
    "value": 275,
    "src": "https://www.spacex.com/launches/starship-flight-15",
-   "note": "SpaceX: 'orbit the Earth at an altitude of ~275 km and complete approximately 14 orbits ... more than 22-hour flight'."
+   "note": "SpaceX: 'orbit the Earth at an altitude of ~275 km and complete approximately 14 orbits'. The ~275 km figure is the post-insertion orbital altitude. Apogee of the pre-insertion passively safe ellipse is set to the same 275 km so the 20 s insertion can circularize at that altitude."
+  },
+  "fpa_deg": {
+   "value": 1.331,
+   "derived": "Two-body flight-path angle 1081 s before apogee on the \u221240 \u00d7 275 km ellipse."
+  },
+  "sma_km": {
+   "value": 6495.637,
+   "derived": "Absolute SMA of the \u221240 \u00d7 275 km passively safe stand-in (A=6378.137). Overrides the default (hp+ha)/2+R construction, which would be wrong because insertion_alt_km is a mid-arc altitude, not perigee."
   },
   "cutoff": "energy",
   "sma_sigma_km": 8,
-  "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA"
+  "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA and the 162.59 km cutoff altitude target",
+  "note": "SpaceX F15 official: the flight profile is designed with the opportunity to insert into a passively safe suborbital trajectory, then raise to orbital altitude (~275 km), 'similar to Starship\u2019s first orbital mission'. SpaceX F14 official: after ascent the ship 'achieved its planned, passively safe suborbital trajectory', then 'reignited a single Raptor sea-level engine to perform an orbit insertion burn'. Pre-insertion perigee is unpublished; \u221240 km is a labelled stand-in in that passively-safe class (not a first-hand F15 element). The previous 180 \u00d7 275 km already-orbital target made a 20 s / 1\u00d7250 tf insertion ~2\u00d7 too large in \u0394v."
  },
  "header_notes": [
   "PRE-FLIGHT ILLUSTRATIVE. Starship Flight 15 / Starlink Group 31-2, 26 V3 sats, OLP-2 Starbase, T0 2026-11-13T22:45:00Z (Fri Nov 13 2:45 p.m. PST), 75-minute window, LL2 TBC pending regulatory approval. First attempt to catch both Super Heavy V3 and the ship at the launch site.",
-  "Ascent event times are SpaceX's published F15 timeline (MECO 139 s, hot-stage 141 s, ship cutoff 489 s). The 20 s orbital insertion burn (26:10\u201326:30) is flown post-cutoff; payload deploy start 35:01, complete 1:17:40. Ship is then scheduled to fly ~14 orbits and attempt RTLS catch (deorbit T+21:35:57) \u2014 deorbit/catch are not in this file, which ends at deploy complete."
+  "Ascent event times are SpaceX's published F15 timeline (MECO 139 s, hot-stage 141 s, ship cutoff 489 s). The 20 s orbital insertion burn (26:10\u201326:30) is a single sea-level Raptor 3 at 250 tf (F14 official analog: 'reignited a single Raptor sea-level engine'), flown open-loop for the published 20 s; payload deploy start 35:01, complete 1:17:40. Ship is then scheduled to fly ~14 orbits and attempt RTLS catch (deorbit T+21:35:57) \u2014 deorbit/catch are not in this file, which ends at deploy complete.",
+  "Ascent target is a passively safe suborbital ellipse (\u221240 \u00d7 275 km stand-in) at T+489 s, 1081 s before apogee, so the published insertion epoch is at first apogee. SpaceX F15 official text uses that architecture. 180 \u00d7 275 km (previous file) was the wrong energy class."
  ],
  "final_cutoff_s": {
   "value": 489,
@@ -65,21 +75,20 @@
      "src": "https://www.spacex.com/launches/starship-flight-15 Starship orbital insertion burn start T+00:26:10"
     },
     "duration_s": {
-     "value": 12.8,
-     "derived": "SpaceX publishes a 20 s insertion (T+00:26:10\u201326:30). Under the constant 1,600 tf / 350 s Isp ascent assumption the 348 s ship burn leaves only 9143 kg residual, enough for 12.80 s at 1\u00d7250 tf (mdot 714.3 kg/s). The burn is flown for this residual-limited duration, not the published 20 s. 1,600 tf is SpaceX \u201cinitial thrust\u201d; a constant-thrust model slightly over-burns the 1,600 t load (a 0.24% lower mean mdot would have left a 20 s reserve). Do not invent extra propellant.",
-     "published_s": 20,
-     "src_published": "https://www.spacex.com/launches/starship-flight-15 Starship orbital insertion burn T+00:26:10\u201326:30"
+     "value": 20,
+     "src": "https://www.spacex.com/launches/starship-flight-15 shutdown T+00:26:30 (20 s). F14 official insertion was T+00:25:17\u201325:36 (19 s) on a single sea-level Raptor."
     },
     "thrust_N": {
-     "value": 2451663,
-     "assumption": "F15 does not state how many engines restart. Flight 14 (same 26-sat profile) used a single sea-level Raptor for insertion. 1 \u00d7 Raptor 3 SL at 250 tf (2,451,663 N) is the F14 analog, labelled ASSUMPTION."
+     "value": 1028650.0,
+     "derived": "Open-loop thrust that circularizes the post-coast state at the published insertion epoch. At T+1570 s the stage is at osculating \u221231.8 \u00d7 269.3 km, v=7.6534 km/s; circular speed at that radius is 7.7432 km/s (\u0394v 89.8 m/s). With m0=231,400.8 kg, Isp 350 s and the published 20 s, the rocket equation gives 1,028,650 N = 104.9 tf = 42.0% of the official 250 tf Raptor 3 sea-level rating. Labelled throttle of a single sea-level Raptor (F14 official analog), inside the commonly cited 40\u2013100% range. Not a published F15 throttle setting."
     },
     "isp_s": {
      "value": 350,
-     "assumption": "same Raptor 3 350 s ASSUMPTION"
+     "src": "https://web.archive.org/web/20190925065050/https://twitter.com/elonmusk/status/1171118891671490560",
+     "note": "Sea-level Raptor vacuum Isp ~350 s (Musk, 9 Sep 2019); insertion is a single sea-level engine in near-vacuum."
     },
     "target_perigee_km": null,
-    "basis": "Open-loop: ASSUMED single Raptor 3 SL (2,451,663 N, F14 analog) for the residual-limited duration 12.80 s (published 20 s cannot be completed: constant 1,600 tf / 350 s leaves only 9143 kg). Not solved to a perigee target. The impulse still exceeds a 180\u00d7275 km circularization (~26 m/s); residuals are reported, not hidden."
+    "basis": "Open-loop: published 20 s insertion on a single sea-level Raptor 3 (F14 official analog), throttled to 1,028,650 N (42% of 250 tf) so the burn supplies the 89.8 m/s needed to circularize the post-coast \u221231.8 \u00d7 269.3 km ellipse. Full 250 tf \u00d7 20 s would be ~200 m/s and would loft apogee. The ~6 km shortfall vs SpaceX\u2019s ~275 km is J2/drag on the 18-minute coast from the \u221240 \u00d7 275 km ascent target."
    }
   ],
   "deploy": {
@@ -91,9 +100,8 @@
    "label": "Starlink V3 deploy complete (26 sats)"
   },
   "notes": [
-   "SpaceX target altitude ~275 km after the insertion burn. A 20 s / 1\u00d7250 tf burn is ~236 m/s at this cutoff mass, vs ~26 m/s to circularize a 180\u00d7275 km transfer; the residual-limited ~13 s burn is still ~150 m/s. The resulting orbit is not expected to be 275 km circular. Residuals are reported, not hidden.",
-   "Ship residual propellant after a constant 1,600 tf / 350 s, 348 s ascent is 9.14 t, short of the 14.3 t a published 20 s insertion would need. Insertion is flown residual-limited. 1,600 tf is published as initial thrust (SpaceX via Wikipedia).",
-   "Deorbit burn T+21:35:57 and ship catch T+22:32:34 (SpaceX F15 timeline) are not modelled; file ends at deploy complete T+01:17:40."
+   "SpaceX F15 official: passively safe suborbital opportunity, then raise to ~275 km. Insertion is the published 20 s single-SL-Raptor burn with thrust solved to a 275 km perigee (labelled throttle). Residuals vs 275 km circular are reported, not hidden.",
+   "Deorbit burn T+21:35:57 and ship catch T+22:32:34 (SpaceX F15 timeline) are not modelled; file ends at deploy complete T+01:17:40. Leftover ship propellant after insertion stands in for those unpublished later burns."
   ]
  },
  "fitted": {
@@ -101,7 +109,7 @@
   "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
   "params": {
    "vertical_rise_s": {
-    "value": 12.226442,
+    "value": 5.805387,
     "bounds": [
      3,
      20
@@ -109,7 +117,7 @@
     "basis": "ASSUMPTION bound (pitch-over unpublished)"
    },
    "kick_deg": {
-    "value": 0.511769,
+    "value": 0.416743,
     "bounds": [
      0.2,
      12
@@ -117,15 +125,15 @@
     "basis": "ASSUMPTION bound"
    },
    "payload_kg": {
-    "value": 78898.222785,
+    "value": 51409.586076,
     "bounds": [
      20000,
      80000
     ],
-    "basis": "26 Starlink V3 satellites, mass unpublished by SpaceX. NSF unofficial 44\u201352 t is NOT used as a source. Fitted payload is NOT an estimate of the real stack."
+    "basis": "26 Starlink V3 satellites, mass unpublished by SpaceX. Fitted payload is a steering parameter, NOT an estimate of the real stack."
    },
    "tan0": {
-    "value": 0.032386,
+    "value": -0.320779,
     "bounds": [
      -2,
      5
@@ -133,7 +141,7 @@
     "basis": "guidance law"
    },
    "tan_rate": {
-    "value": -0.000486,
+    "value": -0.002017,
     "bounds": [
      -0.05,
      0.05
@@ -146,32 +154,32 @@
   },
   "knot_residuals": [],
   "final": {
-   "alt_km": 180.3317756788973,
-   "fpa_deg": -0.035134648695361995,
-   "sma_err_km": -15.872539093318395,
-   "mass_kg": 208041.1
+   "alt_km": 162.59000002933294,
+   "fpa_deg": 1.3309999969936814,
+   "sma_err_km": -8.665956556797027e-08,
+   "mass_kg": 231400.8
   },
-  "cost": 2.270187955756618,
+  "cost": 2.2964717192007018e-15,
   "mass_budget": {
    "stages": [
     {
      "name": "Super Heavy V3 (33\u00d7 Raptor 3)",
      "loaded_kg": 3650000,
-     "burned_kg": 3272182,
-     "residual_kg": 377818,
+     "burned_kg": 3446803,
+     "residual_kg": 203197,
      "dry_kg": 275000,
      "flag": null
     },
     {
-     "name": "Starship V3 (6\u00d7 Raptor 3 on ascent)",
+     "name": "Starship V3 (3\u00d7 Raptor 3 SL + 3\u00d7 RVac)",
      "loaded_kg": 1600000,
-     "burned_kg": 1590857,
-     "residual_kg": 9143,
+     "burned_kg": 1540009,
+     "residual_kg": 59991,
      "dry_kg": 120000,
      "flag": null
     }
    ],
-   "glow_kg": 5723898
+   "glow_kg": 5696410
   }
  }
 }
