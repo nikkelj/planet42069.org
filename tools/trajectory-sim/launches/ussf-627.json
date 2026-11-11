@@ -2,7 +2,7 @@
  "slug": "ussf-627",
  "title": "Falcon 9 USSF-627 (SLC-4E)",
  "vehicle": "falcon9",
- "t0_utc": "2026-11-11T02:49:00Z",
+ "t0_utc": "2026-11-12T02:35:00Z",
  "pad": {
   "lat": 34.632,
   "lon": -120.611,
@@ -33,9 +33,9 @@
   "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude (~3 km difference at insertion latitude, accepted via 1 km-weight)"
  },
  "header_notes": [
-  "RETIMED 2026-11-10: SpaceX ussf627 page now 'targeting Tuesday, November 10 ... four-hour launch window opens at 6:49 p.m. PT' (backup Wed Nov 11 6:35 p.m. PT); LL2 NET 2026-11-11T02:49:00Z Go, window to 06:49Z (LL2 updates 2026-11-09T16:35Z 'Nov 10 at 04:59 UTC', then 21:11Z 'Nov 11 at 02:49 UTC'). Did not fly Mon Nov 9; no attempt reported, reason unpublished. Prior T0 2026-11-10T03:07:15Z. SpaceX timeline revised: MECO 2:25 (was 2:26), fairing 2:56 (was 2:58); sim re-run. ILLUSTRATIVE.",
-  "Published timeline (SpaceX ussf627, checked 2026-11-10): Max-Q 1:07, MECO 2:25, stage sep 2:29, SES-1 2:36, fairing 2:56, entry burn 6:03-6:26, landing burn 8:00, landing 8:22. SECO, orbit, deploy NOT published (classified USSF mission).",
-  "INFERRED/ASSUMED: SECO-1 time and parking orbit are a Starlink Group 15 analog (starlink-15-18), not USSF-627 sources (LL2: drop zones exact fits with Group 15). Azimuth 153.56 deg from FAA/ZLA CARF NOTAM 11/067-26 Area A (identical polygon re-issued as 11/071-26 for the Nov 10 PT window). File ends 2 revs after cutoff (deploy unpublished)."
+  "RETIMED 2026-11-11: SpaceX ussf627 page now 'targeting Wednesday, November 11 ... four-hour launch window opens at 6:35 p.m. PT' (backup Thu Nov 12 6:21 p.m. PT); LL2 NET 2026-11-12T02:35:00Z Go (checked 2026-11-11 16:10Z). Did not fly Tue Nov 10 (SpaceX moved it a day; no attempt, reason unpublished). Prior T0 2026-11-11T02:49:00Z. SpaceX timeline unchanged (MECO 2:25, fairing 2:56); sim re-run for new T0. ILLUSTRATIVE.",
+  "Published timeline (SpaceX ussf627, checked 2026-11-11): Max-Q 1:07, MECO 2:25, stage sep 2:29, SES-1 2:36, fairing 2:56, entry burn 6:03-6:26, landing burn 8:00, landing 8:22. SECO, orbit, deploy NOT published (classified USSF mission).",
+  "INFERRED/ASSUMED: SECO-1 time and parking orbit are a Starlink Group 15 analog (starlink-15-18), not USSF-627 sources (LL2: drop zones exact fits with Group 15). Azimuth 153.56 deg from FAA/ZLA CARF NOTAM 11/067-26 Area A (identical polygon re-issued unchanged as 11/071-26 and 11/107-26). File ends 2 revs after cutoff (deploy unpublished)."
  ],
  "final_cutoff_s": {
   "value": 519,

@@ -1,0 +1,48 @@
+{
+  "slug": "electron-iqps10",
+  "title": "Electron 'The Mountain God Rises' (iQPS Launch 10)",
+  "vehicle": "electron",
+  "t0_utc": "2026-11-14T05:30:00Z",
+  "t0_note": "Rocket Lab launch-safety page: 'Planned Launch Time: NET 05:30 UTC | 18:30 NZDT; NET Saturday 14th November 2026 [NZDT]; backup 14-26 Nov' = Fri Nov 13 9:30p PST (checked 2026-11-11); mission page: NET 14 Nov 6:30pm NZDT / 05:30 UTC; LL2 NET 2026-11-14T05:30Z Go. https://rocketlabcorp.com/launch/launch-safety/ , https://rocketlabcorp.com/missions/launches/iqps-the-mountain-god-rises/ , https://ll.thespacedevs.com/2.3.0/launches/db3500ac-965b-4ad8-b417-cb8d8d005586/",
+  "pad": {
+    "lat": -39.260881,
+    "lon": 177.865826,
+    "alt_m": 0,
+    "src": "https://ll.thespacedevs.com/2.3.0/launches/db3500ac-965b-4ad8-b417-cb8d8d005586/ (LL2 'Unknown Pad', Rocket Lab LC-1 Mahia)"
+  },
+  "azimuth_deg": {
+    "value": 104.68,
+    "derived": "mean great-circle bearing from LC-1 to centroids of HYDROPAC 3249/26 area B and HYDROPAC 3251/26 space-debris areas (2215Z-0700Z daily 13-26 Nov, both tagged to this mission on https://www.space-notices.com/entry/launch-electron-the-mountain-god-rises-iqps-launch-10); Rocket Lab mission page publishes inclination 42 deg; bearings 104.37 deg (3249/26 B centroid 40.46S 174.79W) and 104.98 deg (3251/26 centroid 41.59S 159.20W), mean 104.68 deg; non-rotating inclination 41.5 deg vs published 42 deg"
+  },
+  "payload_kg": {
+    "value": 190,
+    "assumption": "QPS-SAR ~100 kg-class (iQPS, unofficial mass) + Kick Stage dry 40 kg (Electron guide) + kick propellant ~50 kg (ASSUMED); same as electron-iqps9"
+  },
+  "target": {
+    "insertion_alt_km": {
+      "value": 230,
+      "assumption": "S2 inserts Kick Stage into 'low elliptical orbit' (Electron guide); perigee ASSUMED 230 km, same as electron-iqps9/hawkeye360"
+    },
+    "apoapsis_alt_km": {
+      "value": 575,
+      "src": "https://rocketlabcorp.com/missions/launches/iqps-the-mountain-god-rises/ (Orbit 575km LEO, Inclination 42 degrees)"
+    },
+    "cutoff": "energy"
+  },
+  "header_notes": [
+    "UNTUNED: Rocket Lab has published no mission timeline for this flight (Electron's 100th launch); Electron Payload User Guide 8.0 generic event times used.",
+    "Inclination 42 deg published by Rocket Lab; azimuth from HYDROPAC 3249/26 B + 3251/26 debris areas (cross-check vs 42 deg in index.json).",
+    "File ends 2 revs after S2 cutoff on the inferred insertion orbit; Kick Stage (Curie) circularization not modelled (timing unpublished)."
+  ],
+  "post_cutoff": {
+    "deploy": {
+      "t_s": null,
+      "note": "Rocket Lab publishes no deploy or Kick Stage burn time for The Mountain God Rises (mission page and launch-safety page give T0, orbit 575 km/42 deg and hazard areas only, as of 2026-11-11); propagated 2 revs on inferred insertion orbit"
+    },
+    "drag": {
+      "cd": 2.2,
+      "area_m2": 1.13,
+      "basis": "ASSUMPTION: free-molecular Cd 2.2, frontal area of 1.2 m-diameter upper stage"
+    }
+  }
+}
