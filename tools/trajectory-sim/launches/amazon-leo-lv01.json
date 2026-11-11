@@ -1,0 +1,174 @@
+{
+ "slug": "amazon-leo-lv01",
+ "title": "Vulcan VC6L Amazon Leo LV-01 (SLC-41)",
+ "vehicle": "vulcan_vc6l",
+ "t0_utc": "2026-11-13T17:54:00Z",
+ "t0_note": "ULA Vulcan Leo 1 page: Friday, Nov. 13 at 12:54 p.m. EST (1754 UTC). FAA operations advisory ULA KV-01 primary 11/13/26 1754Z-1900Z, backup 11/14/26 1732Z-1838Z. LL2 id ef9850ad-1096-425b-9d27-f7bbd186e61a, status Go, window 17:54\u201318:24Z (checked 2026-11-11).",
+ "pad": {
+  "lat": 28.58341025,
+  "lon": -80.58303644,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.2.0/launch/ef9850ad-1096-425b-9d27-f7bbd186e61a/ (SLC-41, Cape Canaveral SFS)"
+ },
+ "azimuth_deg": {
+  "value": 43.69,
+  "derived": "great-circle bearing from the LL2 pad (28.58341025N, 80.58303644W) to the far-edge midpoint (36.3583N, 70.9750W) of NAVAREA IV 1078/26 Area A, the launch corridor (times 131754Z-131932Z Nov and daily backups matching the FAA KV-01 window). Area A far-edge mid gives a non-rotating inclination of ~52.66 deg vs the 51.9 deg Amazon Leo / Kuiper shell (and KA-01 insertion). Area B (near-shore drop) 44.09 deg / i~52.34; Area C (south of Newfoundland, same notice, matches CZQM H7357/26) 44.32 deg / i~52.16. Geometric azimuth for i=51.9 deg from this pad is 44.64 deg. Hazard-area azimuth kept (NOTAM-first). Source: https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201078%2F26"
+ },
+ "payload_kg": {
+  "fit": true,
+  "value": null,
+  "note": "FITTED within 10.0\u201327.2 t so the ASSUMED MES1 duration delivers the ASSUMED 180 \u00d7 450 km transfer. 40-satellite stack mass unpublished; result is NOT an estimate of the real payload."
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 180,
+   "assumption": "LV-01 parking/transfer perigee unpublished. 180 km is a labelled stand-in for a two-burn ascent to a 450 km circular insertion (apogee set to the published 450 km)."
+  },
+  "apoapsis_alt_km": {
+   "value": 450,
+   "src": "https://www.aboutamazon.com/news/innovation-at-amazon/project-kuiper-photos-internet-satellite-first-launch",
+   "note": "Amazon: KA-01 (Atlas V, same pad, same constellation) 'completed releasing all 27 satellites ... at an altitude of 280 miles (450 kilometers)'. LV-01 insertion is not published on the ULA/Amazon LV-01 pages; 450 km circular is ASSUMED the same insertion, after which sats raise themselves to the FCC 590/610/630 km shells (51.9 deg). Inclination is steered by the NAVAREA azimuth, not retuned to 51.9."
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 5,
+  "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude"
+ },
+ "header_notes": [
+  "PRE-FLIGHT ILLUSTRATIVE. ULA Vulcan VC6L, first 6-SRB / first LEO-optimized Centaur V flight, 40 Amazon Leo satellites from SLC-41, T0 2026-11-13T17:54:00Z (Fri Nov 13 9:54 a.m. PST).",
+  "Booster/Centaur event times are ULA UG Fig. 2.1.1-2 TYPICAL CCSFS values (Approximate Times), not this flight. MES1 cutoff is an ASSUMED 600 s burn (T+908 s), tuned toward a 180 \u00d7 450 km transfer. MES2 (circularize to 450 km) is modelled at first apoapsis in post_cutoff. Deploy time for LV-01 is not in a first-hand source retrieved this turn, so after MES2 the stage is propagated +2 revs on the inferred insertion orbit."
+ ],
+ "final_cutoff_s": {
+  "value": 908,
+  "assumption": "MES1 cutoff = typical MES1 ignition 308 s + ASSUMED 600 s first burn; see vehicle Centaur cutoff_s. Tuned if needed so the transfer apogee is near 450 km."
+ },
+ "fairing_jettison_s": {
+  "value": 316,
+  "src": "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf Fig. 2.1.1-2 PLF jettison T+00:05:16 (typical CCSFS example)"
+ },
+ "knots": [],
+ "post_cutoff": {
+  "drag": {
+   "cd": {
+    "value": 0.4,
+    "assumption": "same Cd as the ascent (fixed 0.4)"
+   },
+   "area_m2": {
+    "value": 22.9,
+    "derived": "pi*(5.4 m/2)^2, Centaur / fairing diameter"
+   }
+  },
+  "burns": [
+   {
+    "name": "MES2 (Centaur V circularization)",
+    "t_ign_s": "apoapsis",
+    "thrust_N": {
+     "value": 211972,
+     "derived": "2 \u00d7 23,825 lbf RL10C-1-1A (ULA Vulcan Leo 1 page)"
+    },
+    "isp_s": {
+     "value": 453.8,
+     "assumption": "same RL10C 453.8 s as the vehicle file (Wikipedia / L3Harris, secondary)"
+    },
+    "target_perigee_km": {
+     "value": 450,
+     "src": "Amazon KA-01 published 450 km insertion (analog); duration of MES2 is solved so perigee reaches 450 km"
+    },
+    "basis": "LV-01 burn 2 time unpublished. ULA UG: one or two Centaur burns are typical for LEO. MES2 is flown at first apoapsis after the ASSUMED 180 \u00d7 450 km MES1 transfer, open thrust, duration solved to 450 km perigee (circularize)."
+   }
+  ],
+  "deploy": {
+   "t_s": null,
+   "note": "LV-01 payload-separation time is not in a first-hand ULA/Amazon/FCC document retrieved this turn (a NSF-forum quotation of a ULA STA giving first sep at ~1 h 17 min was not independently verified). After MES2 the stage is propagated 2 revs on the inferred 450 km insertion orbit."
+  },
+  "notes": [
+   "Amazon KA-01 (Atlas V, 28 Apr 2025, same pad) deployed at 450 km / 280 miles (Amazon). NSF reported that insertion as 450 km circular, 51.9 deg. This LV-01 sim uses 450 km as the insertion target and the NAVAREA IV 1078/26 corridor azimuth (i~52.7 deg) without retuning.",
+   "Centaur disposal (HYDROPAC 3246/26 Eastern Indian Ocean, ~T+2.5 h, matching the FAA-window backups) is not modelled; the file ends 2 revs after MES2."
+  ]
+ },
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "vertical_rise_s": {
+    "value": 7.222392,
+    "bounds": [
+     4,
+     25
+    ],
+    "basis": "UG \u00a72.1 'short vertical rise'; time unpublished"
+   },
+   "kick_deg": {
+    "value": 8.811867,
+    "bounds": [
+     0.2,
+     12
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "payload_kg": {
+    "value": 20279.89771,
+    "bounds": [
+     10000,
+     27200
+    ],
+    "basis": "40 Amazon Leo satellites, mass unpublished (Amazon says production sats weigh more than 1,000 lb / 450 kg \u2192 18 t floor before dispenser). Upper bound = UG/fact-sheet VC6 LEO PSW 27,200 kg (200 km / 28.7\u00b0). Fitted payload is NOT an estimate of the real stack."
+   },
+   "tan0": {
+    "value": -0.37305,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": -0.002067,
+    "bounds": [
+     -0.05,
+     0.05
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "cd": 0.4
+  },
+  "knot_residuals": [],
+  "final": {
+   "alt_km": 180.0000002264008,
+   "fpa_deg": 1.1631185547233591e-08,
+   "sma_err_km": 6.235111504793167e-07,
+   "mass_kg": 32788.1
+  },
+  "cost": 6.046087798694123e-14,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "GEM 63XL SRBs (6)",
+     "loaded_kg": 287118,
+     "burned_kg": 283137,
+     "residual_kg": 3981,
+     "dry_kg": 27120,
+     "flag": null
+    },
+    {
+     "name": "Vulcan booster (2x BE-4)",
+     "loaded_kg": 460000,
+     "burned_kg": 455289,
+     "residual_kg": 4711,
+     "dry_kg": 28600,
+     "flag": null
+    },
+    {
+     "name": "Centaur V LEO-optimized (CV-L, 2x RL10C-1-1A)",
+     "loaded_kg": 36287,
+     "burned_kg": 28579,
+     "residual_kg": 7708,
+     "dry_kg": 4800,
+     "flag": null
+    }
+   ],
+   "glow_kg": 866705
+  }
+ }
+}

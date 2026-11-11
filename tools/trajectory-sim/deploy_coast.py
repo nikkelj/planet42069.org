@@ -4,7 +4,7 @@ Reads out/<slug>/<slug>_ascent_ecef_5s_sim.csv (as written by ascent3dof.py), ta
 propagates with the SAME model (WGS-84 rotating Earth, J2, US76 drag) through any published restart / kick-stage
 burns to the provider's published deploy time. Config: launches/<slug>.json -> "post_cutoff" (every number sourced,
 derived or ASSUMPTION). Without a published deploy time (deploy.t_s null) the
-stage is propagated from insertion for TWO revolutions (osculating period at insertion) on the inferred insertion
+stage is propagated from insertion (after any configured mid-coast burns) for TWO revolutions (osculating period at insertion) on the inferred insertion
 orbit, ending labelled 'inferred insertion orbit, +2 revs (deploy time unpublished)'. Idempotent: strips any previous coast rows first.
 Usage: python3 deploy_coast.py launches/<slug>.json [--outdir DIR]
 Writes the public copies as <slug>_<YYYY-MM-DD>_trajectory_sim.csv and .kml
@@ -93,35 +93,44 @@ def main():
         lat, lon, h = ecef2geod(rotz(-WE*t)@rr); a_, e_, i_, hp, ha = kep(rr, vv)
         d = dict(event=name, t_s=round(t, 3), alt_km=round(h/1e3, 2), v_inertial_km_s=round(float(np.linalg.norm(vv))/1e3, 4), mass_kg=round(mm, 1),
                  lat=round(lat, 4), lon=round(lon, 4), perigee_km=round(hp, 1), apogee_km=round(ha, 1), incl_deg=round(i_, 3), post_cutoff=True); d.update(kw); return d
-    if not pc or pc.get("deploy", {}).get("t_s") is None:
-        why = (pc or {}).get("deploy", {}).get("note", "provider has not published a payload-deploy time")
-        new_ev.append(st("Orbit insertion (inferred insertion orbit)", t_cut, r, v, m, note=why))
-        a0 = kep(r, v)[0]; P = 2*math.pi*math.sqrt(a0**3/MU); tend = t_cut+2*P
-        r, v, m = propagate(r, v, m, t_cut, tend, pc or {"drag": {"cd": 2.2, "area_m2": 4.0}}, record=rec)
+    deploy_spec = (pc or {}).get("deploy") or {}
+    t_s_raw = deploy_spec.get("t_s")
+    t_s_val = t_s_raw["value"] if isinstance(t_s_raw, dict) else t_s_raw
+    burns = (pc or {}).get("burns") or []
+    t = t_cut
+    # Fly any configured mid-coast / circularization burns first. When deploy.t_s is
+    # null, "insertion" is the state after those burns (or ascent cutoff if none),
+    # then the stage is propagated +2 revs on that inferred orbit.
+    for b in burns:
+        t_ign = apo_time(r, v, m, t, pc) if b["t_ign_s"] == "apoapsis" else val(b["t_ign_s"])
+        m_b = m-val(b.get("drop_mass_kg", 0)) if not b.get("mass_after_drop_kg") else val(b["mass_after_drop_kg"])
+        if b.get("center_on_apoapsis"):
+            ra, va, _ = propagate(r, v, m, t, t_ign, pc); _, d0 = solve_burn(ra, va, m_b, t_ign, b, pc)
+            t_ign -= d0/2
+        r, v, m = propagate(r, v, m, t, t_ign, pc, record=rec); t = t_ign; m = m_b
+        F, d = solve_burn(r, v, m, t_ign, b, pc)
+        new_ev.append(st(f"{b['name']} ignition", t, r, v, m))
+        r, v, m = propagate(r, v, m, t, t+d, pc, burn=(F, val(b["isp_s"])), record=rec, dt_=0.25); t += d
+        new_ev.append(st(f"{b['name']} cutoff", t, r, v, m, modelled_thrust_N=round(F, 1), burn_s=round(d, 2)))
+        note.append(f"# POST-CUTOFF burn '{b['name']}': ign T+{new_ev[-2]['t_s']:.1f} s, {d:.1f} s at {F/1e3:.2f} kN prograde (Isp {val(b['isp_s'])} s); {b['basis']}")
+    if t_s_val is None:
+        why = deploy_spec.get("note", "provider has not published a payload-deploy time")
+        if not burns:
+            new_ev.append(st("Orbit insertion (inferred insertion orbit)", t_cut, r, v, m, note=why))
+        a0 = kep(r, v)[0]; P = 2*math.pi*math.sqrt(a0**3/MU); tend = t+2*P
+        r, v, m = propagate(r, v, m, t, tend, pc or {"drag": {"cd": 2.2, "area_m2": 4.0}}, record=rec)
         new_ev.append(st("End: inferred insertion orbit, +2 revs (deploy time unpublished)", tend, r, v, m, note=why))
         e = new_ev[-1]
-        note.append(f"# POST-CUTOFF: deploy time unpublished ({why}). From insertion T+{t_cut:.1f} s the stage is propagated for TWO revolutions (osculating period {P/60:.2f} min) on the inferred insertion orbit (same WGS-84/J2/US76-drag model); rows tagged -coast.")
+        start_lbl = f"after last burn T+{t:.1f} s" if burns else f"insertion T+{t_cut:.1f} s"
+        note.insert(0, f"# POST-CUTOFF: deploy time unpublished ({why}). From {start_lbl} the stage is propagated for TWO revolutions (osculating period {P/60:.2f} min) on the inferred insertion orbit (same WGS-84/J2/US76-drag model); rows tagged -coast/-burn.")
         note.append(f"# POST-CUTOFF end T+{tend:.0f} s: inferred insertion orbit, +2 revs (deploy time unpublished): alt {e['alt_km']} km, osculating {e['perigee_km']} x {e['apogee_km']} km, i {e['incl_deg']} deg.")
         for n in (pc or {}).get("notes", []): note.append("# POST-CUTOFF note: "+n)
     else:
-        t = t_cut
-        for b in pc.get("burns", []):
-            t_ign = apo_time(r, v, m, t, pc) if b["t_ign_s"] == "apoapsis" else val(b["t_ign_s"])
-            m_b = m-val(b.get("drop_mass_kg", 0)) if not b.get("mass_after_drop_kg") else val(b["mass_after_drop_kg"])
-            if b.get("center_on_apoapsis"):
-                ra, va, _ = propagate(r, v, m, t, t_ign, pc); _, d0 = solve_burn(ra, va, m_b, t_ign, b, pc)
-                t_ign -= d0/2
-            r, v, m = propagate(r, v, m, t, t_ign, pc, record=rec); t = t_ign; m = m_b
-            F, d = solve_burn(r, v, m, t_ign, b, pc)
-            new_ev.append(st(f"{b['name']} ignition", t, r, v, m))
-            r, v, m = propagate(r, v, m, t, t+d, pc, burn=(F, val(b["isp_s"])), record=rec, dt_=0.25); t += d
-            new_ev.append(st(f"{b['name']} cutoff", t, r, v, m, modelled_thrust_N=round(F, 1), burn_s=round(d, 2)))
-            note.append(f"# POST-CUTOFF burn '{b['name']}': ign T+{new_ev[-2]['t_s']:.1f} s, {d:.1f} s at {F/1e3:.2f} kN prograde (Isp {val(b['isp_s'])} s); {b['basis']}")
-        td = t if pc["deploy"]["t_s"] == "after_last_burn" else val(pc["deploy"]["t_s"]); r, v, m = propagate(r, v, m, t, td, pc, record=rec); t = td
-        new_ev.append(st(pc["deploy"].get("label", "Payload deploy"), t, r, v, m, src=pc["deploy"]["src"]))
+        td = t if t_s_val == "after_last_burn" else val(deploy_spec["t_s"]); r, v, m = propagate(r, v, m, t, td, pc, record=rec); t = td
+        new_ev.append(st(deploy_spec.get("label", "Payload deploy"), t, r, v, m, src=deploy_spec["src"]))
         e = new_ev[-1]
-        note.insert(0, f"# POST-CUTOFF: after final cutoff T+{t_cut:.1f} s the stage coasts (same WGS-84/J2/US76-drag model) to PAYLOAD DEPLOY T+{td:.0f} s; rows after cutoff tagged -coast/-burn.")
-        note.append(f"# POST-CUTOFF deploy T+{td:.0f} s ({pc['deploy']['src']}): alt {e['alt_km']} km, osculating {e['perigee_km']} x {e['apogee_km']} km, i {e['incl_deg']} deg.")
+        note.insert(0, f"# POST-CUTOFF: after final cutoff T+{t_cut:.1f} s the stage coasts (same WGS-84/J2/US76-drag model) to PAYLOAD DEPLOY T+{td:.0f} s; rows tagged -coast/-burn.")
+        note.append(f"# POST-CUTOFF deploy T+{td:.0f} s ({deploy_spec['src']}): alt {e['alt_km']} km, osculating {e['perigee_km']} x {e['apogee_km']} km, i {e['incl_deg']} deg.")
         for n in pc.get("notes", []): note.append("# POST-CUTOFF note: "+n)
     # rewrite CSV
     rng = float(last[5]); prev = (float(last[2]), float(last[3])); out = []

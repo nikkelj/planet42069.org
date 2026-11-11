@@ -355,6 +355,61 @@
       "id": "zla-carf-11-107",
       "title": "FAA ZLA CARF 11/107-26 (SX R-5 Area A, re-issue)",
       "url": "https://space-notices.com/notice/notam-ZLA-11%2F107-26"
+    },
+    {
+      "id": "ula-vulcan-leo-1",
+      "title": "ULA: Vulcan Leo 1 (Amazon Leo LV-01) mission page — VC6L, T0, vehicle description",
+      "url": "https://www.ulalaunch.com/missions/next-launch/vulcan-leo-1"
+    },
+    {
+      "id": "ula-vulcan-ug-2023",
+      "title": "ULA Vulcan User’s Guide (2023) — typical CCSFS event times (Fig. 2.1.1-2), BE-4 / Centaur description",
+      "url": "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf"
+    },
+    {
+      "id": "ula-blog-cv-l",
+      "title": "ULA blog (2 Jun 2026): LEO-optimized Centaur V is ~6 ft shorter and carries a third less propellant than the 120,000 lb CV-HE",
+      "url": "https://blog.ulalaunch.com/blog/vulcan-new-centaur-v-version-readies-for-amazon-leo"
+    },
+    {
+      "id": "ng-propulsion-catalog",
+      "title": "Northrop Grumman Propulsion Products Catalog — GEM 63XL vacuum 73°F: Isp 280.3 s, time-average thrust 334,063 lbf, propellant 105,497 lbm, burn 87.3 s (p.39)",
+      "url": "https://cdn.northropgrumman.com/-/media/wp-content/uploads/NG-Propulsion-Products-Catalog.pdf"
+    },
+    {
+      "id": "navarea-iv-1078-26",
+      "title": "NAVAREA IV 1078/26 (Amazon Leo LV-01 / Vulcan launch corridor, Area A) via space-notices",
+      "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201078%2F26"
+    },
+    {
+      "id": "amazon-ka-01-450km",
+      "title": "Amazon: Project Kuiper (KA-01) first launch — 'completed releasing all 27 satellites … at an altitude of 280 miles (450 kilometers)' (analog used for LV-01 insertion)",
+      "url": "https://www.aboutamazon.com/news/innovation-at-amazon/project-kuiper-photos-internet-satellite-first-launch"
+    },
+    {
+      "id": "wp-vulcan-centaur",
+      "title": "Wikipedia: Vulcan Centaur (secondary: BE-4 Isp, booster empty mass, RL10C Isp citations)",
+      "url": "https://en.wikipedia.org/wiki/Vulcan_Centaur"
+    },
+    {
+      "id": "spacex-starship-flight-15",
+      "title": "SpaceX: Starship Flight 15 mission page and published timeline (also content.spacex.com API)",
+      "url": "https://www.spacex.com/launches/starship-flight-15"
+    },
+    {
+      "id": "navarea-iv-1080-26",
+      "title": "NAVAREA IV 1080/26 (Starship Flight 15 Gulf / Yucatan launch corridor, Area A) via space-notices",
+      "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201080%2F26"
+    },
+    {
+      "id": "wp-spacex-starship",
+      "title": "Wikipedia: SpaceX Starship (Block 3 ship propellant / thrust citing SpaceX 'Introducing Starship V3', 12 May 2026)",
+      "url": "https://en.wikipedia.org/wiki/SpaceX_Starship"
+    },
+    {
+      "id": "wp-spacex-super-heavy",
+      "title": "Wikipedia: SpaceX Super Heavy (Block 3 booster propellant / 80.8 MN liftoff thrust, earlier-block empty mass used as a stand-in)",
+      "url": "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy"
     }
   ],
   "launches": [
@@ -904,6 +959,122 @@
         "This flight used a new 3.35 m composite fairing and lightened S2 (China航天 Weibo, unofficial) - not modelled"
       ],
       "note": "FLOWN 2026-11-11T11:41:00Z (Wed 11 Nov 3:41 am PST; 19:41 BJT): LM-2D Y108 put the 4-satellite Origins Pathfinder stack into the preset orbit (Xinhua; CSSAR; LL2 Success; Long March flight 677). Retimed +60 s; sim and surrogate re-run for CSSAR's 600 km dawn-dusk SSO. Pre-flight-style ILLUSTRATIVE geometry."
+    },
+    {
+      "slug": "amazon-leo-lv01",
+      "name": "Amazon Leo LV-01 (Vulcan VC6L, SLC-41)",
+      "vehicle": "Vulcan VC6L",
+      "t0_utc": "2026-11-13T17:54:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-13T17:54:00Z",
+      "window_close_utc": "2026-11-13T18:24:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-13_trajectory.csv",
+        "kml": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-13_trajectory.kml",
+        "csv_sim": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-13_trajectory_sim.csv",
+        "kml_sim": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-13_trajectory_sim.kml",
+        "track_lite": "/launches/amazon-leo-lv01/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://www.ulalaunch.com/missions/next-launch/vulcan-leo-1",
+        "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf",
+        "https://blog.ulalaunch.com/blog/vulcan-new-centaur-v-version-readies-for-amazon-leo",
+        "https://cdn.northropgrumman.com/-/media/wp-content/uploads/NG-Propulsion-Products-Catalog.pdf",
+        "https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201078%2F26",
+        "https://www.aboutamazon.com/news/innovation-at-amazon/project-kuiper-photos-internet-satellite-first-launch",
+        "https://ll.thespacedevs.com/2.2.0/launch/ef9850ad-1096-425b-9d27-f7bbd186e61a/",
+        "https://en.wikipedia.org/wiki/Vulcan_Centaur"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: NG catalog GEM 63XL burn 87.3 s and ULA UG Fig. 2.1.1-2 TYPICAL CCSFS times (SRB jettison 100 s, BECO 292 s, sep 298 s, MES1 308 s, fairing 316 s); MES1 cutoff T+908 s ASSUMED (308+600 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; azimuth 43.69 deg from NAVAREA IV 1078/26 Area A far-edge midpoint; ends at MES1 cutoff; T0 2026-11-13T17:54:00Z (ULA Vulcan Leo 1 page / LL2 Go, window to 18:24Z)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: UG-typical CCSFS event times as hard events (not flight-specific); 6x GEM 63XL catalog time-average thrust; 2x BE-4 550k-lbf SL; CV-L propellant derived as one-third less than the 120,000 lb CV-HE; MES1 cutoff ASSUMED 908 s, steering/payload fitted to an ASSUMED 180 x 450 km transfer (450 km from Amazon KA-01 analog; 180 km perigee stand-in); azimuth 43.69 deg from NAVAREA IV 1078/26 Area A; MES1 residual: geodetic alt 180.16 km (target 180), FPA 0.00 deg, osculating 168.4 x 461.4 km (equatorial-radius; SMA error ~0 vs 180x450), i=49.66 deg vs non-rotating 52.66 deg from the commanded azimuth (residual -3.0 deg, known sim track bias; azimuth not retuned to the FCC 51.9 deg shell); MES2 at first apoapsis T+3625 s, 12.64 s at 2x RL10, solves perigee to 450.0 km (osculating 450.0 x 468.0 km after flattening); deploy time unpublished, so +2 revs on the inferred insertion orbit, file ends T+14890 s; fitted payload 20.28 t is NOT an estimate of the 40-sat stack; ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "ula-vulcan-leo-1",
+        "ula-vulcan-ug-2023",
+        "ula-blog-cv-l",
+        "ng-propulsion-catalog",
+        "navarea-iv-1078-26",
+        "amazon-ka-01-450km",
+        "wp-vulcan-centaur",
+        "ll2",
+        "kml"
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. ULA Vulcan VC6L (first 6-SRB / first LEO-optimized Centaur V), 40 Amazon Leo satellites from SLC-41; T0 Fri Nov 13 9:54 a.m. PST = 2026-11-13T17:54:00Z (ULA / LL2 Go, window to 18:24Z; FAA KV-01 backup Sat 9:32 a.m. PST). 450 km insertion is an Amazon KA-01 analog, not a published LV-01 figure. Sim inclination 49.66 deg vs 52.66 deg from the NAVAREA azimuth (known track bias; not retuned).",
+      "assumptions": [
+        "Booster/Centaur event times = ULA UG Fig. 2.1.1-2 TYPICAL CCSFS two-burn sequence (Approximate Times), not LV-01's unpublished timeline",
+        "MES1 duration 600 s (T+908 s) ASSUMED, then tuned so the first burn targets a 180 x 450 km transfer",
+        "450 km circular insertion ASSUMED from Amazon KA-01 (same pad, 28 Apr 2025, 280 miles / 450 km deploy); LV-01 insertion unpublished on ULA/Amazon LV-01 pages",
+        "MES1 transfer perigee 180 km ASSUMED (stand-in)",
+        "BE-4 vacuum Isp 340 s and sea-level 320 s (Wikipedia / factory-tour / Reich 2020, secondary); ULA does not publish BE-4 Isp",
+        "Vulcan booster propellant 460 t ASSUMED (UG 'over a million pounds' floor plus margin for a 292 s full-thrust BECO); UG 4.6 g throttle not modelled",
+        "Booster dry mass 28,600 kg (Reich 2020 via Wikipedia, secondary)",
+        "CV-L propellant 36,287 kg DERIVED (ULA: a third less than the 120,000 lb CV-HE); CV-L dry mass 4,800 kg ASSUMED; fairing 2,500 kg ASSUMED",
+        "RL10C Isp 453.8 s (Wikipedia / L3Harris, secondary; datasheet PDF not retrieved)",
+        "GEM 63XL flown at catalog time-average thrust, not max thrust; sea-level loss at liftoff not modelled (Ae=0)",
+        "Azimuth from NAVAREA IV 1078/26 Area A, not retuned to 51.9 deg; sim i=49.66 deg vs 52.66 deg (known track bias)",
+        "Deploy time unpublished (NSF-forum 1 h 17 min STA quote not independently verified) -> after MES2, +2 revs on the inferred 450 km insertion orbit",
+        "Fitted payload 20.28 t is a steering parameter, NOT an estimate of the real 40-satellite stack",
+        "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at the sim MES1 altitude (180.2 km); surrogate ends at MES1",
+        "Cd 0.4 fixed, generic"
+      ]
+    },
+    {
+      "slug": "starship-flight-15",
+      "name": "Starship Flight 15 (Starlink 31-2, 26 V3 sats, Starbase)",
+      "vehicle": "Starship V3 (Super Heavy + Ship)",
+      "t0_utc": "2026-11-13T22:45:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-13T22:45:00Z",
+      "window_close_utc": "2026-11-14T00:00:00Z",
+      "status": "To Be Confirmed",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory.csv",
+        "kml": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory.kml",
+        "csv_sim": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory_sim.csv",
+        "kml_sim": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory_sim.kml",
+        "track_lite": "/launches/starship-flight-15/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://www.spacex.com/launches/starship-flight-15",
+        "https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201080%2F26",
+        "https://ll.thespacedevs.com/2.2.0/launch/0f867f0c-5422-4d44-93b8-d7faaae7019b/",
+        "https://en.wikipedia.org/wiki/SpaceX_Starship",
+        "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: SpaceX Flight 15 published timeline (Max-Q 58 s, Super Heavy MECO 139 s, hot-stage / sep 141 s, ship ascent cutoff 489 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; azimuth 107.53 deg from NAVAREA IV 1080/26 Area A far-edge midpoint; ends at ship ascent cutoff; insertion burn and deploy are in the sim file only; T0 2026-11-13T22:45:00Z (SpaceX 75-minute window / LL2 To Be Confirmed, window to 00:00Z)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX F15 MECO 139 s, hot-stage 141 s, ship cutoff 489 s as hard events; Super Heavy 3,650 t / 80.8 MN and Ship 1,600 t / 1,600 tf from Wikipedia citing SpaceX V3 specs (12 May 2026); V3 dry masses unpublished (booster 275 t earlier-block stand-in, ship 120 t ASSUMED); Raptor 3 Isp 350 s ASSUMPTION; Ae=0 (SL thrust at all altitudes); steering/payload fitted toward an ASSUMED 180 x 275 km pre-insertion transfer (275 km = SpaceX published orbital altitude; 180 km perigee stand-in); ascent residual: geodetic alt 180.33 km (target 180), FPA -0.04 deg, osculating 177.0 x 246.3 km (SMA -15.9 km vs 180x275; payload pinned at 78.9 t, near the 80 t cap), i=31.18 deg vs 31.01 deg from the NAVAREA azimuth; insertion is a single Raptor 3 SL (250 tf, F14 analog) flown open-loop, residual-limited to 12.80 s (constant 1,600 tf / 350 s leaves only 9.14 t after the 348 s ascent, short of a published 20 s / 14.3 t burn — 1,600 tf is SpaceX 'initial thrust'); post-burn osculating 192.2 x 786.6 km, at deploy complete T+4660 s 202.5 x 771.6 km, i=31.19 deg, vs SpaceX ~275 km (apogee residual ~+500 km: even the residual-limited impulse is ~150 m/s vs ~26 m/s to circularize 180x275; residuals reported, not hidden); deorbit / catch not modelled; fitted payload is NOT an estimate of the 26-sat stack; ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "spacex-starship-flight-15",
+        "navarea-iv-1080-26",
+        "wp-spacex-starship",
+        "wp-spacex-super-heavy",
+        "ll2",
+        "kml"
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. Starship Flight 15 / Starlink 31-2, 26 V3 sats from OLP-2; T0 Fri Nov 13 2:45 p.m. PST = 2026-11-13T22:45:00Z (SpaceX 75-minute window, pending regulatory approval; LL2 To Be Confirmed). Sim after the residual-limited insertion is 203 x 772 km, i=31.18 deg, not the published ~275 km (impulse too large under the open-loop 1x250 tf assumption). Catch and deorbit are not modelled.",
+      "assumptions": [
+        "V3 dry masses unpublished: Super Heavy empty 275 t is an earlier-block Wikipedia infobox stand-in; ship dry 120 t ASSUMED (2021 ~100 t Musk figure is stale)",
+        "Raptor 3 Isp 350 s ASSUMPTION (widely reported from the Aug 2024 reveal; primary transcript not retrieved). Vacuum increment for 33 SL Raptors unpublished; SL thrust used at all altitudes (Ae=0)",
+        "Ship 1,600 tf treated as constant for the 348 s ascent; SpaceX publishes this as initial thrust. Under that assumption only 9.14 t remains, so the published 20 s insertion is flown residual-limited at 12.80 s. Extra propellant was not invented",
+        "Insertion engine count unpublished on F15; 1x Raptor 3 SL at 250 tf is a Flight 14 analog, labelled ASSUMPTION, flown open-loop (not solved to 275 km)",
+        "Pre-insertion target 180 x 275 km: 275 km is SpaceX's published orbital altitude; 180 km perigee is a labelled stand-in. The 20 s / 1x250 tf impulse cannot circularize that transfer (~236 m/s vs ~26 m/s); residuals are reported",
+        "Payload 26 V3 sats, mass unpublished; fitted 78.9 t (near the 80 t cap) is a steering parameter, NOT an estimate",
+        "Azimuth from NAVAREA IV 1080/26 Area A (i~31.01 deg); sim i=31.18 deg (not retuned)",
+        "Cd 0.4 fixed, generic; no jettisoned fairing (mass 0)",
+        "Super Heavy boostback / landing and ship deorbit / catch (T+21:35:57 / T+22:32:34) are not modelled; file ends at deploy complete T+01:17:40",
+        "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at the sim ascent-cutoff altitude; surrogate ends at T+489 s",
+        "Block 3 propellant/thrust from Wikipedia citing SpaceX technical specifications (12 May 2026); the SpaceX specs page is JS and was not scraped first-hand"
+      ]
     },
     {
       "slug": "electron-iqps10",

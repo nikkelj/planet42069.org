@@ -1,0 +1,162 @@
+{
+ "id": "starship_v3",
+ "name": "SpaceX Starship V3 (Super Heavy 33×Raptor 3 + Ship 3 SL + 3 vac Raptor 3) — TIMELINE mode",
+ "timeline": true,
+ "stages": [
+  {
+   "name": "Super Heavy V3 (33× Raptor 3)",
+   "diameter_m": {
+    "value": 9.0,
+    "src": "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy",
+    "note": "9 m diameter; Wikipedia cites SpaceX 'Introducing Starship V3' (12 May 2026) / technical specifications"
+   },
+   "propellant_kg": {
+    "value": 3650000,
+    "src": "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy",
+    "note": "Block 3 / V3 propellant mass 3,650 t (8,050,000 lb). Wikipedia cites SpaceX technical specifications / Introducing Starship V3 (12 May 2026). The SpaceX specs page is JS-only and was not scraped this turn; figure taken from the cited Wikipedia infobox."
+   },
+   "dry_kg": {
+    "value": 275000,
+    "assumption": "Super Heavy V3 empty mass unpublished. 275 t is the earlier-block empty mass on the same Wikipedia Super Heavy infobox (gross 3,675 t with 3,400 t propellant). Used as a labelled stand-in, NOT a V3 measurement."
+   },
+   "thrust_sl_N": {
+    "value": 80800000,
+    "src": "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy",
+    "note": "80.8 MN / 8,240 tf liftoff thrust, 33× Raptor 3, cited to SpaceX specs / Introducing Starship V3"
+   },
+   "thrust_vac_N": {
+    "value": 80800000,
+    "assumption": "vacuum increment for the 33 sea-level Raptor 3s is unpublished; SL/liftoff thrust is used at all altitudes (Ae=0), which slightly understates high-altitude thrust"
+   },
+   "isp_vac_s": {
+    "value": 350,
+    "assumption": "Raptor 3 Isp is widely reported as 350 s from SpaceX's August 2024 Raptor 3 reveal; a primary transcript was not retrieved this turn. Treated as an ASSUMPTION."
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "https://www.spacex.com/launches/starship-flight-15",
+    "note": "SpaceX Flight 15 mission API / page: Liftoff T+00:00:00 (content.spacex.com/api/spacex-website/missions/starship-flight-15)"
+   },
+   "cutoff_s": {
+    "value": 139,
+    "src": "https://www.spacex.com/launches/starship-flight-15",
+    "note": "SpaceX F15 post-launch timeline: Super Heavy MECO (most engines cut off) T+00:02:19"
+   },
+   "separation_s": {
+    "value": 141,
+    "src": "https://www.spacex.com/launches/starship-flight-15",
+    "note": "SpaceX F15: Hot-staging (Starship Raptor ignition and stage separation) T+00:02:21. Unburned Super Heavy residual stands in for the unpublished boostback/landing reserve (boostback T+2:26–3:02, landing burn T+6:10–6:35, not modelled)."
+   }
+  },
+  {
+   "name": "Starship V3 (6× Raptor 3 on ascent)",
+   "diameter_m": {
+    "value": 9.0,
+    "src": "https://en.wikipedia.org/wiki/SpaceX_Starship",
+    "note": "9 m diameter"
+   },
+   "propellant_kg": {
+    "value": 1600000,
+    "src": "https://en.wikipedia.org/wiki/SpaceX_Starship",
+    "note": "Block 3 ship propellant 1,600 t, Wikipedia citing Musk / SpaceX V3 materials. Same caveat as the booster: specs page not scraped this turn."
+   },
+   "dry_kg": {
+    "value": 120000,
+    "assumption": "Starship V3 dry mass unpublished. Elon Musk in 2021 quoted ~100 t for a much earlier ship. 120 t is a labelled stand-in for a V3 ship, NOT a measurement."
+   },
+   "thrust_vac_N": {
+    "value": 15690640,
+    "src": "https://en.wikipedia.org/wiki/SpaceX_Starship",
+    "note": "Block 3 'Ship initial thrust' 1,600 tf. Flight 14 narrative: ship ignites all six Raptors on ascent (3 sea-level + 3 vacuum). 1,600 tf ≈ 3×250 tf SL + 3×275 tf vac (1,575 tf) plus a small official rounding."
+   },
+   "thrust_sl_N": {
+    "value": 15690640,
+    "assumption": "hot-stage start is already above the atmosphere; vac thrust used"
+   },
+   "isp_vac_s": {
+    "value": 350,
+    "assumption": "same Raptor 3 350 s ASSUMPTION as the booster; mix of SL and vacuum bells would have a slightly higher blend-average, unpublished"
+   },
+   "ignition_s": {
+    "value": 141,
+    "src": "https://www.spacex.com/launches/starship-flight-15",
+    "note": "F15 hot-staging / Starship Raptor ignition T+00:02:21"
+   },
+   "cutoff_s": {
+    "value": 489,
+    "src": "https://www.spacex.com/launches/starship-flight-15",
+    "note": "F15 Starship engine cutoff T+00:08:09 (ascent burn). Orbital insertion burn is a later restart (T+26:10–26:30) and is modelled in post_cutoff, not in this cutoff."
+   }
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 0,
+   "assumption": "no jettisoned payload fairing; Starlink V3 stack is carried internally and deployed through a door. Mass 0 so the jettison event is a no-op."
+  },
+  "jettison_time_s": {
+   "value": 141,
+   "assumption": "dummy time at staging; fairing mass is 0"
+  }
+ },
+ "guidance": {
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "not published"
+  },
+  "linear_tangent_from_stage": 1
+ },
+ "fixed_params": {
+  "cd": {
+   "value": 0.4,
+   "assumption": "not published; generic Cd. A 9 m cylinder would have a different (unpublished) coefficient; not fitted."
+  }
+ },
+ "fit": {
+  "vertical_rise_s": {
+   "x0": 8,
+   "bounds": [
+    3,
+    20
+   ],
+   "basis": "ASSUMPTION bound (pitch-over unpublished)"
+  },
+  "kick_deg": {
+   "x0": 2.0,
+   "bounds": [
+    0.2,
+    12
+   ],
+   "basis": "ASSUMPTION bound"
+  },
+  "payload_kg": {
+   "x0": 50000,
+   "bounds": [
+    20000,
+    80000
+   ],
+   "basis": "26 Starlink V3 satellites, mass unpublished by SpaceX. NSF unofficial 44–52 t is NOT used as a source. Fitted payload is NOT an estimate of the real stack."
+  },
+  "tan0": {
+   "x0": 0.5,
+   "bounds": [
+    -2,
+    5
+   ],
+   "basis": "guidance law"
+  },
+  "tan_rate": {
+   "x0": 0.002,
+   "bounds": [
+    -0.05,
+    0.05
+   ],
+   "basis": "guidance law"
+  }
+ },
+ "header_notes": [
+  "Starship V3: Super Heavy 3,650 t propellant, 33× Raptor 3, 80.8 MN / 8,240 tf liftoff; Ship Block 3 1,600 t propellant, 1,600 tf initial thrust (Wikipedia citing SpaceX 'Introducing Starship V3' / technical specifications, 12 May 2026). V3 dry masses and Raptor 3 Isp are ASSUMED (see fields).",
+  "TIMELINE mode uses SpaceX's published Flight 15 event times (content.spacex.com/api/spacex-website/missions/starship-flight-15, also spacex.com/launches/starship-flight-15): MECO 139 s, hot-stage / ship ignition 141 s, ship ascent cutoff 489 s. Boostback and catch are not modelled; unburned booster propellant stands in for the recovery reserve.",
+  "The 20 s orbital insertion burn (T+26:10–26:30) and payload deploy (start 35:01, complete 1:17:40) are flown in post_cutoff. SpaceX: ~275 km, ~14 orbits, >22-hour flight, then RTLS catch if the vehicle is healthy."
+ ]
+}
