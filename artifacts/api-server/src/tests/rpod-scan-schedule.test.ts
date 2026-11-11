@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 import {
   rpodScanIsDue, withDeadline, RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_ERROR_RETRY_MS, RPOD_SCAN_CHECK_INTERVAL_MS,
   RPOD_SCAN_BOOT_DELAY_MS, MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS,
-  RPOD_POST_SGP4_RESERVE_MS, sgp4ShouldStop,
+  RPOD_POST_SGP4_RESERVE_MS, sgp4ShouldStop, screenStopDeadlineMs,
   cancelScanAttempt, markScanLogged,
 } from "../lib/rpod/scanPolicy";
 
@@ -72,6 +72,12 @@ console.log("rpodScanIsDue: overdue lastScanAt must not wait for the next hourly
   check("SGP4 stops once only the reserve remains",
     sgp4ShouldStop(1_000, 1_000 + RPOD_POST_SGP4_RESERVE_MS - 1) === true
     && sgp4ShouldStop(1_000, 1_000 + RPOD_POST_SGP4_RESERVE_MS + 60_000) === false);
+  check("catalog screens stop at the persist reserve, not the hard cap",
+    screenStopDeadlineMs(1_500_000) === 1_500_000 - RPOD_POST_SGP4_RESERVE_MS
+    && screenStopDeadlineMs(1_500_000) > 1_500_000 - MAX_RPOD_SCAN_MS);
+  check("a stage inside the reserve is the same stop SGP4 already uses",
+    sgp4ShouldStop(screenStopDeadlineMs(5_000) + 1, 5_000) === true
+    && sgp4ShouldStop(screenStopDeadlineMs(5_000), 5_000) === false);
 }
 
 console.log("withDeadline rejects hung work so lastScanAt can move");
@@ -155,9 +161,26 @@ console.log("scheduler + scan source: staleness checks, skip logging, timeouts")
     /alongTrackRulesOutRange\(/.test(scanSrc)
     && /alongTrackRulesOutRange\([\s\S]{0,700}prioritizeSgp4Pairs\(/.test(scanSrc));
   check("widened rescreen is anchored on event members",
-    /screenCandidatePairs\(neighborhood, relaxed, SCREEN_YIELD_EVERY, deadlineMs, memberSet\)/.test(scanSrc));
+    /screenCandidatePairs\(neighborhood, relaxed, SCREEN_YIELD_EVERY, screenStopDeadlineMs\(deadlineMs\), memberSet/.test(scanSrc));
   check("SGP4 stops on the reserve instead of running into the hard cap",
     scanSrc.includes("sgp4ShouldStop("));
+  check("persist checkpoint does not throw the hour away",
+    !/throwIfScanDeadline\(deadlineMs,\s*"before persist"/.test(scanSrc)
+    && scanSrc.includes("if (abort.cancelled) return;"));
+  check("stage-1 and co-aligned screens use the persist-reserve deadline",
+    /const screenDeadlineMs = screenStopDeadlineMs\(deadlineMs\)/.test(scanSrc)
+    && /screenCandidatePairs\(elsets, DEFAULT_SCREEN, SCREEN_YIELD_EVERY, screenDeadlineMs/.test(scanSrc)
+    && /screenCoAlignedPairs\(elsets, DEFAULT_COALIGNED, nowMs, SCREEN_YIELD_EVERY, screenDeadlineMs/.test(scanSrc));
+  check("co-aligned screen and station-keeping wait while the persist reserve is open",
+    /if \(!sgp4ShouldStop\(Date\.now\(\), deadlineMs\)\) \{\s*coRaw = await screenCoAlignedPairs/.test(scanSrc)
+    && /if \(!sgp4ShouldStop\(Date\.now\(\), deadlineMs\)\) \{\s*try \{\s*const samples: ElementSample\[]/.test(scanSrc));
+  const skSrc = readFileSync(join(here, "../lib/rpod/stationKeeping.ts"), "utf8");
+  check("station-keeping history seek is statement-capped inside the persist reserve",
+    /STATION_KEEPING_HISTORY_TIMEOUT_MS = 20_000/.test(skSrc)
+    && skSrc.includes("SET LOCAL statement_timeout = ${STATION_KEEPING_HISTORY_TIMEOUT_MS}")
+    && /20_000/.test(skSrc));
+  check("a finished scan logs a numeric event count",
+    /logScanRow\(\s*\n\s*"success",\s*\n\s*started,\s*\n\s*conjKept\.kept\.length \+ coKept\.kept\.length \+ skEvents\.length/.test(scanSrc));
   check("partial SGP4 does not retire coplanar cases",
     scanSrc.includes("skipped coplanar retire after partial sgp4")
     && /else \{[\s\S]{0,180}retireDriftedCoplanarEvents\(/.test(scanSrc));
