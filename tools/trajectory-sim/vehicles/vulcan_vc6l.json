@@ -1,0 +1,203 @@
+{
+ "id": "vulcan_vc6l",
+ "name": "ULA Vulcan VC6L (2x BE-4, 6x GEM 63XL, LEO-optimized Centaur V / CV-L with 2x RL10C-1-1A, 21.3 m fairing) — TIMELINE mode",
+ "timeline": true,
+ "stages": [
+  {
+   "name": "GEM 63XL SRBs (6)",
+   "count": 6,
+   "parallel": true,
+   "diameter_m": {
+    "value": 1.618,
+    "derived": "63.7 in motor diameter, Northrop Grumman Propulsion Products Catalog p.39 (https://cdn.northropgrumman.com/-/media/wp-content/uploads/NG-Propulsion-Products-Catalog.pdf"
+   },
+   "propellant_kg": {
+    "value": 47853,
+    "derived": "105,497 lbm propellant (NG catalog p.39, 73°F vacuum performance table) × 0.45359237"
+   },
+   "dry_kg": {
+    "value": 4520,
+    "derived": "burnout (est.) 9,966 lbm (NG catalog p.39) × 0.45359237"
+   },
+   "thrust_vac_N": {
+    "value": 1485850,
+    "derived": "total-time-average thrust 334,063 lbf vacuum at 73°F (NG catalog p.39) × 4.448221615"
+   },
+   "thrust_sl_N": {
+    "value": 1485850,
+    "assumption": "catalog quotes vacuum average only; used as the constant average for the whole 87.3 s burn (grain throttle unpublished). Sea-level loss at liftoff not modelled."
+   },
+   "isp_vac_s": {
+    "value": 280.3,
+    "src": "https://cdn.northropgrumman.com/-/media/wp-content/uploads/NG-Propulsion-Products-Catalog.pdf",
+    "note": "GEM 63XL specific impulse 280.3 lbf-s/lbm, vacuum, 73°F, p.39"
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf",
+    "note": "UG §2.1: SRBs ignite after BE-4 health check and the vehicle lifts off; sim T-0 is liftoff with SRBs and BE-4 already running"
+   },
+   "cutoff_s": {
+    "value": 87.3,
+    "src": "https://cdn.northropgrumman.com/-/media/wp-content/uploads/NG-Propulsion-Products-Catalog.pdf",
+    "note": "GEM 63XL burn time 87.3 s (catalog summary table and p.39)"
+   },
+   "separation_s": {
+    "value": 100,
+    "src": "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf",
+    "note": "UG §2.1: 'The SRBs are jettisoned after burnout is detected. This occurs roughly 100 seconds into flight.' Approximate UG typical, not this flight."
+   }
+  },
+  {
+   "name": "Vulcan booster (2x BE-4)",
+   "diameter_m": {
+    "value": 5.4,
+    "src": "https://www.ulalaunch.com/missions/next-launch/vulcan-leo-1",
+    "note": "booster 17.7 ft (5.4 m) diameter"
+   },
+   "propellant_kg": {
+    "value": 460000,
+    "assumption": "ULA UG §1.4: tanks 'hold over a million pounds' of LOX and LNG (>453,592 kg). 460 t is a floor-plus-margin so a 292 s full-thrust BECO (UG Fig. 2.1.1-2, CCSFS example) at the derived mdot leaves a small PU residual. Exact load and the UG throttle to 4.6 g are unpublished."
+   },
+   "dry_kg": {
+    "value": 28600,
+    "assumption": "Secondary: Reich, Raketen: Die Internationale Enzyklopädie (2020) via Wikipedia 'Vulcan Centaur' (empty mass 28,600 kg). Not a ULA primary figure."
+   },
+   "thrust_sl_N": {
+    "value": 4893000,
+    "derived": "2 × 2,446.5 kN (550k-lbf) sea-level (ULA UG Table 1.4-1 and Vulcan Leo 1 mission page)"
+   },
+   "thrust_vac_N": {
+    "value": 5198813,
+    "derived": "2 × 2,446.5 kN × (340/320); mdot held at the sea-level pair F_sl/(Isp_sl g0). Isp pair is secondary (see isp_vac_s)."
+   },
+   "isp_vac_s": {
+    "value": 340,
+    "assumption": "Vacuum Isp 340 s from Jeff Bezos / Tim Dodd factory tour (15 Aug 2024) as cited on Wikipedia 'Vulcan Centaur'/'BE-4'; ULA does not publish BE-4 Isp. Sea-level 320 s from Reich 2020 (same Wikipedia citation) used only to derive vac thrust."
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf",
+    "note": "UG §2.1: booster phase begins with ignition of the two BE-4 engines"
+   },
+   "cutoff_s": {
+    "value": 292,
+    "src": "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf",
+    "note": "UG Fig. 2.1.1-2 (two-burn 1800 m/s GTO, CCSFS, 'Approximate Times & Values') BECO T+00:04:52. TYPICAL east-coast example, not this flight. (Fig. 2.1.1-1 VSFB SSO is 286 s; Cert-1 webcast 299 s on a 2-SRB vehicle.)"
+   },
+   "separation_s": {
+    "value": 298,
+    "src": "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf",
+    "note": "UG Fig. 2.1.1-2 booster/Centaur separation T+00:04:58 (typical CCSFS example)"
+   }
+  },
+  {
+   "name": "Centaur V LEO-optimized (CV-L, 2x RL10C-1-1A)",
+   "diameter_m": {
+    "value": 5.4,
+    "src": "https://www.ulalaunch.com/missions/next-launch/vulcan-leo-1",
+    "note": "Centaur LEO 17.7 ft (5.4 m) diameter, 35 ft (10.7 m) length"
+   },
+   "propellant_kg": {
+    "value": 36287,
+    "derived": "ULA fact sheet / Centaur V '120,000-lb propellant capacity' for the high-energy variant (https://www.ulalaunch.com/docs/default-source/rockets/vulcancentaur.pdf = 54,431 kg; ULA blog 2 Jun 2026: the LEO-optimized Centaur V 'carries a third less propellant than the high energy variant' (https://blog.ulalaunch.com/blog/vulcan-new-centaur-v-version-readies-for-amazon-leo → 54,431 × 2/3 = 36,287 kg"
+   },
+   "dry_kg": {
+    "value": 4800,
+    "assumption": "CV-L dry mass unpublished. CV-HE empty mass has only secondary encyclopedia figures (~5.5 t). 4,800 kg is a labelled stand-in for the shorter (35 ft vs ~41 ft) LEO-optimized stage, which ULA says accounts for less overall weight."
+   },
+   "thrust_vac_N": {
+    "value": 211972,
+    "derived": "2 × 23,825 lbf (106 kN) RL10C-1-1A (https://www.ulalaunch.com/missions/next-launch/vulcan-leo-1 × 4.448221615"
+   },
+   "thrust_sl_N": {
+    "value": 211972,
+    "assumption": "upper-stage start is in vacuum after BECO; SL rating unpublished, vac thrust used"
+   },
+   "isp_vac_s": {
+    "value": 453.8,
+    "assumption": "RL10C vacuum Isp 453.8 s as listed on Wikipedia 'Vulcan Centaur' citing the L3Harris RL10 datasheet; the datasheet PDF was not retrieved this turn (vendor URL served HTML). Treat as a secondary figure."
+   },
+   "ignition_s": {
+    "value": 308,
+    "src": "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf",
+    "note": "UG Fig. 2.1.1-2 MES1 T+00:05:08, typical CCSFS example (6 s after booster/Centaur sep)"
+   },
+   "cutoff_s": {
+    "value": 908,
+    "assumption": "LV-01 MES1 duration unpublished. 600 s MES1 (T+908 s) is a starting value in the UG-typical 11–12 min first-burn band (Fig. 2.1.1-1/2), to be tuned so MES1 inserts a ~180 × 450 km transfer (apogee = Amazon's published 450 km KA-01 insertion; perigee 180 km ASSUMED). MES2 is modelled post-cutoff at first apoapsis."
+   }
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 2500,
+   "assumption": "21.3 m (70 ft) long 5.4 m composite PLF mass unpublished by ULA/Beyond Gravity; 2,500 kg is a labelled stand-in (order of a large composite fairing), NOT a measurement."
+  },
+  "jettison_time_s": {
+   "value": 316,
+   "src": "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf",
+   "note": "UG Fig. 2.1.1-2 PLF jettison T+00:05:16 during MES1 (typical CCSFS example). UG §2.1: jettisoned during the first Centaur burn after the heating constraint is satisfied."
+  }
+ },
+ "guidance": {
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "not published"
+  },
+  "linear_tangent_from_stage": 2
+ },
+ "fixed_params": {
+  "cd": {
+   "value": 0.4,
+   "assumption": "not published; generic slender-launcher Cd (same as Electron/F9). Not fitted."
+  }
+ },
+ "fit": {
+  "vertical_rise_s": {
+   "x0": 12,
+   "bounds": [
+    4,
+    25
+   ],
+   "basis": "UG §2.1 'short vertical rise'; time unpublished"
+  },
+  "kick_deg": {
+   "x0": 2.0,
+   "bounds": [
+    0.2,
+    12
+   ],
+   "basis": "ASSUMPTION bound"
+  },
+  "payload_kg": {
+   "x0": 20000,
+   "bounds": [
+    10000,
+    27200
+   ],
+   "basis": "40 Amazon Leo satellites, mass unpublished (Amazon says production sats weigh more than 1,000 lb / 450 kg → 18 t floor before dispenser). Upper bound = UG/fact-sheet VC6 LEO PSW 27,200 kg (200 km / 28.7°). Fitted payload is NOT an estimate of the real stack."
+  },
+  "tan0": {
+   "x0": 0.5,
+   "bounds": [
+    -2,
+    5
+   ],
+   "basis": "guidance law"
+  },
+  "tan_rate": {
+   "x0": 0.002,
+   "bounds": [
+    -0.05,
+    0.05
+   ],
+   "basis": "guidance law"
+  }
+ },
+ "header_notes": [
+  "Vulcan VC6L: 6 GEM 63XL (NG catalog p.39 masses, 87.3 s burn, 334,063 lbf vacuum time-average thrust, Isp 280.3 s), 2×BE-4 550k-lbf SL (ULA UG / Vulcan Leo 1 page), LEO-optimized Centaur V (ULA: 35 ft, a third less propellant than the 120,000-lb CV-HE, twin RL10C-1-1A at 23,825 lbf each), 21.3 m fairing (ULA).",
+  "TIMELINE mode: booster/Centaur event times from ULA UG Fig. 2.1.1-2 (CCSFS two-burn example, 'Approximate Times & Values') plus NG 87.3 s SRB burn and UG '~100 s' SRB jettison — TYPICAL sequence, not LV-01's unpublished timeline. MES1 cutoff is an ASSUMED duration, tuned so the first burn targets a 180 × 450 km transfer.",
+  "BE-4 Isp, booster dry mass, CV-L dry mass and fairing mass are secondary or ASSUMED (see fields). BE-4 throttle to 4.6 g (UG) is not modelled; full published sea-level/derived-vac thrust is used throughout the booster phase."
+ ]
+}

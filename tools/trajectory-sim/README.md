@@ -73,7 +73,7 @@ Insertion times moved 741.5→743.5 s (LM-6A) and 761.0→763.0 s (LM-8A).
 
 ## deploy_coast.py (post-cutoff, through deploy)
 `python3 deploy_coast.py launches/<slug>.json [--outdir DIR]` extends `out/<slug>/` past final cutoff using the launch's `post_cutoff` block
-(drag, burns[], deploy{t_s, src}). If `deploy.t_s` is null, it propagates TWO revolutions on the inferred insertion orbit, ending
+(drag, burns[], deploy{t_s, src}). If `deploy.t_s` is null, it flies any configured mid-coast burns first and then propagates TWO revolutions on the inferred insertion orbit, ending
 "inferred insertion orbit, +2 revs (deploy time unpublished)". `deploy_coast.py` then copies those out/ files to
 `artifacts/space-report/public/launches/<slug>/<slug>_<YYYY-MM-DD>_trajectory_sim.csv` and `.kml`
 (the date is the launch `t0_utc`; surrogate files use the same pattern without `_sim`).
