@@ -1,41 +1,42 @@
 {
  "id": "starship_v3",
- "name": "SpaceX Starship V3 (Super Heavy 33×Raptor 3 + Ship 3 SL + 3 vac Raptor 3) — TIMELINE mode",
+ "name": "SpaceX Starship V3 (Super Heavy 33\u00d7Raptor 3 + Ship 3 SL + 3 RVac Raptor 3) \u2014 TIMELINE mode",
  "timeline": true,
  "stages": [
   {
-   "name": "Super Heavy V3 (33× Raptor 3)",
+   "name": "Super Heavy V3 (33\u00d7 Raptor 3)",
    "diameter_m": {
     "value": 9.0,
-    "src": "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy",
-    "note": "9 m diameter; Wikipedia cites SpaceX 'Introducing Starship V3' (12 May 2026) / technical specifications"
+    "src": "https://www.spacex.com/vehicles/starship/technical-specifications",
+    "note": "SpaceX technical specifications: Super Heavy diameter 9 m / 29.5 ft"
    },
    "propellant_kg": {
     "value": 3650000,
-    "src": "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy",
-    "note": "Block 3 / V3 propellant mass 3,650 t (8,050,000 lb). Wikipedia cites SpaceX technical specifications / Introducing Starship V3 (12 May 2026). The SpaceX specs page is JS-only and was not scraped this turn; figure taken from the cited Wikipedia infobox."
+    "src": "https://www.spacex.com/vehicles/starship/technical-specifications",
+    "note": "SpaceX technical specifications: Super Heavy propellant capacity 3,650 t / 8 Mlb"
    },
    "dry_kg": {
     "value": 275000,
-    "assumption": "Super Heavy V3 empty mass unpublished. 275 t is the earlier-block empty mass on the same Wikipedia Super Heavy infobox (gross 3,675 t with 3,400 t propellant). Used as a labelled stand-in, NOT a V3 measurement."
+    "assumption": "Super Heavy V3 empty mass is still unpublished on the SpaceX specs page. 275 t is the earlier-block empty mass on the Wikipedia Super Heavy infobox (gross 3,675 t with 3,400 t propellant). Labelled stand-in, NOT a V3 measurement."
    },
    "thrust_sl_N": {
-    "value": 80800000,
-    "src": "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy",
-    "note": "80.8 MN / 8,240 tf liftoff thrust, 33× Raptor 3, cited to SpaceX specs / Introducing Starship V3"
+    "value": 80806796,
+    "src": "https://www.spacex.com/vehicles/starship/technical-specifications",
+    "note": "SpaceX technical specifications: Super Heavy thrust 8,240 tf / 18.1 Mlbf (8,240 \u00d7 1,000 \u00d7 9.80665 = 80,806,796 N). Equals 33 \u00d7 ~249.7 tf, matching the 250 tf Raptor 3 sea-level rating on the same page and the 12 May 2026 V3 update."
    },
    "thrust_vac_N": {
-    "value": 80800000,
-    "assumption": "vacuum increment for the 33 sea-level Raptor 3s is unpublished; SL/liftoff thrust is used at all altitudes (Ae=0), which slightly understates high-altitude thrust"
+    "value": 85111915,
+    "derived": "33 \u00d7 263.00 tf, the per-engine vacuum thrust implied by the official Ship 1,614 tf total minus 3 \u00d7 275 tf RVac (see ship stage). Same Raptor 3 sea-level engines as the ship. 85,111,915 N."
    },
    "isp_vac_s": {
     "value": 350,
-    "assumption": "Raptor 3 Isp is widely reported as 350 s from SpaceX's August 2024 Raptor 3 reveal; a primary transcript was not retrieved this turn. Treated as an ASSUMPTION."
+    "src": "https://web.archive.org/web/20190925065050/https://twitter.com/elonmusk/status/1171118891671490560",
+    "note": "Elon Musk, 9 Sep 2019: 'Sea level Raptor\u2019s vacuum Isp is ~350 sec, but ~380 sec with larger vacuum-optimized nozzle.' SpaceX's 3 Aug 2024 Raptor 3 (sea-level variant) post also listed 350 s. Used as vacuum Isp for the 33 sea-level Raptor 3s."
    },
    "ignition_s": {
     "value": 0,
     "src": "https://www.spacex.com/launches/starship-flight-15",
-    "note": "SpaceX Flight 15 mission API / page: Liftoff T+00:00:00 (content.spacex.com/api/spacex-website/missions/starship-flight-15)"
+    "note": "SpaceX Flight 15 timeline: Liftoff T+00:00:00 (content.spacex.com/api/spacex-website/missions/starship-flight-15)"
    },
    "cutoff_s": {
     "value": 139,
@@ -45,47 +46,47 @@
    "separation_s": {
     "value": 141,
     "src": "https://www.spacex.com/launches/starship-flight-15",
-    "note": "SpaceX F15: Hot-staging (Starship Raptor ignition and stage separation) T+00:02:21. Unburned Super Heavy residual stands in for the unpublished boostback/landing reserve (boostback T+2:26–3:02, landing burn T+6:10–6:35, not modelled)."
+    "note": "SpaceX F15: Hot-staging (Starship Raptor ignition and stage separation) T+00:02:21. Unburned Super Heavy residual stands in for the unpublished boostback/landing reserve (boostback T+2:26\u20133:02, landing burn T+6:10\u20136:35 and catch, not modelled). F14 official narrative: boostback used 31 of 33 engines; that reserve stays on the booster and is not delivered to the ship."
    }
   },
   {
-   "name": "Starship V3 (6× Raptor 3 on ascent)",
+   "name": "Starship V3 (3\u00d7 Raptor 3 SL + 3\u00d7 RVac)",
    "diameter_m": {
     "value": 9.0,
-    "src": "https://en.wikipedia.org/wiki/SpaceX_Starship",
-    "note": "9 m diameter"
+    "src": "https://www.spacex.com/vehicles/starship/technical-specifications",
+    "note": "SpaceX technical specifications: Starship diameter 9 m / 29.5 ft"
    },
    "propellant_kg": {
     "value": 1600000,
-    "src": "https://en.wikipedia.org/wiki/SpaceX_Starship",
-    "note": "Block 3 ship propellant 1,600 t, Wikipedia citing Musk / SpaceX V3 materials. Same caveat as the booster: specs page not scraped this turn."
+    "src": "https://www.spacex.com/vehicles/starship/technical-specifications",
+    "note": "SpaceX technical specifications: Starship propellant capacity 1,600 t / 3.5 Mlb. Not increased above this figure."
    },
    "dry_kg": {
     "value": 120000,
     "assumption": "Starship V3 dry mass unpublished. Elon Musk in 2021 quoted ~100 t for a much earlier ship. 120 t is a labelled stand-in for a V3 ship, NOT a measurement."
    },
    "thrust_vac_N": {
-    "value": 15690640,
-    "src": "https://en.wikipedia.org/wiki/SpaceX_Starship",
-    "note": "Block 3 'Ship initial thrust' 1,600 tf. Flight 14 narrative: ship ignites all six Raptors on ascent (3 sea-level + 3 vacuum). 1,600 tf ≈ 3×250 tf SL + 3×275 tf vac (1,575 tf) plus a small official rounding."
+    "value": 15827933.1,
+    "src": "https://www.spacex.com/vehicles/starship/technical-specifications",
+    "note": "SpaceX technical specifications: Ship thrust 1,614 tf (15,827,933 N). That is the official rated/initial thrust of 3 sea-level + 3 RVac Raptor 3s (3\u00d7263.00 tf vac implied + 3\u00d7275 tf = 1,614 tf). Held for the published 348 s ascent. At blended Isp 364.72 s this burns 1,540 t of the 1,600 t load and leaves 60 t residual \u2014 enough to fly the published 20 s insertion (14.3 t at 250 tf / 350 s) with propellant left for the unmodelled deorbit/catch. A deeper 80.7% mean ascent throttle, tried in order to make a full-thrust 20 s / 250 tf insertion only 94 m/s, left too little \u0394v to reach the passively safe ellipse. Ascent is therefore flown at the official 1,614 tf; the insertion burn is throttled instead (see launch post_cutoff)."
    },
    "thrust_sl_N": {
-    "value": 15690640,
-    "assumption": "hot-stage start is already above the atmosphere; vac thrust used"
+    "value": 15827933.1,
+    "assumption": "Hot-stage start is already ~60\u201380 km (above essentially all atmosphere); official 1,614 tf vacuum/rated thrust is used. Sea-level stack would be 3\u00d7250 tf plus three RVacs not rated for SL."
    },
    "isp_vac_s": {
-    "value": 350,
-    "assumption": "same Raptor 3 350 s ASSUMPTION as the booster; mix of SL and vacuum bells would have a slightly higher blend-average, unpublished"
+    "value": 364.72,
+    "derived": "Blended vacuum Isp of 3 sea-level Raptor 3s at 350 s and 3 RVacs at 380 s, mass-flow weighted at the official 1,614 tf / 275 tf split: mdot_full = 3\u00d72,579,149/(350\u00d7g0) + 3\u00d72,696,829/(380\u00d7g0) = 4,425.34 kg/s; Isp = 15,827,933/(mdot\u00d7g0) = 364.72 s. 350 s / 380 s from Musk 9 Sep 2019 (sea-level Raptor vacuum Isp ~350 s, ~380 s with the larger vacuum-optimized nozzle). The previous model used a single 350 s for all six engines and over-burned the tank."
    },
    "ignition_s": {
     "value": 141,
     "src": "https://www.spacex.com/launches/starship-flight-15",
-    "note": "F15 hot-staging / Starship Raptor ignition T+00:02:21"
+    "note": "F15 hot-staging / Starship Raptor ignition T+00:02:21. F14 official narrative: ship ignites all six Raptor engines (3 sea-level + 3 vacuum) on ascent."
    },
    "cutoff_s": {
     "value": 489,
     "src": "https://www.spacex.com/launches/starship-flight-15",
-    "note": "F15 Starship engine cutoff T+00:08:09 (ascent burn). Orbital insertion burn is a later restart (T+26:10–26:30) and is modelled in post_cutoff, not in this cutoff."
+    "note": "F15 Starship engine cutoff T+00:08:09 (ascent burn). Orbital insertion burn is a later restart (T+26:10\u201326:30) and is modelled in post_cutoff, not in this cutoff."
    }
   }
  ],
@@ -135,7 +136,7 @@
     20000,
     80000
    ],
-   "basis": "26 Starlink V3 satellites, mass unpublished by SpaceX. NSF unofficial 44–52 t is NOT used as a source. Fitted payload is NOT an estimate of the real stack."
+   "basis": "26 Starlink V3 satellites, mass unpublished by SpaceX. Fitted payload is a steering parameter, NOT an estimate of the real stack."
   },
   "tan0": {
    "x0": 0.5,
@@ -155,8 +156,9 @@
   }
  },
  "header_notes": [
-  "Starship V3: Super Heavy 3,650 t propellant, 33× Raptor 3, 80.8 MN / 8,240 tf liftoff; Ship Block 3 1,600 t propellant, 1,600 tf initial thrust (Wikipedia citing SpaceX 'Introducing Starship V3' / technical specifications, 12 May 2026). V3 dry masses and Raptor 3 Isp are ASSUMED (see fields).",
-  "TIMELINE mode uses SpaceX's published Flight 15 event times (content.spacex.com/api/spacex-website/missions/starship-flight-15, also spacex.com/launches/starship-flight-15): MECO 139 s, hot-stage / ship ignition 141 s, ship ascent cutoff 489 s. Boostback and catch are not modelled; unburned booster propellant stands in for the recovery reserve.",
-  "The 20 s orbital insertion burn (T+26:10–26:30) and payload deploy (start 35:01, complete 1:17:40) are flown in post_cutoff. SpaceX: ~275 km, ~14 orbits, >22-hour flight, then RTLS catch if the vehicle is healthy."
+  "Starship V3 from SpaceX technical specifications (https://www.spacex.com/vehicles/starship/technical-specifications): Super Heavy 3,650 t propellant, 8,240 tf / 18.1 Mlbf, 9 m; Ship 1,600 t propellant, 1,614 tf, 9 m. Raptor 3 sea-level 250 tf (same page and SpaceX 'Introducing Starship V3' update, 12 May 2026, https://www.spacex.com/updates/starship-v3). RVac 275 tf (same 12 May 2026 update, up from 258 tf). Engine counts: 33 Raptor 3 on Super Heavy; Ship 3 sea-level + 3 RVac (SpaceX specs page; F14 official narrative: all six on ascent).",
+  "Previous file used 1,600 tf (rounded Wikipedia 'initial thrust') and a single 350 s Isp for all six ship engines, held constant for 348 s, which left only 9.1 t residual and could not fly the published 20 s insertion. Units were already correct (1,600/1,614 tf is the ship, Super Heavy is 8,240 tf). This revision uses official 1,614 tf and blended 364.72 s Isp; residual after ascent is ~60 t. Insertion is the published 20 s burn with thrust solved to a 275 km perigee (labelled Raptor throttle), not a residual-limited 12.8 s at 250 tf.",
+  "TIMELINE mode uses SpaceX's published Flight 15 event times (content.spacex.com/api/spacex-website/missions/starship-flight-15): MECO 139 s, hot-stage / ship ignition 141 s, ship ascent cutoff 489 s. Boostback and catch are not modelled; unburned booster propellant stands in for the recovery reserve and is not delivered to the ship.",
+  "The 20 s orbital insertion burn (T+26:10\u201326:30) and payload deploy (start 35:01, complete 1:17:40) are flown in post_cutoff. SpaceX F15: ~275 km, ~14 orbits, >22-hour flight, with a passively safe suborbital opportunity before raising to orbital altitude (same architecture as F14). F14 official: single sea-level Raptor insertion after a passively safe suborbital trajectory."
  ]
 }

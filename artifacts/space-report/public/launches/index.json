@@ -410,6 +410,26 @@
       "id": "wp-spacex-super-heavy",
       "title": "Wikipedia: SpaceX Super Heavy (Block 3 booster propellant / 80.8 MN liftoff thrust, earlier-block empty mass used as a stand-in)",
       "url": "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy"
+    },
+    {
+      "id": "spacex-starship-specs",
+      "title": "SpaceX: Starship technical specifications (Ship 1,614 tf / 1,600 t; Super Heavy 8,240 tf / 3,650 t; Raptor 3 sea-level 250 tf; 3 SL + 3 RVac on Ship, 33 on Super Heavy)",
+      "url": "https://www.spacex.com/vehicles/starship/technical-specifications"
+    },
+    {
+      "id": "spacex-v3-update",
+      "title": "SpaceX update, 12 May 2026: Introducing Starship V3 — Raptor 3 sea-level 250 tf (up from 230), RVac 275 tf (up from 258)",
+      "url": "https://www.spacex.com/updates/starship-v3"
+    },
+    {
+      "id": "spacex-starship-flight-14",
+      "title": "SpaceX: Starship Flight 14 mission page — all six ship engines on ascent; passively safe suborbital trajectory; single sea-level Raptor insertion (T+00:25:17–25:36)",
+      "url": "https://www.spacex.com/launches/starship-flight-14"
+    },
+    {
+      "id": "musk-raptor-isp-2019",
+      "title": "Elon Musk, 9 Sep 2019: 'Sea level Raptor’s vacuum Isp is ~350 sec, but ~380 sec with larger vacuum-optimized nozzle'",
+      "url": "https://web.archive.org/web/20190925065050/https://twitter.com/elonmusk/status/1171118891671490560"
     }
   ],
   "launches": [
@@ -1044,36 +1064,45 @@
       "confidence": "low",
       "sources": [
         "https://www.spacex.com/launches/starship-flight-15",
+        "https://www.spacex.com/launches/starship-flight-14",
+        "https://www.spacex.com/vehicles/starship/technical-specifications",
+        "https://www.spacex.com/updates/starship-v3",
         "https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201080%2F26",
         "https://ll.thespacedevs.com/2.2.0/launch/0f867f0c-5422-4d44-93b8-d7faaae7019b/",
+        "https://web.archive.org/web/20190925065050/https://twitter.com/elonmusk/status/1171118891671490560",
         "https://en.wikipedia.org/wiki/SpaceX_Starship",
         "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy"
       ],
       "method": {
-        "csv": "event-surrogate parametric: SpaceX Flight 15 published timeline (Max-Q 58 s, Super Heavy MECO 139 s, hot-stage / sep 141 s, ship ascent cutoff 489 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; azimuth 107.53 deg from NAVAREA IV 1080/26 Area A far-edge midpoint; ends at ship ascent cutoff; insertion burn and deploy are in the sim file only; T0 2026-11-13T22:45:00Z (SpaceX 75-minute window / LL2 To Be Confirmed, window to 00:00Z)",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX F15 MECO 139 s, hot-stage 141 s, ship cutoff 489 s as hard events; Super Heavy 3,650 t / 80.8 MN and Ship 1,600 t / 1,600 tf from Wikipedia citing SpaceX V3 specs (12 May 2026); V3 dry masses unpublished (booster 275 t earlier-block stand-in, ship 120 t ASSUMED); Raptor 3 Isp 350 s ASSUMPTION; Ae=0 (SL thrust at all altitudes); steering/payload fitted toward an ASSUMED 180 x 275 km pre-insertion transfer (275 km = SpaceX published orbital altitude; 180 km perigee stand-in); ascent residual: geodetic alt 180.33 km (target 180), FPA -0.04 deg, osculating 177.0 x 246.3 km (SMA -15.9 km vs 180x275; payload pinned at 78.9 t, near the 80 t cap), i=31.18 deg vs 31.01 deg from the NAVAREA azimuth; insertion is a single Raptor 3 SL (250 tf, F14 analog) flown open-loop, residual-limited to 12.80 s (constant 1,600 tf / 350 s leaves only 9.14 t after the 348 s ascent, short of a published 20 s / 14.3 t burn — 1,600 tf is SpaceX 'initial thrust'); post-burn osculating 192.2 x 786.6 km, at deploy complete T+4660 s 202.5 x 771.6 km, i=31.19 deg, vs SpaceX ~275 km (apogee residual ~+500 km: even the residual-limited impulse is ~150 m/s vs ~26 m/s to circularize 180x275; residuals reported, not hidden); deorbit / catch not modelled; fitted payload is NOT an estimate of the 26-sat stack; ILLUSTRATIVE"
+        "csv": "event-surrogate parametric: SpaceX Flight 15 published timeline (Max-Q 58 s, Super Heavy MECO 139 s, hot-stage / sep 141 s, ship ascent cutoff 489 s); altitudes unpublished, so knot altitudes ASSUMED from this board's retuned 3DOF sim (MECO 86.8 km, cutoff 162.6 km); azimuth 107.53 deg from NAVAREA IV 1080/26 Area A far-edge midpoint; ends at ship ascent cutoff; insertion burn and deploy are in the sim file only; T0 2026-11-13T22:45:00Z (SpaceX 75-minute window / LL2 To Be Confirmed, window to 00:00Z)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode, RETUNED 2026-11-11: SpaceX F15 MECO 139 s, hot-stage 141 s, ship cutoff 489 s as hard events; official V3 figures (SpaceX technical specifications + 12 May 2026 V3 update) — Super Heavy 3,650 t / 8,240 tf at liftoff (33× Raptor 3), Ship 1,600 t / 1,614 tf (3 sea-level + 3 RVac); RVac 275 tf; blended ship Isp 364.72 s (3×350 s + 3×380 s, Musk 9 Sep 2019); Super Heavy vacuum thrust 8,679 tf DERIVED (33 × 263 tf implied by the 1,614 tf / 275 tf split); V3 dry masses still unpublished (booster 275 t earlier-block stand-in, ship 120 t ASSUMED); ascent target is an ASSUMED passively safe −40 × 275 km ellipse (SpaceX F15 official: 'passively safe suborbital trajectory' then raise to ~275 km; F14 official analog), 1081 s before apogee so the published insertion epoch is at first apogee; cutoff residual: geodetic alt 162.59 km (target 162.59), FPA 1.331 deg (target 1.331), osculating −39.2 × 274.1 km, SMA error ~0, i=31.62 deg vs 31.01 deg from the NAVAREA azimuth; insertion is a single Raptor 3 SL (F14 official analog) flown open-loop for the published 20 s at a DERIVED 1,028,650 N (104.9 tf, 42% of 250 tf) so the burn supplies the 89.8 m/s to circularize the post-coast −31.8 × 269.3 km ellipse (J2/drag walked the 275 km apogee down ~6 km); post-burn 262.8 × 275.1 km, i=31.63 deg; at deploy complete T+4660 s, 254.8 × 278.4 km, i=31.62 deg, vs SpaceX ~275 km; fitted payload 51.4 t is NOT an estimate of the 26-sat stack; ship residual after ascent 60.0 t (enough for the 20 s burn plus later unmodelled deorbit/catch); Super Heavy residual 203 t stays on the booster as the unpublished boostback/landing reserve; ILLUSTRATIVE"
       },
       "reference_ids": [
         "spacex-starship-flight-15",
+        "spacex-starship-flight-14",
+        "spacex-starship-specs",
+        "spacex-v3-update",
+        "musk-raptor-isp-2019",
         "navarea-iv-1080-26",
         "wp-spacex-starship",
         "wp-spacex-super-heavy",
         "ll2",
         "kml"
       ],
-      "note": "Pre-flight ILLUSTRATIVE. Starship Flight 15 / Starlink 31-2, 26 V3 sats from OLP-2; T0 Fri Nov 13 2:45 p.m. PST = 2026-11-13T22:45:00Z (SpaceX 75-minute window, pending regulatory approval; LL2 To Be Confirmed). Sim after the residual-limited insertion is 203 x 772 km, i=31.18 deg, not the published ~275 km (impulse too large under the open-loop 1x250 tf assumption). Catch and deorbit are not modelled.",
+      "note": "Pre-flight ILLUSTRATIVE, RETUNED 2026-11-11. Starship Flight 15 / Starlink 31-2, 26 V3 sats from OLP-2; T0 Fri Nov 13 2:45 p.m. PST = 2026-11-13T22:45:00Z (SpaceX 75-minute window, pending regulatory approval; LL2 To Be Confirmed). The previous model used a single 350 s Isp and treated 1,600 tf as constant, leaving only 9.1 t residual and a 202 × 772 km post-insertion orbit. The retuned sim uses official 1,614 tf, blended 364.72 s Isp, a passively safe −40 × 275 km ascent, and a 20 s insertion throttled to 42% of 250 tf, and reaches 263 × 275 km at insertion cutoff (i=31.63 deg vs 31.01 deg from the NAVAREA azimuth). Catch and deorbit are not modelled.",
       "assumptions": [
         "V3 dry masses unpublished: Super Heavy empty 275 t is an earlier-block Wikipedia infobox stand-in; ship dry 120 t ASSUMED (2021 ~100 t Musk figure is stale)",
-        "Raptor 3 Isp 350 s ASSUMPTION (widely reported from the Aug 2024 reveal; primary transcript not retrieved). Vacuum increment for 33 SL Raptors unpublished; SL thrust used at all altitudes (Ae=0)",
-        "Ship 1,600 tf treated as constant for the 348 s ascent; SpaceX publishes this as initial thrust. Under that assumption only 9.14 t remains, so the published 20 s insertion is flown residual-limited at 12.80 s. Extra propellant was not invented",
-        "Insertion engine count unpublished on F15; 1x Raptor 3 SL at 250 tf is a Flight 14 analog, labelled ASSUMPTION, flown open-loop (not solved to 275 km)",
-        "Pre-insertion target 180 x 275 km: 275 km is SpaceX's published orbital altitude; 180 km perigee is a labelled stand-in. The 20 s / 1x250 tf impulse cannot circularize that transfer (~236 m/s vs ~26 m/s); residuals are reported",
-        "Payload 26 V3 sats, mass unpublished; fitted 78.9 t (near the 80 t cap) is a steering parameter, NOT an estimate",
-        "Azimuth from NAVAREA IV 1080/26 Area A (i~31.01 deg); sim i=31.18 deg (not retuned)",
+        "Ship vacuum Isp is a DERIVED 364.72 s blend of 3 sea-level Raptor 3s at 350 s and 3 RVacs at 380 s (Musk, 9 Sep 2019). The official 1,614 tf and 275 tf RVac figures imply 263.00 tf vacuum for each sea-level Raptor 3",
+        "Super Heavy vacuum thrust 8,679 tf is DERIVED (33 × 263 tf); liftoff is the official 8,240 tf. Unburned booster propellant (203 t) stays on the booster as the unpublished boostback/landing reserve and is not delivered to the ship",
+        "Ascent is flown at official 1,614 tf (not a deeper mean throttle). A trial 80.7% ascent throttle, sized so a full-thrust 20 s / 250 tf insertion would be only ~94 m/s, left too little ship Δv to reach the passively safe ellipse",
+        "Insertion engine count unpublished on F15; 1× Raptor 3 SL is a Flight 14 official analog. The published 20 s is flown in full. Thrust is DERIVED at 1,028,650 N (42% of 250 tf) to circularize the post-coast ellipse; full 250 tf × 20 s would loft apogee. 42% is inside the commonly cited Raptor 40–100% throttle range (not a published F15 setting)",
+        "Pre-insertion orbit is an ASSUMED −40 × 275 km passively safe ellipse (275 km apogee = SpaceX published orbital altitude; −40 km perigee is a labelled stand-in in the F14/F15 passively-safe class; F15 official text does not publish the suborbital elements). Mid-arc target 1081 s before apogee matches the published cutoff-to-insertion interval",
+        "J2/drag on the 18-minute coast lowers apogee from 274.1 km at cutoff to 269.3 km (equatorial-radius) at T+1570 s. Insertion circularizes there, giving 262.8 × 275.1 km — residual vs a perfect 275 km circle is this walk plus finite-burn effects",
+        "Payload 26 V3 sats, mass unpublished; fitted 51.4 t is a steering parameter, NOT an estimate",
+        "Azimuth from NAVAREA IV 1080/26 Area A (i~31.01 deg); sim i=31.63 deg (not retuned). Fit kick is 0.42 deg, near its 0.2 deg lower bound, so Super Heavy MECO is lofted (FPA 66.9 deg)",
         "Cd 0.4 fixed, generic; no jettisoned fairing (mass 0)",
-        "Super Heavy boostback / landing and ship deorbit / catch (T+21:35:57 / T+22:32:34) are not modelled; file ends at deploy complete T+01:17:40",
-        "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at the sim ascent-cutoff altitude; surrogate ends at T+489 s",
-        "Block 3 propellant/thrust from Wikipedia citing SpaceX technical specifications (12 May 2026); the SpaceX specs page is JS and was not scraped first-hand"
+        "Super Heavy boostback / landing and ship deorbit / catch (T+21:35:57 / T+22:32:34) are not modelled; file ends at deploy complete T+01:17:40. ~54 t ship propellant remains after insertion as a stand-in for those burns",
+        "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at the sim ascent-cutoff altitude; surrogate ends at T+489 s"
       ]
     },
     {
