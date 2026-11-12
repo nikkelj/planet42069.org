@@ -1,0 +1,217 @@
+{
+ "slug": "ussf-317",
+ "title": "Falcon 9 USSF-317 (SLC-4E)",
+ "vehicle": "falcon9",
+ "t0_utc": "2026-11-15T03:55:00Z",
+ "pad": {
+  "lat": 34.632,
+  "lon": -120.611,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/ (SLC-4E, Vandenberg SFB)"
+ },
+ "azimuth_deg": {
+  "value": 153.56,
+  "derived": "great-circle bearing from LL2 pad to far-edge midpoint (32.733N 119.492W) of FAA/ZLA CARF NOTAM 11/116-26 Area A 'SX USSF317 R-6 26-73' (valid 2026-11-15T03:55Z-08:17Z; same polygon in 11/094-26 for Nov 13). Polygon is IDENTICAL to USSF-627's 11/067-26 Area A, so the azimuth 153.56 deg is the same. NAVAREA XII 785/26 Area A (13-19 Nov, 15 Nov 0355-0818Z) is a different, wider polygon (far edge 32-05N 119-08W..32-30N 119-18W) and was not used for the azimuth (ZLA polygon used for consistency with USSF-627/432). Inclination NOT published (classified); used as launch-plane azimuth without tuning. LL2 notes drop zones match Starlink Group 15.",
+  "src": "https://space-notices.com/notice/notam-ZLA-11%2F116-26 (also 11/094-26, 11/115-26 Area B; NAVAREA XII 785/26 https://www.sealagom.com/navarea/12/message/25632/785-26-north-pacific/; HYDROPAC 3245/26; entry https://space-notices.com/entry/launch-f9-ussf-317)"
+ },
+ "payload_kg": {
+  "fit": true,
+  "value": null,
+  "note": "FITTED within the F9 config bounds (13.0-21.6 t) so the ASSUMED SECO-1 time delivers the ASSUMED parking orbit. USSF-317 payload mass/identity unpublished; result is NOT an estimate of the real payload. (payload bounds and Group 15 SECO-1/orbit borrowed from the USSF-627 config)"
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 177.3,
+   "assumption": "USSF-317 orbit unpublished. ASSUMED Starlink Group 15 analog parking orbit (perigee) copied from starlink-15-18.json, because LL2 notes the mission's drop zones match Starlink Group 15 (possible Starshield). https://ll.thespacedevs.com/2.3.0/launches/6aa7b90b-e5ed-45d8-a52e-04fbf399d178/"
+  },
+  "apoapsis_alt_km": {
+   "value": 266.2,
+   "assumption": "same Group 15 analog (starlink-15-18 parking apogee); not a USSF-317 source"
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 2,
+  "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude (~3 km difference at insertion latitude, accepted via 1 km-weight)"
+ },
+ "header_notes": [
+  "NEW 2026-11-12: SpaceX ussf317 page: 'targeting Saturday, November 14 ... four-hour launch window opens at 7:55 p.m. PT' (backup Sun Nov 15 7:41 p.m. PT); LL2 NET 2026-11-15T03:55:00Z Go. Booster: 11th flight (B1100 per Next Spaceflight), OCISLY landing. ILLUSTRATIVE.",
+  "Published timeline (SpaceX ussf317, checked 2026-11-12): Max-Q 1:07, MECO 2:26, stage sep 2:29, SES-1 2:36, fairing 2:58, entry burn 6:06-6:30, landing burn 7:52, landing 8:11. SECO, orbit, deploy NOT published (classified USSF mission).",
+  "INFERRED/ASSUMED: SECO-1 time and parking orbit are borrowed from the Starlink Group 15 analog via the USSF-627 config (LL2: drop zones exact fits with Group 15), not USSF-317 sources. Azimuth 153.56 deg from FAA/ZLA CARF NOTAM 11/116-26 Area A (identical to USSF-627's polygon). File ends 2 revs after cutoff (deploy unpublished)."
+ ],
+ "final_cutoff_s": {
+  "value": 519,
+  "assumption": "USSF-317 SECO-1 unpublished; Group 15 analog SECO-1 T+8:39 (https://www.spacex.com/launches/sl-15-18)"
+ },
+ "knots": [
+  {
+   "event": "MECO (F9 family telemetry, Iridium NEXT-7)",
+   "t_s": 146,
+   "alt_km": 63.98,
+   "range_km": 58.6,
+   "alt_sigma_km": 3,
+   "range_sigma_km": 10,
+   "src": "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207 (SpaceX webcast telemetry; FAMILY stand-in, not this flight)"
+  },
+  {
+   "event": "SES-1 (F9 family telemetry)",
+   "t_s": 156,
+   "alt_km": 73.78,
+   "range_km": 74.8,
+   "alt_sigma_km": 3,
+   "range_sigma_km": 10,
+   "src": "same"
+  },
+  {
+   "event": "Fairing sep (F9 family telemetry)",
+   "t_s": 176,
+   "alt_km": 91.15,
+   "range_km": 108.7,
+   "alt_sigma_km": 3,
+   "range_sigma_km": 10,
+   "src": "same"
+  }
+ ],
+ "post_cutoff": {
+  "drag": {
+   "cd": {
+    "value": 0.4,
+    "assumption": "same Cd as the ascent fit (fixed 0.4)"
+   },
+   "area_m2": {
+    "value": 10.75,
+    "derived": "pi*(3.7 m/2)^2, Falcon 9 diameter (vehicle config)"
+   }
+  },
+  "deploy": {
+   "t_s": null,
+   "note": "SpaceX publishes no SECO, restart or deploy time for USSF-317 (national-security payload); propagated 2 revs on the inferred (Group-15-analog, borrowed from USSF-627 config) insertion orbit"
+  }
+ },
+ "fairing_jettison_s": {
+  "value": 178,
+  "src": "https://www.spacex.com/launches/ussf317 fairing separation T+00:02:58 (checked 2026-11-12)"
+ },
+ "stage_event_overrides": {
+  "0": {
+   "cutoff_s": {
+    "value": 146,
+    "src": "https://www.spacex.com/launches/ussf317 MECO T+00:02:26 (checked 2026-11-12)"
+   },
+   "separation_s": {
+    "value": 149,
+    "src": "https://www.spacex.com/launches/ussf317 stage separation T+00:02:29 (checked 2026-11-12)"
+   }
+  },
+  "1": {
+   "ignition_s": {
+    "value": 156,
+    "src": "https://www.spacex.com/launches/ussf317 SES-1 T+00:02:36 (checked 2026-11-12)"
+   }
+  }
+ },
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "vertical_rise_s": {
+    "value": 9.895913,
+    "bounds": [
+     4,
+     30
+    ],
+    "basis": "ASSUMPTION bound (F9 pitch-over time unpublished)"
+   },
+   "kick_deg": {
+    "value": 3.657169,
+    "bounds": [
+     0.2,
+     10
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "payload_kg": {
+    "value": 16869.001316,
+    "bounds": [
+     13000,
+     21600
+    ],
+    "basis": "27 V2 Mini Optimized: ~575 kg each community-reported (spacex.com.pl) = 15.5 t; MaxQ lists 800 kg each = 21.6 t (upper bound). Mass not published by SpaceX"
+   },
+   "tan0": {
+    "value": 0.5564,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": 0.001378,
+    "bounds": [
+     -0.05,
+     0.05
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "cd": 0.4
+  },
+  "knot_residuals": [
+   {
+    "event": "MECO (F9 family telemetry, Iridium NEXT-7)",
+    "t_pub": 146,
+    "t_sim": 146.0,
+    "alt_pub": 63.98,
+    "alt_sim": 66.3,
+    "rng_pub": 58.6,
+    "rng_sim": 85.9
+   },
+   {
+    "event": "SES-1 (F9 family telemetry)",
+    "t_pub": 156,
+    "t_sim": 156.0,
+    "alt_pub": 73.78,
+    "alt_sim": 76.26,
+    "rng_pub": 74.8,
+    "rng_sim": 107.8
+   },
+   {
+    "event": "Fairing sep (F9 family telemetry)",
+    "t_pub": 176,
+    "t_sim": 178.0,
+    "alt_pub": 91.15,
+    "alt_sim": 96.01,
+    "rng_pub": 108.7,
+    "rng_sim": 157.3
+   }
+  ],
+  "final": {
+   "alt_km": 177.2964803304579,
+   "fpa_deg": -0.0002602546598940025,
+   "sma_err_km": -0.01606328584719449,
+   "mass_kg": 24023.0
+  },
+  "cost": 22.934213105289587,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "Stage 1 (9x Merlin 1D)",
+     "loaded_kg": 410900,
+     "burned_kg": 392572,
+     "residual_kg": 18328,
+     "dry_kg": 22200,
+     "flag": null
+    },
+    {
+     "name": "Stage 2 (1x Merlin Vacuum)",
+     "loaded_kg": 107500,
+     "burned_kg": 104346,
+     "residual_kg": 3154,
+     "dry_kg": 4000,
+     "flag": null
+    }
+   ],
+   "glow_kg": 563369
+  }
+ }
+}
