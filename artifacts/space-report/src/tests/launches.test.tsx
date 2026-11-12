@@ -390,15 +390,20 @@ describe("launch manifest parsing", () => {
       const stem = `/launches/${launch.slug}/${launch.slug}_${date}`;
       expect(launch.files.csv).toBe(`${stem}_trajectory.csv`);
       expect(launch.files.kml).toBe(`${stem}_trajectory.kml`);
-      expect(launch.files.csv_sim).toBe(`${stem}_trajectory_sim.csv`);
-      expect(launch.files.kml_sim).toBe(`${stem}_trajectory_sim.kml`);
-      for (const rel of [launch.files.csv, launch.files.kml, launch.files.csv_sim, launch.files.kml_sim, launch.files.track_lite]) {
+      // Surrogate-only launches (no vehicle model, e.g. Soyuz-2.1b/Fregat) omit the sim files.
+      const hasSim = Boolean(launch.files.csv_sim);
+      if (hasSim) {
+        expect(launch.files.csv_sim).toBe(`${stem}_trajectory_sim.csv`);
+        expect(launch.files.kml_sim).toBe(`${stem}_trajectory_sim.kml`);
+      }
+      for (const rel of [launch.files.csv, launch.files.kml, launch.files.csv_sim, launch.files.kml_sim, launch.files.track_lite].filter(Boolean)) {
         expect(fs.existsSync(path.join(root, rel.replace(/^\//, "")))).toBe(true);
       }
       const track = JSON.parse(fs.readFileSync(path.join(root, launch.files.track_lite.replace(/^\//, "")), "utf8")) as {
         sim: [number, number, number, number][];
         surrogate: [number, number, number, number][];
       };
+      if (!hasSim) continue;
       const simEnd = track.sim[track.sim.length - 1]?.[0] ?? 0;
       const surEnd = track.surrogate[track.surrogate.length - 1]?.[0] ?? 0;
       expect(simEnd).toBeGreaterThan(surEnd + 60);
