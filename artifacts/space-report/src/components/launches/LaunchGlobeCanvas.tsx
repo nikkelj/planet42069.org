@@ -131,6 +131,9 @@ export default function LaunchGlobeCanvas({ indexUrl }: { indexUrl: string }) {
   useEffect(() => {
     const el = host.current;
     if (!el || !launches) return;
+    // Plot only the launches that appear in the legend; omitted earlier/later
+    // flights are not rendered and cannot linger after filters are cleared.
+    const plotted = selectGlobeLegendLaunches(launches).items;
     const renderer = new WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(el.clientWidth, el.clientHeight);
@@ -175,7 +178,7 @@ export default function LaunchGlobeCanvas({ indexUrl }: { indexUrl: string }) {
 
     // initial view: centroid of pads
     const c = new Vector3();
-    launches.forEach((l) => { const p = (l.track.sim || l.track.surrogate)![0]; c.add(llr(p[1], p[2], 1)); });
+    plotted.forEach((l) => { const p = (l.track.sim || l.track.surrogate)![0]; c.add(llr(p[1], p[2], 1)); });
     camera.position.copy(c.normalize().multiplyScalar(3.4)).add(new Vector3(0, 0.6, 0));
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true; controls.dampingFactor = 0.08; controls.enablePan = false;
@@ -201,7 +204,7 @@ export default function LaunchGlobeCanvas({ indexUrl }: { indexUrl: string }) {
       disposeGroup(); comets = []; pick = [];
       const { hidden, method, exag } = opts.current;
       const k = exag ? 8 : 1;
-      for (const l of launches) {
+      for (const l of plotted) {
         if (hidden[l.slug]) continue;
         const sets: [string, Pt[] | undefined][] =
           method === "both" ? [["sim", l.track.sim], ["surrogate", l.track.surrogate]] : [[method, l.track[method]]];
@@ -344,7 +347,7 @@ export default function LaunchGlobeCanvas({ indexUrl }: { indexUrl: string }) {
   const btn = (on: boolean) =>
     `px-2 py-0.5 border ${on ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:text-foreground"}`;
 
-  // Legend only: traces stay plotted for every loaded launch.
+  // Plotted traces and legend rows are the same set.
   const legend = launches ? selectGlobeLegendLaunches(launches) : { items: [] as Loaded[], omittedFlown: 0, omittedUpcoming: 0 };
 
   return (

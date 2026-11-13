@@ -462,7 +462,7 @@ describe("launch manifest parsing", () => {
 });
 
 
-describe("ascent-globe legend cap", () => {
+describe("ascent-globe legend and plot cap", () => {
   const L = (slug: string, t0_utc: string, phase: string) => ({ slug, t0_utc, phase });
 
   it("keeps the 5 most recent flown launches and all upcoming when upcoming fits", () => {
@@ -490,6 +490,11 @@ describe("ascent-globe legend cap", () => {
     ]);
     expect(omittedFlown).toBe(4);
     expect(omittedUpcoming).toBe(0);
+    // The globe plots exactly this set; omitted earlier flown are not traces.
+    const shown = new Set(items.map((l) => l.slug));
+    for (const slug of ["old-1", "old-2", "old-3", "old-4"]) {
+      expect(shown.has(slug)).toBe(false);
+    }
   });
 
   it("leaves a short list intact", () => {
@@ -518,6 +523,9 @@ describe("ascent-globe legend cap", () => {
     ]);
     expect(omittedFlown).toBe(0);
     expect(omittedUpcoming).toBe(2);
+    const shown = new Set(items.map((l) => l.slug));
+    expect(shown.has("u9")).toBe(false);
+    expect(shown.has("u10")).toBe(false);
   });
 });
 

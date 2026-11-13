@@ -17,7 +17,7 @@ Assets: `public/launches/globe/` holds the 512px placeholders (≈20 KB), which 
 
 Features: day/night shading with the real sun direction for now, city lights, ocean glint, atmosphere rim, and a starfield.
 Tracks are glowing fat lines (solid = recent, dashed = upcoming). Each sim track is the full file, through payload deploy or two revolutions past insertion. Samples on the far side of the earth are drawn dimmer (they would otherwise vanish behind the limb, which for Starlink 15-16 is right at SECO-1). Pad markers, an animated trace head, and a per-launch legend
-toggle are included. The legend lists the last 5 flown launches by T-0 plus upcoming (capped at the soonest 8 if that list would also overflow); every track stays plotted. You can switch between surrogate, 3DOF sim, or both, and between true altitude (default) and alt ×8. Hover or tap a track for its tooltip.
+toggle are included. The legend and the plotted traces are the same set: the last 5 flown launches by T-0 plus upcoming (capped at the soonest 8 if that list would also overflow). Earlier flown and later upcoming launches are omitted from both, with a '+N earlier flown not listed' (and upcoming) note. You can switch between surrogate, 3DOF sim, or both, and between true altitude (default) and alt ×8. Hover or tap a track for its tooltip.
 Perf: renders on demand, pauses when the tab is hidden or the globe is offscreen, caps DPR at 2, disposes everything on unmount,
 and turns the trace off under prefers-reduced-motion.
 Texture credits are in `index.json` references: `nasa-bluemarble`, `nasa-blackmarble`, `threejs`.

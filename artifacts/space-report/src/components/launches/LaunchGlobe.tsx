@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 /**
- * LaunchGlobe — collapsible (default OPEN) 3D globe of every recent + upcoming
- * ILLUSTRATIVE launch ascent in /launches/index.json.
+ * LaunchGlobe — collapsible (default OPEN) 3D globe of the legend's recent +
+ * upcoming ILLUSTRATIVE launch ascents in /launches/index.json (last 5 flown
+ * by T-0, plus upcoming capped at the soonest 8).
  *
  * Perf: this shell is tiny. three.js + the scene live in LaunchGlobeCanvas,
  * which is code-split (React.lazy) and only imported once (a) the browser has

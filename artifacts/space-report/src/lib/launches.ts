@@ -333,11 +333,11 @@ export interface GlobeLegendSelection<T> {
 }
 
 /**
- * Legend-only slice for the ascent globe. Traces stay plotted; this only
- * decides which rows appear in the clickable legend. Flown/recent are
- * capped at the last GLOBE_RECENT_LEGEND_CAP by T-0. Upcoming stays
- * intact unless it exceeds GLOBE_UPCOMING_LEGEND_CAP, in which case the
- * soonest remain. Items stay in chronological T-0 order.
+ * Shared slice for the ascent-globe legend and plotted traces. The two
+ * sets are the same: flown/recent are capped at the last
+ * GLOBE_RECENT_LEGEND_CAP by T-0, and upcoming stays intact unless it
+ * exceeds GLOBE_UPCOMING_LEGEND_CAP, in which case the soonest remain.
+ * Omitted launches are not rendered. Items stay in chronological T-0 order.
  */
 export function selectGlobeLegendLaunches<T extends GlobeLegendLaunch>(
   launches: T[],
