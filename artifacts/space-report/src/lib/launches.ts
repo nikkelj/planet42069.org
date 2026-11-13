@@ -315,6 +315,48 @@ export function partitionLaunches(launches: LaunchEntry[], nowMs = Date.now()): 
   return { upcoming, recent };
 }
 
+/** How many flown (recent/flown) launches the ascent-globe legend keeps, most recent T-0 last. */
+export const GLOBE_RECENT_LEGEND_CAP = 5;
+
+/** Upcoming cap if that list would also overflow the legend. Soonest T-0 first. */
+export const GLOBE_UPCOMING_LEGEND_CAP = 8;
+
+export interface GlobeLegendLaunch {
+  phase: string;
+  t0_utc: string;
+}
+
+export interface GlobeLegendSelection<T> {
+  items: T[];
+  omittedFlown: number;
+  omittedUpcoming: number;
+}
+
+/**
+ * Legend-only slice for the ascent globe. Traces stay plotted; this only
+ * decides which rows appear in the clickable legend. Flown/recent are
+ * capped at the last GLOBE_RECENT_LEGEND_CAP by T-0. Upcoming stays
+ * intact unless it exceeds GLOBE_UPCOMING_LEGEND_CAP, in which case the
+ * soonest remain. Items stay in chronological T-0 order.
+ */
+export function selectGlobeLegendLaunches<T extends GlobeLegendLaunch>(
+  launches: T[],
+  recentCap = GLOBE_RECENT_LEGEND_CAP,
+  upcomingCap = GLOBE_UPCOMING_LEGEND_CAP,
+): GlobeLegendSelection<T> {
+  const flown = launches.filter((l) => l.phase !== "upcoming");
+  const upcoming = launches.filter((l) => l.phase === "upcoming");
+  flown.sort((a, b) => a.t0_utc.localeCompare(b.t0_utc));
+  upcoming.sort((a, b) => a.t0_utc.localeCompare(b.t0_utc));
+  const flownShown = flown.slice(-recentCap);
+  const upcomingShown = upcoming.slice(0, upcomingCap);
+  return {
+    items: [...flownShown, ...upcomingShown],
+    omittedFlown: flown.length - flownShown.length,
+    omittedUpcoming: upcoming.length - upcomingShown.length,
+  };
+}
+
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
