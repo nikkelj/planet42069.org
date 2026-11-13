@@ -1,1338 +1,1362 @@
 {
- "methods": {
-  "surrogate": {
-   "title": "Surrogate (published-profile)",
-   "summary": "Event knots (time, altitude, velocity) from official vehicle brochures/user manuals, interpolated every 5 s and laid along a constant-azimuth rhumb line from the pad (azimuth from NOTAM/hazard areas or from target inclination). One assumption splits horizontal motion from the published profile. Where a vehicle has no published profile, a family stand-in (LM-3B from the CALT manual) is used and labelled. ILLUSTRATIVE, not telemetry. Falcon 9 flights use SpaceX webcast telemetry (altitude and speed vs time) from a past F9 Block 5 Vandenberg launch as the family profile, timed to the mission's published SpaceX event timeline."
-  },
-  "sim": {
-   "title": "First-principles 3DOF sim",
-   "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry. Long March vehicles run in timeline mode: published ignition/cutoff/separation times are hard events, burn rates from published thrust/Isp, and remaining free parameters fitted (bounded least squares) to the CALT manual LM-3B profile (altitude within 3.4 km at all events). Falcon 9 also runs in timeline mode: SpaceX's published MECO, stage-separation, SES-1, fairing and SECO-1 times are hard events, Block 5 masses and Merlin thrust/Isp from open sources, and steering and payload are fitted (bounded least squares) to the parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP), along an azimuth tuned so the orbit plane reaches the state vector's inclination (15-16: 155.87° for 70.007°; 15-18: 155.80° for 70.004°), inside the NAVAREA hazard corridor. Sims run through payload deploy: after final cutoff the stage coasts under the same WGS-84/J2/US76-drag model, with any published restart or kick-stage burn modelled from its published timing, to the provider's published deploy time (Starlink 15-16: SES-2/SECO-2 at T+53:01-53:03, deploy T+1:01:53; Starlink 15-18: SES-2/SECO-2 at T+53:07-53:08, deploy T+1:01:59; Kinetica-2 Y2 and LM-2C Xichang: CAS Space / CALT TYPICAL-sequence payload separation at T+514.7 s and T+545.7 s, not flight-specific). Where no deploy time is published (Electron HawkEye 360, Electron iQPS 9, USSF-432, LM-4B, LM-6A, LM-8A) the stage is propagated from insertion for two revolutions on the inferred insertion orbit (same J2 + drag model) and the file ends labelled 'inferred insertion orbit, +2 revs (deploy time unpublished)'."
-  },
-  "methods_doc": "/launches/METHODS.md"
- },
- "references": [
-  {
-   "id": "rl-ug",
-   "title": "Rocket Lab Electron Payload User's Guide v8.0",
-   "url": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf"
-  },
-  {
-   "id": "calt-lm3a",
-   "title": "CALT LM-3A Series Launch Vehicles User's Manual, Issue 2011",
-   "url": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
-  },
-  {
-   "id": "wp-electron",
-   "title": "Wikipedia: Rocket Lab Electron",
-   "url": "https://en.wikipedia.org/wiki/Rocket_Lab_Electron"
-  },
-  {
-   "id": "wp-lm3b",
-   "title": "Wikipedia: Long March 3B",
-   "url": "https://en.wikipedia.org/wiki/Long_March_3B"
-  },
-  {
-   "id": "wp-lm4b",
-   "title": "Wikipedia: Long March 4B",
-   "url": "https://en.wikipedia.org/wiki/Long_March_4B"
-  },
-  {
-   "id": "wp-lm6a",
-   "title": "Wikipedia: Long March 6A",
-   "url": "https://en.wikipedia.org/wiki/Long_March_6A"
-  },
-  {
-   "id": "wp-lm8",
-   "title": "Wikipedia: Long March 8",
-   "url": "https://en.wikipedia.org/wiki/Long_March_8"
-  },
-  {
-   "id": "huiji-lm4b",
-   "title": "Huiji Satellite Wiki: 长征四号乙 (Long March 4B event times)",
-   "url": "https://sat.huijiwiki.com/wiki/长征四号乙"
-  },
-  {
-   "id": "navarea-xi-26-0481",
-   "title": "NAVAREA XI 26-0481 (LM-8A drop zones, Sulu Sea) via sealagom",
-   "url": "https://www.sealagom.com/navarea/11/message/25242/"
-  },
-  {
-   "id": "zj385",
-   "title": "China MSA debris-zone notice ZJ385/26 (LM-4B Jiuquan)",
-   "url": null
-  },
-  {
-   "id": "rkrr-d3252",
-   "title": "NOTAM RKRR D3252/26 (Incheon FIR, LM-4B hazard area)",
-   "url": null
-  },
-  {
-   "id": "rjjj-p5065",
-   "title": "NOTAM RJJJ P5065/26 (Fukuoka FIR, LM-4B hazard area)",
-   "url": null
-  },
-  {
-   "id": "ll2",
-   "title": "The Space Devs Launch Library 2 API v2.3.0 (launch times/status)",
-   "url": "https://ll.thespacedevs.com/2.3.0/launches/"
-  },
-  {
-   "id": "kml",
-   "title": "OGC KML 2.2 namespace/specification",
-   "url": "http://www.opengis.net/kml/2.2"
-  },
-  {
-   "id": "wp-yf20",
-   "title": "Wikipedia: YF-20 (sea-level vs vacuum thrust and Isp)",
-   "url": "https://en.wikipedia.org/wiki/YF-20"
-  },
-  {
-   "id": "nasa-bluemarble",
-   "title": "NASA Visible Earth — Blue Marble Next Generation w/ Topography and Bathymetry (Dec 2004), R. Stöckli et al., NASA Earth Observatory (public domain); globe day texture",
-   "url": "https://visibleearth.nasa.gov/images/73909/december-blue-marble-next-generation-w-topography-and-bathymetry"
-  },
-  {
-   "id": "nasa-blackmarble",
-   "title": "NASA Earth Observatory — Earth at Night / Black Marble 2016 (Suomi NPP VIIRS) (public domain); globe night-lights texture",
-   "url": "https://earthobservatory.nasa.gov/features/NightLights"
-  },
-  {
-   "id": "threejs",
-   "title": "three.js (MIT) — WebGL renderer, OrbitControls, Line2/LineMaterial used by the launch globe",
-   "url": "https://threejs.org/"
-  },
-  {
-   "id": "spacex-sl-15-16",
-   "title": "SpaceX: Starlink 15-16 mission page and timeline",
-   "url": "https://www.spacex.com/launches/sl-15-16"
-  },
-  {
-   "id": "navarea-xii-737-26",
-   "title": "NAVAREA XII 737/26 (Starlink 15-16 hazard areas A/B, eastern Pacific) via space-notices",
-   "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20737%2F26"
-  },
-  {
-   "id": "uscg-lnm-56736",
-   "title": "USCG Local Notice to Mariners 56736, Sector San Diego (repeats Hazard Area A)",
-   "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20737%2F26"
-  },
-  {
-   "id": "mmfr-b3055-26",
-   "title": "NOTAM MMFR B3055/26 (Mexico FIR, Falcon 9 stage-1 reentry)",
-   "url": "https://www.notamify.com/notams/MMFR/42c9513c-5fc7-4d3c-8ad8-cccd7e6a30de"
-  },
-  {
-   "id": "faa-sl-15-16",
-   "title": "FAA operations advisory: SpaceX Starlink 15-16",
-   "url": "https://space-notices.com/notice/infopage-faa-operations-advisory-spacex-starlink-15-16"
-  },
-  {
-   "id": "shahar603-tel",
-   "title": "shahar603/Telemetry-Data: Falcon 9 webcast telemetry (Iridium NEXT-7, 2018)",
-   "url": "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207"
-  },
-  {
-   "id": "wp-falcon9",
-   "title": "Wikipedia: Falcon 9 (thrust, Isp, burn times, fairing)",
-   "url": "https://en.wikipedia.org/wiki/Falcon_9"
-  },
-  {
-   "id": "wp-falcon9-b5",
-   "title": "Wikipedia: Falcon 9 Block 5 (stage masses, tank capacities)",
-   "url": "https://en.wikipedia.org/wiki/Falcon_9_Block_5"
-  },
-  {
-   "id": "sfn-schedule",
-   "title": "Spaceflight Now launch schedule",
-   "url": "https://spaceflightnow.com/launch-schedule/"
-  },
-  {
-   "id": "celestrak-supgp-g15-16",
-   "title": "CelesTrak SupGP: Starlink G15-16 pre-launch elements (from a SpaceX-supplied state vector)",
-   "url": "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-16&FORMAT=json"
-  },
-  {
-   "id": "xinhua-lm8a-y12",
-   "title": "Xinhua: Long March 8A launches SatNet LEO Group 28 (25 Oct 2026)",
-   "url": "https://www.news.cn/politics/20261025/3573644b269e466f83510360cb84eff4/c.html"
-  },
-  {
-   "id": "spacex-sl-15-18",
-   "title": "SpaceX: Starlink 15-18 mission page and timeline",
-   "url": "https://www.spacex.com/launches/sl-15-18"
-  },
-  {
-   "id": "celestrak-supgp-g15-18",
-   "title": "CelesTrak SupGP: Starlink G15-18 pre-launch elements (from a SpaceX-supplied state vector)",
-   "url": "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-18&FORMAT=json"
-  },
-  {
-   "id": "navarea-xii-747-26",
-   "title": "NAVAREA XII 747/26 (Starlink 15-18 hazard areas, eastern Pacific; USCG LNM 56848) via space-notices",
-   "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20747%2F26"
-  },
-  {
-   "id": "spacex-ussf432",
-   "title": "SpaceX: USSF-432 mission page and timeline",
-   "url": "https://www.spacex.com/launches/ussf432"
-  },
-  {
-   "id": "zla-carf-10-377",
-   "title": "FAA ZLA CARF NOTAM 10/377 & 10/378 (USSF-432 hazard areas A/B) and MMFR B3553 via space-notices",
-   "url": "https://www.space-notices.com/"
-  },
-  {
-   "id": "rl-sea-god",
-   "title": "Rocket Lab: The Sea God Surveys (iQPS Launch 9) mission page",
-   "url": "https://rocketlabcorp.com/missions/launches/iqps-the-sea-god-surveys/"
-  },
-  {
-   "id": "rl-launch-safety",
-   "title": "Rocket Lab Launch Safety (LC-1): planned launch time NET 16:41 UTC 3 Nov NZT and Space Debris Hazard Areas 1/2 for The Sea God Surveys",
-   "url": "https://rocketlabcorp.com/launch/launch-safety/"
-  },
-  {
-   "id": "iqps-4118",
-   "title": "iQPS news: QPS-SAR-20 launch (575 km, mid-inclined orbit)",
-   "url": "https://i-qps.net/en/news/4118/"
-  },
-  {
-   "id": "notam-b5324-b5325",
-   "title": "NOTAM B5324/26, B5325/26 and HYDROPAC 3128/26, 3129/26 (Electron iQPS 9 debris areas NZD032/NZD033) via space-notices",
-   "url": "https://www.space-notices.com/"
-  },
-  {
-   "id": "huiji-kinetica2",
-   "title": "Huiji Wiki: 力箭二号 Kinetica-2 (CAS Space data, typical flight sequence; unofficial compilation)",
-   "url": "https://sat.huijiwiki.com/wiki/力箭二号"
-  },
-  {
-   "id": "huiji-yf102",
-   "title": "Huiji Wiki: YF-102 engine (incl. YF-102V vacuum figures; unofficial table)",
-   "url": "https://sat.huijiwiki.com/wiki/YF-102"
-  },
-  {
-   "id": "zhwp-yf102",
-   "title": "Wikipedia (zh): YF-102 (sea-level thrust/Isp)",
-   "url": "https://zh.wikipedia.org/wiki/YF-102"
-  },
-  {
-   "id": "satnet-k2y2",
-   "title": "SatNet News: Kinetica-2 Y2 window and 18 Qianfan satellites (UNOFFICIAL)",
-   "url": "https://satnet.news/item/76103"
-  },
-  {
-   "id": "satnet-k2",
-   "title": "SatNet News: Kinetica-2 vehicle figures (UNOFFICIAL)",
-   "url": "https://satnet.news/item/70043"
-  },
-  {
-   "id": "unilym-k2y2",
-   "title": "Unilym: Lijian-2 Y2, 18 satellites, near-polar orbit (UNOFFICIAL)",
-   "url": "https://www.unilym.com/articles/lijian-2-yao2-18xing-20261102"
-  },
-  {
-   "id": "notam-a5561-a5562",
-   "title": "NOTAM ZLHW A5561/26 and ZPKM A5562/26 (Kinetica-2 Y2 hazard areas) via space-notices",
-   "url": "https://www.space-notices.com/"
-  },
-  {
-   "id": "huiji-lm2c",
-   "title": "Huiji Wiki: 长征二号丙 LM-2C (stage data per World Launch Vehicles 2nd ed. 2007; CALT typical flight sequence)",
-   "url": "https://sat.huijiwiki.com/wiki/长征二号丙"
-  },
-  {
-   "id": "notam-a5624",
-   "title": "NOTAM ZJSA A5624/26 (LM-2C Xichang danger area) via space-notices",
-   "url": "https://www.space-notices.com/"
-  },
-  {
-   "id": "wp-merlin1d",
-   "title": "Wikipedia: Merlin 1D (vac/SL thrust ratio used as ASSUMPTION for YF-102 vac conversion)",
-   "url": "https://en.wikipedia.org/wiki/SpaceX_Merlin"
-  },
-  {
-   "id": "zla-carf-11-032",
-   "title": "FAA/ZLA CARF NOTAM 11/032-26 & 11/033-26 (USSF-432 Areas A/B, Nov 6 PT window) via space-notices.com",
-   "url": "https://space-notices.com/entry/launch-f9-ussf-432"
-  },
-  {
-   "id": "weibo-k2y2",
-   "title": "Weibo post cited by LL2 for Kinetica-2 Y2 launch result",
-   "url": "https://m.weibo.cn/detail/5361090570488447"
-  },
-  {
-   "id": "bjdaily-k2y2",
-   "title": "Beijing Daily (X): Kinetica-2 Y2 sends 18 Qianfan polar group-21 satellites to preset orbit",
-   "url": "https://x.com/DailyBeijing/status/2117514278206898575"
-  },
-  {
-   "id": "kcb-k2y2",
-   "title": "Ke Chuang Ban Daily via X @najoygo: Kinetica-2 Y2 liftoff 08:15:25 BJT",
-   "url": "https://x.com/najoygo/status/2117424232691056846"
-  },
-  {
-   "id": "huiji-lm12",
-   "title": "Huiji Wiki: 长征十二号 LM-12 (YF-100K/YF-115B thrust; CALT typical Y7 flight sequence)",
-   "url": "https://sat.huijiwiki.com/wiki/长征十二号"
-  },
-  {
-   "id": "wp-lm12",
-   "title": "Wikipedia: Long March 12 (GLOW, 10 t to 300 km LEO)",
-   "url": "https://en.wikipedia.org/wiki/Long_March_12"
-  },
-  {
-   "id": "wp-yf115",
-   "title": "Wikipedia: YF-115 (vacuum Isp)",
-   "url": "https://en.wikipedia.org/wiki/YF-115"
-  },
-  {
-   "id": "notam-b5920",
-   "title": "NOTAM RPHI B5920/26 + HYDROPAC 3200/26 (LM-12 downrange area) via space-notices",
-   "url": "https://space-notices.com/entry/launch-long-march-12-satnet-leo-group-tbd"
-  },
-  {
-   "id": "spacex-ussf627",
-   "title": "SpaceX: USSF-627 mission page and timeline",
-   "url": "https://www.spacex.com/launches/ussf627"
-  },
-  {
-   "id": "zla-carf-11-067",
-   "title": "FAA/ZLA CARF NOTAM 11/067-26 & 11/068-26 (USSF-627 Areas A/B, SX R-5 26-72) via space-notices.com",
-   "url": "https://space-notices.com/entry/launch-f9-ussf-627"
-  },
-  {
-   "id": "hydropac-3207",
-   "title": "HYDROPAC 3207/26 (USSF-627 / SX R-5 downrange debris hazard)",
-   "url": "https://space-notices.com/notice/nav-warning-HYDROPAC%203207%2F26"
-  },
-  {
-   "id": "huiji-lm2d",
-   "title": "卫星百科 (huijiwiki): 长征二号丁 — stage data (World Launch Vehicles 2nd ed. 2007) and SAST typical flight sequence",
-   "url": "https://sat.huijiwiki.com/wiki/长征二号丁"
-  },
-  {
-   "id": "wp-lm2d",
-   "title": "Wikipedia: Long March 2D",
-   "url": "https://en.wikipedia.org/wiki/Long_March_2D"
-  },
-  {
-   "id": "notam-a5728",
-   "title": "NOTAM ZLHW A5728/26 temporary danger area, 2026-11-11 11:32-12:05Z (via Space Notices / FAA NOTAM search)",
-   "url": "https://space-notices.com/notice/notam-ZLHW-A5728%2F26"
-  },
-  {
-   "id": "xinhua-lm12-y11",
-   "title": "Xinhua: 我国成功发射卫星互联网低轨29组卫星 (LM-12, Hainan commercial site, 2026-11-09 04:24 BJT)",
-   "url": "https://www.news.cn/20261109/c59381337ab24106a800be4d3baac43f/c.html"
-  },
-  {
-   "id": "zla-carf-11-071",
-   "title": "FAA/ZLA CARF NOTAM 11/071-26 \"SX R-5 26-72\" (USSF-627, Nov 10 PT window; Area A polygon identical to 11/067-26)",
-   "url": "https://space-notices.com/entry/launch-f9-ussf-627"
-  },
-  {
-   "id": "xinhua-lm2d-y108",
-   "title": "Xinhua: 我国成功发射探源计划探路者卫星 (LM-2D, Jiuquan, 11 Nov 2026 19:41 BJT)",
-   "url": "http://www.xinhuanet.com/20261111/f62e737993404c6aa3ba9246a6118598/c.html"
-  },
-  {
-   "id": "cssar-pathfinder",
-   "title": "CSSAR/NSSC: 探源计划探路者卫星成功发射 (LM-2D Y108, 4 satellites, 600 km dawn-dusk SSO)",
-   "url": "http://www.cssar.cas.cn/xwdt2015/xwsd2015/202611/t20261111_8307991.html"
-  },
-  {
-   "id": "rl-mountain-god",
-   "title": "Rocket Lab: The Mountain God Rises (iQPS Launch 10) mission page",
-   "url": "https://rocketlabcorp.com/missions/launches/iqps-the-mountain-god-rises/"
-  },
-  {
-   "id": "hydropac-3249-3251",
-   "title": "HYDROPAC 3249/26 and 3251/26 space-debris areas (The Mountain God Rises)",
-   "url": "https://www.space-notices.com/entry/launch-electron-the-mountain-god-rises-iqps-launch-10"
-  },
-  {
-   "id": "zla-carf-11-107",
-   "title": "FAA ZLA CARF 11/107-26 (SX R-5 Area A, re-issue)",
-   "url": "https://space-notices.com/notice/notam-ZLA-11%2F107-26"
-  },
-  {
-   "id": "ula-vulcan-leo-1",
-   "title": "ULA: Vulcan Leo 1 (Amazon Leo LV-01) mission page — VC6L, T0, vehicle description",
-   "url": "https://www.ulalaunch.com/missions/next-launch/vulcan-leo-1"
-  },
-  {
-   "id": "ula-vulcan-ug-2023",
-   "title": "ULA Vulcan User’s Guide (2023) — typical CCSFS event times (Fig. 2.1.1-2), BE-4 / Centaur description",
-   "url": "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf"
-  },
-  {
-   "id": "ula-blog-cv-l",
-   "title": "ULA blog (2 Jun 2026): LEO-optimized Centaur V is ~6 ft shorter and carries a third less propellant than the 120,000 lb CV-HE",
-   "url": "https://blog.ulalaunch.com/blog/vulcan-new-centaur-v-version-readies-for-amazon-leo"
-  },
-  {
-   "id": "ng-propulsion-catalog",
-   "title": "Northrop Grumman Propulsion Products Catalog — GEM 63XL vacuum 73°F: Isp 280.3 s, time-average thrust 334,063 lbf, propellant 105,497 lbm, burn 87.3 s (p.39)",
-   "url": "https://cdn.northropgrumman.com/-/media/wp-content/uploads/NG-Propulsion-Products-Catalog.pdf"
-  },
-  {
-   "id": "navarea-iv-1078-26",
-   "title": "NAVAREA IV 1078/26 (Amazon Leo LV-01 / Vulcan launch corridor, Area A) via space-notices",
-   "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201078%2F26"
-  },
-  {
-   "id": "amazon-ka-01-450km",
-   "title": "Amazon: Project Kuiper (KA-01) first launch — 'completed releasing all 27 satellites … at an altitude of 280 miles (450 kilometers)' (analog used for LV-01 insertion)",
-   "url": "https://www.aboutamazon.com/news/innovation-at-amazon/project-kuiper-photos-internet-satellite-first-launch"
-  },
-  {
-   "id": "wp-vulcan-centaur",
-   "title": "Wikipedia: Vulcan Centaur (secondary: BE-4 Isp, booster empty mass, RL10C Isp citations)",
-   "url": "https://en.wikipedia.org/wiki/Vulcan_Centaur"
-  },
-  {
-   "id": "spacex-starship-flight-15",
-   "title": "SpaceX: Starship Flight 15 mission page and published timeline (also content.spacex.com API)",
-   "url": "https://www.spacex.com/launches/starship-flight-15"
-  },
-  {
-   "id": "navarea-iv-1080-26",
-   "title": "NAVAREA IV 1080/26 (Starship Flight 15 Gulf / Yucatan launch corridor, Area A) via space-notices",
-   "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201080%2F26"
-  },
-  {
-   "id": "wp-spacex-starship",
-   "title": "Wikipedia: SpaceX Starship (Block 3 ship propellant / thrust citing SpaceX 'Introducing Starship V3', 12 May 2026)",
-   "url": "https://en.wikipedia.org/wiki/SpaceX_Starship"
-  },
-  {
-   "id": "wp-spacex-super-heavy",
-   "title": "Wikipedia: SpaceX Super Heavy (Block 3 booster propellant / 80.8 MN liftoff thrust, earlier-block empty mass used as a stand-in)",
-   "url": "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy"
-  },
-  {
-   "id": "spacex-starship-specs",
-   "title": "SpaceX: Starship technical specifications (Ship 1,614 tf / 1,600 t; Super Heavy 8,240 tf / 3,650 t; Raptor 3 sea-level 250 tf; 3 SL + 3 RVac on Ship, 33 on Super Heavy)",
-   "url": "https://www.spacex.com/vehicles/starship/technical-specifications"
-  },
-  {
-   "id": "spacex-v3-update",
-   "title": "SpaceX update, 12 May 2026: Introducing Starship V3 — Raptor 3 sea-level 250 tf (up from 230), RVac 275 tf (up from 258)",
-   "url": "https://www.spacex.com/updates/starship-v3"
-  },
-  {
-   "id": "spacex-starship-flight-14",
-   "title": "SpaceX: Starship Flight 14 mission page — all six ship engines on ascent; passively safe suborbital trajectory; single sea-level Raptor insertion (T+00:25:17–25:36)",
-   "url": "https://www.spacex.com/launches/starship-flight-14"
-  },
-  {
-   "id": "musk-raptor-isp-2019",
-   "title": "Elon Musk, 9 Sep 2019: 'Sea level Raptor’s vacuum Isp is ~350 sec, but ~380 sec with larger vacuum-optimized nozzle'",
-   "url": "https://web.archive.org/web/20190925065050/https://twitter.com/elonmusk/status/1171118891671490560"
-  },
-  {
-   "id": "spacex-ussf627-x",
-   "title": "SpaceX on X: 'Falcon 9 launches USSF-627 to orbit' (2026-11-12)",
-   "url": "https://x.com/SpaceX/status/2120808224324510133"
-  },
-  {
-   "id": "ula-leo1-target-x",
-   "title": "ULA on X (2026-11-12): LV-01 target 'near-circular low Earth orbit of approximately 285 miles (460km) inclined at 51.9 degrees'",
-   "url": "https://x.com/ulalaunch/status/2120895023067639859"
-  },
-  {
-   "id": "spacex-ussf317",
-   "title": "SpaceX: USSF-317 mission page and timeline",
-   "url": "https://www.spacex.com/launches/ussf317"
-  },
-  {
-   "id": "zla-carf-11-116",
-   "title": "FAA/ZLA CARF NOTAM 11/116-26 (USSF-317 Area A, SX USSF317 R-6 26-73; same polygon in 11/094-26; Area B 11/093-26, 11/115-26)",
-   "url": "https://space-notices.com/notice/notam-ZLA-11%2F116-26"
-  },
-  {
-   "id": "navarea-xii-785-26",
-   "title": "NAVAREA XII 785/26 (USSF-317 Falcon 9 hazard areas A-C, 13-19 Nov) via sealagom",
-   "url": "https://www.sealagom.com/navarea/12/message/25632/785-26-north-pacific/"
-  },
-  {
-   "id": "ll2-soyuz-kinosputnik",
-   "title": "Launch Library 2: Soyuz 2.1b/Fregat-M | MKA Kinosputnik, KOEN and others (NET 2026-11-14T00:50Z, Go; id bff2fc91-eddd-4dfc-af26-ac0674cfab4d)",
-   "url": "https://ll.thespacedevs.com/2.3.0/launches/bff2fc91-eddd-4dfc-af26-ac0674cfab4d/"
-  },
-  {
-   "id": "zeya-drop-zone",
-   "title": "Zeya district administration via Portamur: Soyuz-2.1b launch 14-24 Nov, stage drop zone at the Bryanta and Unakha rivers north of Kirovsky",
-   "url": "https://portamur.ru/news/detail/v-noyabre-s-kosmodroma-vostochnyiy-zapustyat-soyuz-b/"
-  },
-  {
-   "id": "kosmonavtika-soyuz21b-2019",
-   "title": "Kosmonavtika (N. Pillet): Soyuz-2.1b Meteor-M 2-2, Vostochny 5 Jul 2019, theoretical timeline (BVGD sep 117.6 s, fairing 225.63 s, Block A 287.48 s, Block I cutoff 560.40 s)",
-   "url": "https://kosmonavtika.com/lancements/2019/05072019/05072019.html"
-  },
-  {
-   "id": "russianspaceweb-soyuz2-metop",
-   "title": "RussianSpaceWeb: Soyuz-2-1a/Metop launch sequence (stage I sep 118.2 s at 50 km; stage II sep 287.6 s at 175 km)",
-   "url": "https://www.russianspaceweb.com/soyuz2_metop.html"
-  },
-  {
-   "id": "wp-unakha-bryanta",
-   "title": "Wikipedia (ru): Bryanta and Unakha rivers (coordinates; Unakha joins Bryanta 23 km above its mouth)",
-   "url": "https://ru.wikipedia.org/wiki/%D0%91%D1%80%D1%8F%D0%BD%D1%82%D0%B0"
-  },
-  {
-   "id": "skyrocket-kinosputnik",
-   "title": "Gunter's Space Page: KinoSputnik (circular LEO ~500-800 km, 150 kg)",
-   "url": "https://space.skyrocket.de/doc_sdat/kinosputnik.htm"
+  "methods": {
+    "surrogate": {
+      "title": "Surrogate (published-profile)",
+      "summary": "Event knots (time, altitude, velocity) from official vehicle brochures/user manuals, interpolated every 5 s and laid along a constant-azimuth rhumb line from the pad (azimuth from NOTAM/hazard areas or from target inclination). One assumption splits horizontal motion from the published profile. Where a vehicle has no published profile, a family stand-in (LM-3B from the CALT manual) is used and labelled. ILLUSTRATIVE, not telemetry. Falcon 9 flights use SpaceX webcast telemetry (altitude and speed vs time) from a past F9 Block 5 Vandenberg launch as the family profile, timed to the mission's published SpaceX event timeline."
+    },
+    "sim": {
+      "title": "First-principles 3DOF sim",
+      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry. Long March vehicles run in timeline mode: published ignition/cutoff/separation times are hard events, burn rates from published thrust/Isp, and remaining free parameters fitted (bounded least squares) to the CALT manual LM-3B profile (altitude within 3.4 km at all events). Falcon 9 also runs in timeline mode: SpaceX's published MECO, stage-separation, SES-1, fairing and SECO-1 times are hard events, Block 5 masses and Merlin thrust/Isp from open sources, and steering and payload are fitted (bounded least squares) to the parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP), along an azimuth tuned so the orbit plane reaches the state vector's inclination (15-16: 155.87° for 70.007°; 15-18: 155.80° for 70.004°), inside the NAVAREA hazard corridor. Sims run through payload deploy: after final cutoff the stage coasts under the same WGS-84/J2/US76-drag model, with any published restart or kick-stage burn modelled from its published timing, to the provider's published deploy time (Starlink 15-16: SES-2/SECO-2 at T+53:01-53:03, deploy T+1:01:53; Starlink 15-18: SES-2/SECO-2 at T+53:07-53:08, deploy T+1:01:59; Kinetica-2 Y2 and LM-2C Xichang: CAS Space / CALT TYPICAL-sequence payload separation at T+514.7 s and T+545.7 s, not flight-specific). Where no deploy time is published (Electron HawkEye 360, Electron iQPS 9, USSF-432, LM-4B, LM-6A, LM-8A) the stage is propagated from insertion for two revolutions on the inferred insertion orbit (same J2 + drag model) and the file ends labelled 'inferred insertion orbit, +2 revs (deploy time unpublished)'."
+    },
+    "methods_doc": "/launches/METHODS.md"
+  },
+  "references": [
+    {
+      "id": "rl-ug",
+      "title": "Rocket Lab Electron Payload User's Guide v8.0",
+      "url": "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf"
+    },
+    {
+      "id": "calt-lm3a",
+      "title": "CALT LM-3A Series Launch Vehicles User's Manual, Issue 2011",
+      "url": "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf"
+    },
+    {
+      "id": "wp-electron",
+      "title": "Wikipedia: Rocket Lab Electron",
+      "url": "https://en.wikipedia.org/wiki/Rocket_Lab_Electron"
+    },
+    {
+      "id": "wp-lm3b",
+      "title": "Wikipedia: Long March 3B",
+      "url": "https://en.wikipedia.org/wiki/Long_March_3B"
+    },
+    {
+      "id": "wp-lm4b",
+      "title": "Wikipedia: Long March 4B",
+      "url": "https://en.wikipedia.org/wiki/Long_March_4B"
+    },
+    {
+      "id": "wp-lm6a",
+      "title": "Wikipedia: Long March 6A",
+      "url": "https://en.wikipedia.org/wiki/Long_March_6A"
+    },
+    {
+      "id": "wp-lm8",
+      "title": "Wikipedia: Long March 8",
+      "url": "https://en.wikipedia.org/wiki/Long_March_8"
+    },
+    {
+      "id": "huiji-lm4b",
+      "title": "Huiji Satellite Wiki: 长征四号乙 (Long March 4B event times)",
+      "url": "https://sat.huijiwiki.com/wiki/长征四号乙"
+    },
+    {
+      "id": "navarea-xi-26-0481",
+      "title": "NAVAREA XI 26-0481 (LM-8A drop zones, Sulu Sea) via sealagom",
+      "url": "https://www.sealagom.com/navarea/11/message/25242/"
+    },
+    {
+      "id": "zj385",
+      "title": "China MSA debris-zone notice ZJ385/26 (LM-4B Jiuquan)",
+      "url": null
+    },
+    {
+      "id": "rkrr-d3252",
+      "title": "NOTAM RKRR D3252/26 (Incheon FIR, LM-4B hazard area)",
+      "url": null
+    },
+    {
+      "id": "rjjj-p5065",
+      "title": "NOTAM RJJJ P5065/26 (Fukuoka FIR, LM-4B hazard area)",
+      "url": null
+    },
+    {
+      "id": "ll2",
+      "title": "The Space Devs Launch Library 2 API v2.3.0 (launch times/status)",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/"
+    },
+    {
+      "id": "kml",
+      "title": "OGC KML 2.2 namespace/specification",
+      "url": "http://www.opengis.net/kml/2.2"
+    },
+    {
+      "id": "wp-yf20",
+      "title": "Wikipedia: YF-20 (sea-level vs vacuum thrust and Isp)",
+      "url": "https://en.wikipedia.org/wiki/YF-20"
+    },
+    {
+      "id": "nasa-bluemarble",
+      "title": "NASA Visible Earth — Blue Marble Next Generation w/ Topography and Bathymetry (Dec 2004), R. Stöckli et al., NASA Earth Observatory (public domain); globe day texture",
+      "url": "https://visibleearth.nasa.gov/images/73909/december-blue-marble-next-generation-w-topography-and-bathymetry"
+    },
+    {
+      "id": "nasa-blackmarble",
+      "title": "NASA Earth Observatory — Earth at Night / Black Marble 2016 (Suomi NPP VIIRS) (public domain); globe night-lights texture",
+      "url": "https://earthobservatory.nasa.gov/features/NightLights"
+    },
+    {
+      "id": "threejs",
+      "title": "three.js (MIT) — WebGL renderer, OrbitControls, Line2/LineMaterial used by the launch globe",
+      "url": "https://threejs.org/"
+    },
+    {
+      "id": "spacex-sl-15-16",
+      "title": "SpaceX: Starlink 15-16 mission page and timeline",
+      "url": "https://www.spacex.com/launches/sl-15-16"
+    },
+    {
+      "id": "navarea-xii-737-26",
+      "title": "NAVAREA XII 737/26 (Starlink 15-16 hazard areas A/B, eastern Pacific) via space-notices",
+      "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20737%2F26"
+    },
+    {
+      "id": "uscg-lnm-56736",
+      "title": "USCG Local Notice to Mariners 56736, Sector San Diego (repeats Hazard Area A)",
+      "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20737%2F26"
+    },
+    {
+      "id": "mmfr-b3055-26",
+      "title": "NOTAM MMFR B3055/26 (Mexico FIR, Falcon 9 stage-1 reentry)",
+      "url": "https://www.notamify.com/notams/MMFR/42c9513c-5fc7-4d3c-8ad8-cccd7e6a30de"
+    },
+    {
+      "id": "faa-sl-15-16",
+      "title": "FAA operations advisory: SpaceX Starlink 15-16",
+      "url": "https://space-notices.com/notice/infopage-faa-operations-advisory-spacex-starlink-15-16"
+    },
+    {
+      "id": "shahar603-tel",
+      "title": "shahar603/Telemetry-Data: Falcon 9 webcast telemetry (Iridium NEXT-7, 2018)",
+      "url": "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207"
+    },
+    {
+      "id": "wp-falcon9",
+      "title": "Wikipedia: Falcon 9 (thrust, Isp, burn times, fairing)",
+      "url": "https://en.wikipedia.org/wiki/Falcon_9"
+    },
+    {
+      "id": "wp-falcon9-b5",
+      "title": "Wikipedia: Falcon 9 Block 5 (stage masses, tank capacities)",
+      "url": "https://en.wikipedia.org/wiki/Falcon_9_Block_5"
+    },
+    {
+      "id": "sfn-schedule",
+      "title": "Spaceflight Now launch schedule",
+      "url": "https://spaceflightnow.com/launch-schedule/"
+    },
+    {
+      "id": "celestrak-supgp-g15-16",
+      "title": "CelesTrak SupGP: Starlink G15-16 pre-launch elements (from a SpaceX-supplied state vector)",
+      "url": "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-16&FORMAT=json"
+    },
+    {
+      "id": "xinhua-lm8a-y12",
+      "title": "Xinhua: Long March 8A launches SatNet LEO Group 28 (25 Oct 2026)",
+      "url": "https://www.news.cn/politics/20261025/3573644b269e466f83510360cb84eff4/c.html"
+    },
+    {
+      "id": "spacex-sl-15-18",
+      "title": "SpaceX: Starlink 15-18 mission page and timeline",
+      "url": "https://www.spacex.com/launches/sl-15-18"
+    },
+    {
+      "id": "celestrak-supgp-g15-18",
+      "title": "CelesTrak SupGP: Starlink G15-18 pre-launch elements (from a SpaceX-supplied state vector)",
+      "url": "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-18&FORMAT=json"
+    },
+    {
+      "id": "navarea-xii-747-26",
+      "title": "NAVAREA XII 747/26 (Starlink 15-18 hazard areas, eastern Pacific; USCG LNM 56848) via space-notices",
+      "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20747%2F26"
+    },
+    {
+      "id": "spacex-ussf432",
+      "title": "SpaceX: USSF-432 mission page and timeline",
+      "url": "https://www.spacex.com/launches/ussf432"
+    },
+    {
+      "id": "zla-carf-10-377",
+      "title": "FAA ZLA CARF NOTAM 10/377 & 10/378 (USSF-432 hazard areas A/B) and MMFR B3553 via space-notices",
+      "url": "https://www.space-notices.com/"
+    },
+    {
+      "id": "rl-sea-god",
+      "title": "Rocket Lab: The Sea God Surveys (iQPS Launch 9) mission page",
+      "url": "https://rocketlabcorp.com/missions/launches/iqps-the-sea-god-surveys/"
+    },
+    {
+      "id": "rl-launch-safety",
+      "title": "Rocket Lab Launch Safety (LC-1): planned launch time NET 16:41 UTC 3 Nov NZT and Space Debris Hazard Areas 1/2 for The Sea God Surveys",
+      "url": "https://rocketlabcorp.com/launch/launch-safety/"
+    },
+    {
+      "id": "iqps-4118",
+      "title": "iQPS news: QPS-SAR-20 launch (575 km, mid-inclined orbit)",
+      "url": "https://i-qps.net/en/news/4118/"
+    },
+    {
+      "id": "notam-b5324-b5325",
+      "title": "NOTAM B5324/26, B5325/26 and HYDROPAC 3128/26, 3129/26 (Electron iQPS 9 debris areas NZD032/NZD033) via space-notices",
+      "url": "https://www.space-notices.com/"
+    },
+    {
+      "id": "huiji-kinetica2",
+      "title": "Huiji Wiki: 力箭二号 Kinetica-2 (CAS Space data, typical flight sequence; unofficial compilation)",
+      "url": "https://sat.huijiwiki.com/wiki/力箭二号"
+    },
+    {
+      "id": "huiji-yf102",
+      "title": "Huiji Wiki: YF-102 engine (incl. YF-102V vacuum figures; unofficial table)",
+      "url": "https://sat.huijiwiki.com/wiki/YF-102"
+    },
+    {
+      "id": "zhwp-yf102",
+      "title": "Wikipedia (zh): YF-102 (sea-level thrust/Isp)",
+      "url": "https://zh.wikipedia.org/wiki/YF-102"
+    },
+    {
+      "id": "satnet-k2y2",
+      "title": "SatNet News: Kinetica-2 Y2 window and 18 Qianfan satellites (UNOFFICIAL)",
+      "url": "https://satnet.news/item/76103"
+    },
+    {
+      "id": "satnet-k2",
+      "title": "SatNet News: Kinetica-2 vehicle figures (UNOFFICIAL)",
+      "url": "https://satnet.news/item/70043"
+    },
+    {
+      "id": "unilym-k2y2",
+      "title": "Unilym: Lijian-2 Y2, 18 satellites, near-polar orbit (UNOFFICIAL)",
+      "url": "https://www.unilym.com/articles/lijian-2-yao2-18xing-20261102"
+    },
+    {
+      "id": "notam-a5561-a5562",
+      "title": "NOTAM ZLHW A5561/26 and ZPKM A5562/26 (Kinetica-2 Y2 hazard areas) via space-notices",
+      "url": "https://www.space-notices.com/"
+    },
+    {
+      "id": "huiji-lm2c",
+      "title": "Huiji Wiki: 长征二号丙 LM-2C (stage data per World Launch Vehicles 2nd ed. 2007; CALT typical flight sequence)",
+      "url": "https://sat.huijiwiki.com/wiki/长征二号丙"
+    },
+    {
+      "id": "notam-a5624",
+      "title": "NOTAM ZJSA A5624/26 (LM-2C Xichang danger area) via space-notices",
+      "url": "https://www.space-notices.com/"
+    },
+    {
+      "id": "wp-merlin1d",
+      "title": "Wikipedia: Merlin 1D (vac/SL thrust ratio used as ASSUMPTION for YF-102 vac conversion)",
+      "url": "https://en.wikipedia.org/wiki/SpaceX_Merlin"
+    },
+    {
+      "id": "zla-carf-11-032",
+      "title": "FAA/ZLA CARF NOTAM 11/032-26 & 11/033-26 (USSF-432 Areas A/B, Nov 6 PT window) via space-notices.com",
+      "url": "https://space-notices.com/entry/launch-f9-ussf-432"
+    },
+    {
+      "id": "weibo-k2y2",
+      "title": "Weibo post cited by LL2 for Kinetica-2 Y2 launch result",
+      "url": "https://m.weibo.cn/detail/5361090570488447"
+    },
+    {
+      "id": "bjdaily-k2y2",
+      "title": "Beijing Daily (X): Kinetica-2 Y2 sends 18 Qianfan polar group-21 satellites to preset orbit",
+      "url": "https://x.com/DailyBeijing/status/2117514278206898575"
+    },
+    {
+      "id": "kcb-k2y2",
+      "title": "Ke Chuang Ban Daily via X @najoygo: Kinetica-2 Y2 liftoff 08:15:25 BJT",
+      "url": "https://x.com/najoygo/status/2117424232691056846"
+    },
+    {
+      "id": "huiji-lm12",
+      "title": "Huiji Wiki: 长征十二号 LM-12 (YF-100K/YF-115B thrust; CALT typical Y7 flight sequence)",
+      "url": "https://sat.huijiwiki.com/wiki/长征十二号"
+    },
+    {
+      "id": "wp-lm12",
+      "title": "Wikipedia: Long March 12 (GLOW, 10 t to 300 km LEO)",
+      "url": "https://en.wikipedia.org/wiki/Long_March_12"
+    },
+    {
+      "id": "wp-yf115",
+      "title": "Wikipedia: YF-115 (vacuum Isp)",
+      "url": "https://en.wikipedia.org/wiki/YF-115"
+    },
+    {
+      "id": "notam-b5920",
+      "title": "NOTAM RPHI B5920/26 + HYDROPAC 3200/26 (LM-12 downrange area) via space-notices",
+      "url": "https://space-notices.com/entry/launch-long-march-12-satnet-leo-group-tbd"
+    },
+    {
+      "id": "spacex-ussf627",
+      "title": "SpaceX: USSF-627 mission page and timeline",
+      "url": "https://www.spacex.com/launches/ussf627"
+    },
+    {
+      "id": "zla-carf-11-067",
+      "title": "FAA/ZLA CARF NOTAM 11/067-26 & 11/068-26 (USSF-627 Areas A/B, SX R-5 26-72) via space-notices.com",
+      "url": "https://space-notices.com/entry/launch-f9-ussf-627"
+    },
+    {
+      "id": "hydropac-3207",
+      "title": "HYDROPAC 3207/26 (USSF-627 / SX R-5 downrange debris hazard)",
+      "url": "https://space-notices.com/notice/nav-warning-HYDROPAC%203207%2F26"
+    },
+    {
+      "id": "huiji-lm2d",
+      "title": "卫星百科 (huijiwiki): 长征二号丁 — stage data (World Launch Vehicles 2nd ed. 2007) and SAST typical flight sequence",
+      "url": "https://sat.huijiwiki.com/wiki/长征二号丁"
+    },
+    {
+      "id": "wp-lm2d",
+      "title": "Wikipedia: Long March 2D",
+      "url": "https://en.wikipedia.org/wiki/Long_March_2D"
+    },
+    {
+      "id": "notam-a5728",
+      "title": "NOTAM ZLHW A5728/26 temporary danger area, 2026-11-11 11:32-12:05Z (via Space Notices / FAA NOTAM search)",
+      "url": "https://space-notices.com/notice/notam-ZLHW-A5728%2F26"
+    },
+    {
+      "id": "xinhua-lm12-y11",
+      "title": "Xinhua: 我国成功发射卫星互联网低轨29组卫星 (LM-12, Hainan commercial site, 2026-11-09 04:24 BJT)",
+      "url": "https://www.news.cn/20261109/c59381337ab24106a800be4d3baac43f/c.html"
+    },
+    {
+      "id": "zla-carf-11-071",
+      "title": "FAA/ZLA CARF NOTAM 11/071-26 \"SX R-5 26-72\" (USSF-627, Nov 10 PT window; Area A polygon identical to 11/067-26)",
+      "url": "https://space-notices.com/entry/launch-f9-ussf-627"
+    },
+    {
+      "id": "xinhua-lm2d-y108",
+      "title": "Xinhua: 我国成功发射探源计划探路者卫星 (LM-2D, Jiuquan, 11 Nov 2026 19:41 BJT)",
+      "url": "http://www.xinhuanet.com/20261111/f62e737993404c6aa3ba9246a6118598/c.html"
+    },
+    {
+      "id": "cssar-pathfinder",
+      "title": "CSSAR/NSSC: 探源计划探路者卫星成功发射 (LM-2D Y108, 4 satellites, 600 km dawn-dusk SSO)",
+      "url": "http://www.cssar.cas.cn/xwdt2015/xwsd2015/202611/t20261111_8307991.html"
+    },
+    {
+      "id": "rl-mountain-god",
+      "title": "Rocket Lab: The Mountain God Rises (iQPS Launch 10) mission page",
+      "url": "https://rocketlabcorp.com/missions/launches/iqps-the-mountain-god-rises/"
+    },
+    {
+      "id": "hydropac-3249-3251",
+      "title": "HYDROPAC 3249/26 and 3251/26 space-debris areas (The Mountain God Rises)",
+      "url": "https://www.space-notices.com/entry/launch-electron-the-mountain-god-rises-iqps-launch-10"
+    },
+    {
+      "id": "zla-carf-11-107",
+      "title": "FAA ZLA CARF 11/107-26 (SX R-5 Area A, re-issue)",
+      "url": "https://space-notices.com/notice/notam-ZLA-11%2F107-26"
+    },
+    {
+      "id": "ula-vulcan-leo-1",
+      "title": "ULA: Vulcan Leo 1 (Amazon Leo LV-01) mission page — VC6L, T0, vehicle description",
+      "url": "https://www.ulalaunch.com/missions/next-launch/vulcan-leo-1"
+    },
+    {
+      "id": "ula-vulcan-ug-2023",
+      "title": "ULA Vulcan User’s Guide (2023) — typical CCSFS event times (Fig. 2.1.1-2), BE-4 / Centaur description",
+      "url": "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf"
+    },
+    {
+      "id": "ula-blog-cv-l",
+      "title": "ULA blog (2 Jun 2026): LEO-optimized Centaur V is ~6 ft shorter and carries a third less propellant than the 120,000 lb CV-HE",
+      "url": "https://blog.ulalaunch.com/blog/vulcan-new-centaur-v-version-readies-for-amazon-leo"
+    },
+    {
+      "id": "ng-propulsion-catalog",
+      "title": "Northrop Grumman Propulsion Products Catalog — GEM 63XL vacuum 73°F: Isp 280.3 s, time-average thrust 334,063 lbf, propellant 105,497 lbm, burn 87.3 s (p.39)",
+      "url": "https://cdn.northropgrumman.com/-/media/wp-content/uploads/NG-Propulsion-Products-Catalog.pdf"
+    },
+    {
+      "id": "navarea-iv-1078-26",
+      "title": "NAVAREA IV 1078/26 (Amazon Leo LV-01 / Vulcan launch corridor, Area A) via space-notices",
+      "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201078%2F26"
+    },
+    {
+      "id": "amazon-ka-01-450km",
+      "title": "Amazon: Project Kuiper (KA-01) first launch — 'completed releasing all 27 satellites … at an altitude of 280 miles (450 kilometers)' (analog used for LV-01 insertion)",
+      "url": "https://www.aboutamazon.com/news/innovation-at-amazon/project-kuiper-photos-internet-satellite-first-launch"
+    },
+    {
+      "id": "wp-vulcan-centaur",
+      "title": "Wikipedia: Vulcan Centaur (secondary: BE-4 Isp, booster empty mass, RL10C Isp citations)",
+      "url": "https://en.wikipedia.org/wiki/Vulcan_Centaur"
+    },
+    {
+      "id": "spacex-starship-flight-15",
+      "title": "SpaceX: Starship Flight 15 mission page and published timeline (also content.spacex.com API)",
+      "url": "https://www.spacex.com/launches/starship-flight-15"
+    },
+    {
+      "id": "navarea-iv-1080-26",
+      "title": "NAVAREA IV 1080/26 (Starship Flight 15 Gulf / Yucatan launch corridor, Area A) via space-notices",
+      "url": "https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201080%2F26"
+    },
+    {
+      "id": "wp-spacex-starship",
+      "title": "Wikipedia: SpaceX Starship (Block 3 ship propellant / thrust citing SpaceX 'Introducing Starship V3', 12 May 2026)",
+      "url": "https://en.wikipedia.org/wiki/SpaceX_Starship"
+    },
+    {
+      "id": "wp-spacex-super-heavy",
+      "title": "Wikipedia: SpaceX Super Heavy (Block 3 booster propellant / 80.8 MN liftoff thrust, earlier-block empty mass used as a stand-in)",
+      "url": "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy"
+    },
+    {
+      "id": "spacex-starship-specs",
+      "title": "SpaceX: Starship technical specifications (Ship 1,614 tf / 1,600 t; Super Heavy 8,240 tf / 3,650 t; Raptor 3 sea-level 250 tf; 3 SL + 3 RVac on Ship, 33 on Super Heavy)",
+      "url": "https://www.spacex.com/vehicles/starship/technical-specifications"
+    },
+    {
+      "id": "spacex-v3-update",
+      "title": "SpaceX update, 12 May 2026: Introducing Starship V3 — Raptor 3 sea-level 250 tf (up from 230), RVac 275 tf (up from 258)",
+      "url": "https://www.spacex.com/updates/starship-v3"
+    },
+    {
+      "id": "spacex-starship-flight-14",
+      "title": "SpaceX: Starship Flight 14 mission page — all six ship engines on ascent; passively safe suborbital trajectory; single sea-level Raptor insertion (T+00:25:17–25:36)",
+      "url": "https://www.spacex.com/launches/starship-flight-14"
+    },
+    {
+      "id": "musk-raptor-isp-2019",
+      "title": "Elon Musk, 9 Sep 2019: 'Sea level Raptor’s vacuum Isp is ~350 sec, but ~380 sec with larger vacuum-optimized nozzle'",
+      "url": "https://web.archive.org/web/20190925065050/https://twitter.com/elonmusk/status/1171118891671490560"
+    },
+    {
+      "id": "spacex-ussf627-x",
+      "title": "SpaceX on X: 'Falcon 9 launches USSF-627 to orbit' (2026-11-12)",
+      "url": "https://x.com/SpaceX/status/2120808224324510133"
+    },
+    {
+      "id": "ula-leo1-target-x",
+      "title": "ULA on X (2026-11-12): LV-01 target 'near-circular low Earth orbit of approximately 285 miles (460km) inclined at 51.9 degrees'",
+      "url": "https://x.com/ulalaunch/status/2120895023067639859"
+    },
+    {
+      "id": "spacex-ussf317",
+      "title": "SpaceX: USSF-317 mission page and timeline",
+      "url": "https://www.spacex.com/launches/ussf317"
+    },
+    {
+      "id": "zla-carf-11-116",
+      "title": "FAA/ZLA CARF NOTAM 11/116-26 (USSF-317 Area A, SX USSF317 R-6 26-73; same polygon in 11/094-26; Area B 11/093-26, 11/115-26)",
+      "url": "https://space-notices.com/notice/notam-ZLA-11%2F116-26"
+    },
+    {
+      "id": "navarea-xii-785-26",
+      "title": "NAVAREA XII 785/26 (USSF-317 Falcon 9 hazard areas A-C, 13-19 Nov) via sealagom",
+      "url": "https://www.sealagom.com/navarea/12/message/25632/785-26-north-pacific/"
+    },
+    {
+      "id": "ll2-soyuz-kinosputnik",
+      "title": "Launch Library 2: Soyuz 2.1b/Fregat-M | MKA Kinosputnik, KOEN and others (NET 2026-11-14T00:50Z, Go; id bff2fc91-eddd-4dfc-af26-ac0674cfab4d)",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/bff2fc91-eddd-4dfc-af26-ac0674cfab4d/"
+    },
+    {
+      "id": "zeya-drop-zone",
+      "title": "Zeya district administration via Portamur: Soyuz-2.1b launch 14-24 Nov, stage drop zone at the Bryanta and Unakha rivers north of Kirovsky",
+      "url": "https://portamur.ru/news/detail/v-noyabre-s-kosmodroma-vostochnyiy-zapustyat-soyuz-b/"
+    },
+    {
+      "id": "kosmonavtika-soyuz21b-2019",
+      "title": "Kosmonavtika (N. Pillet): Soyuz-2.1b Meteor-M 2-2, Vostochny 5 Jul 2019, theoretical timeline (BVGD sep 117.6 s, fairing 225.63 s, Block A 287.48 s, Block I cutoff 560.40 s)",
+      "url": "https://kosmonavtika.com/lancements/2019/05072019/05072019.html"
+    },
+    {
+      "id": "russianspaceweb-soyuz2-metop",
+      "title": "RussianSpaceWeb: Soyuz-2-1a/Metop launch sequence (stage I sep 118.2 s at 50 km; stage II sep 287.6 s at 175 km)",
+      "url": "https://www.russianspaceweb.com/soyuz2_metop.html"
+    },
+    {
+      "id": "wp-unakha-bryanta",
+      "title": "Wikipedia (ru): Bryanta and Unakha rivers (coordinates; Unakha joins Bryanta 23 km above its mouth)",
+      "url": "https://ru.wikipedia.org/wiki/%D0%91%D1%80%D1%8F%D0%BD%D1%82%D0%B0"
+    },
+    {
+      "id": "skyrocket-kinosputnik",
+      "title": "Gunter's Space Page: KinoSputnik (circular LEO ~500-800 km, 150 kg)",
+      "url": "https://space.skyrocket.de/doc_sdat/kinosputnik.htm"
+    },
+    {
+      "id": "ula-leo1-delay-x",
+      "title": "ULA on X: Vulcan Leo 1 delayed (Air Liquide GN2 plant power interruption), 2026-11-13",
+      "url": "https://x.com/ulalaunch/status/2121252131172671506"
+    },
+    {
+      "id": "tommot-soyuz-t0-x",
+      "title": "@afec7032 on X: Tommot city administration gives Soyuz-2.1b Vostochny launch 10:16 Yakutsk time (01:16 UTC), 2026-11-13",
+      "url": "https://x.com/afec7032/status/2121264240455504290"
+    },
+    {
+      "id": "zla-carf-11-149",
+      "title": "FAA/ZLA CARF NOTAM 11/149-26 USSF-317 Area A (space-notices.com)",
+      "url": "https://space-notices.com/notice/notam-ZLA-11%2F149-26"
+    }
+  ],
+  "launches": [
+    {
+      "slug": "electron-hawkeye360",
+      "name": "We're Not Hawking Around (3x HawkEye 360)",
+      "vehicle": "Electron",
+      "t0_utc": "2026-10-23T07:11:00Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory.csv",
+        "kml": "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory.kml",
+        "csv_sim": "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory_sim.csv",
+        "kml_sim": "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory_sim.kml",
+        "track_lite": "/launches/electron-hawkeye360/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low-medium",
+      "sources": [
+        "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+        "https://ll.thespacedevs.com/2.3.0/launches/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric (published event table + azimuth)",
+        "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "rl-ug",
+        "wp-electron",
+        "ll2",
+        "kml"
+      ]
+    },
+    {
+      "slug": "lm6a-yaogan50-03",
+      "name": "Yaogan 50-03",
+      "vehicle": "Long March 6A",
+      "t0_utc": "2026-10-23T10:15:00Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory.csv",
+        "kml": "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory.kml",
+        "csv_sim": "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory_sim.csv",
+        "kml_sim": "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory_sim.kml",
+        "track_lite": "/launches/lm6a-yaogan50-03/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+        "https://ll.thespacedevs.com/2.3.0/launches/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric (published event table + azimuth)",
+        "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "calt-lm3a",
+        "wp-lm3b",
+        "wp-lm6a",
+        "ll2",
+        "kml"
+      ]
+    },
+    {
+      "slug": "lm4b-jiuquan",
+      "name": "Yaogan 53-07..09 / 56-19..21",
+      "vehicle": "Long March 4B",
+      "t0_utc": "2026-10-23T19:25:00Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory.csv",
+        "kml": "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory.kml",
+        "csv_sim": "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory_sim.csv",
+        "kml_sim": "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory_sim.kml",
+        "track_lite": "/launches/lm4b-jiuquan/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low-medium",
+      "sources": [
+        "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+        "https://ll.thespacedevs.com/2.3.0/launches/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric (published event table + azimuth)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: published Y51 event times as hard constraints; payload/steering fitted; Cd from LM-3B fit; ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "calt-lm3a",
+        "wp-lm3b",
+        "wp-lm4b",
+        "huiji-lm4b",
+        "zj385",
+        "rkrr-d3252",
+        "rjjj-p5065",
+        "ll2",
+        "kml",
+        "wp-yf20"
+      ]
+    },
+    {
+      "slug": "lm8a-wenchang",
+      "name": "SatNet LEO Group 28",
+      "vehicle": "Long March 8A",
+      "t0_utc": "2026-10-25T02:03:00Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory.csv",
+        "kml": "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory.kml",
+        "csv_sim": "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory_sim.csv",
+        "kml_sim": "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory_sim.kml",
+        "track_lite": "/launches/lm8a-wenchang/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+        "https://www.sealagom.com/navarea/11/message/25242/",
+        "https://ll.thespacedevs.com/2.3.0/launches/",
+        "https://www.news.cn/politics/20261025/3573644b269e466f83510360cb84eff4/c.html"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric (published event table + azimuth)",
+        "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "xinhua-lm8a-y12",
+        "calt-lm3a",
+        "wp-lm3b",
+        "wp-lm8",
+        "navarea-xi-26-0481",
+        "ll2",
+        "kml"
+      ],
+      "note": "Flown 2026-10-25T02:03Z (13 min after the planned 01:50Z); pre-flight ILLUSTRATIVE geometry re-timed to the actual liftoff."
+    },
+    {
+      "slug": "starlink-15-16",
+      "name": "Starlink Group 15-16",
+      "vehicle": "Falcon 9 Block 5",
+      "t0_utc": "2026-10-27T07:25:51Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory.csv",
+        "kml": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory.kml",
+        "csv_sim": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory_sim.csv",
+        "kml_sim": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory_sim.kml",
+        "track_lite": "/launches/starlink-15-16/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "medium",
+      "sources": [
+        "https://www.spacex.com/launches/sl-15-16",
+        "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20737%2F26",
+        "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
+        "https://en.wikipedia.org/wiki/Falcon_9_Block_5",
+        "https://ll.thespacedevs.com/2.3.0/launches/",
+        "https://spaceflightnow.com/launch-schedule/",
+        "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-16&FORMAT=json"
+      ],
+      "method": {
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX event timeline, NAVAREA XII 737/26 azimuth 154.56 deg)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX sl-15-16 event times (MECO 146 s, sep 150 s, SES-1 156 s, fairing 176 s, SECO-1 519 s) as hard events; steering/payload fitted to the 159 x 265 km, i=70.007 deg parking orbit derived from SpaceX's pre-launch state vector (CelesTrak SupGP); azimuth 155.87 deg (inside NAVAREA XII 737/26 Area A); continues through SES-2/SECO-2 to deploy T+3713 s; retimed 26 Oct to LL2 T0 07:25:51Z (Earth-fixed track unchanged; RAAN 221.51 deg); ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "spacex-sl-15-16",
+        "celestrak-supgp-g15-16",
+        "navarea-xii-737-26",
+        "uscg-lnm-56736",
+        "mmfr-b3055-26",
+        "faa-sl-15-16",
+        "shahar603-tel",
+        "wp-falcon9",
+        "wp-falcon9-b5",
+        "ll2",
+        "sfn-schedule",
+        "kml"
+      ],
+      "note": "Flown 2026-10-27T07:25:51Z (Tue 12:25:51 am PDT); SpaceX confirmed 27 satellites deployed. Pre-flight ILLUSTRATIVE geometry re-timed to the actual liftoff. Recheck 27 Oct vs CelesTrak SupGP refreshed after liftoff (epoch 08:28:08Z): 252 x 265 km, i 70.007 deg, RAAN 222.58 deg; sim at deploy RAAN 221.51 deg, i 70.04 deg (RAAN residual -1.1 deg; the earlier +36 deg came from a stale pre-slip vector)."
+    },
+    {
+      "slug": "starlink-15-18",
+      "name": "Starlink Group 15-18",
+      "vehicle": "Falcon 9 Block 5",
+      "t0_utc": "2026-10-31T04:04:34Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/starlink-15-18/starlink-15-18_2026-10-31_trajectory.csv",
+        "kml": "/launches/starlink-15-18/starlink-15-18_2026-10-31_trajectory.kml",
+        "csv_sim": "/launches/starlink-15-18/starlink-15-18_2026-10-31_trajectory_sim.csv",
+        "kml_sim": "/launches/starlink-15-18/starlink-15-18_2026-10-31_trajectory_sim.kml",
+        "track_lite": "/launches/starlink-15-18/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "medium",
+      "sources": [
+        "https://www.spacex.com/launches/sl-15-18",
+        "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20747%2F26",
+        "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
+        "https://en.wikipedia.org/wiki/Falcon_9_Block_5",
+        "https://ll.thespacedevs.com/2.3.0/launches/",
+        "https://spaceflightnow.com/launch-schedule/",
+        "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-18&FORMAT=json"
+      ],
+      "method": {
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX sl-15-18 event timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:58 / SECO-1 8:39, NAVAREA XII 747/26 Area A azimuth 154.56 deg; retimed 2026-11-03 to actual liftoff 2026-10-31T04:04:34Z (LL2))",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX sl-15-18 event times (MECO 146 s, sep 149 s, SES-1 156 s, fairing 178 s, SECO-1 519 s) as hard events; steering/payload fitted (payload 16.77 t) to the 177 x 266 km parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP, 251 x 266 km, i=70.004 deg); azimuth 155.80 deg tuned to i=69.996 deg (inside NAVAREA XII 747/26 Area A); SES-2/SECO-2 T+53:07-53:08 raises perigee to 251 km; deploy row at T+3719 s (T+1:01:59, SpaceX); RAAN 174.47 deg vs SupGP 175.61 deg (-1.14 deg, same systematic as 15-16); retimed 2026-10-30 to LL2 T0 2026-10-31T04:02:22Z (Fri Oct 30 9:02:22 pm PDT) with the re-issued SupGP vector (epoch 05:05:36Z); ILLUSTRATIVE; retimed 2026-11-03 to actual liftoff 04:04:34Z (132 s late; RAAN target vector was for 04:02:22Z)"
+      },
+      "reference_ids": [
+        "spacex-sl-15-18",
+        "celestrak-supgp-g15-18",
+        "navarea-xii-747-26",
+        "shahar603-tel",
+        "wp-falcon9",
+        "wp-falcon9-b5",
+        "ll2",
+        "sfn-schedule",
+        "kml"
+      ],
+      "note": "Flown 2026-10-31T04:04:34Z (Fri Oct 30 9:04:34 pm PDT, LL2), 2 min 12 s after the filed NET; SpaceX confirmed 27 satellites deployed. Pre-flight ILLUSTRATIVE geometry re-timed to the actual liftoff; inertial RAAN vs the pre-launch SupGP vector not re-checked."
+    },
+    {
+      "slug": "ussf-432",
+      "name": "USSF-432",
+      "vehicle": "Falcon 9 Block 5",
+      "t0_utc": "2026-11-07T00:48:42Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-07T00:46:00Z",
+      "window_close_utc": "2026-11-07T04:46:00Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/ussf-432/ussf-432_2026-11-07_trajectory.csv",
+        "kml": "/launches/ussf-432/ussf-432_2026-11-07_trajectory.kml",
+        "csv_sim": "/launches/ussf-432/ussf-432_2026-11-07_trajectory_sim.csv",
+        "kml_sim": "/launches/ussf-432/ussf-432_2026-11-07_trajectory_sim.kml",
+        "track_lite": "/launches/ussf-432/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://www.spacex.com/launches/ussf432",
+        "https://www.space-notices.com/",
+        "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
+        "https://ll.thespacedevs.com/2.3.0/launches/",
+        "https://www.spacex.com/launches/sl-15-18",
+        "https://space-notices.com/entry/launch-f9-ussf-432"
+      ],
+      "method": {
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX ussf432 timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:55; ZLA CARF 11/032-26 Area A azimuth 153.56 deg, valid for the Nov 6 PT window, same polygon as 10/377); ends at T+508 s (telemetry end) because SECO is unpublished; retimed 2026-11-06 to LL2 NET 2026-11-07T00:48:42Z (Fri Nov 6 4:48:42 pm PST; SpaceX window still opens 4:46 pm PT / 00:46Z, backup Sat Nov 7 4:32 pm PT)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf432 MECO 146 s, sep 149 s, SES-1 156 s, fairing 175 s as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are an ASSUMED Starlink Group 15 analog (LL2 notes drop zones match Group 15), not USSF-432 sources; azimuth 153.56 deg from ZLA CARF 11/032-26 Area A (inclination unpublished) gives i=68.28 deg; payload fitted 16.85 t (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; ILLUSTRATIVE; retimed 2026-11-06 to LL2 NET 2026-11-07T00:48:42Z (Fri Nov 6 4:48:42 pm PST; SpaceX window opens 4:46 pm PT)"
+      },
+      "reference_ids": [
+        "spacex-ussf432",
+        "zla-carf-11-032",
+        "shahar603-tel",
+        "spacex-sl-15-18",
+        "wp-falcon9",
+        "wp-falcon9-b5",
+        "ll2",
+        "kml"
+      ],
+      "note": "FLOWN: LL2 Launch Successful at 2026-11-07T00:48:42Z (Fri Nov 6 4:48:42 pm PST) from Vandenberg SLC-4E; B1095 landed on OCISLY (SpaceX/LL2). Pre-flight ILLUSTRATIVE geometry already at that T0 (no rebuild). SECO/orbit/deploy remain unpublished (classified)."
+    },
+    {
+      "slug": "electron-iqps9",
+      "name": "The Sea God Surveys (iQPS Launch 9, QPS-SAR-20)",
+      "vehicle": "Electron",
+      "t0_utc": "2026-11-02T16:41:00Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/electron-iqps9/electron-iqps9_2026-11-02_trajectory.csv",
+        "kml": "/launches/electron-iqps9/electron-iqps9_2026-11-02_trajectory.kml",
+        "csv_sim": "/launches/electron-iqps9/electron-iqps9_2026-11-02_trajectory_sim.csv",
+        "kml_sim": "/launches/electron-iqps9/electron-iqps9_2026-11-02_trajectory_sim.kml",
+        "track_lite": "/launches/electron-iqps9/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://rocketlabcorp.com/missions/launches/iqps-the-sea-god-surveys/",
+        "https://rocketlabcorp.com/launch/launch-safety/",
+        "https://i-qps.net/en/news/4118/",
+        "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+        "https://www.space-notices.com/",
+        "https://ll.thespacedevs.com/2.3.0/launches/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric (Electron User Guide 8.0 GENERIC event profile - no mission timeline published; S2 cutoff altitude assumed = iQPS 575 km orbit; NOTAM B5324/B5325 debris-area azimuth 107.4 deg); T0 2026-11-02T16:41Z per Rocket Lab launch-safety page (NET 16:41 UTC, 3 Nov NZT), matching LL2; debris areas also published by Rocket Lab as Hazard Areas 1/2",
+        "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance), Electron energy-cutoff mode (UNTUNED: no published mission timeline/inclination); azimuth 107.4 deg from NOTAM / Rocket Lab Space Debris Hazard Areas 1/2; T0 per Rocket Lab launch-safety page; target 230 km (assumed) x 575 km (iQPS); cutoff T+526 s into 221 x 616 km, i=39.96 deg; deploy time unpublished, so propagated 2 revs on the inferred insertion orbit; ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "rl-sea-god",
+        "rl-launch-safety",
+        "iqps-4118",
+        "rl-ug",
+        "notam-b5324-b5325",
+        "wp-electron",
+        "ll2",
+        "kml"
+      ],
+      "note": "Flown 2026-11-02T16:41Z (Mon Nov 2 8:41 am PST, LL2 Launch Successful); Rocket Lab confirmed payload deploy ~9:35 am PST. Pre-flight ILLUSTRATIVE geometry (T0 already matched liftoff)."
+    },
+    {
+      "slug": "kinetica2-y2",
+      "name": "SpaceSail (Qianfan) polar group, Kinetica-2 Y2",
+      "vehicle": "Kinetica-2 (Lijian-2)",
+      "t0_utc": "2026-11-03T00:15:00Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/kinetica2-y2/kinetica2-y2_2026-11-03_trajectory.csv",
+        "kml": "/launches/kinetica2-y2/kinetica2-y2_2026-11-03_trajectory.kml",
+        "csv_sim": "/launches/kinetica2-y2/kinetica2-y2_2026-11-03_trajectory_sim.csv",
+        "kml_sim": "/launches/kinetica2-y2/kinetica2-y2_2026-11-03_trajectory_sim.kml",
+        "track_lite": "/launches/kinetica2-y2/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://sat.huijiwiki.com/wiki/力箭二号",
+        "https://sat.huijiwiki.com/wiki/YF-102",
+        "https://zh.wikipedia.org/wiki/YF-102",
+        "https://satnet.news/item/76103",
+        "https://www.unilym.com/articles/lijian-2-yao2-18xing-20261102",
+        "https://www.space-notices.com/",
+        "https://ll.thespacedevs.com/2.3.0/launches/",
+        "https://m.weibo.cn/detail/5361090570488447",
+        "https://x.com/DailyBeijing/status/2117514278206898575",
+        "https://x.com/najoygo/status/2117424232691056846"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: CAS Space TYPICAL Kinetica-2 sequence times (fairing 217.73 s, S2 cutoff 493.71 s; S1 cutoff 180 s ASSUMED); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; 500 km final altitude ASSUMED; NOTAM A5561/A5562 azimuth 186.58 deg; UNTUNED; retimed 2026-11-03 to actual liftoff 00:15Z",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode (CAS Space typical sequence via huijiwiki, not Y2-specific); S1 burn/sep times, boosters separating with core, fairing mass and YF-102 vac/SL ratio (Merlin 1D) are ASSUMPTIONS; stage masses DERIVED from mdot x burn and 0.92 structure coefficient; Cd from LM-3B fit (UNTUNED, no knots); target 500 km circular ASSUMED; cutoff T+493.7 s; payload separation at typical T+514.7 s into 495 x 506 km, i=94.27 deg; payload fitted 6.7 t (18 Qianfan confirmed post-launch by Chinese media; mass unpublished); ILLUSTRATIVE; retimed 2026-11-03 to actual liftoff 00:15Z"
+      },
+      "reference_ids": [
+        "huiji-kinetica2",
+        "huiji-yf102",
+        "zhwp-yf102",
+        "wp-merlin1d",
+        "satnet-k2y2",
+        "satnet-k2",
+        "unilym-k2y2",
+        "notam-a5561-a5562",
+        "wp-lm3b",
+        "ll2",
+        "kml",
+        "weibo-k2y2",
+        "bjdaily-k2y2",
+        "kcb-k2y2"
+      ],
+      "note": "Flown 2026-11-03T00:15Z (Mon Nov 2 4:15 pm PST, LL2; Chinese media give 00:15:25Z). 18 Qianfan polar satellites reached the preset orbit (Beijing Daily); LL2 labels it Polar Group #17, Chinese media group 21. Pre-flight ILLUSTRATIVE geometry re-timed to the actual liftoff; orbit still unpublished."
+    },
+    {
+      "slug": "lm2c-xichang",
+      "name": "Yaogan-51 07–09 (Long March 2C, Xichang)",
+      "vehicle": "Long March 2C",
+      "t0_utc": "2026-11-05T15:58:00Z",
+      "status": "Success",
+      "phase": "flown",
+      "files": {
+        "csv": "/launches/lm2c-xichang/lm2c-xichang_2026-11-05_trajectory.csv",
+        "kml": "/launches/lm2c-xichang/lm2c-xichang_2026-11-05_trajectory.kml",
+        "csv_sim": "/launches/lm2c-xichang/lm2c-xichang_2026-11-05_trajectory_sim.csv",
+        "kml_sim": "/launches/lm2c-xichang/lm2c-xichang_2026-11-05_trajectory_sim.kml",
+        "track_lite": "/launches/lm2c-xichang/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://sat.huijiwiki.com/wiki/长征二号丙",
+        "https://en.wikipedia.org/wiki/YF-20",
+        "https://www.space-notices.com/",
+        "https://ll.thespacedevs.com/2.3.0/launches/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: CALT TYPICAL LM-2C sequence times (S1 cutoff 146.5 s ... vernier cutoff 542.7 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; 500 km final altitude ASSUMED; NOTAM A5624 azimuth 136.38 deg; UNTUNED; retimed 2026-11-06 to LL2 actual liftoff 2026-11-05T15:58:00Z (Thu Nov 5 7:58 am PST; was NET 16:00Z)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: CALT typical sequence as hard events, Ph.3 stage data (World Launch Vehicles 2007 via huijiwiki), S1 vac via YF-20 ratio, verniers to 542.7 s; fairing mass 1000 kg ASSUMED; Cd from LM-3B fit (UNTUNED); payload/orbit unknown, 500 km circular ASSUMED; payload separation at typical T+545.7 s into 499 x 501 km, i=54.17 deg; fitted payload only ~0.3 t; ILLUSTRATIVE; known sim ground-track drift vs commanded azimuth ~+9 deg (board note); retimed 2026-11-06 to LL2 actual liftoff 2026-11-05T15:58:00Z"
+      },
+      "reference_ids": [
+        "huiji-lm2c",
+        "wp-yf20",
+        "notam-a5624",
+        "wp-lm3b",
+        "ll2",
+        "kml"
+      ],
+      "note": "FLOWN: LL2 Launch Successful at 2026-11-05T15:58:00Z (Thu Nov 5 7:58 am PST) from Xichang LC-3; Yaogan-51 07–09 reached planned orbit (Xinhua/China News/LL2; Long March flight 675). Pre-flight ILLUSTRATIVE files retimed to actual liftoff; geometry unchanged."
+    },
+    {
+      "slug": "lm12-wenchang",
+      "name": "SatNet LEO Group 29 (Long March 12, Wenchang)",
+      "vehicle": "Long March 12",
+      "t0_utc": "2026-11-08T20:24:00Z",
+      "t0_kind": "actual",
+      "window_open_utc": "2026-11-08T20:17:00Z",
+      "window_close_utc": "2026-11-08T20:47:00Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory.csv",
+        "kml": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory.kml",
+        "csv_sim": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory_sim.csv",
+        "kml_sim": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory_sim.kml",
+        "track_lite": "/launches/lm12-wenchang/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://sat.huijiwiki.com/wiki/长征十二号",
+        "https://en.wikipedia.org/wiki/Long_March_12",
+        "https://en.wikipedia.org/wiki/YF-115",
+        "https://space-notices.com/entry/launch-long-march-12-satnet-leo-group-tbd",
+        "https://ll.thespacedevs.com/2.3.0/launches/",
+        "https://www.news.cn/20261109/c59381337ab24106a800be4d3baac43f/c.html",
+        "https://www.chinanews.com.cn/gn/2026/11-09/10728684.shtml"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: CALT TYPICAL LM-12 Y7 sequence times (S1 cutoff 196.315 s, sep 198.315 s, fairing 209.015 s, S2 first cutoff 622.505 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; 300 km final altitude ASSUMED; NOTAM RPHI B5920/26 azimuth 141.27 deg; UNTUNED",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: CALT typical sequence as hard events; thrust from huijiwiki, YF-115 Isp from Wikipedia (B variant ASSUMED same); stage masses DERIVED from burn times with ASSUMED 0.92 structure coefficient; fairing 2.5 t ASSUMED; Cd from LM-3B fit; 300 km circular ASSUMED; sim input azimuth 109.33 deg COMPENSATED for sim track bias so the track passes ~38 km from the NOTAM centroid; fitted payload ~8.3 t; typical 18 s S2 restart at T+1622.5 s flown open-loop prograde (purpose unpublished) giving ILLUSTRATIVE 294 x 2276 km at first-batch separation T+1730.5 s, i=36.8 deg (sim inclination does not match the ~53.9 deg the NOTAM bearing implies); UNTUNED; ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "huiji-lm12",
+        "wp-lm12",
+        "wp-yf115",
+        "notam-b5920",
+        "wp-lm3b",
+        "ll2",
+        "kml",
+        "xinhua-lm12-y11"
+      ],
+      "note": "FLOWN: liftoff 2026-11-08T20:24Z (Sun Nov 8 12:24 pm PST; 04:24 BJT Nov 9) from Hainan Commercial LC-2; SatNet LEO Group 29 entered planned orbit, mission a complete success, Long March flight 676 (Xinhua, China News/CASC; LL2 Launch Successful). Pre-flight ILLUSTRATIVE files retimed -60 s from the 20:25Z NET; geometry unchanged. Orbit still unpublished."
+    },
+    {
+      "slug": "ussf-627",
+      "name": "USSF-627",
+      "vehicle": "Falcon 9 Block 5",
+      "t0_utc": "2026-11-12T04:36:30Z",
+      "t0_kind": "actual",
+      "window_open_utc": "2026-11-12T02:35:00Z",
+      "window_close_utc": "2026-11-12T06:35:00Z",
+      "status": "Success",
+      "phase": "flown",
+      "files": {
+        "csv": "/launches/ussf-627/ussf-627_2026-11-12_trajectory.csv",
+        "kml": "/launches/ussf-627/ussf-627_2026-11-12_trajectory.kml",
+        "csv_sim": "/launches/ussf-627/ussf-627_2026-11-12_trajectory_sim.csv",
+        "kml_sim": "/launches/ussf-627/ussf-627_2026-11-12_trajectory_sim.kml",
+        "track_lite": "/launches/ussf-627/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://www.spacex.com/launches/ussf627",
+        "https://space-notices.com/entry/launch-f9-ussf-627",
+        "https://space-notices.com/notice/notam-ZLA-11%2F067-26",
+        "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
+        "https://ll.thespacedevs.com/2.3.0/launches/6aa7b90b-e5ed-45d8-a52e-04fbf399d178/",
+        "https://www.spacex.com/launches/sl-15-18",
+        "https://x.com/SpaceX/status/2120808224324510133"
+      ],
+      "method": {
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX ussf627 timeline MECO 2:25 / sep 2:29 / SES-1 2:36 / fairing 2:56 (revised 2026-11-10; surrogate knots still at the earlier 2:26/2:58 marks, 1-2 s); ZLA CARF 11/067-26 Area A azimuth 153.56 deg, polygon re-issued unchanged as 11/071-26 and 11/107-26); ends at T+508 s (telemetry end) because SECO is unpublished; T0 ACTUAL liftoff 2026-11-12T04:36:30Z (Wed Nov 11 8:36:30 pm PST; LL2 Launch Successful, SpaceX X post); retimed from NET 02:35:00Z (+7290 s)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf627 MECO 145 s, sep 149 s, SES-1 156 s, fairing 176 s (revised timeline, checked 2026-11-11, unchanged) as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are an ASSUMED Starlink Group 15 analog (LL2 notes drop zones match Group 15), not USSF-627 sources; azimuth 153.56 deg from ZLA CARF 11/067-26 / 11/071-26 Area A (inclination unpublished) gives i≈68.23 deg; payload fitted ~16.42 t (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; sim ground track runs ~+5° east of the commanded azimuth (pad→insertion bearing 158.8° vs 153.56°, known sim bug); T0 = ACTUAL liftoff 2026-11-12T04:36:30Z (re-run, geometry unchanged); ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "spacex-ussf627",
+        "zla-carf-11-067",
+        "zla-carf-11-071",
+        "hydropac-3207",
+        "shahar603-tel",
+        "spacex-sl-15-18",
+        "wp-falcon9",
+        "wp-falcon9-b5",
+        "ll2",
+        "kml",
+        "zla-carf-11-107",
+        "spacex-ussf627-x"
+      ],
+      "assumptions": [
+        "SECO-1 time T+519 s and parking orbit 177×266 km ASSUMED from Starlink Group 15-18 analog (LL2: drop zones match Group 15; possible Starshield); not USSF-627 sources",
+        "Azimuth 153.56° from ZLA CARF 11/067-26 Area A far-edge midpoint (inclination unpublished/classified; used as launch-plane azimuth without tuning)",
+        "Payload mass FITTED (~16.42 t) within F9 bounds so assumed SECO delivers assumed orbit — NOT an estimate of the real payload",
+        "Deploy time unpublished (classified) → deploy.t_s null; coast +2 revs on inferred insertion orbit",
+        "Family Iridium NEXT-7 webcast telemetry used for surrogate loft altitudes/ranges (not this flight)",
+        "Known sim ground-track azimuth residual still present: pad→insertion bearing 158.8° vs commanded 153.56° (+5.2°)",
+        "T0 is the ACTUAL liftoff (LL2/SpaceX), a sourced time; all trajectory geometry and orbit values remain the assumptions above, not actual flight data"
+      ],
+      "note": "FLOWN. Falcon 9 B1103 (7th flight) lifted off from Vandenberg SLC-4E at 2026-11-12T04:36:30Z (Wed 11 Nov 8:36:30 pm PST); LL2 Launch Successful (update 'Launch success.' 07:02Z Nov 12); SpaceX X post 'Falcon 9 launches USSF-627 to orbit'. Both trajectory types retimed from the earlier NET 02:35Z (+7290 s); ILLUSTRATIVE geometry unchanged (files still named by the 2026-11-12 UTC date). Earlier slips: Nov 9 7:03p/7:07p, Nov 10 6:49p, Nov 11 6:35p PT. SECO/orbit/deploy unpublished (classified); orbit shown is a Group 15 analog assumption."
+    },
+    {
+      "slug": "lm2d-jiuquan",
+      "name": "Origins (TanYuan) Pathfinder A-D (Long March 2D Y108, Jiuquan)",
+      "vehicle": "Long March 2D",
+      "t0_utc": "2026-11-11T11:41:00Z",
+      "t0_kind": "liftoff",
+      "window_open_utc": "2026-11-11T11:32:00Z",
+      "window_close_utc": "2026-11-11T12:05:00Z",
+      "status": "Success",
+      "phase": "recent",
+      "files": {
+        "csv": "/launches/lm2d-jiuquan/lm2d-jiuquan_2026-11-11_trajectory.csv",
+        "kml": "/launches/lm2d-jiuquan/lm2d-jiuquan_2026-11-11_trajectory.kml",
+        "csv_sim": "/launches/lm2d-jiuquan/lm2d-jiuquan_2026-11-11_trajectory_sim.csv",
+        "kml_sim": "/launches/lm2d-jiuquan/lm2d-jiuquan_2026-11-11_trajectory_sim.kml",
+        "track_lite": "/launches/lm2d-jiuquan/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "http://www.xinhuanet.com/20261111/f62e737993404c6aa3ba9246a6118598/c.html",
+        "http://www.cssar.cas.cn/xwdt2015/xwsd2015/202611/t20261111_8307991.html",
+        "https://sat.huijiwiki.com/wiki/长征二号丁",
+        "https://en.wikipedia.org/wiki/Long_March_2D",
+        "https://en.wikipedia.org/wiki/YF-20",
+        "https://space-notices.com/notice/notam-ZLHW-A5728%2F26",
+        "https://ll.thespacedevs.com/2.2.0/launch/d66590ab-b273-47ff-b85a-608b62851b4b/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: SAST TYPICAL LM-2D sequence times (pitch-over 17.0 s, S1 cutoff 153.9 s, sep 155.1 s, fairing 185.1 s, S2 main cutoff 324.1 s, vernier cutoff 705.1 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; 600 km final altitude per CSSAR (dawn-dusk SSO; circular insertion ASSUMED); NOTAM ZLHW A5728/26 azimuth 192.23 deg; ends at vernier cutoff; retimed to liftoff 11:41Z (Xinhua)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SAST typical sequence as hard events; configuration-2 stage data (World Launch Vehicles 2007 via huijiwiki), S1 vac via YF-20 ratio; verniers ASSUMED to run from S2 ignition to 705.1 s; 3.35 m fairing 860 kg ASSUMED; Cd from LM-3B fit; TARGET RETUNED 2026-11-11 to CSSAR's published 600 km dawn-dusk SSO (was ASSUMED 500 km); T0 = liftoff 11:41:00Z (Xinhua); azimuth 192.23 deg from NOTAM ZLHW A5728/26; vernier cutoff at 596.8 km, FPA +0.36 deg; payload separation (typical T+737.1 s) into 534 x 626 km, i=97.79 deg (dawn-dusk SSO at 600 km needs ~97.8 deg); fitted payload pinned at its 200 kg lower bound (NOT an estimate; 4 satellites' mass unpublished); ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "xinhua-lm2d-y108",
+        "cssar-pathfinder",
+        "huiji-lm2d",
+        "wp-lm2d",
+        "wp-yf20",
+        "notam-a5728",
+        "wp-lm3b",
+        "ll2",
+        "kml"
+      ],
+      "assumptions": [
+        "Orbit: 600 km dawn-dusk SSO PUBLISHED (CSSAR); circular insertion at typical vernier cutoff ASSUMED; insertion orbit itself unpublished",
+        "NOTAM ZLHW A5728/26 (11:32-12:05Z, SFC-UNL, 614 km SSW of pad) INFERRED to be the stage-1 impact area; it is the only notice found for this window; azimuth = great-circle bearing pad -> area centroid",
+        "Event times are the SAST TYPICAL LM-2D sequence (huijiwiki), not this flight's",
+        "Verniers modelled firing from S2 ignition (155.1 s) to typical vernier cutoff 705.1 s; huijiwiki lists vernier working time 382 s (~vernier-only after 324.1 s), but that model leaves ~4.1 t of the 53 t load unburned and cannot reach orbit at 705.1 s",
+        "Fairing type unknown (2.9-4.2 m options exist): 3.35 m, 860 kg ASSUMED; drag Cd transferred from LM-3B fit",
+        "Payload mass FITTED; it pins at the 200 kg lower bound because the typical-sequence energy barely reaches 600 km - NOT an estimate of the real 4-satellite stack",
+        "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed; surrogate knot altitudes taken from this sim",
+        "Deploy at typical-sequence payload separation T+737.1 s (not flight-specific); post-cutoff coast uses Cd 2.2 / 8.81 m2 ASSUMED",
+        "This flight used a new 3.35 m composite fairing and lightened S2 (China航天 Weibo, unofficial) - not modelled"
+      ],
+      "note": "FLOWN 2026-11-11T11:41:00Z (Wed 11 Nov 3:41 am PST; 19:41 BJT): LM-2D Y108 put the 4-satellite Origins Pathfinder stack into the preset orbit (Xinhua; CSSAR; LL2 Success; Long March flight 677). Retimed +60 s; sim and surrogate re-run for CSSAR's 600 km dawn-dusk SSO. Pre-flight-style ILLUSTRATIVE geometry."
+    },
+    {
+      "slug": "amazon-leo-lv01",
+      "name": "Amazon Leo LV-01 (Vulcan VC6L, SLC-41)",
+      "vehicle": "Vulcan VC6L",
+      "t0_utc": "2026-11-14T17:32:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-14T17:32:00Z",
+      "window_close_utc": "2026-11-14T18:01:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-14_trajectory.csv",
+        "kml": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-14_trajectory.kml",
+        "csv_sim": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-14_trajectory_sim.csv",
+        "kml_sim": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-14_trajectory_sim.kml",
+        "track_lite": "/launches/amazon-leo-lv01/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://www.ulalaunch.com/missions/next-launch/vulcan-leo-1",
+        "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf",
+        "https://blog.ulalaunch.com/blog/vulcan-new-centaur-v-version-readies-for-amazon-leo",
+        "https://cdn.northropgrumman.com/-/media/wp-content/uploads/NG-Propulsion-Products-Catalog.pdf",
+        "https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201078%2F26",
+        "https://www.aboutamazon.com/news/innovation-at-amazon/project-kuiper-photos-internet-satellite-first-launch",
+        "https://ll.thespacedevs.com/2.2.0/launch/ef9850ad-1096-425b-9d27-f7bbd186e61a/",
+        "https://en.wikipedia.org/wiki/Vulcan_Centaur",
+        "https://x.com/ulalaunch/status/2120895023067639859",
+        "https://x.com/ulalaunch/status/2121252131172671506"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: NG catalog GEM 63XL burn 87.3 s and ULA UG Fig. 2.1.1-2 TYPICAL CCSFS times (SRB jettison 100 s, BECO 292 s, sep 298 s, MES1 308 s, fairing 316 s); MES1 cutoff T+908 s ASSUMED (308+600 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; azimuth 43.69 deg from NAVAREA IV 1078/26 Area A far-edge midpoint; ends at MES1 cutoff; T0 2026-11-14T17:32:00Z (ULA Vulcan Leo 1 page, window 17:32-18:01Z; RETIMED 2026-11-13 from 17:54Z Nov 13, utc shift only)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: UG-typical CCSFS event times as hard events (not flight-specific); 6x GEM 63XL catalog time-average thrust; 2x BE-4 550k-lbf SL; CV-L propellant derived as one-third less than the 120,000 lb CV-HE; MES1 cutoff ASSUMED 908 s, steering/payload fitted to a 180 x 460 km transfer (460 km from ULA, 180 km perigee ASSUMED); azimuth 43.69 deg from NAVAREA IV 1078/26 Area A; MES1 residual: geodetic alt 180.16 km (target 180), FPA 0.00 deg, SMA error ~0 vs 180x460; osculating 163 x 478 km at MES2 ignition (equatorial-radius, after J2/drag coast), i=49.66 deg vs ULA-published 51.9 deg (residual -2.24 deg; commanded NAVAREA azimuth gives non-rotating 52.66 deg, known sim track bias; azimuth kept NOTAM-first, not retuned); MES2 at first apoapsis T+3628 s, 13.0 s at 2x RL10, solves perigee to 460.0 km (osculating 460.0 x 478.1 km after flattening); deploy time unpublished, so +2 revs on the inferred insertion orbit, file ends T+14919 s; fitted payload 20.14 t is NOT an estimate of the 40-sat stack; ILLUSTRATIVE; RETIMED 2026-11-13 to T0 2026-11-14T17:32:00Z by utc shift only (+85080 s; Earth-fixed geometry unchanged)"
+      },
+      "reference_ids": [
+        "ula-vulcan-leo-1",
+        "ula-vulcan-ug-2023",
+        "ula-blog-cv-l",
+        "ng-propulsion-catalog",
+        "navarea-iv-1078-26",
+        "wp-vulcan-centaur",
+        "ll2",
+        "kml",
+        "ula-leo1-target-x",
+        "ula-leo1-delay-x"
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. ULA Vulcan VC6L (first 6-SRB / first LEO-optimized Centaur V), 40 Amazon Leo satellites from SLC-41; T0 Fri Nov 13 9:54 a.m. PST = 2026-11-13T17:54:00Z (ULA / LL2 Go, window to 18:24Z; FAA KV-01 backup Sat 9:32 a.m. PST). UPDATED 2026-11-12: ULA published the target 'near-circular low Earth orbit of approximately 285 miles (460km) inclined at 51.9 degrees' (replacing the earlier ASSUMED 450 km KA-01 analog); sim retuned to 460 km. Sim inclination 49.66 deg vs the published 51.9 deg (-2.24 deg; azimuth kept NOTAM-first from NAVAREA IV 1078/26, not retuned). RETIMED 2026-11-13: ULA delayed the launch to Sat Nov 14, window 12:32-1:01 p.m. EST (9:32-10:01 a.m. PST, 1732-1801 UTC) after a power interruption at the Air Liquide gaseous-nitrogen plant; files shifted in UTC only (+85080 s). LL2 lists NET 17:32:30Z, 30 s after ULA's window open.",
+      "assumptions": [
+        "Booster/Centaur event times = ULA UG Fig. 2.1.1-2 TYPICAL CCSFS two-burn sequence (Approximate Times), not LV-01's unpublished timeline",
+        "460 km near-circular insertion is PUBLISHED by ULA (X post 2026-11-12, 285 miles / 460 km at 51.9 deg); treated as exactly circular (eccentricity unpublished). Replaces the earlier 450 km Amazon KA-01 assumption",
+        "MES1 duration 600 s (T+908 s) ASSUMED, then tuned so the first burn targets a 180 x 460 km transfer",
+        "MES1 transfer perigee 180 km ASSUMED (stand-in)",
+        "BE-4 vacuum Isp 340 s and sea-level 320 s (Wikipedia / factory-tour / Reich 2020, secondary); ULA does not publish BE-4 Isp",
+        "Vulcan booster propellant 460 t ASSUMED (UG 'over a million pounds' floor plus margin for a 292 s full-thrust BECO); UG 4.6 g throttle not modelled",
+        "Booster dry mass 28,600 kg (Reich 2020 via Wikipedia, secondary)",
+        "CV-L propellant 36,287 kg DERIVED (ULA: a third less than the 120,000 lb CV-HE); CV-L dry mass 4,800 kg ASSUMED; fairing 2,500 kg ASSUMED",
+        "RL10C Isp 453.8 s (Wikipedia / L3Harris, secondary; datasheet PDF not retrieved)",
+        "GEM 63XL flown at catalog time-average thrust, not max thrust; sea-level loss at liftoff not modelled (Ae=0)",
+        "Fitted payload 20.28 t is a steering parameter, NOT an estimate of the real 40-satellite stack",
+        "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at the sim MES1 altitude (180.2 km); surrogate ends at MES1",
+        "Cd 0.4 fixed, generic",
+        "Azimuth from NAVAREA IV 1078/26 Area A, deliberately NOT retuned to the ULA-published 51.9 deg; sim i=49.66 deg vs 51.9 deg (residual -2.24 deg; non-rotating 52.66 deg from the commanded azimuth, known sim track bias)",
+        "Deploy time unpublished (NSF-forum 1 h 17 min STA quote not independently verified) -> after MES2, +2 revs on the inferred 460 km insertion orbit",
+        "T0 = ULA window open 2026-11-14T17:32:00Z (LL2 gives 17:32:30Z, unsourced 30 s offset); retimed by utc shift, sim not re-run (sim output is Earth-fixed and T0-independent)"
+      ]
+    },
+    {
+      "slug": "starship-flight-15",
+      "name": "Starship Flight 15 (Starlink 31-2, 26 V3 sats, Starbase)",
+      "vehicle": "Starship V3 (Super Heavy + Ship)",
+      "t0_utc": "2026-11-13T22:45:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-13T22:45:00Z",
+      "window_close_utc": "2026-11-14T00:00:00Z",
+      "status": "To Be Confirmed",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory.csv",
+        "kml": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory.kml",
+        "csv_sim": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory_sim.csv",
+        "kml_sim": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory_sim.kml",
+        "track_lite": "/launches/starship-flight-15/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://www.spacex.com/launches/starship-flight-15",
+        "https://www.spacex.com/launches/starship-flight-14",
+        "https://www.spacex.com/vehicles/starship/technical-specifications",
+        "https://www.spacex.com/updates/starship-v3",
+        "https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201080%2F26",
+        "https://ll.thespacedevs.com/2.2.0/launch/0f867f0c-5422-4d44-93b8-d7faaae7019b/",
+        "https://web.archive.org/web/20190925065050/https://twitter.com/elonmusk/status/1171118891671490560",
+        "https://en.wikipedia.org/wiki/SpaceX_Starship",
+        "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: SpaceX Flight 15 published timeline (Max-Q 58 s, Super Heavy MECO 139 s, hot-stage / sep 141 s, ship ascent cutoff 489 s); altitudes unpublished, so knot altitudes ASSUMED from this board's retuned 3DOF sim (MECO 86.8 km, cutoff 162.6 km); azimuth 107.53 deg from NAVAREA IV 1080/26 Area A far-edge midpoint; ends at ship ascent cutoff; insertion burn and deploy are in the sim file only; T0 2026-11-13T22:45:00Z (SpaceX 75-minute window / LL2 To Be Confirmed, window to 00:00Z)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode, RETUNED 2026-11-11: SpaceX F15 MECO 139 s, hot-stage 141 s, ship cutoff 489 s as hard events; official V3 figures (SpaceX technical specifications + 12 May 2026 V3 update) — Super Heavy 3,650 t / 8,240 tf at liftoff (33× Raptor 3), Ship 1,600 t / 1,614 tf (3 sea-level + 3 RVac); RVac 275 tf; blended ship Isp 364.72 s (3×350 s + 3×380 s, Musk 9 Sep 2019); Super Heavy vacuum thrust 8,679 tf DERIVED (33 × 263 tf implied by the 1,614 tf / 275 tf split); V3 dry masses still unpublished (booster 275 t earlier-block stand-in, ship 120 t ASSUMED); ascent target is an ASSUMED passively safe −40 × 275 km ellipse (SpaceX F15 official: 'passively safe suborbital trajectory' then raise to ~275 km; F14 official analog), 1081 s before apogee so the published insertion epoch is at first apogee; cutoff residual: geodetic alt 162.59 km (target 162.59), FPA 1.331 deg (target 1.331), osculating −39.2 × 274.1 km, SMA error ~0, i=31.62 deg vs 31.01 deg from the NAVAREA azimuth; insertion is a single Raptor 3 SL (F14 official analog) flown open-loop for the published 20 s at a DERIVED 1,028,650 N (104.9 tf, 42% of 250 tf) so the burn supplies the 89.8 m/s to circularize the post-coast −31.8 × 269.3 km ellipse (J2/drag walked the 275 km apogee down ~6 km); post-burn 262.8 × 275.1 km, i=31.63 deg; at deploy complete T+4660 s, 254.8 × 278.4 km, i=31.62 deg, vs SpaceX ~275 km; fitted payload 51.4 t is NOT an estimate of the 26-sat stack; ship residual after ascent 60.0 t (enough for the 20 s burn plus later unmodelled deorbit/catch); Super Heavy residual 203 t stays on the booster as the unpublished boostback/landing reserve; ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "spacex-starship-flight-15",
+        "spacex-starship-flight-14",
+        "spacex-starship-specs",
+        "spacex-v3-update",
+        "musk-raptor-isp-2019",
+        "navarea-iv-1080-26",
+        "wp-spacex-starship",
+        "wp-spacex-super-heavy",
+        "ll2",
+        "kml"
+      ],
+      "note": "Pre-flight ILLUSTRATIVE, RETUNED 2026-11-11. Starship Flight 15 / Starlink 31-2, 26 V3 sats from OLP-2; T0 Fri Nov 13 2:45 p.m. PST = 2026-11-13T22:45:00Z (SpaceX 75-minute window, pending regulatory approval; LL2 To Be Confirmed). The previous model used a single 350 s Isp and treated 1,600 tf as constant, leaving only 9.1 t residual and a 202 × 772 km post-insertion orbit. The retuned sim uses official 1,614 tf, blended 364.72 s Isp, a passively safe −40 × 275 km ascent, and a 20 s insertion throttled to 42% of 250 tf, and reaches 263 × 275 km at insertion cutoff (i=31.63 deg vs 31.01 deg from the NAVAREA azimuth). Catch and deorbit are not modelled.",
+      "assumptions": [
+        "V3 dry masses unpublished: Super Heavy empty 275 t is an earlier-block Wikipedia infobox stand-in; ship dry 120 t ASSUMED (2021 ~100 t Musk figure is stale)",
+        "Ship vacuum Isp is a DERIVED 364.72 s blend of 3 sea-level Raptor 3s at 350 s and 3 RVacs at 380 s (Musk, 9 Sep 2019). The official 1,614 tf and 275 tf RVac figures imply 263.00 tf vacuum for each sea-level Raptor 3",
+        "Super Heavy vacuum thrust 8,679 tf is DERIVED (33 × 263 tf); liftoff is the official 8,240 tf. Unburned booster propellant (203 t) stays on the booster as the unpublished boostback/landing reserve and is not delivered to the ship",
+        "Ascent is flown at official 1,614 tf (not a deeper mean throttle). A trial 80.7% ascent throttle, sized so a full-thrust 20 s / 250 tf insertion would be only ~94 m/s, left too little ship Δv to reach the passively safe ellipse",
+        "Insertion engine count unpublished on F15; 1× Raptor 3 SL is a Flight 14 official analog. The published 20 s is flown in full. Thrust is DERIVED at 1,028,650 N (42% of 250 tf) to circularize the post-coast ellipse; full 250 tf × 20 s would loft apogee. 42% is inside the commonly cited Raptor 40–100% throttle range (not a published F15 setting)",
+        "Pre-insertion orbit is an ASSUMED −40 × 275 km passively safe ellipse (275 km apogee = SpaceX published orbital altitude; −40 km perigee is a labelled stand-in in the F14/F15 passively-safe class; F15 official text does not publish the suborbital elements). Mid-arc target 1081 s before apogee matches the published cutoff-to-insertion interval",
+        "J2/drag on the 18-minute coast lowers apogee from 274.1 km at cutoff to 269.3 km (equatorial-radius) at T+1570 s. Insertion circularizes there, giving 262.8 × 275.1 km — residual vs a perfect 275 km circle is this walk plus finite-burn effects",
+        "Payload 26 V3 sats, mass unpublished; fitted 51.4 t is a steering parameter, NOT an estimate",
+        "Azimuth from NAVAREA IV 1080/26 Area A (i~31.01 deg); sim i=31.63 deg (not retuned). Fit kick is 0.42 deg, near its 0.2 deg lower bound, so Super Heavy MECO is lofted (FPA 66.9 deg)",
+        "Cd 0.4 fixed, generic; no jettisoned fairing (mass 0)",
+        "Super Heavy boostback / landing and ship deorbit / catch (T+21:35:57 / T+22:32:34) are not modelled; file ends at deploy complete T+01:17:40. ~54 t ship propellant remains after insertion as a stand-in for those burns",
+        "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at the sim ascent-cutoff altitude; surrogate ends at T+489 s"
+      ]
+    },
+    {
+      "slug": "soyuz21b-vostochny",
+      "name": "Soyuz-2.1b/Fregat-M MKA Kinosputnik, KOEN et al. (Vostochny 1S)",
+      "vehicle": "Soyuz-2.1b/Fregat-M",
+      "t0_utc": "2026-11-14T01:16:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-14T00:50:00Z",
+      "window_close_utc": "2026-11-14T01:50:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/soyuz21b-vostochny/soyuz21b-vostochny_2026-11-14_trajectory.csv",
+        "kml": "/launches/soyuz21b-vostochny/soyuz21b-vostochny_2026-11-14_trajectory.kml",
+        "track_lite": "/launches/soyuz21b-vostochny/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "very low",
+      "sources": [
+        "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?search=Fregat",
+        "https://portamur.ru/news/detail/v-noyabre-s-kosmodroma-vostochnyiy-zapustyat-soyuz-b/",
+        "https://anna-news.info/anonsirovan-pervyj-v-2026-godu-pusk-s-vostochnogo/",
+        "https://kosmonavtika.com/lancements/2019/05072019/05072019.html",
+        "https://www.russianspaceweb.com/soyuz2_metop.html",
+        "https://ru.wikipedia.org/wiki/%D0%91%D1%80%D1%8F%D0%BD%D1%82%D0%B0",
+        "https://ru.wikipedia.org/wiki/%D0%A3%D0%BD%D0%B0%D1%85%D0%B0",
+        "https://space.skyrocket.de/doc_sdat/kinosputnik.htm",
+        "https://x.com/afec7032/status/2121264240455504290"
+      ],
+      "method": {
+        "csv": "event-surrogate, ALL BORROWED/ASSUMED: Soyuz-2.1b/Fregat event times from the Vostochny Meteor-M 2-2 flight (5 Jul 2019: BVGD sep 117.6 s, fairing 225.63 s, Block A sep 287.48 s, Block I cutoff 560.40 s, upper-part sep 563.70 s); altitudes 50 km @ booster sep and 175 km @ stage-2 sep from the Soyuz-2-1a/Metop sequence, fairing altitude linearly interpolated, 200 km at Block I cutoff ASSUMED; horizontal speed ASSUMED linear to circular-200-km ground speed; azimuth 349.46 deg inferred as bearing from the pad to the Unakha-Bryanta confluence in the announced stage drop zone (no NOTAM coordinates found); ends at upper-part separation (Fregat burns and deploys not modelled); T0 2026-11-14T01:16:00Z (Tommot city administration via @afec7032; LL2 updated T-0; RETIMED 2026-11-13 from 00:50Z, utc shift only)"
+      },
+      "reference_ids": [
+        "ll2-soyuz-kinosputnik",
+        "zeya-drop-zone",
+        "kosmonavtika-soyuz21b-2019",
+        "russianspaceweb-soyuz2-metop",
+        "wp-unakha-bryanta",
+        "skyrocket-kinosputnik",
+        "kml",
+        "tommot-soyuz-t0-x"
+      ],
+      "assumptions": [
+        "Event times BORROWED from the 2019 Vostochny Soyuz-2.1b/Fregat Meteor-M 2-2 theoretical timeline (kosmonavtika.com); this mission's timeline is unpublished",
+        "Altitudes 50 km (t=117.6 s) and 175 km (t=287.48 s) BORROWED from the Soyuz-2-1a/Metop launch sequence (russianspaceweb.com, Baikonur flight); fairing-sep altitude (129.5 km) linearly interpolated; Block I cutoff altitude 200 km ASSUMED",
+        "Horizontal ground speed ASSUMED linear 0 -> circular speed at 200 km minus Earth rotation along azimuth; real Block I cutoff is suborbital (lower speed)",
+        "Azimuth 349.46 deg INFERRED: great-circle bearing from the LL2 pad to the Unakha-Bryanta confluence (54.527N 127.486E), a point inside the Zeya-district-announced stage drop zone ('area of the Bryanta and Unakha rivers north of Kirovsky'); no NOTAM or hazard-area coordinates were found. A ~98 deg SSO would imply ~340-345 deg",
+        "Target orbit unpublished (SSO per LL2; Kinosputnik ~500-800 km circular per Gunter's page) -> not used in this file",
+        "No 3DOF sim: no Soyuz/Fregat vehicle model and no published target orbit; building one would need many unsourced numbers",
+        "T0 2026-11-14T01:16:00Z from the Tommot (Sakha) city administration notice for the fairing impact zone, relayed by @afec7032 and adopted by LL2; NOT announced by Roscosmos. Spaceflight Now (feed generated 2026-11-12 15:21Z) still lists Wed Nov 18, date only - CONFLICT"
+      ],
+      "note": "Pre-flight ILLUSTRATIVE, surrogate only. Soyuz-2.1b/Fregat-M from Vostochny Site 1S, SSO rideshare (MKA Kinosputnik, KOEN / KA MT-LAB, NPO Kaisant cubesats). LL2 NET 2026-11-14T00:50Z (Fri 13 Nov 4:50 pm PST), Go, window to 01:50Z; Roscosmos has not announced; Zeya district says launch 14-24 Nov (drop zone Bryanta/Unakha rivers). Timeline, altitudes and speed are borrowed/assumed (see assumptions); file ends at upper-part separation. No 3DOF sim (no vehicle model, unpublished orbit). RETIMED 2026-11-13: T0 01:16:00Z (Fri Nov 13 5:16 pm PST) per the Tommot city administration ('10:16 Yakutsk time'), via @afec7032; LL2 Go at 01:16Z. Roscosmos has not announced; Spaceflight Now still shows Nov 18 (date only). Utc shift +1560 s only."
+    },
+    {
+      "slug": "electron-iqps10",
+      "name": "The Mountain God Rises (iQPS Launch 10, Electron's 100th)",
+      "vehicle": "Electron",
+      "t0_utc": "2026-11-14T05:30:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/electron-iqps10/electron-iqps10_2026-11-14_trajectory.csv",
+        "kml": "/launches/electron-iqps10/electron-iqps10_2026-11-14_trajectory.kml",
+        "csv_sim": "/launches/electron-iqps10/electron-iqps10_2026-11-14_trajectory_sim.csv",
+        "kml_sim": "/launches/electron-iqps10/electron-iqps10_2026-11-14_trajectory_sim.kml",
+        "track_lite": "/launches/electron-iqps10/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://rocketlabcorp.com/missions/launches/iqps-the-mountain-god-rises/",
+        "https://rocketlabcorp.com/launch/launch-safety/",
+        "https://www.space-notices.com/notice/nav-warning-HYDROPAC%203249%2F26",
+        "https://www.space-notices.com/notice/nav-warning-HYDROPAC%203251%2F26",
+        "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+        "https://ll.thespacedevs.com/2.3.0/launches/db3500ac-965b-4ad8-b417-cb8d8d005586/"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric (Electron User Guide 8.0 GENERIC event profile - no mission timeline published; S2 cutoff altitude = Rocket Lab's published 575 km orbit; azimuth 104.68 deg = mean bearing to HYDROPAC 3249/26 area B and 3251/26 debris-area centroids); T0 2026-11-14T05:30Z per Rocket Lab launch-safety page (NET 18:30 NZDT 14 Nov), matching LL2",
+        "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance), Electron energy-cutoff mode (UNTUNED: no published mission timeline); azimuth 104.68 deg from HYDROPAC 3249/26 B + 3251/26; target 230 km (assumed) x 575 km (Rocket Lab); cutoff T+526 s into 221 x 640 km, i=39.30 deg vs Rocket Lab's published 42 deg (residual -2.7 deg: hazard-area azimuth kept per NOTAM-first rule, plus known sim track bias); deploy time unpublished, so propagated 2 revs on the inferred insertion orbit; ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "rl-mountain-god",
+        "rl-launch-safety",
+        "hydropac-3249-3251",
+        "rl-ug",
+        "wp-electron",
+        "ll2",
+        "kml"
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. Rocket Lab NET Sat 14 Nov 18:30 NZDT = 2026-11-14T05:30Z (Fri 13 Nov 9:30 pm PST); backup days 14-26 Nov NZT; LL2 Go. 1x QPS-SAR to 575 km, 42 deg (Rocket Lab). Electron's 100th launch.",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-14T05:30:00Z",
+      "window_close_utc": "2026-11-14T05:30:00Z",
+      "assumptions": [
+        "Event profile = Electron User Guide 8.0 GENERIC example (Rocket Lab publishes no timeline for this mission)",
+        "S2 insertion perigee 230 km ASSUMED (Kick Stage 'low elliptical orbit'); Kick Stage circularization not modelled",
+        "Payload ~190 kg incl. Kick Stage ASSUMED (QPS-SAR 100 kg-class unofficial + Kick Stage 40 kg + ~50 kg propellant)",
+        "Azimuth from HYDROPAC debris-area centroids; sim inclination 39.3 deg vs published 42 deg (not re-aimed)",
+        "Deploy time unpublished -> deploy.t_s null; coast +2 revs on inferred insertion orbit",
+        "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at 575 km",
+        "Pad: files use LC-1 coordinates -39.260881, 177.865826; LL2 updated the pad on 2026-11-13 00:15Z to LC-1A (-39.262833, 177.864469), ~250 m away, citing a Rocket Lab post that says only 'Launch Complex 1'. Not re-run (offset negligible at file scale); pad identity A/B unconfirmed by Rocket Lab text"
+      ]
+    },
+    {
+      "slug": "ussf-317",
+      "name": "USSF-317",
+      "vehicle": "Falcon 9 Block 5",
+      "t0_utc": "2026-11-18T03:14:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-18T03:14:00Z",
+      "window_close_utc": "2026-11-18T07:14:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/ussf-317/ussf-317_2026-11-18_trajectory.csv",
+        "kml": "/launches/ussf-317/ussf-317_2026-11-18_trajectory.kml",
+        "csv_sim": "/launches/ussf-317/ussf-317_2026-11-18_trajectory_sim.csv",
+        "kml_sim": "/launches/ussf-317/ussf-317_2026-11-18_trajectory_sim.kml",
+        "track_lite": "/launches/ussf-317/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://www.spacex.com/launches/ussf317",
+        "https://space-notices.com/entry/launch-f9-ussf-317",
+        "https://space-notices.com/notice/notam-ZLA-11%2F116-26",
+        "https://www.sealagom.com/navarea/12/message/25632/785-26-north-pacific/",
+        "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
+        "https://ll.thespacedevs.com/2.3.0/launches/",
+        "https://www.spacex.com/launches/sl-15-18",
+        "https://www.nextspaceflight.com/launches/details/8335/",
+        "https://space-notices.com/notice/notam-ZLA-11%2F149-26"
+      ],
+      "method": {
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, identical rows to USSF-627; SpaceX ussf317 timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:58, MECO matches the telemetry's T+146 s); ZLA CARF 11/116-26 Area A azimuth 153.56 deg (same polygon as USSF-627); ends at T+508 s (telemetry end) because SECO is unpublished; T0 SpaceX/LL2 NET 2026-11-18T03:14:00Z (Tue Nov 17 7:14 pm PST; window to 07:14Z; backup Wed Nov 18 8:54 pm PT; RETIMED 2026-11-13 from 2026-11-15T03:55Z, utc shift only)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf317 MECO 146 s, sep 149 s, SES-1 156 s, fairing 178 s as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are ASSUMED, BORROWED from the USSF-627 config (itself a Starlink Group 15 analog; LL2: drop zones match Group 15), not USSF-317 sources; azimuth 153.56 deg from ZLA CARF 11/116-26 Area A (inclination unpublished) gives i=68.27 deg; payload fitted ~16.4 t-class (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; sim ground track runs ~+5.3 deg east of the commanded azimuth (pad->insertion bearing 158.85 deg vs 153.56 deg, known sim bug); ILLUSTRATIVE; RETIMED 2026-11-13 to T0 2026-11-18T03:14:00Z by utc shift only (+256740 s)"
+      },
+      "reference_ids": [
+        "spacex-ussf317",
+        "zla-carf-11-116",
+        "navarea-xii-785-26",
+        "shahar603-tel",
+        "spacex-sl-15-18",
+        "wp-falcon9",
+        "wp-falcon9-b5",
+        "ll2",
+        "kml",
+        "zla-carf-11-149"
+      ],
+      "assumptions": [
+        "SECO-1 time T+519 s and parking orbit 177x266 km BORROWED from the USSF-627 config / Starlink Group 15-18 analog (LL2: drop zones match Group 15; possible Starshield); not USSF-317 sources",
+        "Azimuth 153.56 deg from ZLA CARF 11/116-26 Area A far-edge midpoint; polygon identical to USSF-627's, so borrowed azimuth is also NOTAM-derived (inclination unpublished/classified; used as launch-plane azimuth without tuning). NAVAREA XII 785/26 Area A is wider and was not used",
+        "Payload mass FITTED within F9 bounds (13.0-21.6 t, borrowed from USSF-627 config) so assumed SECO delivers assumed orbit - NOT an estimate of the real payload",
+        "Deploy time unpublished (classified) -> deploy.t_s null; coast +2 revs on inferred insertion orbit",
+        "Family Iridium NEXT-7 webcast telemetry used for surrogate loft altitudes/ranges (not this flight)",
+        "Surrogate rows are identical to USSF-627's (same loft, pad, azimuth); only UTC differs",
+        "Known sim ground-track azimuth residual: pad->insertion bearing 158.85 deg vs commanded 153.56 deg (+5.3 deg)",
+        "T0 is NET (SpaceX page / LL2); booster 11th flight (B1100 per Next Spaceflight, secondary)",
+        "Retimed by utc shift only (+256740 s); azimuth still from the Nov 15/16 CARF polygon because no NOTAM for the Nov 18 03:14Z window was published as of 2026-11-13 08:00 PST"
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. SpaceX targets Sat Nov 14, four-hour window opens 7:55 pm PT (backup Sun Nov 15 7:41 pm PT) = 2026-11-15T03:55:00Z; LL2 Go. Falcon 9 from Vandenberg SLC-4E, 11th booster flight, OCISLY landing. Classified USSF mission; LL2: stage drop zones match Starlink Group 15, so the USSF-627 analog (Group 15 SECO/orbit) is reused and labelled. ZLA CARF Area A polygon identical to USSF-627's. SECO/orbit/deploy unpublished. Slips so far: Nov 12 8:23p -> Nov 13 8:09p -> Nov 14 7:55p PT. -> Tue Nov 17 7:14p PT (RETIMED 2026-11-13: SpaceX ussf317 page 'targeting Tuesday, November 17 ... window opens at 7:14 p.m. PT', backup Wed Nov 18 8:54 p.m. PT; LL2 Go). SpaceX timeline unchanged. ZLA CARF 11/149-26 (Nov 16 slot) repeats the 11/116-26 polygon; no NOTAM yet for Nov 18 03:14Z."
+    }
+  ],
+  "globe": {
+    "textures": {
+      "day": "/launches/globe/earth_day_4k.webp",
+      "day_placeholder": "/launches/globe/earth_day_512.webp",
+      "night": "/launches/globe/earth_night_4k.webp",
+      "night_placeholder": "/launches/globe/earth_night_512.webp",
+      "fallback_png": "/launches/globe/fallback.png"
+    },
+    "reference_ids": [
+      "nasa-bluemarble",
+      "nasa-blackmarble",
+      "threejs"
+    ]
   }
- ],
- "launches": [
-  {
-   "slug": "electron-hawkeye360",
-   "name": "We're Not Hawking Around (3x HawkEye 360)",
-   "vehicle": "Electron",
-   "t0_utc": "2026-10-23T07:11:00Z",
-   "status": "Success",
-   "phase": "recent",
-   "files": {
-    "csv": "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory.csv",
-    "kml": "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory.kml",
-    "csv_sim": "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory_sim.csv",
-    "kml_sim": "/launches/electron-hawkeye360/electron-hawkeye360_2026-10-23_trajectory_sim.kml",
-    "track_lite": "/launches/electron-hawkeye360/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low-medium",
-   "sources": [
-    "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
-    "https://ll.thespacedevs.com/2.3.0/launches/"
-   ],
-   "method": {
-    "csv": "event-surrogate parametric (published event table + azimuth)",
-    "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
-   },
-   "reference_ids": [
-    "rl-ug",
-    "wp-electron",
-    "ll2",
-    "kml"
-   ]
-  },
-  {
-   "slug": "lm6a-yaogan50-03",
-   "name": "Yaogan 50-03",
-   "vehicle": "Long March 6A",
-   "t0_utc": "2026-10-23T10:15:00Z",
-   "status": "Success",
-   "phase": "recent",
-   "files": {
-    "csv": "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory.csv",
-    "kml": "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory.kml",
-    "csv_sim": "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory_sim.csv",
-    "kml_sim": "/launches/lm6a-yaogan50-03/lm6a-yaogan50-03_2026-10-23_trajectory_sim.kml",
-    "track_lite": "/launches/lm6a-yaogan50-03/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low",
-   "sources": [
-    "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
-    "https://ll.thespacedevs.com/2.3.0/launches/"
-   ],
-   "method": {
-    "csv": "event-surrogate parametric (published event table + azimuth)",
-    "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
-   },
-   "reference_ids": [
-    "calt-lm3a",
-    "wp-lm3b",
-    "wp-lm6a",
-    "ll2",
-    "kml"
-   ]
-  },
-  {
-   "slug": "lm4b-jiuquan",
-   "name": "Yaogan 53-07..09 / 56-19..21",
-   "vehicle": "Long March 4B",
-   "t0_utc": "2026-10-23T19:25:00Z",
-   "status": "Success",
-   "phase": "recent",
-   "files": {
-    "csv": "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory.csv",
-    "kml": "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory.kml",
-    "csv_sim": "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory_sim.csv",
-    "kml_sim": "/launches/lm4b-jiuquan/lm4b-jiuquan_2026-10-23_trajectory_sim.kml",
-    "track_lite": "/launches/lm4b-jiuquan/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low-medium",
-   "sources": [
-    "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
-    "https://ll.thespacedevs.com/2.3.0/launches/"
-   ],
-   "method": {
-    "csv": "event-surrogate parametric (published event table + azimuth)",
-    "csv_sim": "first-principles 3DOF sim, TIMELINE mode: published Y51 event times as hard constraints; payload/steering fitted; Cd from LM-3B fit; ILLUSTRATIVE"
-   },
-   "reference_ids": [
-    "calt-lm3a",
-    "wp-lm3b",
-    "wp-lm4b",
-    "huiji-lm4b",
-    "zj385",
-    "rkrr-d3252",
-    "rjjj-p5065",
-    "ll2",
-    "kml",
-    "wp-yf20"
-   ]
-  },
-  {
-   "slug": "lm8a-wenchang",
-   "name": "SatNet LEO Group 28",
-   "vehicle": "Long March 8A",
-   "t0_utc": "2026-10-25T02:03:00Z",
-   "status": "Success",
-   "phase": "recent",
-   "files": {
-    "csv": "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory.csv",
-    "kml": "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory.kml",
-    "csv_sim": "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory_sim.csv",
-    "kml_sim": "/launches/lm8a-wenchang/lm8a-wenchang_2026-10-25_trajectory_sim.kml",
-    "track_lite": "/launches/lm8a-wenchang/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low",
-   "sources": [
-    "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
-    "https://www.sealagom.com/navarea/11/message/25242/",
-    "https://ll.thespacedevs.com/2.3.0/launches/",
-    "https://www.news.cn/politics/20261025/3573644b269e466f83510360cb84eff4/c.html"
-   ],
-   "method": {
-    "csv": "event-surrogate parametric (published event table + azimuth)",
-    "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance); ILLUSTRATIVE"
-   },
-   "reference_ids": [
-    "xinhua-lm8a-y12",
-    "calt-lm3a",
-    "wp-lm3b",
-    "wp-lm8",
-    "navarea-xi-26-0481",
-    "ll2",
-    "kml"
-   ],
-   "note": "Flown 2026-10-25T02:03Z (13 min after the planned 01:50Z); pre-flight ILLUSTRATIVE geometry re-timed to the actual liftoff."
-  },
-  {
-   "slug": "starlink-15-16",
-   "name": "Starlink Group 15-16",
-   "vehicle": "Falcon 9 Block 5",
-   "t0_utc": "2026-10-27T07:25:51Z",
-   "status": "Success",
-   "phase": "recent",
-   "files": {
-    "csv": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory.csv",
-    "kml": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory.kml",
-    "csv_sim": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory_sim.csv",
-    "kml_sim": "/launches/starlink-15-16/starlink-15-16_2026-10-27_trajectory_sim.kml",
-    "track_lite": "/launches/starlink-15-16/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "medium",
-   "sources": [
-    "https://www.spacex.com/launches/sl-15-16",
-    "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20737%2F26",
-    "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
-    "https://en.wikipedia.org/wiki/Falcon_9_Block_5",
-    "https://ll.thespacedevs.com/2.3.0/launches/",
-    "https://spaceflightnow.com/launch-schedule/",
-    "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-16&FORMAT=json"
-   ],
-   "method": {
-    "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX event timeline, NAVAREA XII 737/26 azimuth 154.56 deg)",
-    "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX sl-15-16 event times (MECO 146 s, sep 150 s, SES-1 156 s, fairing 176 s, SECO-1 519 s) as hard events; steering/payload fitted to the 159 x 265 km, i=70.007 deg parking orbit derived from SpaceX's pre-launch state vector (CelesTrak SupGP); azimuth 155.87 deg (inside NAVAREA XII 737/26 Area A); continues through SES-2/SECO-2 to deploy T+3713 s; retimed 26 Oct to LL2 T0 07:25:51Z (Earth-fixed track unchanged; RAAN 221.51 deg); ILLUSTRATIVE"
-   },
-   "reference_ids": [
-    "spacex-sl-15-16",
-    "celestrak-supgp-g15-16",
-    "navarea-xii-737-26",
-    "uscg-lnm-56736",
-    "mmfr-b3055-26",
-    "faa-sl-15-16",
-    "shahar603-tel",
-    "wp-falcon9",
-    "wp-falcon9-b5",
-    "ll2",
-    "sfn-schedule",
-    "kml"
-   ],
-   "note": "Flown 2026-10-27T07:25:51Z (Tue 12:25:51 am PDT); SpaceX confirmed 27 satellites deployed. Pre-flight ILLUSTRATIVE geometry re-timed to the actual liftoff. Recheck 27 Oct vs CelesTrak SupGP refreshed after liftoff (epoch 08:28:08Z): 252 x 265 km, i 70.007 deg, RAAN 222.58 deg; sim at deploy RAAN 221.51 deg, i 70.04 deg (RAAN residual -1.1 deg; the earlier +36 deg came from a stale pre-slip vector)."
-  },
-  {
-   "slug": "starlink-15-18",
-   "name": "Starlink Group 15-18",
-   "vehicle": "Falcon 9 Block 5",
-   "t0_utc": "2026-10-31T04:04:34Z",
-   "status": "Success",
-   "phase": "recent",
-   "files": {
-    "csv": "/launches/starlink-15-18/starlink-15-18_2026-10-31_trajectory.csv",
-    "kml": "/launches/starlink-15-18/starlink-15-18_2026-10-31_trajectory.kml",
-    "csv_sim": "/launches/starlink-15-18/starlink-15-18_2026-10-31_trajectory_sim.csv",
-    "kml_sim": "/launches/starlink-15-18/starlink-15-18_2026-10-31_trajectory_sim.kml",
-    "track_lite": "/launches/starlink-15-18/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "medium",
-   "sources": [
-    "https://www.spacex.com/launches/sl-15-18",
-    "https://space-notices.com/notice/nav-warning-NAVAREA%20XII%20747%2F26",
-    "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
-    "https://en.wikipedia.org/wiki/Falcon_9_Block_5",
-    "https://ll.thespacedevs.com/2.3.0/launches/",
-    "https://spaceflightnow.com/launch-schedule/",
-    "https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink-g15-18&FORMAT=json"
-   ],
-   "method": {
-    "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX sl-15-18 event timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:58 / SECO-1 8:39, NAVAREA XII 747/26 Area A azimuth 154.56 deg; retimed 2026-11-03 to actual liftoff 2026-10-31T04:04:34Z (LL2))",
-    "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX sl-15-18 event times (MECO 146 s, sep 149 s, SES-1 156 s, fairing 178 s, SECO-1 519 s) as hard events; steering/payload fitted (payload 16.77 t) to the 177 x 266 km parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP, 251 x 266 km, i=70.004 deg); azimuth 155.80 deg tuned to i=69.996 deg (inside NAVAREA XII 747/26 Area A); SES-2/SECO-2 T+53:07-53:08 raises perigee to 251 km; deploy row at T+3719 s (T+1:01:59, SpaceX); RAAN 174.47 deg vs SupGP 175.61 deg (-1.14 deg, same systematic as 15-16); retimed 2026-10-30 to LL2 T0 2026-10-31T04:02:22Z (Fri Oct 30 9:02:22 pm PDT) with the re-issued SupGP vector (epoch 05:05:36Z); ILLUSTRATIVE; retimed 2026-11-03 to actual liftoff 04:04:34Z (132 s late; RAAN target vector was for 04:02:22Z)"
-   },
-   "reference_ids": [
-    "spacex-sl-15-18",
-    "celestrak-supgp-g15-18",
-    "navarea-xii-747-26",
-    "shahar603-tel",
-    "wp-falcon9",
-    "wp-falcon9-b5",
-    "ll2",
-    "sfn-schedule",
-    "kml"
-   ],
-   "note": "Flown 2026-10-31T04:04:34Z (Fri Oct 30 9:04:34 pm PDT, LL2), 2 min 12 s after the filed NET; SpaceX confirmed 27 satellites deployed. Pre-flight ILLUSTRATIVE geometry re-timed to the actual liftoff; inertial RAAN vs the pre-launch SupGP vector not re-checked."
-  },
-  {
-   "slug": "ussf-432",
-   "name": "USSF-432",
-   "vehicle": "Falcon 9 Block 5",
-   "t0_utc": "2026-11-07T00:48:42Z",
-   "t0_kind": "net",
-   "window_open_utc": "2026-11-07T00:46:00Z",
-   "window_close_utc": "2026-11-07T04:46:00Z",
-   "status": "Success",
-   "phase": "recent",
-   "files": {
-    "csv": "/launches/ussf-432/ussf-432_2026-11-07_trajectory.csv",
-    "kml": "/launches/ussf-432/ussf-432_2026-11-07_trajectory.kml",
-    "csv_sim": "/launches/ussf-432/ussf-432_2026-11-07_trajectory_sim.csv",
-    "kml_sim": "/launches/ussf-432/ussf-432_2026-11-07_trajectory_sim.kml",
-    "track_lite": "/launches/ussf-432/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low",
-   "sources": [
-    "https://www.spacex.com/launches/ussf432",
-    "https://www.space-notices.com/",
-    "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
-    "https://ll.thespacedevs.com/2.3.0/launches/",
-    "https://www.spacex.com/launches/sl-15-18",
-    "https://space-notices.com/entry/launch-f9-ussf-432"
-   ],
-   "method": {
-    "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX ussf432 timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:55; ZLA CARF 11/032-26 Area A azimuth 153.56 deg, valid for the Nov 6 PT window, same polygon as 10/377); ends at T+508 s (telemetry end) because SECO is unpublished; retimed 2026-11-06 to LL2 NET 2026-11-07T00:48:42Z (Fri Nov 6 4:48:42 pm PST; SpaceX window still opens 4:46 pm PT / 00:46Z, backup Sat Nov 7 4:32 pm PT)",
-    "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf432 MECO 146 s, sep 149 s, SES-1 156 s, fairing 175 s as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are an ASSUMED Starlink Group 15 analog (LL2 notes drop zones match Group 15), not USSF-432 sources; azimuth 153.56 deg from ZLA CARF 11/032-26 Area A (inclination unpublished) gives i=68.28 deg; payload fitted 16.85 t (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; ILLUSTRATIVE; retimed 2026-11-06 to LL2 NET 2026-11-07T00:48:42Z (Fri Nov 6 4:48:42 pm PST; SpaceX window opens 4:46 pm PT)"
-   },
-   "reference_ids": [
-    "spacex-ussf432",
-    "zla-carf-11-032",
-    "shahar603-tel",
-    "spacex-sl-15-18",
-    "wp-falcon9",
-    "wp-falcon9-b5",
-    "ll2",
-    "kml"
-   ],
-   "note": "FLOWN: LL2 Launch Successful at 2026-11-07T00:48:42Z (Fri Nov 6 4:48:42 pm PST) from Vandenberg SLC-4E; B1095 landed on OCISLY (SpaceX/LL2). Pre-flight ILLUSTRATIVE geometry already at that T0 (no rebuild). SECO/orbit/deploy remain unpublished (classified)."
-  },
-  {
-   "slug": "electron-iqps9",
-   "name": "The Sea God Surveys (iQPS Launch 9, QPS-SAR-20)",
-   "vehicle": "Electron",
-   "t0_utc": "2026-11-02T16:41:00Z",
-   "status": "Success",
-   "phase": "recent",
-   "files": {
-    "csv": "/launches/electron-iqps9/electron-iqps9_2026-11-02_trajectory.csv",
-    "kml": "/launches/electron-iqps9/electron-iqps9_2026-11-02_trajectory.kml",
-    "csv_sim": "/launches/electron-iqps9/electron-iqps9_2026-11-02_trajectory_sim.csv",
-    "kml_sim": "/launches/electron-iqps9/electron-iqps9_2026-11-02_trajectory_sim.kml",
-    "track_lite": "/launches/electron-iqps9/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low",
-   "sources": [
-    "https://rocketlabcorp.com/missions/launches/iqps-the-sea-god-surveys/",
-    "https://rocketlabcorp.com/launch/launch-safety/",
-    "https://i-qps.net/en/news/4118/",
-    "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
-    "https://www.space-notices.com/",
-    "https://ll.thespacedevs.com/2.3.0/launches/"
-   ],
-   "method": {
-    "csv": "event-surrogate parametric (Electron User Guide 8.0 GENERIC event profile - no mission timeline published; S2 cutoff altitude assumed = iQPS 575 km orbit; NOTAM B5324/B5325 debris-area azimuth 107.4 deg); T0 2026-11-02T16:41Z per Rocket Lab launch-safety page (NET 16:41 UTC, 3 Nov NZT), matching LL2; debris areas also published by Rocket Lab as Hazard Areas 1/2",
-    "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance), Electron energy-cutoff mode (UNTUNED: no published mission timeline/inclination); azimuth 107.4 deg from NOTAM / Rocket Lab Space Debris Hazard Areas 1/2; T0 per Rocket Lab launch-safety page; target 230 km (assumed) x 575 km (iQPS); cutoff T+526 s into 221 x 616 km, i=39.96 deg; deploy time unpublished, so propagated 2 revs on the inferred insertion orbit; ILLUSTRATIVE"
-   },
-   "reference_ids": [
-    "rl-sea-god",
-    "rl-launch-safety",
-    "iqps-4118",
-    "rl-ug",
-    "notam-b5324-b5325",
-    "wp-electron",
-    "ll2",
-    "kml"
-   ],
-   "note": "Flown 2026-11-02T16:41Z (Mon Nov 2 8:41 am PST, LL2 Launch Successful); Rocket Lab confirmed payload deploy ~9:35 am PST. Pre-flight ILLUSTRATIVE geometry (T0 already matched liftoff)."
-  },
-  {
-   "slug": "kinetica2-y2",
-   "name": "SpaceSail (Qianfan) polar group, Kinetica-2 Y2",
-   "vehicle": "Kinetica-2 (Lijian-2)",
-   "t0_utc": "2026-11-03T00:15:00Z",
-   "status": "Success",
-   "phase": "recent",
-   "files": {
-    "csv": "/launches/kinetica2-y2/kinetica2-y2_2026-11-03_trajectory.csv",
-    "kml": "/launches/kinetica2-y2/kinetica2-y2_2026-11-03_trajectory.kml",
-    "csv_sim": "/launches/kinetica2-y2/kinetica2-y2_2026-11-03_trajectory_sim.csv",
-    "kml_sim": "/launches/kinetica2-y2/kinetica2-y2_2026-11-03_trajectory_sim.kml",
-    "track_lite": "/launches/kinetica2-y2/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low",
-   "sources": [
-    "https://sat.huijiwiki.com/wiki/力箭二号",
-    "https://sat.huijiwiki.com/wiki/YF-102",
-    "https://zh.wikipedia.org/wiki/YF-102",
-    "https://satnet.news/item/76103",
-    "https://www.unilym.com/articles/lijian-2-yao2-18xing-20261102",
-    "https://www.space-notices.com/",
-    "https://ll.thespacedevs.com/2.3.0/launches/",
-    "https://m.weibo.cn/detail/5361090570488447",
-    "https://x.com/DailyBeijing/status/2117514278206898575",
-    "https://x.com/najoygo/status/2117424232691056846"
-   ],
-   "method": {
-    "csv": "event-surrogate parametric: CAS Space TYPICAL Kinetica-2 sequence times (fairing 217.73 s, S2 cutoff 493.71 s; S1 cutoff 180 s ASSUMED); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; 500 km final altitude ASSUMED; NOTAM A5561/A5562 azimuth 186.58 deg; UNTUNED; retimed 2026-11-03 to actual liftoff 00:15Z",
-    "csv_sim": "first-principles 3DOF sim, TIMELINE mode (CAS Space typical sequence via huijiwiki, not Y2-specific); S1 burn/sep times, boosters separating with core, fairing mass and YF-102 vac/SL ratio (Merlin 1D) are ASSUMPTIONS; stage masses DERIVED from mdot x burn and 0.92 structure coefficient; Cd from LM-3B fit (UNTUNED, no knots); target 500 km circular ASSUMED; cutoff T+493.7 s; payload separation at typical T+514.7 s into 495 x 506 km, i=94.27 deg; payload fitted 6.7 t (18 Qianfan confirmed post-launch by Chinese media; mass unpublished); ILLUSTRATIVE; retimed 2026-11-03 to actual liftoff 00:15Z"
-   },
-   "reference_ids": [
-    "huiji-kinetica2",
-    "huiji-yf102",
-    "zhwp-yf102",
-    "wp-merlin1d",
-    "satnet-k2y2",
-    "satnet-k2",
-    "unilym-k2y2",
-    "notam-a5561-a5562",
-    "wp-lm3b",
-    "ll2",
-    "kml",
-    "weibo-k2y2",
-    "bjdaily-k2y2",
-    "kcb-k2y2"
-   ],
-   "note": "Flown 2026-11-03T00:15Z (Mon Nov 2 4:15 pm PST, LL2; Chinese media give 00:15:25Z). 18 Qianfan polar satellites reached the preset orbit (Beijing Daily); LL2 labels it Polar Group #17, Chinese media group 21. Pre-flight ILLUSTRATIVE geometry re-timed to the actual liftoff; orbit still unpublished."
-  },
-  {
-   "slug": "lm2c-xichang",
-   "name": "Yaogan-51 07–09 (Long March 2C, Xichang)",
-   "vehicle": "Long March 2C",
-   "t0_utc": "2026-11-05T15:58:00Z",
-   "status": "Success",
-   "phase": "flown",
-   "files": {
-    "csv": "/launches/lm2c-xichang/lm2c-xichang_2026-11-05_trajectory.csv",
-    "kml": "/launches/lm2c-xichang/lm2c-xichang_2026-11-05_trajectory.kml",
-    "csv_sim": "/launches/lm2c-xichang/lm2c-xichang_2026-11-05_trajectory_sim.csv",
-    "kml_sim": "/launches/lm2c-xichang/lm2c-xichang_2026-11-05_trajectory_sim.kml",
-    "track_lite": "/launches/lm2c-xichang/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low",
-   "sources": [
-    "https://sat.huijiwiki.com/wiki/长征二号丙",
-    "https://en.wikipedia.org/wiki/YF-20",
-    "https://www.space-notices.com/",
-    "https://ll.thespacedevs.com/2.3.0/launches/"
-   ],
-   "method": {
-    "csv": "event-surrogate parametric: CALT TYPICAL LM-2C sequence times (S1 cutoff 146.5 s ... vernier cutoff 542.7 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; 500 km final altitude ASSUMED; NOTAM A5624 azimuth 136.38 deg; UNTUNED; retimed 2026-11-06 to LL2 actual liftoff 2026-11-05T15:58:00Z (Thu Nov 5 7:58 am PST; was NET 16:00Z)",
-    "csv_sim": "first-principles 3DOF sim, TIMELINE mode: CALT typical sequence as hard events, Ph.3 stage data (World Launch Vehicles 2007 via huijiwiki), S1 vac via YF-20 ratio, verniers to 542.7 s; fairing mass 1000 kg ASSUMED; Cd from LM-3B fit (UNTUNED); payload/orbit unknown, 500 km circular ASSUMED; payload separation at typical T+545.7 s into 499 x 501 km, i=54.17 deg; fitted payload only ~0.3 t; ILLUSTRATIVE; known sim ground-track drift vs commanded azimuth ~+9 deg (board note); retimed 2026-11-06 to LL2 actual liftoff 2026-11-05T15:58:00Z"
-   },
-   "reference_ids": [
-    "huiji-lm2c",
-    "wp-yf20",
-    "notam-a5624",
-    "wp-lm3b",
-    "ll2",
-    "kml"
-   ],
-   "note": "FLOWN: LL2 Launch Successful at 2026-11-05T15:58:00Z (Thu Nov 5 7:58 am PST) from Xichang LC-3; Yaogan-51 07–09 reached planned orbit (Xinhua/China News/LL2; Long March flight 675). Pre-flight ILLUSTRATIVE files retimed to actual liftoff; geometry unchanged."
-  },
-  {
-   "slug": "lm12-wenchang",
-   "name": "SatNet LEO Group 29 (Long March 12, Wenchang)",
-   "vehicle": "Long March 12",
-   "t0_utc": "2026-11-08T20:24:00Z",
-   "t0_kind": "actual",
-   "window_open_utc": "2026-11-08T20:17:00Z",
-   "window_close_utc": "2026-11-08T20:47:00Z",
-   "status": "Success",
-   "phase": "recent",
-   "files": {
-    "csv": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory.csv",
-    "kml": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory.kml",
-    "csv_sim": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory_sim.csv",
-    "kml_sim": "/launches/lm12-wenchang/lm12-wenchang_2026-11-08_trajectory_sim.kml",
-    "track_lite": "/launches/lm12-wenchang/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low",
-   "sources": [
-    "https://sat.huijiwiki.com/wiki/长征十二号",
-    "https://en.wikipedia.org/wiki/Long_March_12",
-    "https://en.wikipedia.org/wiki/YF-115",
-    "https://space-notices.com/entry/launch-long-march-12-satnet-leo-group-tbd",
-    "https://ll.thespacedevs.com/2.3.0/launches/",
-    "https://www.news.cn/20261109/c59381337ab24106a800be4d3baac43f/c.html",
-    "https://www.chinanews.com.cn/gn/2026/11-09/10728684.shtml"
-   ],
-   "method": {
-    "csv": "event-surrogate parametric: CALT TYPICAL LM-12 Y7 sequence times (S1 cutoff 196.315 s, sep 198.315 s, fairing 209.015 s, S2 first cutoff 622.505 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; 300 km final altitude ASSUMED; NOTAM RPHI B5920/26 azimuth 141.27 deg; UNTUNED",
-    "csv_sim": "first-principles 3DOF sim, TIMELINE mode: CALT typical sequence as hard events; thrust from huijiwiki, YF-115 Isp from Wikipedia (B variant ASSUMED same); stage masses DERIVED from burn times with ASSUMED 0.92 structure coefficient; fairing 2.5 t ASSUMED; Cd from LM-3B fit; 300 km circular ASSUMED; sim input azimuth 109.33 deg COMPENSATED for sim track bias so the track passes ~38 km from the NOTAM centroid; fitted payload ~8.3 t; typical 18 s S2 restart at T+1622.5 s flown open-loop prograde (purpose unpublished) giving ILLUSTRATIVE 294 x 2276 km at first-batch separation T+1730.5 s, i=36.8 deg (sim inclination does not match the ~53.9 deg the NOTAM bearing implies); UNTUNED; ILLUSTRATIVE"
-   },
-   "reference_ids": [
-    "huiji-lm12",
-    "wp-lm12",
-    "wp-yf115",
-    "notam-b5920",
-    "wp-lm3b",
-    "ll2",
-    "kml",
-    "xinhua-lm12-y11"
-   ],
-   "note": "FLOWN: liftoff 2026-11-08T20:24Z (Sun Nov 8 12:24 pm PST; 04:24 BJT Nov 9) from Hainan Commercial LC-2; SatNet LEO Group 29 entered planned orbit, mission a complete success, Long March flight 676 (Xinhua, China News/CASC; LL2 Launch Successful). Pre-flight ILLUSTRATIVE files retimed -60 s from the 20:25Z NET; geometry unchanged. Orbit still unpublished."
-  },
-  {
-   "slug": "ussf-627",
-   "name": "USSF-627",
-   "vehicle": "Falcon 9 Block 5",
-   "t0_utc": "2026-11-12T04:36:30Z",
-   "t0_kind": "actual",
-   "window_open_utc": "2026-11-12T02:35:00Z",
-   "window_close_utc": "2026-11-12T06:35:00Z",
-   "status": "Success",
-   "phase": "flown",
-   "files": {
-    "csv": "/launches/ussf-627/ussf-627_2026-11-12_trajectory.csv",
-    "kml": "/launches/ussf-627/ussf-627_2026-11-12_trajectory.kml",
-    "csv_sim": "/launches/ussf-627/ussf-627_2026-11-12_trajectory_sim.csv",
-    "kml_sim": "/launches/ussf-627/ussf-627_2026-11-12_trajectory_sim.kml",
-    "track_lite": "/launches/ussf-627/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low",
-   "sources": [
-    "https://www.spacex.com/launches/ussf627",
-    "https://space-notices.com/entry/launch-f9-ussf-627",
-    "https://space-notices.com/notice/notam-ZLA-11%2F067-26",
-    "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
-    "https://ll.thespacedevs.com/2.3.0/launches/6aa7b90b-e5ed-45d8-a52e-04fbf399d178/",
-    "https://www.spacex.com/launches/sl-15-18",
-    "https://x.com/SpaceX/status/2120808224324510133"
-   ],
-   "method": {
-    "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, SpaceX ussf627 timeline MECO 2:25 / sep 2:29 / SES-1 2:36 / fairing 2:56 (revised 2026-11-10; surrogate knots still at the earlier 2:26/2:58 marks, 1-2 s); ZLA CARF 11/067-26 Area A azimuth 153.56 deg, polygon re-issued unchanged as 11/071-26 and 11/107-26); ends at T+508 s (telemetry end) because SECO is unpublished; T0 ACTUAL liftoff 2026-11-12T04:36:30Z (Wed Nov 11 8:36:30 pm PST; LL2 Launch Successful, SpaceX X post); retimed from NET 02:35:00Z (+7290 s)",
-    "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf627 MECO 145 s, sep 149 s, SES-1 156 s, fairing 176 s (revised timeline, checked 2026-11-11, unchanged) as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are an ASSUMED Starlink Group 15 analog (LL2 notes drop zones match Group 15), not USSF-627 sources; azimuth 153.56 deg from ZLA CARF 11/067-26 / 11/071-26 Area A (inclination unpublished) gives i≈68.23 deg; payload fitted ~16.42 t (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; sim ground track runs ~+5° east of the commanded azimuth (pad→insertion bearing 158.8° vs 153.56°, known sim bug); T0 = ACTUAL liftoff 2026-11-12T04:36:30Z (re-run, geometry unchanged); ILLUSTRATIVE"
-   },
-   "reference_ids": [
-    "spacex-ussf627",
-    "zla-carf-11-067",
-    "zla-carf-11-071",
-    "hydropac-3207",
-    "shahar603-tel",
-    "spacex-sl-15-18",
-    "wp-falcon9",
-    "wp-falcon9-b5",
-    "ll2",
-    "kml",
-    "zla-carf-11-107",
-    "spacex-ussf627-x"
-   ],
-   "assumptions": [
-    "SECO-1 time T+519 s and parking orbit 177×266 km ASSUMED from Starlink Group 15-18 analog (LL2: drop zones match Group 15; possible Starshield); not USSF-627 sources",
-    "Azimuth 153.56° from ZLA CARF 11/067-26 Area A far-edge midpoint (inclination unpublished/classified; used as launch-plane azimuth without tuning)",
-    "Payload mass FITTED (~16.42 t) within F9 bounds so assumed SECO delivers assumed orbit — NOT an estimate of the real payload",
-    "Deploy time unpublished (classified) → deploy.t_s null; coast +2 revs on inferred insertion orbit",
-    "Family Iridium NEXT-7 webcast telemetry used for surrogate loft altitudes/ranges (not this flight)",
-    "Known sim ground-track azimuth residual still present: pad→insertion bearing 158.8° vs commanded 153.56° (+5.2°)",
-    "T0 is the ACTUAL liftoff (LL2/SpaceX), a sourced time; all trajectory geometry and orbit values remain the assumptions above, not actual flight data"
-   ],
-   "note": "FLOWN. Falcon 9 B1103 (7th flight) lifted off from Vandenberg SLC-4E at 2026-11-12T04:36:30Z (Wed 11 Nov 8:36:30 pm PST); LL2 Launch Successful (update 'Launch success.' 07:02Z Nov 12); SpaceX X post 'Falcon 9 launches USSF-627 to orbit'. Both trajectory types retimed from the earlier NET 02:35Z (+7290 s); ILLUSTRATIVE geometry unchanged (files still named by the 2026-11-12 UTC date). Earlier slips: Nov 9 7:03p/7:07p, Nov 10 6:49p, Nov 11 6:35p PT. SECO/orbit/deploy unpublished (classified); orbit shown is a Group 15 analog assumption."
-  },
-  {
-   "slug": "lm2d-jiuquan",
-   "name": "Origins (TanYuan) Pathfinder A-D (Long March 2D Y108, Jiuquan)",
-   "vehicle": "Long March 2D",
-   "t0_utc": "2026-11-11T11:41:00Z",
-   "t0_kind": "liftoff",
-   "window_open_utc": "2026-11-11T11:32:00Z",
-   "window_close_utc": "2026-11-11T12:05:00Z",
-   "status": "Success",
-   "phase": "recent",
-   "files": {
-    "csv": "/launches/lm2d-jiuquan/lm2d-jiuquan_2026-11-11_trajectory.csv",
-    "kml": "/launches/lm2d-jiuquan/lm2d-jiuquan_2026-11-11_trajectory.kml",
-    "csv_sim": "/launches/lm2d-jiuquan/lm2d-jiuquan_2026-11-11_trajectory_sim.csv",
-    "kml_sim": "/launches/lm2d-jiuquan/lm2d-jiuquan_2026-11-11_trajectory_sim.kml",
-    "track_lite": "/launches/lm2d-jiuquan/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low",
-   "sources": [
-    "http://www.xinhuanet.com/20261111/f62e737993404c6aa3ba9246a6118598/c.html",
-    "http://www.cssar.cas.cn/xwdt2015/xwsd2015/202611/t20261111_8307991.html",
-    "https://sat.huijiwiki.com/wiki/长征二号丁",
-    "https://en.wikipedia.org/wiki/Long_March_2D",
-    "https://en.wikipedia.org/wiki/YF-20",
-    "https://space-notices.com/notice/notam-ZLHW-A5728%2F26",
-    "https://ll.thespacedevs.com/2.2.0/launch/d66590ab-b273-47ff-b85a-608b62851b4b/"
-   ],
-   "method": {
-    "csv": "event-surrogate parametric: SAST TYPICAL LM-2D sequence times (pitch-over 17.0 s, S1 cutoff 153.9 s, sep 155.1 s, fairing 185.1 s, S2 main cutoff 324.1 s, vernier cutoff 705.1 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; 600 km final altitude per CSSAR (dawn-dusk SSO; circular insertion ASSUMED); NOTAM ZLHW A5728/26 azimuth 192.23 deg; ends at vernier cutoff; retimed to liftoff 11:41Z (Xinhua)",
-    "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SAST typical sequence as hard events; configuration-2 stage data (World Launch Vehicles 2007 via huijiwiki), S1 vac via YF-20 ratio; verniers ASSUMED to run from S2 ignition to 705.1 s; 3.35 m fairing 860 kg ASSUMED; Cd from LM-3B fit; TARGET RETUNED 2026-11-11 to CSSAR's published 600 km dawn-dusk SSO (was ASSUMED 500 km); T0 = liftoff 11:41:00Z (Xinhua); azimuth 192.23 deg from NOTAM ZLHW A5728/26; vernier cutoff at 596.8 km, FPA +0.36 deg; payload separation (typical T+737.1 s) into 534 x 626 km, i=97.79 deg (dawn-dusk SSO at 600 km needs ~97.8 deg); fitted payload pinned at its 200 kg lower bound (NOT an estimate; 4 satellites' mass unpublished); ILLUSTRATIVE"
-   },
-   "reference_ids": [
-    "xinhua-lm2d-y108",
-    "cssar-pathfinder",
-    "huiji-lm2d",
-    "wp-lm2d",
-    "wp-yf20",
-    "notam-a5728",
-    "wp-lm3b",
-    "ll2",
-    "kml"
-   ],
-   "assumptions": [
-    "Orbit: 600 km dawn-dusk SSO PUBLISHED (CSSAR); circular insertion at typical vernier cutoff ASSUMED; insertion orbit itself unpublished",
-    "NOTAM ZLHW A5728/26 (11:32-12:05Z, SFC-UNL, 614 km SSW of pad) INFERRED to be the stage-1 impact area; it is the only notice found for this window; azimuth = great-circle bearing pad -> area centroid",
-    "Event times are the SAST TYPICAL LM-2D sequence (huijiwiki), not this flight's",
-    "Verniers modelled firing from S2 ignition (155.1 s) to typical vernier cutoff 705.1 s; huijiwiki lists vernier working time 382 s (~vernier-only after 324.1 s), but that model leaves ~4.1 t of the 53 t load unburned and cannot reach orbit at 705.1 s",
-    "Fairing type unknown (2.9-4.2 m options exist): 3.35 m, 860 kg ASSUMED; drag Cd transferred from LM-3B fit",
-    "Payload mass FITTED; it pins at the 200 kg lower bound because the typical-sequence energy barely reaches 600 km - NOT an estimate of the real 4-satellite stack",
-    "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed; surrogate knot altitudes taken from this sim",
-    "Deploy at typical-sequence payload separation T+737.1 s (not flight-specific); post-cutoff coast uses Cd 2.2 / 8.81 m2 ASSUMED",
-    "This flight used a new 3.35 m composite fairing and lightened S2 (China航天 Weibo, unofficial) - not modelled"
-   ],
-   "note": "FLOWN 2026-11-11T11:41:00Z (Wed 11 Nov 3:41 am PST; 19:41 BJT): LM-2D Y108 put the 4-satellite Origins Pathfinder stack into the preset orbit (Xinhua; CSSAR; LL2 Success; Long March flight 677). Retimed +60 s; sim and surrogate re-run for CSSAR's 600 km dawn-dusk SSO. Pre-flight-style ILLUSTRATIVE geometry."
-  },
-  {
-   "slug": "amazon-leo-lv01",
-   "name": "Amazon Leo LV-01 (Vulcan VC6L, SLC-41)",
-   "vehicle": "Vulcan VC6L",
-   "t0_utc": "2026-11-13T17:54:00Z",
-   "t0_kind": "net",
-   "window_open_utc": "2026-11-13T17:54:00Z",
-   "window_close_utc": "2026-11-13T18:24:00Z",
-   "status": "Go",
-   "phase": "upcoming",
-   "files": {
-    "csv": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-13_trajectory.csv",
-    "kml": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-13_trajectory.kml",
-    "csv_sim": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-13_trajectory_sim.csv",
-    "kml_sim": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-13_trajectory_sim.kml",
-    "track_lite": "/launches/amazon-leo-lv01/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low",
-   "sources": [
-    "https://www.ulalaunch.com/missions/next-launch/vulcan-leo-1",
-    "https://www.ulalaunch.com/docs/default-source/rockets/2023_vulcan_user_guide.pdf",
-    "https://blog.ulalaunch.com/blog/vulcan-new-centaur-v-version-readies-for-amazon-leo",
-    "https://cdn.northropgrumman.com/-/media/wp-content/uploads/NG-Propulsion-Products-Catalog.pdf",
-    "https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201078%2F26",
-    "https://www.aboutamazon.com/news/innovation-at-amazon/project-kuiper-photos-internet-satellite-first-launch",
-    "https://ll.thespacedevs.com/2.2.0/launch/ef9850ad-1096-425b-9d27-f7bbd186e61a/",
-    "https://en.wikipedia.org/wiki/Vulcan_Centaur",
-    "https://x.com/ulalaunch/status/2120895023067639859"
-   ],
-   "method": {
-    "csv": "event-surrogate parametric: NG catalog GEM 63XL burn 87.3 s and ULA UG Fig. 2.1.1-2 TYPICAL CCSFS times (SRB jettison 100 s, BECO 292 s, sep 298 s, MES1 308 s, fairing 316 s); MES1 cutoff T+908 s ASSUMED (308+600 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; azimuth 43.69 deg from NAVAREA IV 1078/26 Area A far-edge midpoint; ends at MES1 cutoff; T0 2026-11-13T17:54:00Z (ULA Vulcan Leo 1 page / LL2 Go, window to 18:24Z)",
-    "csv_sim": "first-principles 3DOF sim, TIMELINE mode: UG-typical CCSFS event times as hard events (not flight-specific); 6x GEM 63XL catalog time-average thrust; 2x BE-4 550k-lbf SL; CV-L propellant derived as one-third less than the 120,000 lb CV-HE; MES1 cutoff ASSUMED 908 s, steering/payload fitted to a 180 x 460 km transfer (460 km from ULA, 180 km perigee ASSUMED); azimuth 43.69 deg from NAVAREA IV 1078/26 Area A; MES1 residual: geodetic alt 180.16 km (target 180), FPA 0.00 deg, SMA error ~0 vs 180x460; osculating 163 x 478 km at MES2 ignition (equatorial-radius, after J2/drag coast), i=49.66 deg vs ULA-published 51.9 deg (residual -2.24 deg; commanded NAVAREA azimuth gives non-rotating 52.66 deg, known sim track bias; azimuth kept NOTAM-first, not retuned); MES2 at first apoapsis T+3628 s, 13.0 s at 2x RL10, solves perigee to 460.0 km (osculating 460.0 x 478.1 km after flattening); deploy time unpublished, so +2 revs on the inferred insertion orbit, file ends T+14919 s; fitted payload 20.14 t is NOT an estimate of the 40-sat stack; ILLUSTRATIVE"
-   },
-   "reference_ids": [
-    "ula-vulcan-leo-1",
-    "ula-vulcan-ug-2023",
-    "ula-blog-cv-l",
-    "ng-propulsion-catalog",
-    "navarea-iv-1078-26",
-    "wp-vulcan-centaur",
-    "ll2",
-    "kml",
-    "ula-leo1-target-x"
-   ],
-   "note": "Pre-flight ILLUSTRATIVE. ULA Vulcan VC6L (first 6-SRB / first LEO-optimized Centaur V), 40 Amazon Leo satellites from SLC-41; T0 Fri Nov 13 9:54 a.m. PST = 2026-11-13T17:54:00Z (ULA / LL2 Go, window to 18:24Z; FAA KV-01 backup Sat 9:32 a.m. PST). UPDATED 2026-11-12: ULA published the target 'near-circular low Earth orbit of approximately 285 miles (460km) inclined at 51.9 degrees' (replacing the earlier ASSUMED 450 km KA-01 analog); sim retuned to 460 km. Sim inclination 49.66 deg vs the published 51.9 deg (-2.24 deg; azimuth kept NOTAM-first from NAVAREA IV 1078/26, not retuned).",
-   "assumptions": [
-    "Booster/Centaur event times = ULA UG Fig. 2.1.1-2 TYPICAL CCSFS two-burn sequence (Approximate Times), not LV-01's unpublished timeline",
-    "460 km near-circular insertion is PUBLISHED by ULA (X post 2026-11-12, 285 miles / 460 km at 51.9 deg); treated as exactly circular (eccentricity unpublished). Replaces the earlier 450 km Amazon KA-01 assumption",
-    "MES1 duration 600 s (T+908 s) ASSUMED, then tuned so the first burn targets a 180 x 460 km transfer",
-    "MES1 transfer perigee 180 km ASSUMED (stand-in)",
-    "BE-4 vacuum Isp 340 s and sea-level 320 s (Wikipedia / factory-tour / Reich 2020, secondary); ULA does not publish BE-4 Isp",
-    "Vulcan booster propellant 460 t ASSUMED (UG 'over a million pounds' floor plus margin for a 292 s full-thrust BECO); UG 4.6 g throttle not modelled",
-    "Booster dry mass 28,600 kg (Reich 2020 via Wikipedia, secondary)",
-    "CV-L propellant 36,287 kg DERIVED (ULA: a third less than the 120,000 lb CV-HE); CV-L dry mass 4,800 kg ASSUMED; fairing 2,500 kg ASSUMED",
-    "RL10C Isp 453.8 s (Wikipedia / L3Harris, secondary; datasheet PDF not retrieved)",
-    "GEM 63XL flown at catalog time-average thrust, not max thrust; sea-level loss at liftoff not modelled (Ae=0)",
-    "Fitted payload 20.28 t is a steering parameter, NOT an estimate of the real 40-satellite stack",
-    "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at the sim MES1 altitude (180.2 km); surrogate ends at MES1",
-    "Cd 0.4 fixed, generic",
-    "Azimuth from NAVAREA IV 1078/26 Area A, deliberately NOT retuned to the ULA-published 51.9 deg; sim i=49.66 deg vs 51.9 deg (residual -2.24 deg; non-rotating 52.66 deg from the commanded azimuth, known sim track bias)",
-    "Deploy time unpublished (NSF-forum 1 h 17 min STA quote not independently verified) -> after MES2, +2 revs on the inferred 460 km insertion orbit"
-   ]
-  },
-  {
-   "slug": "starship-flight-15",
-   "name": "Starship Flight 15 (Starlink 31-2, 26 V3 sats, Starbase)",
-   "vehicle": "Starship V3 (Super Heavy + Ship)",
-   "t0_utc": "2026-11-13T22:45:00Z",
-   "t0_kind": "net",
-   "window_open_utc": "2026-11-13T22:45:00Z",
-   "window_close_utc": "2026-11-14T00:00:00Z",
-   "status": "To Be Confirmed",
-   "phase": "upcoming",
-   "files": {
-    "csv": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory.csv",
-    "kml": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory.kml",
-    "csv_sim": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory_sim.csv",
-    "kml_sim": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory_sim.kml",
-    "track_lite": "/launches/starship-flight-15/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low",
-   "sources": [
-    "https://www.spacex.com/launches/starship-flight-15",
-    "https://www.spacex.com/launches/starship-flight-14",
-    "https://www.spacex.com/vehicles/starship/technical-specifications",
-    "https://www.spacex.com/updates/starship-v3",
-    "https://space-notices.com/notice/nav-warning-NAVAREA%20IV%201080%2F26",
-    "https://ll.thespacedevs.com/2.2.0/launch/0f867f0c-5422-4d44-93b8-d7faaae7019b/",
-    "https://web.archive.org/web/20190925065050/https://twitter.com/elonmusk/status/1171118891671490560",
-    "https://en.wikipedia.org/wiki/SpaceX_Starship",
-    "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy"
-   ],
-   "method": {
-    "csv": "event-surrogate parametric: SpaceX Flight 15 published timeline (Max-Q 58 s, Super Heavy MECO 139 s, hot-stage / sep 141 s, ship ascent cutoff 489 s); altitudes unpublished, so knot altitudes ASSUMED from this board's retuned 3DOF sim (MECO 86.8 km, cutoff 162.6 km); azimuth 107.53 deg from NAVAREA IV 1080/26 Area A far-edge midpoint; ends at ship ascent cutoff; insertion burn and deploy are in the sim file only; T0 2026-11-13T22:45:00Z (SpaceX 75-minute window / LL2 To Be Confirmed, window to 00:00Z)",
-    "csv_sim": "first-principles 3DOF sim, TIMELINE mode, RETUNED 2026-11-11: SpaceX F15 MECO 139 s, hot-stage 141 s, ship cutoff 489 s as hard events; official V3 figures (SpaceX technical specifications + 12 May 2026 V3 update) — Super Heavy 3,650 t / 8,240 tf at liftoff (33× Raptor 3), Ship 1,600 t / 1,614 tf (3 sea-level + 3 RVac); RVac 275 tf; blended ship Isp 364.72 s (3×350 s + 3×380 s, Musk 9 Sep 2019); Super Heavy vacuum thrust 8,679 tf DERIVED (33 × 263 tf implied by the 1,614 tf / 275 tf split); V3 dry masses still unpublished (booster 275 t earlier-block stand-in, ship 120 t ASSUMED); ascent target is an ASSUMED passively safe −40 × 275 km ellipse (SpaceX F15 official: 'passively safe suborbital trajectory' then raise to ~275 km; F14 official analog), 1081 s before apogee so the published insertion epoch is at first apogee; cutoff residual: geodetic alt 162.59 km (target 162.59), FPA 1.331 deg (target 1.331), osculating −39.2 × 274.1 km, SMA error ~0, i=31.62 deg vs 31.01 deg from the NAVAREA azimuth; insertion is a single Raptor 3 SL (F14 official analog) flown open-loop for the published 20 s at a DERIVED 1,028,650 N (104.9 tf, 42% of 250 tf) so the burn supplies the 89.8 m/s to circularize the post-coast −31.8 × 269.3 km ellipse (J2/drag walked the 275 km apogee down ~6 km); post-burn 262.8 × 275.1 km, i=31.63 deg; at deploy complete T+4660 s, 254.8 × 278.4 km, i=31.62 deg, vs SpaceX ~275 km; fitted payload 51.4 t is NOT an estimate of the 26-sat stack; ship residual after ascent 60.0 t (enough for the 20 s burn plus later unmodelled deorbit/catch); Super Heavy residual 203 t stays on the booster as the unpublished boostback/landing reserve; ILLUSTRATIVE"
-   },
-   "reference_ids": [
-    "spacex-starship-flight-15",
-    "spacex-starship-flight-14",
-    "spacex-starship-specs",
-    "spacex-v3-update",
-    "musk-raptor-isp-2019",
-    "navarea-iv-1080-26",
-    "wp-spacex-starship",
-    "wp-spacex-super-heavy",
-    "ll2",
-    "kml"
-   ],
-   "note": "Pre-flight ILLUSTRATIVE, RETUNED 2026-11-11. Starship Flight 15 / Starlink 31-2, 26 V3 sats from OLP-2; T0 Fri Nov 13 2:45 p.m. PST = 2026-11-13T22:45:00Z (SpaceX 75-minute window, pending regulatory approval; LL2 To Be Confirmed). The previous model used a single 350 s Isp and treated 1,600 tf as constant, leaving only 9.1 t residual and a 202 × 772 km post-insertion orbit. The retuned sim uses official 1,614 tf, blended 364.72 s Isp, a passively safe −40 × 275 km ascent, and a 20 s insertion throttled to 42% of 250 tf, and reaches 263 × 275 km at insertion cutoff (i=31.63 deg vs 31.01 deg from the NAVAREA azimuth). Catch and deorbit are not modelled.",
-   "assumptions": [
-    "V3 dry masses unpublished: Super Heavy empty 275 t is an earlier-block Wikipedia infobox stand-in; ship dry 120 t ASSUMED (2021 ~100 t Musk figure is stale)",
-    "Ship vacuum Isp is a DERIVED 364.72 s blend of 3 sea-level Raptor 3s at 350 s and 3 RVacs at 380 s (Musk, 9 Sep 2019). The official 1,614 tf and 275 tf RVac figures imply 263.00 tf vacuum for each sea-level Raptor 3",
-    "Super Heavy vacuum thrust 8,679 tf is DERIVED (33 × 263 tf); liftoff is the official 8,240 tf. Unburned booster propellant (203 t) stays on the booster as the unpublished boostback/landing reserve and is not delivered to the ship",
-    "Ascent is flown at official 1,614 tf (not a deeper mean throttle). A trial 80.7% ascent throttle, sized so a full-thrust 20 s / 250 tf insertion would be only ~94 m/s, left too little ship Δv to reach the passively safe ellipse",
-    "Insertion engine count unpublished on F15; 1× Raptor 3 SL is a Flight 14 official analog. The published 20 s is flown in full. Thrust is DERIVED at 1,028,650 N (42% of 250 tf) to circularize the post-coast ellipse; full 250 tf × 20 s would loft apogee. 42% is inside the commonly cited Raptor 40–100% throttle range (not a published F15 setting)",
-    "Pre-insertion orbit is an ASSUMED −40 × 275 km passively safe ellipse (275 km apogee = SpaceX published orbital altitude; −40 km perigee is a labelled stand-in in the F14/F15 passively-safe class; F15 official text does not publish the suborbital elements). Mid-arc target 1081 s before apogee matches the published cutoff-to-insertion interval",
-    "J2/drag on the 18-minute coast lowers apogee from 274.1 km at cutoff to 269.3 km (equatorial-radius) at T+1570 s. Insertion circularizes there, giving 262.8 × 275.1 km — residual vs a perfect 275 km circle is this walk plus finite-burn effects",
-    "Payload 26 V3 sats, mass unpublished; fitted 51.4 t is a steering parameter, NOT an estimate",
-    "Azimuth from NAVAREA IV 1080/26 Area A (i~31.01 deg); sim i=31.63 deg (not retuned). Fit kick is 0.42 deg, near its 0.2 deg lower bound, so Super Heavy MECO is lofted (FPA 66.9 deg)",
-    "Cd 0.4 fixed, generic; no jettisoned fairing (mass 0)",
-    "Super Heavy boostback / landing and ship deorbit / catch (T+21:35:57 / T+22:32:34) are not modelled; file ends at deploy complete T+01:17:40. ~54 t ship propellant remains after insertion as a stand-in for those burns",
-    "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at the sim ascent-cutoff altitude; surrogate ends at T+489 s"
-   ]
-  },
-  {
-   "slug": "soyuz21b-vostochny",
-   "name": "Soyuz-2.1b/Fregat-M MKA Kinosputnik, KOEN et al. (Vostochny 1S)",
-   "vehicle": "Soyuz-2.1b/Fregat-M",
-   "t0_utc": "2026-11-14T00:50:00Z",
-   "t0_kind": "net",
-   "window_open_utc": "2026-11-14T00:50:00Z",
-   "window_close_utc": "2026-11-14T01:50:00Z",
-   "status": "Go",
-   "phase": "upcoming",
-   "files": {
-    "csv": "/launches/soyuz21b-vostochny/soyuz21b-vostochny_2026-11-14_trajectory.csv",
-    "kml": "/launches/soyuz21b-vostochny/soyuz21b-vostochny_2026-11-14_trajectory.kml",
-    "track_lite": "/launches/soyuz21b-vostochny/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "very low",
-   "sources": [
-    "https://ll.thespacedevs.com/2.3.0/launches/upcoming/?search=Fregat",
-    "https://portamur.ru/news/detail/v-noyabre-s-kosmodroma-vostochnyiy-zapustyat-soyuz-b/",
-    "https://anna-news.info/anonsirovan-pervyj-v-2026-godu-pusk-s-vostochnogo/",
-    "https://kosmonavtika.com/lancements/2019/05072019/05072019.html",
-    "https://www.russianspaceweb.com/soyuz2_metop.html",
-    "https://ru.wikipedia.org/wiki/%D0%91%D1%80%D1%8F%D0%BD%D1%82%D0%B0",
-    "https://ru.wikipedia.org/wiki/%D0%A3%D0%BD%D0%B0%D1%85%D0%B0",
-    "https://space.skyrocket.de/doc_sdat/kinosputnik.htm"
-   ],
-   "method": {
-    "csv": "event-surrogate, ALL BORROWED/ASSUMED: Soyuz-2.1b/Fregat event times from the Vostochny Meteor-M 2-2 flight (5 Jul 2019: BVGD sep 117.6 s, fairing 225.63 s, Block A sep 287.48 s, Block I cutoff 560.40 s, upper-part sep 563.70 s); altitudes 50 km @ booster sep and 175 km @ stage-2 sep from the Soyuz-2-1a/Metop sequence, fairing altitude linearly interpolated, 200 km at Block I cutoff ASSUMED; horizontal speed ASSUMED linear to circular-200-km ground speed; azimuth 349.46 deg inferred as bearing from the pad to the Unakha-Bryanta confluence in the announced stage drop zone (no NOTAM coordinates found); ends at upper-part separation (Fregat burns and deploys not modelled); T0 LL2 NET 2026-11-14T00:50:00Z (window to 01:50Z)"
-   },
-   "reference_ids": [
-    "ll2-soyuz-kinosputnik",
-    "zeya-drop-zone",
-    "kosmonavtika-soyuz21b-2019",
-    "russianspaceweb-soyuz2-metop",
-    "wp-unakha-bryanta",
-    "skyrocket-kinosputnik",
-    "kml"
-   ],
-   "assumptions": [
-    "Event times BORROWED from the 2019 Vostochny Soyuz-2.1b/Fregat Meteor-M 2-2 theoretical timeline (kosmonavtika.com); this mission's timeline is unpublished",
-    "Altitudes 50 km (t=117.6 s) and 175 km (t=287.48 s) BORROWED from the Soyuz-2-1a/Metop launch sequence (russianspaceweb.com, Baikonur flight); fairing-sep altitude (129.5 km) linearly interpolated; Block I cutoff altitude 200 km ASSUMED",
-    "Horizontal ground speed ASSUMED linear 0 -> circular speed at 200 km minus Earth rotation along azimuth; real Block I cutoff is suborbital (lower speed)",
-    "Azimuth 349.46 deg INFERRED: great-circle bearing from the LL2 pad to the Unakha-Bryanta confluence (54.527N 127.486E), a point inside the Zeya-district-announced stage drop zone ('area of the Bryanta and Unakha rivers north of Kirovsky'); no NOTAM or hazard-area coordinates were found. A ~98 deg SSO would imply ~340-345 deg",
-    "Target orbit unpublished (SSO per LL2; Kinosputnik ~500-800 km circular per Gunter's page) -> not used in this file",
-    "T0 is LL2 NET (Go; update 2026-11-12T16:00Z 'Reverted back to NET November 14'); Roscosmos has not announced the date (local warnings say 14-24 Nov), so T0 is low confidence",
-    "No 3DOF sim: no Soyuz/Fregat vehicle model and no published target orbit; building one would need many unsourced numbers"
-   ],
-   "note": "Pre-flight ILLUSTRATIVE, surrogate only. Soyuz-2.1b/Fregat-M from Vostochny Site 1S, SSO rideshare (MKA Kinosputnik, KOEN / KA MT-LAB, NPO Kaisant cubesats). LL2 NET 2026-11-14T00:50Z (Fri 13 Nov 4:50 pm PST), Go, window to 01:50Z; Roscosmos has not announced; Zeya district says launch 14-24 Nov (drop zone Bryanta/Unakha rivers). Timeline, altitudes and speed are borrowed/assumed (see assumptions); file ends at upper-part separation. No 3DOF sim (no vehicle model, unpublished orbit)."
-  },
-  {
-   "slug": "electron-iqps10",
-   "name": "The Mountain God Rises (iQPS Launch 10, Electron's 100th)",
-   "vehicle": "Electron",
-   "t0_utc": "2026-11-14T05:30:00Z",
-   "status": "Go",
-   "phase": "upcoming",
-   "files": {
-    "csv": "/launches/electron-iqps10/electron-iqps10_2026-11-14_trajectory.csv",
-    "kml": "/launches/electron-iqps10/electron-iqps10_2026-11-14_trajectory.kml",
-    "csv_sim": "/launches/electron-iqps10/electron-iqps10_2026-11-14_trajectory_sim.csv",
-    "kml_sim": "/launches/electron-iqps10/electron-iqps10_2026-11-14_trajectory_sim.kml",
-    "track_lite": "/launches/electron-iqps10/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low",
-   "sources": [
-    "https://rocketlabcorp.com/missions/launches/iqps-the-mountain-god-rises/",
-    "https://rocketlabcorp.com/launch/launch-safety/",
-    "https://www.space-notices.com/notice/nav-warning-HYDROPAC%203249%2F26",
-    "https://www.space-notices.com/notice/nav-warning-HYDROPAC%203251%2F26",
-    "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
-    "https://ll.thespacedevs.com/2.3.0/launches/db3500ac-965b-4ad8-b417-cb8d8d005586/"
-   ],
-   "method": {
-    "csv": "event-surrogate parametric (Electron User Guide 8.0 GENERIC event profile - no mission timeline published; S2 cutoff altitude = Rocket Lab's published 575 km orbit; azimuth 104.68 deg = mean bearing to HYDROPAC 3249/26 area B and 3251/26 debris-area centroids); T0 2026-11-14T05:30Z per Rocket Lab launch-safety page (NET 18:30 NZDT 14 Nov), matching LL2",
-    "csv_sim": "first-principles 3DOF sim (WGS-84+J2, US76 drag, staged thrust, optimized gravity-turn/linear-tangent guidance), Electron energy-cutoff mode (UNTUNED: no published mission timeline); azimuth 104.68 deg from HYDROPAC 3249/26 B + 3251/26; target 230 km (assumed) x 575 km (Rocket Lab); cutoff T+526 s into 221 x 640 km, i=39.30 deg vs Rocket Lab's published 42 deg (residual -2.7 deg: hazard-area azimuth kept per NOTAM-first rule, plus known sim track bias); deploy time unpublished, so propagated 2 revs on the inferred insertion orbit; ILLUSTRATIVE"
-   },
-   "reference_ids": [
-    "rl-mountain-god",
-    "rl-launch-safety",
-    "hydropac-3249-3251",
-    "rl-ug",
-    "wp-electron",
-    "ll2",
-    "kml"
-   ],
-   "note": "Pre-flight ILLUSTRATIVE. Rocket Lab NET Sat 14 Nov 18:30 NZDT = 2026-11-14T05:30Z (Fri 13 Nov 9:30 pm PST); backup days 14-26 Nov NZT; LL2 Go. 1x QPS-SAR to 575 km, 42 deg (Rocket Lab). Electron's 100th launch.",
-   "t0_kind": "net",
-   "window_open_utc": "2026-11-14T05:30:00Z",
-   "window_close_utc": "2026-11-14T05:30:00Z",
-   "assumptions": [
-    "Event profile = Electron User Guide 8.0 GENERIC example (Rocket Lab publishes no timeline for this mission)",
-    "S2 insertion perigee 230 km ASSUMED (Kick Stage 'low elliptical orbit'); Kick Stage circularization not modelled",
-    "Payload ~190 kg incl. Kick Stage ASSUMED (QPS-SAR 100 kg-class unofficial + Kick Stage 40 kg + ~50 kg propellant)",
-    "Azimuth from HYDROPAC debris-area centroids; sim inclination 39.3 deg vs published 42 deg (not re-aimed)",
-    "Deploy time unpublished -> deploy.t_s null; coast +2 revs on inferred insertion orbit",
-    "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at 575 km"
-   ]
-  },
-  {
-   "slug": "ussf-317",
-   "name": "USSF-317",
-   "vehicle": "Falcon 9 Block 5",
-   "t0_utc": "2026-11-15T03:55:00Z",
-   "t0_kind": "net",
-   "window_open_utc": "2026-11-15T03:55:00Z",
-   "window_close_utc": "2026-11-15T07:55:00Z",
-   "status": "Go",
-   "phase": "upcoming",
-   "files": {
-    "csv": "/launches/ussf-317/ussf-317_2026-11-15_trajectory.csv",
-    "kml": "/launches/ussf-317/ussf-317_2026-11-15_trajectory.kml",
-    "csv_sim": "/launches/ussf-317/ussf-317_2026-11-15_trajectory_sim.csv",
-    "kml_sim": "/launches/ussf-317/ussf-317_2026-11-15_trajectory_sim.kml",
-    "track_lite": "/launches/ussf-317/track_lite.json"
-   },
-   "illustrative": true,
-   "confidence": "low",
-   "sources": [
-    "https://www.spacex.com/launches/ussf317",
-    "https://space-notices.com/entry/launch-f9-ussf-317",
-    "https://space-notices.com/notice/notam-ZLA-11%2F116-26",
-    "https://www.sealagom.com/navarea/12/message/25632/785-26-north-pacific/",
-    "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
-    "https://ll.thespacedevs.com/2.3.0/launches/",
-    "https://www.spacex.com/launches/sl-15-18",
-    "https://www.nextspaceflight.com/launches/details/8335/"
-   ],
-   "method": {
-    "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, identical rows to USSF-627; SpaceX ussf317 timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:58, MECO matches the telemetry's T+146 s); ZLA CARF 11/116-26 Area A azimuth 153.56 deg (same polygon as USSF-627); ends at T+508 s (telemetry end) because SECO is unpublished; T0 SpaceX/LL2 NET 2026-11-15T03:55:00Z (Sat Nov 14 7:55 pm PST; window to 07:55Z; backup Sun Nov 15 7:41 pm PT)",
-    "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf317 MECO 146 s, sep 149 s, SES-1 156 s, fairing 178 s as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are ASSUMED, BORROWED from the USSF-627 config (itself a Starlink Group 15 analog; LL2: drop zones match Group 15), not USSF-317 sources; azimuth 153.56 deg from ZLA CARF 11/116-26 Area A (inclination unpublished) gives i=68.27 deg; payload fitted ~16.4 t-class (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; sim ground track runs ~+5.3 deg east of the commanded azimuth (pad->insertion bearing 158.85 deg vs 153.56 deg, known sim bug); ILLUSTRATIVE"
-   },
-   "reference_ids": [
-    "spacex-ussf317",
-    "zla-carf-11-116",
-    "navarea-xii-785-26",
-    "shahar603-tel",
-    "spacex-sl-15-18",
-    "wp-falcon9",
-    "wp-falcon9-b5",
-    "ll2",
-    "kml"
-   ],
-   "assumptions": [
-    "SECO-1 time T+519 s and parking orbit 177x266 km BORROWED from the USSF-627 config / Starlink Group 15-18 analog (LL2: drop zones match Group 15; possible Starshield); not USSF-317 sources",
-    "Azimuth 153.56 deg from ZLA CARF 11/116-26 Area A far-edge midpoint; polygon identical to USSF-627's, so borrowed azimuth is also NOTAM-derived (inclination unpublished/classified; used as launch-plane azimuth without tuning). NAVAREA XII 785/26 Area A is wider and was not used",
-    "Payload mass FITTED within F9 bounds (13.0-21.6 t, borrowed from USSF-627 config) so assumed SECO delivers assumed orbit - NOT an estimate of the real payload",
-    "Deploy time unpublished (classified) -> deploy.t_s null; coast +2 revs on inferred insertion orbit",
-    "Family Iridium NEXT-7 webcast telemetry used for surrogate loft altitudes/ranges (not this flight)",
-    "Surrogate rows are identical to USSF-627's (same loft, pad, azimuth); only UTC differs",
-    "Known sim ground-track azimuth residual: pad->insertion bearing 158.85 deg vs commanded 153.56 deg (+5.3 deg)",
-    "T0 is NET (SpaceX page / LL2); booster 11th flight (B1100 per Next Spaceflight, secondary)"
-   ],
-   "note": "Pre-flight ILLUSTRATIVE. SpaceX targets Sat Nov 14, four-hour window opens 7:55 pm PT (backup Sun Nov 15 7:41 pm PT) = 2026-11-15T03:55:00Z; LL2 Go. Falcon 9 from Vandenberg SLC-4E, 11th booster flight, OCISLY landing. Classified USSF mission; LL2: stage drop zones match Starlink Group 15, so the USSF-627 analog (Group 15 SECO/orbit) is reused and labelled. ZLA CARF Area A polygon identical to USSF-627's. SECO/orbit/deploy unpublished. Slips so far: Nov 12 8:23p -> Nov 13 8:09p -> Nov 14 7:55p PT."
-  }
- ],
- "globe": {
-  "textures": {
-   "day": "/launches/globe/earth_day_4k.webp",
-   "day_placeholder": "/launches/globe/earth_day_512.webp",
-   "night": "/launches/globe/earth_night_4k.webp",
-   "night_placeholder": "/launches/globe/earth_night_512.webp",
-   "fallback_png": "/launches/globe/fallback.png"
-  },
-  "reference_ids": [
-   "nasa-bluemarble",
-   "nasa-blackmarble",
-   "threejs"
-  ]
- }
 }
