@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { selectGlobeLegendLaunches } from "@/lib/launches";
 import {
   AdditiveBlending, BackSide, BufferAttribute, BufferGeometry, CanvasTexture, Color, Mesh, MeshBasicMaterial,
   PerspectiveCamera, Points, PointsMaterial, Scene, ShaderMaterial, SphereGeometry, Sprite, SpriteMaterial,
@@ -343,12 +344,18 @@ export default function LaunchGlobeCanvas({ indexUrl }: { indexUrl: string }) {
   const btn = (on: boolean) =>
     `px-2 py-0.5 border ${on ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:text-foreground"}`;
 
+  // Legend only: traces stay plotted for every loaded launch.
+  const legend = launches ? selectGlobeLegendLaunches(launches) : { items: [] as Loaded[], omittedFlown: 0, omittedUpcoming: 0 };
+
   return (
     <div className="absolute inset-0">
       <div ref={host} className="absolute inset-0 cursor-grab active:cursor-grabbing" />
       {launches && (
         <div className="absolute top-2 left-2 max-w-[min(340px,70%)] bg-black/65 backdrop-blur-sm border border-border p-2 font-mono text-[10px] uppercase tracking-wider space-y-1.5 select-none">
-          {launches.map((l) => (
+          {legend.omittedFlown > 0 && (
+            <div className="text-muted-foreground">+{legend.omittedFlown} earlier flown not listed</div>
+          )}
+          {legend.items.map((l) => (
             <label key={l.slug} className="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" className="mt-0.5 accent-current" style={{ color: l.color }} checked={!hidden[l.slug]}
                 onChange={() => setHidden((h) => ({ ...h, [l.slug]: !h[l.slug] }))} />
@@ -360,6 +367,9 @@ export default function LaunchGlobeCanvas({ indexUrl }: { indexUrl: string }) {
               </span>
             </label>
           ))}
+          {legend.omittedUpcoming > 0 && (
+            <div className="text-muted-foreground">+{legend.omittedUpcoming} later upcoming not listed</div>
+          )}
         </div>
       )}
       <div className="absolute top-2 right-2 flex flex-col items-end gap-1 font-mono text-[10px] uppercase tracking-wider">

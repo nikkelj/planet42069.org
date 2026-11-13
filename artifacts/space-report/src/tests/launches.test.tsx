@@ -19,6 +19,9 @@ import {
   loadLaunchIndex,
   parseLaunchIndex,
   partitionLaunches,
+  selectGlobeLegendLaunches,
+  GLOBE_RECENT_LEGEND_CAP,
+  GLOBE_UPCOMING_LEGEND_CAP,
   launchDownloadName,
   publicAssetHref,
   type LaunchEntry,
@@ -455,6 +458,66 @@ describe("launch manifest parsing", () => {
     expect(withoutDoc.ok).toBe(true);
     if (!withoutDoc.ok) return;
     expect(withoutDoc.manifest.methodsMarkdown).toBeNull();
+  });
+});
+
+
+describe("ascent-globe legend cap", () => {
+  const L = (slug: string, t0_utc: string, phase: string) => ({ slug, t0_utc, phase });
+
+  it("keeps the 5 most recent flown launches and all upcoming when upcoming fits", () => {
+    const launches = [
+      L("old-1", "2026-10-01T00:00:00Z", "recent"),
+      L("old-2", "2026-10-02T00:00:00Z", "recent"),
+      L("old-3", "2026-10-03T00:00:00Z", "recent"),
+      L("old-4", "2026-10-04T00:00:00Z", "recent"),
+      L("old-5", "2026-10-05T00:00:00Z", "recent"),
+      L("old-6", "2026-10-06T00:00:00Z", "recent"),
+      L("flown-7", "2026-10-07T00:00:00Z", "flown"),
+      L("mid-8", "2026-10-08T00:00:00Z", "recent"),
+      L("new-9", "2026-10-09T00:00:00Z", "recent"),
+      L("up-a", "2026-11-13T22:45:00Z", "upcoming"),
+      L("up-b", "2026-11-14T01:16:00Z", "upcoming"),
+      L("up-c", "2026-11-14T05:30:00Z", "upcoming"),
+      L("up-d", "2026-11-14T17:32:00Z", "upcoming"),
+      L("up-e", "2026-11-18T03:14:00Z", "upcoming"),
+    ];
+    const { items, omittedFlown, omittedUpcoming } = selectGlobeLegendLaunches(launches);
+    expect(GLOBE_RECENT_LEGEND_CAP).toBe(5);
+    expect(items.map((l) => l.slug)).toEqual([
+      "old-5", "old-6", "flown-7", "mid-8", "new-9",
+      "up-a", "up-b", "up-c", "up-d", "up-e",
+    ]);
+    expect(omittedFlown).toBe(4);
+    expect(omittedUpcoming).toBe(0);
+  });
+
+  it("leaves a short list intact", () => {
+    const launches = [
+      L("a", "2026-10-01T00:00:00Z", "recent"),
+      L("b", "2026-10-02T00:00:00Z", "flown"),
+      L("c", "2026-11-01T00:00:00Z", "upcoming"),
+    ];
+    const { items, omittedFlown, omittedUpcoming } = selectGlobeLegendLaunches(launches);
+    expect(items.map((l) => l.slug)).toEqual(["a", "b", "c"]);
+    expect(omittedFlown).toBe(0);
+    expect(omittedUpcoming).toBe(0);
+  });
+
+  it("caps overflowing upcoming at the soonest 8 by T-0", () => {
+    const flown = Array.from({ length: 3 }, (_, i) => L(`f${i + 1}`, `2026-10-0${i + 1}T00:00:00Z`, "recent"));
+    const upcoming = Array.from({ length: 10 }, (_, i) => {
+      const day = String(i + 1).padStart(2, "0");
+      return L(`u${i + 1}`, `2026-11-${day}T00:00:00Z`, "upcoming");
+    });
+    const { items, omittedFlown, omittedUpcoming } = selectGlobeLegendLaunches([...upcoming, ...flown]);
+    expect(GLOBE_UPCOMING_LEGEND_CAP).toBe(8);
+    expect(items.map((l) => l.slug)).toEqual([
+      "f1", "f2", "f3",
+      "u1", "u2", "u3", "u4", "u5", "u6", "u7", "u8",
+    ]);
+    expect(omittedFlown).toBe(0);
+    expect(omittedUpcoming).toBe(2);
   });
 });
 
