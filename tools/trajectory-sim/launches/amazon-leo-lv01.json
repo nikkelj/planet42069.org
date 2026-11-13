@@ -2,7 +2,7 @@
  "slug": "amazon-leo-lv01",
  "title": "Vulcan VC6L Amazon Leo LV-01 (SLC-41)",
  "vehicle": "vulcan_vc6l",
- "t0_utc": "2026-11-13T17:54:00Z",
+ "t0_utc": "2026-11-14T17:32:00Z",
  "t0_note": "ULA Vulcan Leo 1 page: Friday, Nov. 13 at 12:54 p.m. EST (1754 UTC). FAA operations advisory ULA KV-01 primary 11/13/26 1754Z-1900Z, backup 11/14/26 1732Z-1838Z. LL2 id ef9850ad-1096-425b-9d27-f7bbd186e61a, status Go, window 17:54\u201318:24Z (checked 2026-11-11).",
  "pad": {
   "lat": 28.58341025,
