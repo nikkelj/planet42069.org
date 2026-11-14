@@ -500,6 +500,51 @@
       "id": "zla-carf-11-149",
       "title": "FAA/ZLA CARF NOTAM 11/149-26 USSF-317 Area A (space-notices.com)",
       "url": "https://space-notices.com/notice/notam-ZLA-11%2F149-26"
+    },
+    {
+      "id": "ula-leo1-delay2-x",
+      "title": "ULA on X: Vulcan Leo 1 delayed to Sunday (ground-to-vehicle network communication issue), 2026-11-14",
+      "url": "https://x.com/ulalaunch/status/2121603937232879787"
+    },
+    {
+      "id": "mcdowell-f15-x",
+      "title": "Jonathan McDowell on X: Starship Flight 15 liftoff 2247:36 UTC, orbit T+8:10, 18 s insertion burn at T+26:06 (~92 m/s) to ~276 km, 26 Starlinks deployed, booster in Gulf",
+      "url": "https://x.com/planet4589/status/2121412618514739506"
+    },
+    {
+      "id": "spacex-f15-deploy-x",
+      "title": "SpaceX on X: Starship deploying 26 Starlink V3 satellites (~42 min sequence), 2026-11-13",
+      "url": "https://x.com/SpaceX/status/2121384424558453096"
+    },
+    {
+      "id": "spacex-f15-insertion-x",
+      "title": "SpaceX on X: Starship orbital insertion burn, ~275 km orbit, 2026-11-13",
+      "url": "https://x.com/SpaceX/status/2121381593768186362"
+    },
+    {
+      "id": "ll2-starship-f15",
+      "title": "Launch Library 2: Starship | Starlink Group 31-2 (Starship Flight 15), Payload Deployed",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/0f867f0c-5422-4d44-93b8-d7faaae7019b/"
+    },
+    {
+      "id": "glavkosmos-soyuz-cluster",
+      "title": "Glavkosmos (Roscosmos): Soyuz-2.1b/Fregat launched from Vostochny 14 Nov 04:16 MSK, 2 primary + 12 secondary spacecraft to orbit",
+      "url": "https://glavkosmos.com/ru/glavkosmos-provides-a-dedicated-cluster-launch-of-spacecraft-for-russian-private-space-companies/"
+    },
+    {
+      "id": "mcdowell-soyuz-x",
+      "title": "Jonathan McDowell on X: Soyuz-2-1b/Fregat launch 0116 UTC Nov 14 from Vostochniy (KOEN, Kinosputnik, cubesats)",
+      "url": "https://x.com/planet4589/status/2121561709810762078"
+    },
+    {
+      "id": "rl-iqps10-success-x",
+      "title": "Rocket Lab on X: MISSION SUCCESS, payload deployment from the Kick Stage confirmed (iQPS 10), 2026-11-14",
+      "url": "https://x.com/RocketLab/status/2121488840359862297"
+    },
+    {
+      "id": "iqps-qps-sar19",
+      "title": "iQPS news: QPS-SAR-19 'YAMATSUMI-II' launched 14 Nov 14:30 JST, separated ~50 min after launch, first contact ~8 min later",
+      "url": "https://i-qps.net/news/4163/"
     }
   ],
   "launches": [
@@ -1057,17 +1102,17 @@
       "slug": "amazon-leo-lv01",
       "name": "Amazon Leo LV-01 (Vulcan VC6L, SLC-41)",
       "vehicle": "Vulcan VC6L",
-      "t0_utc": "2026-11-14T17:32:00Z",
+      "t0_utc": "2026-11-15T17:11:00Z",
       "t0_kind": "net",
-      "window_open_utc": "2026-11-14T17:32:00Z",
-      "window_close_utc": "2026-11-14T18:01:00Z",
+      "window_open_utc": "2026-11-15T17:11:00Z",
+      "window_close_utc": "2026-11-15T17:40:00Z",
       "status": "Go",
       "phase": "upcoming",
       "files": {
-        "csv": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-14_trajectory.csv",
-        "kml": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-14_trajectory.kml",
-        "csv_sim": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-14_trajectory_sim.csv",
-        "kml_sim": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-14_trajectory_sim.kml",
+        "csv": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-15_trajectory.csv",
+        "kml": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-15_trajectory.kml",
+        "csv_sim": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-15_trajectory_sim.csv",
+        "kml_sim": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-15_trajectory_sim.kml",
         "track_lite": "/launches/amazon-leo-lv01/track_lite.json"
       },
       "illustrative": true,
@@ -1082,11 +1127,12 @@
         "https://ll.thespacedevs.com/2.2.0/launch/ef9850ad-1096-425b-9d27-f7bbd186e61a/",
         "https://en.wikipedia.org/wiki/Vulcan_Centaur",
         "https://x.com/ulalaunch/status/2120895023067639859",
-        "https://x.com/ulalaunch/status/2121252131172671506"
+        "https://x.com/ulalaunch/status/2121252131172671506",
+        "https://x.com/ulalaunch/status/2121603937232879787"
       ],
       "method": {
-        "csv": "event-surrogate parametric: NG catalog GEM 63XL burn 87.3 s and ULA UG Fig. 2.1.1-2 TYPICAL CCSFS times (SRB jettison 100 s, BECO 292 s, sep 298 s, MES1 308 s, fairing 316 s); MES1 cutoff T+908 s ASSUMED (308+600 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; azimuth 43.69 deg from NAVAREA IV 1078/26 Area A far-edge midpoint; ends at MES1 cutoff; T0 2026-11-14T17:32:00Z (ULA Vulcan Leo 1 page, window 17:32-18:01Z; RETIMED 2026-11-13 from 17:54Z Nov 13, utc shift only)",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: UG-typical CCSFS event times as hard events (not flight-specific); 6x GEM 63XL catalog time-average thrust; 2x BE-4 550k-lbf SL; CV-L propellant derived as one-third less than the 120,000 lb CV-HE; MES1 cutoff ASSUMED 908 s, steering/payload fitted to a 180 x 460 km transfer (460 km from ULA, 180 km perigee ASSUMED); azimuth 43.69 deg from NAVAREA IV 1078/26 Area A; MES1 residual: geodetic alt 180.16 km (target 180), FPA 0.00 deg, SMA error ~0 vs 180x460; osculating 163 x 478 km at MES2 ignition (equatorial-radius, after J2/drag coast), i=49.66 deg vs ULA-published 51.9 deg (residual -2.24 deg; commanded NAVAREA azimuth gives non-rotating 52.66 deg, known sim track bias; azimuth kept NOTAM-first, not retuned); MES2 at first apoapsis T+3628 s, 13.0 s at 2x RL10, solves perigee to 460.0 km (osculating 460.0 x 478.1 km after flattening); deploy time unpublished, so +2 revs on the inferred insertion orbit, file ends T+14919 s; fitted payload 20.14 t is NOT an estimate of the 40-sat stack; ILLUSTRATIVE; RETIMED 2026-11-13 to T0 2026-11-14T17:32:00Z by utc shift only (+85080 s; Earth-fixed geometry unchanged)"
+        "csv": "event-surrogate parametric: NG catalog GEM 63XL burn 87.3 s and ULA UG Fig. 2.1.1-2 TYPICAL CCSFS times (SRB jettison 100 s, BECO 292 s, sep 298 s, MES1 308 s, fairing 316 s); MES1 cutoff T+908 s ASSUMED (308+600 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; azimuth 43.69 deg from NAVAREA IV 1078/26 Area A far-edge midpoint; ends at MES1 cutoff; T0 2026-11-15T17:11:00Z (ULA Vulcan Leo 1 page, window 17:11-17:40Z; RETIMED 2026-11-14 from 17:32Z Nov 14 after the ground-network delay, and 2026-11-13 from 17:54Z Nov 13; utc shift only)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: UG-typical CCSFS event times as hard events (not flight-specific); 6x GEM 63XL catalog time-average thrust; 2x BE-4 550k-lbf SL; CV-L propellant derived as one-third less than the 120,000 lb CV-HE; MES1 cutoff ASSUMED 908 s, steering/payload fitted to a 180 x 460 km transfer (460 km from ULA, 180 km perigee ASSUMED); azimuth 43.69 deg from NAVAREA IV 1078/26 Area A; MES1 residual: geodetic alt 180.16 km (target 180), FPA 0.00 deg, SMA error ~0 vs 180x460; osculating 163 x 478 km at MES2 ignition (equatorial-radius, after J2/drag coast), i=49.66 deg vs ULA-published 51.9 deg (residual -2.24 deg; commanded NAVAREA azimuth gives non-rotating 52.66 deg, known sim track bias; azimuth kept NOTAM-first, not retuned); MES2 at first apoapsis T+3628 s, 13.0 s at 2x RL10, solves perigee to 460.0 km (osculating 460.0 x 478.1 km after flattening); deploy time unpublished, so +2 revs on the inferred insertion orbit, file ends T+14919 s; fitted payload 20.14 t is NOT an estimate of the 40-sat stack; ILLUSTRATIVE; RETIMED 2026-11-13 to T0 2026-11-14T17:32:00Z by utc shift only (+85080 s; Earth-fixed geometry unchanged); RETIMED 2026-11-14 to T0 2026-11-15T17:11:00Z by utc shift only (+85140 s)"
       },
       "reference_ids": [
         "ula-vulcan-leo-1",
@@ -1098,9 +1144,10 @@
         "ll2",
         "kml",
         "ula-leo1-target-x",
-        "ula-leo1-delay-x"
+        "ula-leo1-delay-x",
+        "ula-leo1-delay2-x"
       ],
-      "note": "Pre-flight ILLUSTRATIVE. ULA Vulcan VC6L (first 6-SRB / first LEO-optimized Centaur V), 40 Amazon Leo satellites from SLC-41; T0 Fri Nov 13 9:54 a.m. PST = 2026-11-13T17:54:00Z (ULA / LL2 Go, window to 18:24Z; FAA KV-01 backup Sat 9:32 a.m. PST). UPDATED 2026-11-12: ULA published the target 'near-circular low Earth orbit of approximately 285 miles (460km) inclined at 51.9 degrees' (replacing the earlier ASSUMED 450 km KA-01 analog); sim retuned to 460 km. Sim inclination 49.66 deg vs the published 51.9 deg (-2.24 deg; azimuth kept NOTAM-first from NAVAREA IV 1078/26, not retuned). RETIMED 2026-11-13: ULA delayed the launch to Sat Nov 14, window 12:32-1:01 p.m. EST (9:32-10:01 a.m. PST, 1732-1801 UTC) after a power interruption at the Air Liquide gaseous-nitrogen plant; files shifted in UTC only (+85080 s). LL2 lists NET 17:32:30Z, 30 s after ULA's window open.",
+      "note": "Pre-flight ILLUSTRATIVE. ULA Vulcan VC6L (first 6-SRB / first LEO-optimized Centaur V), 40 Amazon Leo satellites from SLC-41; T0 Fri Nov 13 9:54 a.m. PST = 2026-11-13T17:54:00Z (ULA / LL2 Go, window to 18:24Z; FAA KV-01 backup Sat 9:32 a.m. PST). UPDATED 2026-11-12: ULA published the target 'near-circular low Earth orbit of approximately 285 miles (460km) inclined at 51.9 degrees' (replacing the earlier ASSUMED 450 km KA-01 analog); sim retuned to 460 km. Sim inclination 49.66 deg vs the published 51.9 deg (-2.24 deg; azimuth kept NOTAM-first from NAVAREA IV 1078/26, not retuned). RETIMED 2026-11-13: ULA delayed the launch to Sat Nov 14, window 12:32-1:01 p.m. EST (9:32-10:01 a.m. PST, 1732-1801 UTC) after a power interruption at the Air Liquide gaseous-nitrogen plant; files shifted in UTC only (+85080 s). LL2 lists NET 17:32:30Z, 30 s after ULA's window open. RETIMED 2026-11-14: ULA scrubbed Sat Nov 14 (network communication issue between ground equipment and the vehicle; reconfiguration would exceed the 29-minute window) and now targets Sun Nov 15, 12:11-12:40 p.m. EST (9:11-9:40 a.m. PST, 1711-1740 UTC). Files shifted in UTC only (+85140 s). LL2 lists NET 17:11:30Z, 30 s after ULA's window open; Spaceflight Now's feed (generated 07:32Z Nov 14) still showed Sat 17:32:30Z.",
       "assumptions": [
         "Booster/Centaur event times = ULA UG Fig. 2.1.1-2 TYPICAL CCSFS two-burn sequence (Approximate Times), not LV-01's unpublished timeline",
         "460 km near-circular insertion is PUBLISHED by ULA (X post 2026-11-12, 285 miles / 460 km at 51.9 deg); treated as exactly circular (eccentricity unpublished). Replaces the earlier 450 km Amazon KA-01 assumption",
@@ -1117,19 +1164,19 @@
         "Cd 0.4 fixed, generic",
         "Azimuth from NAVAREA IV 1078/26 Area A, deliberately NOT retuned to the ULA-published 51.9 deg; sim i=49.66 deg vs 51.9 deg (residual -2.24 deg; non-rotating 52.66 deg from the commanded azimuth, known sim track bias)",
         "Deploy time unpublished (NSF-forum 1 h 17 min STA quote not independently verified) -> after MES2, +2 revs on the inferred 460 km insertion orbit",
-        "T0 = ULA window open 2026-11-14T17:32:00Z (LL2 gives 17:32:30Z, unsourced 30 s offset); retimed by utc shift, sim not re-run (sim output is Earth-fixed and T0-independent)"
+        "T0 = ULA window open 2026-11-15T17:11:00Z (LL2 gives 17:11:30Z, unsourced 30 s offset); retimed by utc shift, sim not re-run (sim output is Earth-fixed and T0-independent). Azimuth still from NAVAREA IV 1078/26 (daily backups); no newer hazard notice checked for the Nov 15 window"
       ]
     },
     {
       "slug": "starship-flight-15",
       "name": "Starship Flight 15 (Starlink 31-2, 26 V3 sats, Starbase)",
       "vehicle": "Starship V3 (Super Heavy + Ship)",
-      "t0_utc": "2026-11-13T22:45:00Z",
-      "t0_kind": "net",
+      "t0_utc": "2026-11-13T22:47:36Z",
+      "t0_kind": "actual",
       "window_open_utc": "2026-11-13T22:45:00Z",
       "window_close_utc": "2026-11-14T00:00:00Z",
-      "status": "To Be Confirmed",
-      "phase": "upcoming",
+      "status": "Payload Deployed",
+      "phase": "flown",
       "files": {
         "csv": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory.csv",
         "kml": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory.kml",
@@ -1148,11 +1195,15 @@
         "https://ll.thespacedevs.com/2.2.0/launch/0f867f0c-5422-4d44-93b8-d7faaae7019b/",
         "https://web.archive.org/web/20190925065050/https://twitter.com/elonmusk/status/1171118891671490560",
         "https://en.wikipedia.org/wiki/SpaceX_Starship",
-        "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy"
+        "https://en.wikipedia.org/wiki/SpaceX_Super_Heavy",
+        "https://ll.thespacedevs.com/2.3.0/launches/0f867f0c-5422-4d44-93b8-d7faaae7019b/",
+        "https://x.com/planet4589/status/2121412618514739506",
+        "https://x.com/SpaceX/status/2121381593768186362",
+        "https://x.com/SpaceX/status/2121384424558453096"
       ],
       "method": {
-        "csv": "event-surrogate parametric: SpaceX Flight 15 published timeline (Max-Q 58 s, Super Heavy MECO 139 s, hot-stage / sep 141 s, ship ascent cutoff 489 s); altitudes unpublished, so knot altitudes ASSUMED from this board's retuned 3DOF sim (MECO 86.8 km, cutoff 162.6 km); azimuth 107.53 deg from NAVAREA IV 1080/26 Area A far-edge midpoint; ends at ship ascent cutoff; insertion burn and deploy are in the sim file only; T0 2026-11-13T22:45:00Z (SpaceX 75-minute window / LL2 To Be Confirmed, window to 00:00Z)",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode, RETUNED 2026-11-11: SpaceX F15 MECO 139 s, hot-stage 141 s, ship cutoff 489 s as hard events; official V3 figures (SpaceX technical specifications + 12 May 2026 V3 update) — Super Heavy 3,650 t / 8,240 tf at liftoff (33× Raptor 3), Ship 1,600 t / 1,614 tf (3 sea-level + 3 RVac); RVac 275 tf; blended ship Isp 364.72 s (3×350 s + 3×380 s, Musk 9 Sep 2019); Super Heavy vacuum thrust 8,679 tf DERIVED (33 × 263 tf implied by the 1,614 tf / 275 tf split); V3 dry masses still unpublished (booster 275 t earlier-block stand-in, ship 120 t ASSUMED); ascent target is an ASSUMED passively safe −40 × 275 km ellipse (SpaceX F15 official: 'passively safe suborbital trajectory' then raise to ~275 km; F14 official analog), 1081 s before apogee so the published insertion epoch is at first apogee; cutoff residual: geodetic alt 162.59 km (target 162.59), FPA 1.331 deg (target 1.331), osculating −39.2 × 274.1 km, SMA error ~0, i=31.62 deg vs 31.01 deg from the NAVAREA azimuth; insertion is a single Raptor 3 SL (F14 official analog) flown open-loop for the published 20 s at a DERIVED 1,028,650 N (104.9 tf, 42% of 250 tf) so the burn supplies the 89.8 m/s to circularize the post-coast −31.8 × 269.3 km ellipse (J2/drag walked the 275 km apogee down ~6 km); post-burn 262.8 × 275.1 km, i=31.63 deg; at deploy complete T+4660 s, 254.8 × 278.4 km, i=31.62 deg, vs SpaceX ~275 km; fitted payload 51.4 t is NOT an estimate of the 26-sat stack; ship residual after ascent 60.0 t (enough for the 20 s burn plus later unmodelled deorbit/catch); Super Heavy residual 203 t stays on the booster as the unpublished boostback/landing reserve; ILLUSTRATIVE"
+        "csv": "event-surrogate parametric: SpaceX Flight 15 published timeline (Max-Q 58 s, Super Heavy MECO 139 s, hot-stage / sep 141 s, ship ascent cutoff 489 s); altitudes unpublished, so knot altitudes ASSUMED from this board's retuned 3DOF sim (MECO 86.8 km, cutoff 162.6 km); azimuth 107.53 deg from NAVAREA IV 1080/26 Area A far-edge midpoint; ends at ship ascent cutoff; insertion burn and deploy are in the sim file only; T0 ACTUAL liftoff 2026-11-13T22:47:36Z (LL2 / McDowell; retimed from NET 22:45:00Z, +156 s, utc shift only)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode, RETUNED 2026-11-11: SpaceX F15 MECO 139 s, hot-stage 141 s, ship cutoff 489 s as hard events; official V3 figures (SpaceX technical specifications + 12 May 2026 V3 update) — Super Heavy 3,650 t / 8,240 tf at liftoff (33× Raptor 3), Ship 1,600 t / 1,614 tf (3 sea-level + 3 RVac); RVac 275 tf; blended ship Isp 364.72 s (3×350 s + 3×380 s, Musk 9 Sep 2019); Super Heavy vacuum thrust 8,679 tf DERIVED (33 × 263 tf implied by the 1,614 tf / 275 tf split); V3 dry masses still unpublished (booster 275 t earlier-block stand-in, ship 120 t ASSUMED); ascent target is an ASSUMED passively safe −40 × 275 km ellipse (SpaceX F15 official: 'passively safe suborbital trajectory' then raise to ~275 km; F14 official analog), 1081 s before apogee so the published insertion epoch is at first apogee; cutoff residual: geodetic alt 162.59 km (target 162.59), FPA 1.331 deg (target 1.331), osculating −39.2 × 274.1 km, SMA error ~0, i=31.62 deg vs 31.01 deg from the NAVAREA azimuth; insertion is a single Raptor 3 SL (F14 official analog) flown open-loop for the published 20 s at a DERIVED 1,028,650 N (104.9 tf, 42% of 250 tf) so the burn supplies the 89.8 m/s to circularize the post-coast −31.8 × 269.3 km ellipse (J2/drag walked the 275 km apogee down ~6 km); post-burn 262.8 × 275.1 km, i=31.63 deg; at deploy complete T+4660 s, 254.8 × 278.4 km, i=31.62 deg, vs SpaceX ~275 km; fitted payload 51.4 t is NOT an estimate of the 26-sat stack; ship residual after ascent 60.0 t (enough for the 20 s burn plus later unmodelled deorbit/catch); Super Heavy residual 203 t stays on the booster as the unpublished boostback/landing reserve; ILLUSTRATIVE; T0 = ACTUAL liftoff 2026-11-13T22:47:36Z (retimed +156 s, geometry unchanged). Post-flight check vs McDowell: initial orbit T+8:10 (sim ship cutoff T+8:09, -1 s); insertion burn T+26:06 for 18 s, ~92 m/s, near-circular ~276 km (sim T+26:10 for 20 s, 89.8 m/s, 262.8 x 275.1 km: +4 s start, +2 s duration, -2 m/s, perigee ~13 km low). Not re-tuned"
       },
       "reference_ids": [
         "spacex-starship-flight-15",
@@ -1164,9 +1215,13 @@
         "wp-spacex-starship",
         "wp-spacex-super-heavy",
         "ll2",
-        "kml"
+        "kml",
+        "ll2-starship-f15",
+        "mcdowell-f15-x",
+        "spacex-f15-insertion-x",
+        "spacex-f15-deploy-x"
       ],
-      "note": "Pre-flight ILLUSTRATIVE, RETUNED 2026-11-11. Starship Flight 15 / Starlink 31-2, 26 V3 sats from OLP-2; T0 Fri Nov 13 2:45 p.m. PST = 2026-11-13T22:45:00Z (SpaceX 75-minute window, pending regulatory approval; LL2 To Be Confirmed). The previous model used a single 350 s Isp and treated 1,600 tf as constant, leaving only 9.1 t residual and a 202 × 772 km post-insertion orbit. The retuned sim uses official 1,614 tf, blended 364.72 s Isp, a passively safe −40 × 275 km ascent, and a 20 s insertion throttled to 42% of 250 tf, and reaches 263 × 275 km at insertion cutoff (i=31.63 deg vs 31.01 deg from the NAVAREA azimuth). Catch and deorbit are not modelled.",
+      "note": "FLOWN. Starship Flight 15 (Super Heavy B22 / Ship 42, 4th V3 flight) lifted off from Starbase OLP-2 at 2026-11-13T22:47:36Z (Fri 13 Nov 2:47:36 pm PST; LL2, McDowell). Ship entered orbit (SpaceX: insertion burn into ~275 km orbit; McDowell: 18 s single-engine burn at T+26:06, ~92 m/s, near-circular 276 km) and deployed all 26 Starlink V3 satellites (SpaceX; LL2 'Payload Deployed', update 00:59Z Nov 14). Super Heavy B22 did NOT attempt the catch: it diverted and was lost in the Gulf of Mexico (LL2: abort triggered before the landing burn; McDowell: 'Booster landed in the Gulf after catch attempt waved off'). As of 2026-11-14 15:41Z SpaceX says the ship is coasting in orbit and 'still looking good for return to launch site today', pad and tower go for catch (~22.5 h after launch, about 1:20 pm PST Sat 14 Nov; not yet happened at this update). Files retimed to the actual T0 (+156 s); ILLUSTRATIVE pre-flight geometry, not flight data. Catch and deorbit are not modelled.",
       "assumptions": [
         "V3 dry masses unpublished: Super Heavy empty 275 t is an earlier-block Wikipedia infobox stand-in; ship dry 120 t ASSUMED (2021 ~100 t Musk figure is stale)",
         "Ship vacuum Isp is a DERIVED 364.72 s blend of 3 sea-level Raptor 3s at 350 s and 3 RVacs at 380 s (Musk, 9 Sep 2019). The official 1,614 tf and 275 tf RVac figures imply 263.00 tf vacuum for each sea-level Raptor 3",
@@ -1179,7 +1234,8 @@
         "Azimuth from NAVAREA IV 1080/26 Area A (i~31.01 deg); sim i=31.63 deg (not retuned). Fit kick is 0.42 deg, near its 0.2 deg lower bound, so Super Heavy MECO is lofted (FPA 66.9 deg)",
         "Cd 0.4 fixed, generic; no jettisoned fairing (mass 0)",
         "Super Heavy boostback / landing and ship deorbit / catch (T+21:35:57 / T+22:32:34) are not modelled; file ends at deploy complete T+01:17:40. ~54 t ship propellant remains after insertion as a stand-in for those burns",
-        "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at the sim ascent-cutoff altitude; surrogate ends at T+489 s"
+        "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at the sim ascent-cutoff altitude; surrogate ends at T+489 s",
+        "T0 is the ACTUAL liftoff (LL2/McDowell), a sourced time; trajectory geometry is the pre-flight ILLUSTRATIVE model, not reconstructed from flight data. Sim vs McDowell: insertion +4 s late, 2 s longer, ~2 m/s less, perigee ~13 km below the ~276 km near-circular orbit"
       ]
     },
     {
@@ -1187,11 +1243,11 @@
       "name": "Soyuz-2.1b/Fregat-M MKA Kinosputnik, KOEN et al. (Vostochny 1S)",
       "vehicle": "Soyuz-2.1b/Fregat-M",
       "t0_utc": "2026-11-14T01:16:00Z",
-      "t0_kind": "net",
+      "t0_kind": "actual",
       "window_open_utc": "2026-11-14T00:50:00Z",
       "window_close_utc": "2026-11-14T01:50:00Z",
-      "status": "Go",
-      "phase": "upcoming",
+      "status": "Success",
+      "phase": "flown",
       "files": {
         "csv": "/launches/soyuz21b-vostochny/soyuz21b-vostochny_2026-11-14_trajectory.csv",
         "kml": "/launches/soyuz21b-vostochny/soyuz21b-vostochny_2026-11-14_trajectory.kml",
@@ -1208,10 +1264,12 @@
         "https://ru.wikipedia.org/wiki/%D0%91%D1%80%D1%8F%D0%BD%D1%82%D0%B0",
         "https://ru.wikipedia.org/wiki/%D0%A3%D0%BD%D0%B0%D1%85%D0%B0",
         "https://space.skyrocket.de/doc_sdat/kinosputnik.htm",
-        "https://x.com/afec7032/status/2121264240455504290"
+        "https://x.com/afec7032/status/2121264240455504290",
+        "https://glavkosmos.com/ru/glavkosmos-provides-a-dedicated-cluster-launch-of-spacecraft-for-russian-private-space-companies/",
+        "https://x.com/planet4589/status/2121561709810762078"
       ],
       "method": {
-        "csv": "event-surrogate, ALL BORROWED/ASSUMED: Soyuz-2.1b/Fregat event times from the Vostochny Meteor-M 2-2 flight (5 Jul 2019: BVGD sep 117.6 s, fairing 225.63 s, Block A sep 287.48 s, Block I cutoff 560.40 s, upper-part sep 563.70 s); altitudes 50 km @ booster sep and 175 km @ stage-2 sep from the Soyuz-2-1a/Metop sequence, fairing altitude linearly interpolated, 200 km at Block I cutoff ASSUMED; horizontal speed ASSUMED linear to circular-200-km ground speed; azimuth 349.46 deg inferred as bearing from the pad to the Unakha-Bryanta confluence in the announced stage drop zone (no NOTAM coordinates found); ends at upper-part separation (Fregat burns and deploys not modelled); T0 2026-11-14T01:16:00Z (Tommot city administration via @afec7032; LL2 updated T-0; RETIMED 2026-11-13 from 00:50Z, utc shift only)"
+        "csv": "event-surrogate, ALL BORROWED/ASSUMED: Soyuz-2.1b/Fregat event times from the Vostochny Meteor-M 2-2 flight (5 Jul 2019: BVGD sep 117.6 s, fairing 225.63 s, Block A sep 287.48 s, Block I cutoff 560.40 s, upper-part sep 563.70 s); altitudes 50 km @ booster sep and 175 km @ stage-2 sep from the Soyuz-2-1a/Metop sequence, fairing altitude linearly interpolated, 200 km at Block I cutoff ASSUMED; horizontal speed ASSUMED linear to circular-200-km ground speed; azimuth 349.46 deg inferred as bearing from the pad to the Unakha-Bryanta confluence in the announced stage drop zone (no NOTAM coordinates found); ends at upper-part separation (Fregat burns and deploys not modelled); T0 ACTUAL liftoff 2026-11-14T01:16:00Z (Glavkosmos: 04:16 Moscow time Sat 14 Nov; LL2; McDowell 0116 UTC; matches the Tommot notice used in the 2026-11-13 retime)"
       },
       "reference_ids": [
         "ll2-soyuz-kinosputnik",
@@ -1221,7 +1279,9 @@
         "wp-unakha-bryanta",
         "skyrocket-kinosputnik",
         "kml",
-        "tommot-soyuz-t0-x"
+        "tommot-soyuz-t0-x",
+        "glavkosmos-soyuz-cluster",
+        "mcdowell-soyuz-x"
       ],
       "assumptions": [
         "Event times BORROWED from the 2019 Vostochny Soyuz-2.1b/Fregat Meteor-M 2-2 theoretical timeline (kosmonavtika.com); this mission's timeline is unpublished",
@@ -1230,17 +1290,17 @@
         "Azimuth 349.46 deg INFERRED: great-circle bearing from the LL2 pad to the Unakha-Bryanta confluence (54.527N 127.486E), a point inside the Zeya-district-announced stage drop zone ('area of the Bryanta and Unakha rivers north of Kirovsky'); no NOTAM or hazard-area coordinates were found. A ~98 deg SSO would imply ~340-345 deg",
         "Target orbit unpublished (SSO per LL2; Kinosputnik ~500-800 km circular per Gunter's page) -> not used in this file",
         "No 3DOF sim: no Soyuz/Fregat vehicle model and no published target orbit; building one would need many unsourced numbers",
-        "T0 2026-11-14T01:16:00Z from the Tommot (Sakha) city administration notice for the fairing impact zone, relayed by @afec7032 and adopted by LL2; NOT announced by Roscosmos. Spaceflight Now (feed generated 2026-11-12 15:21Z) still lists Wed Nov 18, date only - CONFLICT"
+        "T0 is the ACTUAL liftoff 2026-11-14T01:16:00Z (Glavkosmos 04:16 MSK; LL2; McDowell), matching the earlier Tommot-administration time; geometry remains the borrowed/assumed surrogate"
       ],
-      "note": "Pre-flight ILLUSTRATIVE, surrogate only. Soyuz-2.1b/Fregat-M from Vostochny Site 1S, SSO rideshare (MKA Kinosputnik, KOEN / KA MT-LAB, NPO Kaisant cubesats). LL2 NET 2026-11-14T00:50Z (Fri 13 Nov 4:50 pm PST), Go, window to 01:50Z; Roscosmos has not announced; Zeya district says launch 14-24 Nov (drop zone Bryanta/Unakha rivers). Timeline, altitudes and speed are borrowed/assumed (see assumptions); file ends at upper-part separation. No 3DOF sim (no vehicle model, unpublished orbit). RETIMED 2026-11-13: T0 01:16:00Z (Fri Nov 13 5:16 pm PST) per the Tommot city administration ('10:16 Yakutsk time'), via @afec7032; LL2 Go at 01:16Z. Roscosmos has not announced; Spaceflight Now still shows Nov 18 (date only). Utc shift +1560 s only."
+      "note": "FLOWN. Soyuz-2.1b/Fregat lifted off from Vostochny at 2026-11-14T01:16:00Z (Fri 13 Nov 5:16 pm PST; Glavkosmos/Roscosmos '04:16 Moscow time'; LL2 Launch Successful; McDowell 0116 UTC). Glavkosmos: two primary spacecraft plus 12 small secondary spacecraft placed in orbit (LL2 lists MKA Kinosputnik, KOEN / KA MT-LAB, NPO Kaisant cubesats). Orbit elements unpublished. Surrogate only (no Soyuz/Fregat 3DOF model); timeline/altitudes borrowed or assumed, file ends at upper-part separation. ILLUSTRATIVE, not flight data. Spaceflight Now's schedule had Nov 18/19 (date only) and still listed it as upcoming in its 07:32Z Nov 14 feed."
     },
     {
       "slug": "electron-iqps10",
       "name": "The Mountain God Rises (iQPS Launch 10, Electron's 100th)",
       "vehicle": "Electron",
       "t0_utc": "2026-11-14T05:30:00Z",
-      "status": "Go",
-      "phase": "upcoming",
+      "status": "Success",
+      "phase": "flown",
       "files": {
         "csv": "/launches/electron-iqps10/electron-iqps10_2026-11-14_trajectory.csv",
         "kml": "/launches/electron-iqps10/electron-iqps10_2026-11-14_trajectory.kml",
@@ -1256,7 +1316,9 @@
         "https://www.space-notices.com/notice/nav-warning-HYDROPAC%203249%2F26",
         "https://www.space-notices.com/notice/nav-warning-HYDROPAC%203251%2F26",
         "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
-        "https://ll.thespacedevs.com/2.3.0/launches/db3500ac-965b-4ad8-b417-cb8d8d005586/"
+        "https://ll.thespacedevs.com/2.3.0/launches/db3500ac-965b-4ad8-b417-cb8d8d005586/",
+        "https://x.com/RocketLab/status/2121488840359862297",
+        "https://i-qps.net/news/4163/"
       ],
       "method": {
         "csv": "event-surrogate parametric (Electron User Guide 8.0 GENERIC event profile - no mission timeline published; S2 cutoff altitude = Rocket Lab's published 575 km orbit; azimuth 104.68 deg = mean bearing to HYDROPAC 3249/26 area B and 3251/26 debris-area centroids); T0 2026-11-14T05:30Z per Rocket Lab launch-safety page (NET 18:30 NZDT 14 Nov), matching LL2",
@@ -1269,10 +1331,12 @@
         "rl-ug",
         "wp-electron",
         "ll2",
-        "kml"
+        "kml",
+        "rl-iqps10-success-x",
+        "iqps-qps-sar19"
       ],
-      "note": "Pre-flight ILLUSTRATIVE. Rocket Lab NET Sat 14 Nov 18:30 NZDT = 2026-11-14T05:30Z (Fri 13 Nov 9:30 pm PST); backup days 14-26 Nov NZT; LL2 Go. 1x QPS-SAR to 575 km, 42 deg (Rocket Lab). Electron's 100th launch.",
-      "t0_kind": "net",
+      "note": "FLOWN. Electron's 100th launch lifted off from LC-1 Mahia at 2026-11-14T05:30:00Z (Fri 13 Nov 9:30 pm PST; Rocket Lab 'LIFT-OFF for the 100th time', LL2 Launch Successful). Rocket Lab: 'MISSION SUCCESS. Payload deployment from the Kick Stage confirmed' (posted 06:22Z, ~10:22 pm PST); iQPS: QPS-SAR-19 'YAMATSUMI-II' separated ~50 min after launch and made first contact ~8 min later; antenna deployment later announced. Target 575 km / 42 deg (Rocket Lab). T0 already matched liftoff, so files are unchanged. Sim still ends 2 revs after insertion (deploy time only approximate: ~T+50-52 min). ILLUSTRATIVE pre-flight geometry.",
+      "t0_kind": "actual",
       "window_open_utc": "2026-11-14T05:30:00Z",
       "window_close_utc": "2026-11-14T05:30:00Z",
       "assumptions": [
@@ -1280,7 +1344,7 @@
         "S2 insertion perigee 230 km ASSUMED (Kick Stage 'low elliptical orbit'); Kick Stage circularization not modelled",
         "Payload ~190 kg incl. Kick Stage ASSUMED (QPS-SAR 100 kg-class unofficial + Kick Stage 40 kg + ~50 kg propellant)",
         "Azimuth from HYDROPAC debris-area centroids; sim inclination 39.3 deg vs published 42 deg (not re-aimed)",
-        "Deploy time unpublished -> deploy.t_s null; coast +2 revs on inferred insertion orbit",
+        "Deploy time not published to the second (Rocket Lab success post 06:22Z; iQPS '~50 min after launch'; LL2 separation update 06:21Z) -> deploy.t_s left null; coast +2 revs on inferred insertion orbit",
         "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at 575 km",
         "Pad: files use LC-1 coordinates -39.260881, 177.865826; LL2 updated the pad on 2026-11-13 00:15Z to LC-1A (-39.262833, 177.864469), ~250 m away, citing a Rocket Lab post that says only 'Launch Complex 1'. Not re-run (offset negligible at file scale); pad identity A/B unconfirmed by Rocket Lab text"
       ]

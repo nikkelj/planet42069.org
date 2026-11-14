@@ -2,7 +2,7 @@
  "slug": "starship-flight-15",
  "title": "Starship Flight 15 / Starlink Group 31-2 (OLP-2, Starbase)",
  "vehicle": "starship_v3",
- "t0_utc": "2026-11-13T22:45:00Z",
+ "t0_utc": "2026-11-13T22:47:36Z",
  "t0_note": "SpaceX Flight 15 page: 75-minute window opens 4:45 p.m. CT = 2026-11-13T22:45:00Z, pending regulatory approval. LL2 id 0f867f0c-5422-4d44-93b8-d7faaae7019b, status To Be Confirmed, window 22:45Z\u201300:00Z (checked 2026-11-11).",
  "pad": {
   "lat": 25.99677,
@@ -181,5 +181,8 @@
    ],
    "glow_kg": 5696410
   }
- }
+ },
+ "retime_log": [
+  "RETIMED 2026-11-14 (board) to ACTUAL liftoff 2026-11-13T22:47:36Z (Fri Nov 13 2:47:36 p.m. PST): LL2 (SEC precision, 'Liftoff.'), SpaceX update 'Now targeting Nov 13 at 22:47 UTC', McDowell (https://x.com/planet4589/status/2121412618514739506) '2247:36 UTC'. FLOWN: 26 Starlink V3 deployed (SpaceX; LL2 Payload Deployed). utc shifted by +156 s; ILLUSTRATIVE geometry unchanged (not flight data)."
+ ]
 }
