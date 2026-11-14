@@ -2,7 +2,7 @@
  "slug": "amazon-leo-lv01",
  "title": "Vulcan VC6L Amazon Leo LV-01 (SLC-41)",
  "vehicle": "vulcan_vc6l",
- "t0_utc": "2026-11-14T17:32:00Z",
+ "t0_utc": "2026-11-15T17:11:00Z",
  "t0_note": "ULA Vulcan Leo 1 page: Friday, Nov. 13 at 12:54 p.m. EST (1754 UTC). FAA operations advisory ULA KV-01 primary 11/13/26 1754Z-1900Z, backup 11/14/26 1732Z-1838Z. LL2 id ef9850ad-1096-425b-9d27-f7bbd186e61a, status Go, window 17:54\u201318:24Z (checked 2026-11-11).",
  "pad": {
   "lat": 28.58341025,
@@ -172,5 +172,8 @@
    ],
    "glow_kg": 866568
   }
- }
+ },
+ "retime_log": [
+  "RETIMED 2026-11-14 (board): ULA delayed Vulcan Leo 1 again on Sat Nov 14 ('network communication issue between the ground equipment and the launch vehicle that requires reconfiguration that would extend the hold beyond the 29-minute launch window', https://x.com/ulalaunch/status/2121603937232879787). ULA Vulcan Leo 1 page now: Sunday, Nov. 15 at 12:11 to 12:40 p.m. EST (1711-1740 UTC) (https://www.ulalaunch.com/missions/next-launch/vulcan-leo-1). T0 = ULA window open 2026-11-15T17:11:00Z (Sun Nov 15 9:11 a.m. PST); LL2 lists NET 17:11:30Z (30 s later, source not given). utc shifted by +85140 s; ECEF geometry unchanged."
+ ]
 }
