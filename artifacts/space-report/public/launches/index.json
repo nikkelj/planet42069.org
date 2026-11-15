@@ -1175,7 +1175,7 @@
       "t0_kind": "actual",
       "window_open_utc": "2026-11-13T22:45:00Z",
       "window_close_utc": "2026-11-14T00:00:00Z",
-      "status": "Payload Deployed",
+      "status": "Success",
       "phase": "flown",
       "files": {
         "csv": "/launches/starship-flight-15/starship-flight-15_2026-11-13_trajectory.csv",
@@ -1221,7 +1221,7 @@
         "spacex-f15-insertion-x",
         "spacex-f15-deploy-x"
       ],
-      "note": "FLOWN. Starship Flight 15 (Super Heavy B22 / Ship 42, 4th V3 flight) lifted off from Starbase OLP-2 at 2026-11-13T22:47:36Z (Fri 13 Nov 2:47:36 pm PST; LL2, McDowell). Ship entered orbit (SpaceX: insertion burn into ~275 km orbit; McDowell: 18 s single-engine burn at T+26:06, ~92 m/s, near-circular 276 km) and deployed all 26 Starlink V3 satellites (SpaceX; LL2 'Payload Deployed', update 00:59Z Nov 14). Super Heavy B22 did NOT attempt the catch: it diverted and was lost in the Gulf of Mexico (LL2: abort triggered before the landing burn; McDowell: 'Booster landed in the Gulf after catch attempt waved off'). As of 2026-11-14 15:41Z SpaceX says the ship is coasting in orbit and 'still looking good for return to launch site today', pad and tower go for catch (~22.5 h after launch, about 1:20 pm PST Sat 14 Nov; not yet happened at this update). Files retimed to the actual T0 (+156 s); ILLUSTRATIVE pre-flight geometry, not flight data. Catch and deorbit are not modelled.",
+      "note": "FLOWN. Starship Flight 15 (Super Heavy B22 / Ship 42, 4th V3 flight) lifted off from Starbase OLP-2 at 2026-11-13T22:47:36Z (Fri 13 Nov 2:47:36 pm PST; LL2, McDowell). Ship entered orbit (SpaceX: insertion burn into ~275 km orbit; McDowell: 18 s single-engine burn at T+26:06, ~92 m/s, near-circular 276 km) and deployed all 26 Starlink V3 satellites (SpaceX; LL2 'Payload Deployed', update 00:59Z Nov 14). Super Heavy B22 did NOT attempt the catch: it diverted and was lost in the Gulf of Mexico (LL2: abort triggered before the landing burn; McDowell: 'Booster landed in the Gulf after catch attempt waved off'). As of 2026-11-14 15:41Z SpaceX says the ship is coasting in orbit and 'still looking good for return to launch site today', pad and tower go for catch (~22.5 h after launch, about 1:20 pm PST Sat 14 Nov; not yet happened at this update). Files retimed to the actual T0 (+156 s); ILLUSTRATIVE pre-flight geometry, not flight data. Catch and deorbit are not modelled. UPDATE 2026-11-15: LL2 status now 'Launch Successful'; Ship 42 returned to Starbase and was caught at OLM-B on 14 Nov ~1:21 pm PST (21:21Z), ~22.5 h after liftoff (LL2 update 21:23Z, landing record success=true). Catch is post-deploy and not modelled in either trajectory file.",
       "assumptions": [
         "V3 dry masses unpublished: Super Heavy empty 275 t is an earlier-block Wikipedia infobox stand-in; ship dry 120 t ASSUMED (2021 ~100 t Musk figure is stale)",
         "Ship vacuum Isp is a DERIVED 364.72 s blend of 3 sea-level Raptor 3s at 350 s and 3 RVacs at 380 s (Musk, 9 Sep 2019). The official 1,614 tf and 275 tf RVac figures imply 263.00 tf vacuum for each sea-level Raptor 3",
