@@ -5,6 +5,28 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type RpodAlertQueueRowStatus = typeof RpodAlertQueueRowStatus[keyof typeof RpodAlertQueueRowStatus];
+
+
+export const RpodAlertQueueRowStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+  posted: 'posted',
+} as const;
+
+export interface RpodAlertQueueRow {
+  id: number;
+  eventId: number;
+  objects: number[];
+  text: string;
+  score: number;
+  status: RpodAlertQueueRowStatus;
+  createdAt: string;
+  postedAt?: string | null;
+  tweetId?: string | null;
+}
+
 export interface RpodMember {
   norad: number;
   name?: string | null;
@@ -37,7 +59,7 @@ export type RpodMemberDetail = RpodMember & ({
 export interface RpodEvent {
   id: number;
   status: string;
-  /** conjunction (discrete close approach), coplanar (long-duration co-aligned shadowing), or docked (near-zero range and relative velocity — a physically joined stack, not a proximity operation) */
+  /** conjunction (discrete close approach), coplanar (long-duration co-aligned shadowing), docked (near-zero range and relative velocity — a physically joined stack, not a proximity operation), or station-keeping (red-versus-blue pair holding a steady along-track offset) */
   kind: string;
   windowStart: string;
   windowEnd: string;
@@ -360,7 +382,7 @@ export interface PassesResponse {
   days: number;
   /** Element-set epoch, or the start of the ephemeris file (ISO 8601) */
   epoch: string;
-  /** End of the ephemeris file when source is starlink-ephemeris */
+  /** End of the ephemeris file when source is starlink-ephemeris (ISO 8601) */
   coverageEnd?: string;
   /** starlink-ephemeris or tle */
   source?: string;
@@ -393,7 +415,7 @@ export interface MassAggregate {
 }
 
 /**
- * Last successful sync per upstream source (ISO timestamps, null if never), plus the latest GCAT error when the most recent GCAT attempt failed
+ * Last successful sync per upstream source (ISO timestamps, null if never), plus the latest GCAT/Space-Track errors when the most recent attempt failed
  */
 export interface ObcFreshness {
   gcatSyncedAt: string | null;
@@ -442,17 +464,21 @@ export interface SatcatSummary {
   estimatedObjects: number;
   /** Total estimated (theorized) payload mass in kg */
   estimatedMassKg: number;
+  /** Provisional mass (Falcon-median plus sourced Starship) not yet in the catalog. Not included in totalMassKg. */
+  pendingMassKg: number;
   freshness: ObcFreshness;
 }
 
 export interface YearProviderRow {
   year: string;
-  /** SpaceX (Falcon family) payload mass in kg */
+  /** SpaceX (Falcon and Starship) catalogued payload mass in kg */
   spacex: number;
   /** Rest-of-world payload mass in kg */
   others: number;
-  /** Provisional SpaceX estimate for launches not yet catalogued */
+  /** Falcon-median provisional estimate for Falcon launches not yet catalogued */
   pendingSpacex: number;
+  /** Sourced provisional Starship mass, not yet catalogued. Not included in pendingSpacex. */
+  pendingStarship: number;
   spacexCount: number;
   othersCount: number;
 }
@@ -467,8 +493,10 @@ export interface ProviderUpmassRow {
   massKg: number;
   /** Additional theorized mass in kg (Bureau estimates) */
   estMassKg: number;
-  /** Provisional estimate for launches not yet catalogued */
+  /** Falcon-median provisional estimate for launches not yet catalogued */
   pendingMassKg: number;
+  /** Sourced provisional Starship mass in the window. Not included in pendingMassKg. */
+  pendingStarshipMassKg: number;
   count: number;
 }
 
@@ -481,8 +509,10 @@ export interface UpmassByProvider {
   window: UpmassByProviderWindow;
   providers: ProviderUpmassRow[];
   totalMassKg: number;
-  /** Total provisional (pending cataloguing) estimate in kg */
+  /** Total Falcon-median provisional estimate in kg. Does not include Starship. */
   totalPendingMassKg: number;
+  /** Total sourced provisional Starship mass in the window. Not included in totalMassKg or totalPendingMassKg. */
+  totalPendingStarshipMassKg: number;
   totalCount: number;
 }
 
@@ -608,8 +638,10 @@ export type FalconVsStarshipRowsItem = {
   year: string;
   falcon: number;
   starship: number;
-  /** Provisional estimate for Falcon launches not yet catalogued */
+  /** Falcon-median provisional estimate for Falcon launches not yet catalogued */
   pendingFalcon: number;
+  /** Sourced provisional Starship mass, not yet catalogued. Not included in pendingFalcon or starship. */
+  pendingStarship: number;
 };
 
 export interface FalconVsStarship {
@@ -622,12 +654,16 @@ export type SpacexBySiteMonthlyRowsItem = {
   monthNum: number;
   capeCanaveral: number;
   vandenberg: number;
+  /** Catalogued payload mass from Starbase (Boca Chica). Not folded into other. */
+  starbase: number;
   other: number;
-  /** Provisional estimate for launches not yet catalogued */
+  /** Falcon-median provisional estimate for launches not yet catalogued */
   pendingCapeCanaveral: number;
-  /** Provisional estimate for launches not yet catalogued */
+  /** Falcon-median provisional estimate for launches not yet catalogued */
   pendingVandenberg: number;
-  /** Provisional estimate for launches not yet catalogued */
+  /** Provisional (estimated, not yet catalogued) mass from Starbase, including sourced Starship estimates */
+  pendingStarbase: number;
+  /** Falcon-median provisional estimate for launches not yet catalogued */
   pendingOther: number;
 };
 
@@ -640,12 +676,16 @@ export type SpacexBySiteRowsItem = {
   year: string;
   capeCanaveral: number;
   vandenberg: number;
+  /** Catalogued payload mass from Starbase (Boca Chica). Not folded into other. */
+  starbase: number;
   other: number;
-  /** Provisional estimate for launches not yet catalogued */
+  /** Falcon-median provisional estimate for launches not yet catalogued */
   pendingCapeCanaveral: number;
-  /** Provisional estimate for launches not yet catalogued */
+  /** Falcon-median provisional estimate for launches not yet catalogued */
   pendingVandenberg: number;
-  /** Provisional estimate for launches not yet catalogued */
+  /** Provisional (estimated, not yet catalogued) mass from Starbase, including sourced Starship estimates */
+  pendingStarbase: number;
+  /** Falcon-median provisional estimate for launches not yet catalogued */
   pendingOther: number;
 };
 
@@ -658,12 +698,110 @@ export type SpacexByEntityRowsItem = {
   starlink: number;
   usGov: number;
   commercial: number;
-  /** Provisional estimate for launches not yet catalogued (segment unknown) */
+  /** Falcon-median provisional estimate for launches not yet catalogued (segment unknown) */
   pending: number;
+  /** Sourced provisional Starship mass, not yet catalogued. Not included in pending or starlink. */
+  pendingStarship: number;
 };
 
 export interface SpacexByEntity {
   rows: SpacexByEntityRowsItem[];
+}
+
+export type ProvisionalCalcInputKind = typeof ProvisionalCalcInputKind[keyof typeof ProvisionalCalcInputKind];
+
+
+export const ProvisionalCalcInputKind = {
+  published: 'published',
+  derived: 'derived',
+  editorial: 'editorial',
+} as const;
+
+export interface ProvisionalCalcInput {
+  name: string;
+  value: string;
+  kind: ProvisionalCalcInputKind;
+  source: string;
+}
+
+export interface ProvisionalCalc {
+  title: string;
+  formula: string;
+  inputs: ProvisionalCalcInput[];
+  /** Booked central result in kg */
+  resultKg: number;
+  /**
+     * [low, high] booked range in kg
+     * @minItems 2
+     * @maxItems 2
+     */
+  rangeKg: number[];
+  markdownPath: string;
+}
+
+export interface ProvisionalManifestMatch {
+  ldate: string;
+  lvFamilyIncludes: string;
+  launchTag?: string | null;
+  payloadNameIncludes?: string | null;
+  siteHints?: string[];
+}
+
+export type ProvisionalManifestEntrySiteClass = typeof ProvisionalManifestEntrySiteClass[keyof typeof ProvisionalManifestEntrySiteClass];
+
+
+export const ProvisionalManifestEntrySiteClass = {
+  capeCanaveral: 'capeCanaveral',
+  vandenberg: 'vandenberg',
+  starbase: 'starbase',
+  other: 'other',
+} as const;
+
+export type ProvisionalManifestEntryBasis = typeof ProvisionalManifestEntryBasis[keyof typeof ProvisionalManifestEntryBasis];
+
+
+export const ProvisionalManifestEntryBasis = {
+  published: 'published',
+  estimated: 'estimated',
+} as const;
+
+export interface ProvisionalManifestEntry {
+  id: string;
+  launchDate: string;
+  launchDateTimeUtc: string;
+  vehicle: string;
+  lvFamilyIncludes: string;
+  site: string;
+  siteClass: ProvisionalManifestEntrySiteClass;
+  payloadName: string;
+  payloadCount: number;
+  perSatMassKg: number;
+  perSatLowKg: number;
+  perSatHighKg: number;
+  /** Booked central batch mass in kg */
+  massKg: number;
+  massLowKg: number;
+  massHighKg: number;
+  basis: ProvisionalManifestEntryBasis;
+  sourceUrls: string[];
+  note: string;
+  calc: ProvisionalCalc;
+  match: ProvisionalManifestMatch;
+  /** True once GCAT lists payload mass for this launch. Excluded from totals. */
+  retired: boolean;
+  /** Sum of catalogued object-class P mass matched to this launch */
+  cataloguedMassKg: number;
+  /** Published calculation write-up */
+  markdown: string;
+}
+
+export interface ProvisionalManifest {
+  calculatedOn: string;
+  timezone: string;
+  entries: ProvisionalManifestEntry[];
+  /** Booked kg of entries that are not retired */
+  activeMassKg: number;
+  note: string;
 }
 
 export interface DeorbitObject {
@@ -789,9 +927,12 @@ export const GetSatcatOrder = {
 } as const;
 
 export type GetSatcatPassesParams = {
-norad: number;
 /**
- * Satellite name. When set, the newest Starlink public ephemeris for this name is preferred.
+ * NORAD catalog number. Optional when name is set.
+ */
+norad?: number;
+/**
+ * Satellite name, used to pick the newest Starlink public ephemeris.
  */
 name?: string;
 /**
@@ -834,7 +975,7 @@ limit?: number;
  */
 status?: GetRpodEventsStatus;
 /**
- * Filter by event kind (discrete conjunction, long-duration coplanar shadowing, or docked stack)
+ * Filter by event kind (discrete conjunction, long-duration coplanar shadowing, docked stack, or red-versus-blue station keeping)
  */
 kind?: GetRpodEventsKind;
 /**
@@ -926,5 +1067,29 @@ export const GetRpodEventsOrder2 = {
 
 export type GetRpodCountries200 = {
   countries: string[];
+};
+
+export type GetRpodAlertQueueParams = {
+status?: GetRpodAlertQueueStatus;
+/**
+ * @minimum 1
+ * @maximum 200
+ */
+limit?: number;
+};
+
+export type GetRpodAlertQueueStatus = typeof GetRpodAlertQueueStatus[keyof typeof GetRpodAlertQueueStatus];
+
+
+export const GetRpodAlertQueueStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+  posted: 'posted',
+} as const;
+
+export type GetRpodAlertQueue200 = {
+  total: number;
+  data: RpodAlertQueueRow[];
 };
 

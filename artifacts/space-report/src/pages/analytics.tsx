@@ -6,7 +6,9 @@ import {
   useGetSatcatSpacexBySiteMonthly,
   useGetSatcatSpacexByEntity,
   useGetSatcatLaunchRate,
+  useGetSatcatProvisionalManifest,
   getGetSatcatFalconVsStarshipQueryKey,
+  getGetSatcatProvisionalManifestQueryKey,
   getGetSatcatSpacexBySiteQueryKey,
   getGetSatcatSpacexBySiteMonthlyQueryKey,
   getGetSatcatSpacexByEntityQueryKey,
@@ -19,7 +21,7 @@ import {
   BarChart, Bar, Cell, ReferenceArea, ReferenceLine, Label, LabelList
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Radar, Activity, Loader2, TrendingUp, Zap, MapPin, Building2 } from "lucide-react";
+import { Radar, Activity, Loader2, TrendingUp, Zap, MapPin, Building2, FileSearch } from "lucide-react";
 import { OrbitalMap } from "@/components/OrbitalMap";
 import { DeorbitAnimation } from "@/components/DeorbitAnimation";
 import { MassCDFChart } from "@/components/MassCDFChart";
@@ -148,8 +150,8 @@ function FalconVsStarshipChart() {
 
   const rows = data.rows;
   const falconTotal = rows.reduce((s, r) => s + r.falcon, 0);
+  const pendingStarship = rows.reduce((s, r) => s + (r.pendingStarship ?? 0), 0);
   const peakRow = [...rows].sort((a, b) => b.falcon - a.falcon)[0];
-  const noStarship = data.starshipTotal === 0;
 
   const FvsTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
@@ -157,13 +159,15 @@ function FalconVsStarshipChart() {
     const falcon   = row.falcon ?? 0;
     const starship = row.starship ?? 0;
     const pending  = row.pendingFalcon ?? 0;
+    const pendingSs = row.pendingStarship ?? 0;
     return (
       <div className="bg-card border-2 border-primary p-3 shadow-xl font-mono text-sm z-50">
         <p className="text-primary font-bold mb-2 pb-1 border-b border-primary/30 uppercase">{label}</p>
         <div className="space-y-1 text-card-foreground">
           <p><span style={{ color: FALCON_COLOR }}>■</span> <span className="text-muted-foreground">Falcon 9 / Heavy:</span> {(falcon / 1000).toFixed(1)}t</p>
           {pending > 0 && <p><span style={{ color: FALCON_COLOR, opacity: 0.5 }}>▨</span> <span className="text-muted-foreground">Falcon pending cataloguing:</span> ~{(pending / 1000).toFixed(1)}t est.</p>}
-          <p><span style={{ color: STARSHIP_COLOR }}>■</span> <span className="text-muted-foreground">Starship:</span> {starship > 0 ? `${(starship / 1000).toFixed(1)}t` : '—'}</p>
+          <p><span style={{ color: STARSHIP_COLOR }}>■</span> <span className="text-muted-foreground">Starship (catalogued):</span> {starship > 0 ? `${(starship / 1000).toFixed(1)}t` : '—'}</p>
+          {pendingSs > 0 && <p><span style={{ color: STARSHIP_COLOR, opacity: 0.55 }}>▨</span> <span className="text-muted-foreground">Provisional (estimated, not yet catalogued):</span> ~{(pendingSs / 1000).toFixed(1)}t</p>}
         </div>
       </div>
     );
@@ -191,8 +195,20 @@ function FalconVsStarshipChart() {
           </div>
           <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
             <div className="text-[10px] text-muted-foreground uppercase mb-1">Starship Total</div>
-            <div className="text-lg font-bold" style={{ color: STARSHIP_COLOR }}>{noStarship ? '—' : `${(data.starshipTotal / 1000).toFixed(0)}t`}</div>
-            <div className="text-xs text-muted-foreground">{noStarship ? 'Not yet in GCAT' : 'Orbital payloads'}</div>
+            <div className="text-lg font-bold" style={{ color: STARSHIP_COLOR }}>
+              {data.starshipTotal > 0
+                ? `${(data.starshipTotal / 1000).toFixed(0)}t`
+                : pendingStarship > 0
+                  ? `~${(pendingStarship / 1000).toFixed(0)}t`
+                  : '—'}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {data.starshipTotal > 0
+                ? 'Catalogued payloads'
+                : pendingStarship > 0
+                  ? 'Provisional (estimated)'
+                  : 'Not yet in GCAT'}
+            </div>
           </div>
           <div className="border border-border bg-muted/20 rounded p-3 font-mono text-center">
             <div className="text-[10px] text-muted-foreground uppercase mb-1">Starship Capacity</div>
@@ -213,13 +229,20 @@ function FalconVsStarshipChart() {
           <span className="flex items-center gap-1.5">
             <span
               className="inline-block w-3 h-3 rounded-sm border border-muted-foreground/50"
-              style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(var(--muted-foreground) / 0.6) 2px, hsl(var(--muted-foreground) / 0.6) 3px)' }}
+              style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(140 100% 50% / 0.7) 2px, hsl(140 100% 50% / 0.7) 3px)' }}
             />
-            <span className="text-muted-foreground">Pending cataloguing (est.)</span>
+            <span className="text-muted-foreground">Falcon pending cataloguing (est.)</span>
           </span>
-          {noStarship && (
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-block w-3 h-3 rounded-sm border border-amber-400/50"
+              style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(35 100% 55% / 0.85) 2px, hsl(35 100% 55% / 0.85) 3px)' }}
+            />
+            <span className="text-muted-foreground">Provisional (estimated, not yet catalogued)</span>
+          </span>
+          {pendingStarship > 0 && data.starshipTotal === 0 && (
             <span className="ml-auto text-amber-400/70 border border-amber-400/30 px-2 py-0.5 rounded text-[10px] uppercase tracking-wide">
-              ⚠ Starship: test flights catalogued — orbital payload deployments pending GCAT entry
+              ⚠ Starship: provisional estimate — not yet catalogued by GCAT
             </span>
           )}
         </div>
@@ -236,10 +259,15 @@ function FalconVsStarshipChart() {
                   <rect width="6" height="6" fill={FALCON_COLOR} fillOpacity="0.15" />
                   <line x1="0" y1="0" x2="0" y2="6" stroke={FALCON_COLOR} strokeWidth="2" strokeOpacity="0.7" />
                 </pattern>
+                <pattern id="hatchStarshipPend" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                  <rect width="6" height="6" fill={STARSHIP_COLOR} fillOpacity="0.15" />
+                  <line x1="0" y1="0" x2="0" y2="6" stroke={STARSHIP_COLOR} strokeWidth="2" strokeOpacity="0.85" />
+                </pattern>
               </defs>
               <Bar dataKey="falcon" name="Falcon" stackId="f" fill={FALCON_COLOR} />
               <Bar dataKey="pendingFalcon" name="Falcon pending (est.)" stackId="f" fill="url(#hatchFalconPend)" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="starship" name="Starship" fill={STARSHIP_COLOR} radius={[3, 3, 0, 0]} />
+              <Bar dataKey="starship" name="Starship" stackId="s" fill={STARSHIP_COLOR} />
+              <Bar dataKey="pendingStarship" name="Provisional (estimated, not yet catalogued)" stackId="s" fill="url(#hatchStarshipPend)" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -247,9 +275,11 @@ function FalconVsStarshipChart() {
         <div className="px-6 pt-3 pb-1">
           <p className="text-xs font-mono text-muted-foreground/60">
             <span className="text-amber-400/70">// </span>
-            {noStarship
-              ? 'Starship has conducted orbital test flights but has not yet deployed commercially catalogued payloads in the GCAT database. When it does, a single Starship flight (~150t LEO) will dwarf an entire Falcon 9 year from before 2020.'
-              : `Starship is now in the catalog. Watch this space.`
+            {data.starshipTotal > 0
+              ? 'Catalogued Starship payload mass is the solid bar. Hatched amber is a sourced provisional estimate for flights GCAT has not given a mass yet, and it drops out on its own once that mass lands.'
+              : pendingStarship > 0
+                ? `GCAT has not catalogued a Starship payload mass yet. The hatched bar is a sourced provisional estimate (~${(pendingStarship / 1000).toFixed(0)}t booked), kept separate from the Falcon-median pending series. It is replaced automatically once GCAT lists the mass. The calculation is below.`
+                : 'Starship has conducted orbital test flights but has not yet deployed commercially catalogued payloads in the GCAT database. When it does, a single Starship flight (~150t LEO) will dwarf an entire Falcon 9 year from before 2020.'
             }
           </p>
         </div>
@@ -260,7 +290,8 @@ function FalconVsStarshipChart() {
 
 const CAPE_COLOR    = 'hsl(180 100% 45%)';
 const VAND_COLOR    = 'hsl(140 100% 50%)';
-const OTHER_SITE_COLOR = 'hsl(35 100% 50%)';
+const STARBASE_COLOR = 'hsl(35 100% 55%)';
+const OTHER_SITE_COLOR = 'hsl(280 45% 62%)';
 
 function SpaceXBySiteChart() {
   const [view, setView] = useState<'annual' | 'monthly'>('annual');
@@ -290,8 +321,10 @@ function SpaceXBySiteChart() {
 
   const totalCape  = activeRows.reduce((s, r) => s + r.capeCanaveral, 0);
   const totalVand  = activeRows.reduce((s, r) => s + r.vandenberg, 0);
+  const totalStarbase = activeRows.reduce((s, r) => s + (r.starbase ?? 0), 0);
   const totalOther = activeRows.reduce((s, r) => s + r.other, 0);
-  const totalAll   = totalCape + totalVand + totalOther;
+  const pendStarbase = activeRows.reduce((s, r) => s + (r.pendingStarbase ?? 0), 0);
+  const totalAll   = totalCape + totalVand + totalStarbase + totalOther;
   const pct = (n: number) => totalAll > 0 ? ((n / totalAll) * 100).toFixed(0) : '0';
 
   const currentMonthIdx = new Date().getMonth(); // 0-based
@@ -301,21 +334,25 @@ function SpaceXBySiteChart() {
     const row = payload[0].payload ?? {};
     const cape  = row.capeCanaveral ?? 0;
     const vand  = row.vandenberg ?? 0;
+    const starbase = row.starbase ?? 0;
     const other = row.other ?? 0;
     const pendCape  = row.pendingCapeCanaveral ?? 0;
     const pendVand  = row.pendingVandenberg ?? 0;
+    const pendBase = row.pendingStarbase ?? 0;
     const pendOther = row.pendingOther ?? 0;
-    const total = cape + vand + other;
-    const pendTotal = pendCape + pendVand + pendOther;
+    const total = cape + vand + starbase + other;
+    const pendTotal = pendCape + pendVand + pendBase + pendOther;
     return (
       <div className="bg-card border-2 border-primary p-3 shadow-xl font-mono text-sm z-50">
         <p className="text-primary font-bold mb-2 pb-1 border-b border-primary/30 uppercase">{label}</p>
         <div className="space-y-1 text-card-foreground">
           <p><span style={{ color: CAPE_COLOR }}>■</span> <span className="text-muted-foreground">Cape Canaveral / KSC:</span> {(cape / 1000).toFixed(1)}t</p>
           <p><span style={{ color: VAND_COLOR }}>■</span> <span className="text-muted-foreground">Vandenberg SFB:</span> {(vand / 1000).toFixed(1)}t</p>
+          {(starbase > 0 || pendBase > 0) && <p><span style={{ color: STARBASE_COLOR }}>■</span> <span className="text-muted-foreground">Starbase:</span> {(starbase / 1000).toFixed(1)}t</p>}
           {other > 0 && <p><span style={{ color: OTHER_SITE_COLOR }}>■</span> <span className="text-muted-foreground">Other:</span> {(other / 1000).toFixed(1)}t</p>}
           {pendCape > 0 && <p><span style={{ color: CAPE_COLOR, opacity: 0.5 }}>▨</span> <span className="text-muted-foreground">Cape pending cataloguing:</span> ~{(pendCape / 1000).toFixed(1)}t est.</p>}
           {pendVand > 0 && <p><span style={{ color: VAND_COLOR, opacity: 0.5 }}>▨</span> <span className="text-muted-foreground">Vandenberg pending cataloguing:</span> ~{(pendVand / 1000).toFixed(1)}t est.</p>}
+          {pendBase > 0 && <p><span style={{ color: STARBASE_COLOR, opacity: 0.55 }}>▨</span> <span className="text-muted-foreground">Provisional (estimated, not yet catalogued):</span> ~{(pendBase / 1000).toFixed(1)}t</p>}
           {pendOther > 0 && <p><span style={{ color: OTHER_SITE_COLOR, opacity: 0.5 }}>▨</span> <span className="text-muted-foreground">Other pending cataloguing:</span> ~{(pendOther / 1000).toFixed(1)}t est.</p>}
           {(total > 0 || pendTotal > 0) && (
             <p className="border-t border-border/50 mt-1 pt-1 text-muted-foreground">
@@ -362,16 +399,22 @@ function SpaceXBySiteChart() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-3 gap-2 px-6 pb-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-6 pb-4">
               {([
-                { label: view === 'monthly' ? 'Cape YTD' : 'Cape / KSC', value: totalCape,  color: CAPE_COLOR },
-                { label: view === 'monthly' ? 'Vand YTD' : 'Vandenberg',  value: totalVand,  color: VAND_COLOR },
-                { label: view === 'monthly' ? 'Other YTD' : 'Other Sites', value: totalOther, color: OTHER_SITE_COLOR },
-              ] as const).map(({ label, value, color }) => (
+                { label: view === 'monthly' ? 'Cape YTD' : 'Cape / KSC', value: totalCape, pending: 0, color: CAPE_COLOR },
+                { label: view === 'monthly' ? 'Vand YTD' : 'Vandenberg', value: totalVand, pending: 0, color: VAND_COLOR },
+                { label: view === 'monthly' ? 'Starbase YTD' : 'Starbase', value: totalStarbase, pending: pendStarbase, color: STARBASE_COLOR },
+                { label: view === 'monthly' ? 'Other YTD' : 'Other Sites', value: totalOther, pending: 0, color: OTHER_SITE_COLOR },
+              ] as const).map(({ label, value, pending, color }) => (
                 <div key={label} className="border border-border bg-muted/20 p-2 font-mono text-center">
                   <div className="text-[9px] text-muted-foreground uppercase mb-0.5">{label}</div>
-                  <div className="text-base font-bold" style={{ color }}>{(value / 1000).toFixed(0)}t</div>
-                  <div className="text-[10px] text-muted-foreground">{pct(value)}%</div>
+                  <div className="text-base font-bold" style={{ color }}>
+                    {value === 0 && pending > 0 ? `~${(pending / 1000).toFixed(0)}t` : `${(value / 1000).toFixed(0)}t`}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {value === 0 && pending > 0 ? 'provisional est.' : `${pct(value)}%`}
+                    {value > 0 && pending > 0 ? ` +${(pending / 1000).toFixed(0)}t est.` : ''}
+                  </div>
                 </div>
               ))}
             </div>
@@ -380,6 +423,7 @@ function SpaceXBySiteChart() {
               {([
                 { color: CAPE_COLOR, label: 'Cape Canaveral / KSC' },
                 { color: VAND_COLOR, label: 'Vandenberg SFB' },
+                { color: STARBASE_COLOR, label: 'Starbase' },
                 { color: OTHER_SITE_COLOR, label: 'Other' },
               ] as const).map(({ color, label }) => (
                 <span key={label} className="flex items-center gap-1.5">
@@ -392,7 +436,14 @@ function SpaceXBySiteChart() {
                   className="inline-block w-3 h-3 rounded-sm border border-muted-foreground/50"
                   style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(var(--muted-foreground) / 0.6) 2px, hsl(var(--muted-foreground) / 0.6) 3px)' }}
                 />
-                <span className="text-muted-foreground">Pending cataloguing (est.)</span>
+                <span className="text-muted-foreground">Falcon pending cataloguing (est.)</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span
+                  className="inline-block w-3 h-3 rounded-sm border border-amber-400/50"
+                  style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(35 100% 55% / 0.85) 2px, hsl(35 100% 55% / 0.85) 3px)' }}
+                />
+                <span className="text-muted-foreground">Provisional (estimated, not yet catalogued)</span>
               </span>
               {view === 'monthly' && (
                 <span className="ml-auto text-primary/60 text-[10px] uppercase tracking-wide font-mono">
@@ -434,6 +485,7 @@ function SpaceXBySiteChart() {
                     {([
                       ['hatchCape', CAPE_COLOR],
                       ['hatchVand', VAND_COLOR],
+                      ['hatchStarbase', STARBASE_COLOR],
                       ['hatchOther', OTHER_SITE_COLOR],
                     ] as const).map(([id, color]) => (
                       <pattern key={id} id={id} patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
@@ -444,10 +496,12 @@ function SpaceXBySiteChart() {
                   </defs>
                   <Bar dataKey="capeCanaveral" stackId="a" fill={CAPE_COLOR} />
                   <Bar dataKey="vandenberg"    stackId="a" fill={VAND_COLOR} />
+                  <Bar dataKey="starbase"      stackId="a" fill={STARBASE_COLOR} />
                   <Bar dataKey="other"         stackId="a" fill={OTHER_SITE_COLOR} />
                   <Bar dataKey="pendingCapeCanaveral" stackId="a" fill="url(#hatchCape)" />
                   <Bar dataKey="pendingVandenberg"    stackId="a" fill="url(#hatchVand)" />
-                  <Bar dataKey="pendingOther"         stackId="a" fill="url(#hatchOther)" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="pendingOther"         stackId="a" fill="url(#hatchOther)" />
+                  <Bar dataKey="pendingStarbase"      name="Provisional (estimated, not yet catalogued)" stackId="a" fill="url(#hatchStarbase)" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -456,12 +510,12 @@ function SpaceXBySiteChart() {
               <div className="px-6 pt-2 pb-1">
                 <p className="text-xs font-mono text-muted-foreground/60">
                   <span className="text-primary/50">// </span>
-                  Each bar = all Falcon 9 / Heavy / Starship payloads catalogued in GCAT for that month.
-                 Starship flights to date have zero catalogued payloads — "Other" (Starbase) stays 0t
-                 until a catalog says otherwise.
-                 Hatched segments are provisional estimates for recent launches the catalogs haven't
-                 processed yet (space-track lags days, GCAT weeks) — they're replaced by real catalog
-                 data as it lands.
+                  Each bar = Falcon 9 / Heavy / Starship payload mass for that month.
+                  Starbase is its own site. Hatched amber is a sourced Starship provisional
+                  (estimated, not yet catalogued) — it is not a Falcon-median guess, and it is
+                  replaced automatically once GCAT lists a payload mass. Hatched Cape and
+                  Vandenberg segments are Falcon-median estimates for recent launches the
+                  catalogs haven't processed yet.
                   Empty bars ahead are open launch windows — waiting to be filled.
                 </p>
               </div>
@@ -502,6 +556,7 @@ function SpaceXByEntityChart() {
     const gov  = row.usGov ?? 0;
     const comm = row.commercial ?? 0;
     const pend = row.pending ?? 0;
+    const pendSs = row.pendingStarship ?? 0;
     const total = sl + gov + comm;
     return (
       <div className="bg-card border-2 border-primary p-3 shadow-xl font-mono text-sm z-50">
@@ -510,9 +565,10 @@ function SpaceXByEntityChart() {
           <p><span style={{ color: STARLINK_COLOR }}>■</span> <span className="text-muted-foreground">Starlink:</span> {(sl / 1000).toFixed(1)}t</p>
           <p><span style={{ color: USGOV_COLOR }}>■</span> <span className="text-muted-foreground">US Government:</span> {(gov / 1000).toFixed(1)}t</p>
           <p><span style={{ color: COMMERCIAL_COLOR }}>■</span> <span className="text-muted-foreground">Commercial / Intl:</span> {(comm / 1000).toFixed(1)}t</p>
-          {pend > 0 && <p><span className="text-muted-foreground/70">▨</span> <span className="text-muted-foreground">Pending cataloguing:</span> ~{(pend / 1000).toFixed(1)}t est.</p>}
+          {pend > 0 && <p><span className="text-muted-foreground/70">▨</span> <span className="text-muted-foreground">Falcon pending cataloguing:</span> ~{(pend / 1000).toFixed(1)}t est.</p>}
+          {pendSs > 0 && <p><span style={{ color: STARSHIP_COLOR, opacity: 0.7 }}>▨</span> <span className="text-muted-foreground">Provisional (estimated, not yet catalogued):</span> ~{(pendSs / 1000).toFixed(1)}t</p>}
           <p className="border-t border-border/50 mt-1 pt-1 text-muted-foreground">
-            Total: {(total / 1000).toFixed(1)}t{pend > 0 && <span className="text-muted-foreground/70"> (+~{(pend / 1000).toFixed(1)}t pending)</span>}
+            Total: {(total / 1000).toFixed(1)}t{(pend + pendSs) > 0 && <span className="text-muted-foreground/70"> (+~{((pend + pendSs) / 1000).toFixed(1)}t provisional)</span>}
           </p>
         </div>
       </div>
@@ -557,7 +613,14 @@ function SpaceXByEntityChart() {
               className="inline-block w-3 h-3 rounded-sm border border-muted-foreground/50"
               style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(var(--muted-foreground) / 0.6) 2px, hsl(var(--muted-foreground) / 0.6) 3px)' }}
             />
-            <span className="text-muted-foreground">Pending cataloguing (est., segment unknown)</span>
+            <span className="text-muted-foreground">Falcon pending cataloguing (est., segment unknown)</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-block w-3 h-3 rounded-sm border border-amber-400/50"
+              style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(35 100% 55% / 0.85) 2px, hsl(35 100% 55% / 0.85) 3px)' }}
+            />
+            <span className="text-muted-foreground">Provisional (estimated, not yet catalogued)</span>
           </span>
         </div>
         <div className="h-[280px] w-full">
@@ -572,11 +635,16 @@ function SpaceXByEntityChart() {
                   <rect width="6" height="6" fill="hsl(var(--muted-foreground))" fillOpacity="0.12" />
                   <line x1="0" y1="0" x2="0" y2="6" stroke="hsl(var(--muted-foreground))" strokeWidth="2" strokeOpacity="0.6" />
                 </pattern>
+                <pattern id="hatchEntityStarship" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                  <rect width="6" height="6" fill={STARSHIP_COLOR} fillOpacity="0.15" />
+                  <line x1="0" y1="0" x2="0" y2="6" stroke={STARSHIP_COLOR} strokeWidth="2" strokeOpacity="0.85" />
+                </pattern>
               </defs>
               <Bar dataKey="starlink" stackId="a" fill={STARLINK_COLOR} />
               <Bar dataKey="usGov" stackId="a" fill={USGOV_COLOR} />
               <Bar dataKey="commercial" stackId="a" fill={COMMERCIAL_COLOR} />
-              <Bar dataKey="pending" stackId="a" fill="url(#hatchEntityPend)" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="pending" stackId="a" fill="url(#hatchEntityPend)" />
+              <Bar dataKey="pendingStarship" name="Provisional (estimated, not yet catalogued)" stackId="a" fill="url(#hatchEntityStarship)" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -587,6 +655,144 @@ function SpaceXByEntityChart() {
 
 const SPACEX_COLOR = 'hsl(0 90% 60%)';
 const OTHERS_COLOR = 'hsl(180 100% 45%)';
+
+function LinkedText({ text }: { text: string }) {
+  const parts = text.split(/(https?:\/\/[^\s)]+)/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.startsWith('http') ? (
+          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-primary underline break-all">
+            {part}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
+  );
+}
+
+function KindTag({ kind }: { kind: string }) {
+  const cls =
+    kind === 'published'
+      ? 'text-primary border-primary/40'
+      : kind === 'derived'
+        ? 'text-sky-300 border-sky-400/40'
+        : 'text-amber-300 border-amber-400/40';
+  return (
+    <span className={`uppercase text-[9px] tracking-wider border px-1 py-0.5 ${cls}`}>
+      {kind}
+    </span>
+  );
+}
+
+function ProvisionalEstimates() {
+  const { data, isLoading, isError } = useGetSatcatProvisionalManifest({
+    query: { queryKey: getGetSatcatProvisionalManifestQueryKey(), staleTime: 5 * 60 * 1000 },
+  });
+
+  return (
+    <Card className="border-2 border-amber-400/40 bg-card lg:col-span-2 overflow-hidden relative">
+      <CardHeader className="bg-muted/30 border-b border-border">
+        <CardTitle className="text-amber-300 uppercase flex items-center gap-2 text-sm">
+          <FileSearch className="w-4 h-4" /> Provisional estimates — how we got these numbers
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-4 pb-5 px-6 font-mono text-xs space-y-4">
+        <p className="text-muted-foreground leading-relaxed">
+          <span className="text-amber-400/80">// </span>
+          These figures are <span className="text-amber-300">ESTIMATED / provisional</span>. They are not in the catalog total.
+          Entries are replaced automatically once GCAT lists a payload mass for the launch, and a retired row is excluded from every chart.
+        </p>
+        {isLoading && (
+          <p className="text-muted-foreground uppercase tracking-wider animate-pulse">Loading the calculation…</p>
+        )}
+        {isError && (
+          <p className="text-destructive uppercase tracking-wider">Provisional manifest unavailable.</p>
+        )}
+        {data?.entries.map((entry) => (
+          <article key={entry.id} className={`border border-border bg-muted/10 p-4 space-y-3 ${entry.retired ? 'opacity-70' : ''}`}>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="text-sm text-foreground font-bold uppercase tracking-wide">{entry.calc.title}</h3>
+              <span className={`text-[10px] uppercase tracking-wider border px-2 py-0.5 ${entry.retired ? 'border-primary/40 text-primary' : 'border-amber-400/40 text-amber-300'}`}>
+                {entry.retired ? 'Retired — GCAT has the mass' : `${entry.basis} / provisional`}
+              </span>
+            </div>
+            <p className="text-muted-foreground">
+              {entry.vehicle} · {entry.site} · {entry.payloadName} · {entry.payloadCount} sats · {entry.launchDateTimeUtc}
+            </p>
+            {entry.retired ? (
+              <p className="text-primary">
+                GCAT now lists {entry.cataloguedMassKg.toLocaleString()} kg of payload mass for this launch.
+                The provisional {entry.massKg.toLocaleString()} kg is excluded from every total.
+              </p>
+            ) : (
+              <p className="text-foreground">
+                Booked <span className="text-amber-300 font-bold">{entry.calc.resultKg.toLocaleString()} kg</span>
+                {' '}({(entry.calc.resultKg / 1000).toFixed(1)} t).
+                Range {entry.calc.rangeKg[0].toLocaleString()}–{entry.calc.rangeKg[1].toLocaleString()} kg
+                {' '}({entry.perSatLowKg.toLocaleString()}–{entry.perSatHighKg.toLocaleString()} kg per sat).
+              </p>
+            )}
+            <p className="text-muted-foreground">
+              <span className="text-foreground">Formula. </span>
+              <LinkedText text={entry.calc.formula} />
+            </p>
+            <div className="overflow-x-auto border border-border">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="bg-muted/40 text-muted-foreground uppercase tracking-wider text-[9px]">
+                    <th className="text-left p-2 font-bold">Input</th>
+                    <th className="text-left p-2 font-bold">Kind</th>
+                    <th className="text-left p-2 font-bold">Value</th>
+                    <th className="text-left p-2 font-bold">Source</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entry.calc.inputs.map((input) => (
+                    <tr key={input.name} className="border-t border-border align-top">
+                      <td className="p-2 text-foreground">{input.name}</td>
+                      <td className="p-2"><KindTag kind={input.kind} /></td>
+                      <td className="p-2 text-muted-foreground"><LinkedText text={input.value} /></td>
+                      <td className="p-2 text-muted-foreground"><LinkedText text={input.source} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Sources</p>
+              <ul className="space-y-1">
+                {entry.sourceUrls.map((url) => (
+                  <li key={url}>
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary underline break-all">
+                      {url}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <p className="text-muted-foreground leading-relaxed border-l-2 border-amber-400/30 pl-3">
+              <LinkedText text={entry.note} />
+            </p>
+            <details className="border border-border bg-background/40">
+              <summary className="cursor-pointer px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                Full calculation
+              </summary>
+              <pre className="px-3 pb-3 whitespace-pre-wrap text-[11px] leading-relaxed text-muted-foreground">
+                <LinkedText text={entry.markdown} />
+              </pre>
+            </details>
+          </article>
+        ))}
+        {data?.note && (
+          <p className="text-muted-foreground/80 leading-relaxed">{data.note}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 function SpaceXComparisonChart() {
   const { data, isLoading, isError } = useGetSatcatByYearProvider();
@@ -619,16 +825,18 @@ function SpaceXComparisonChart() {
     const spacexVal = payload.find((p: any) => p.dataKey === 'spacex')?.value ?? 0;
     const othersVal = payload.find((p: any) => p.dataKey === 'others')?.value ?? 0;
     const pendVal = payload[0]?.payload?.pendingSpacex ?? 0;
+    const pendSs = payload[0]?.payload?.pendingStarship ?? 0;
     const total = spacexVal + othersVal;
     const pct = total > 0 ? ((spacexVal / total) * 100).toFixed(0) : '0';
     return (
       <div className="bg-card border-2 border-primary p-3 box-glow-cyan shadow-xl font-mono text-sm z-50">
         <p className="text-primary font-bold mb-2 pb-1 border-b border-primary/30 uppercase">{label}</p>
         <div className="space-y-1 text-card-foreground">
-          <p><span style={{ color: SPACEX_COLOR }}>■</span> <span className="text-muted-foreground">SpaceX (Falcon):</span> {(spacexVal / 1000).toFixed(1)}t</p>
-          {pendVal > 0 && <p><span style={{ color: SPACEX_COLOR, opacity: 0.5 }}>▨</span> <span className="text-muted-foreground">SpaceX pending cataloguing:</span> ~{(pendVal / 1000).toFixed(1)}t est.</p>}
+          <p><span style={{ color: SPACEX_COLOR }}>■</span> <span className="text-muted-foreground">SpaceX (Falcon + Starship, catalogued):</span> {(spacexVal / 1000).toFixed(1)}t</p>
+          {pendVal > 0 && <p><span style={{ color: SPACEX_COLOR, opacity: 0.5 }}>▨</span> <span className="text-muted-foreground">Falcon pending cataloguing:</span> ~{(pendVal / 1000).toFixed(1)}t est.</p>}
+          {pendSs > 0 && <p><span style={{ color: STARSHIP_COLOR, opacity: 0.7 }}>▨</span> <span className="text-muted-foreground">Provisional (estimated, not yet catalogued):</span> ~{(pendSs / 1000).toFixed(1)}t</p>}
           <p><span style={{ color: OTHERS_COLOR }}>■</span> <span className="text-muted-foreground">Rest of World:</span> {(othersVal / 1000).toFixed(1)}t</p>
-          <p className="border-t border-border/50 mt-1 pt-1"><span className="text-muted-foreground">SpaceX share:</span> <span style={{ color: SPACEX_COLOR }}>{pct}%</span></p>
+          <p className="border-t border-border/50 mt-1 pt-1"><span className="text-muted-foreground">SpaceX share (catalogued):</span> <span style={{ color: SPACEX_COLOR }}>{pct}%</span></p>
         </div>
       </div>
     );
@@ -686,10 +894,10 @@ function SpaceXComparisonChart() {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 px-6 pb-4 font-mono text-xs">
+        <div className="flex items-center gap-4 px-6 pb-4 font-mono text-xs flex-wrap">
           <span className="flex items-center gap-1.5">
             <span className="inline-block w-3 h-3 rounded-sm" style={{ background: SPACEX_COLOR }} />
-            <span className="text-muted-foreground">SpaceX (Falcon 9 / Falcon Heavy)</span>
+            <span className="text-muted-foreground">SpaceX (Falcon 9 / Heavy / Starship)</span>
           </span>
           <span className="flex items-center gap-1.5">
             <span className="inline-block w-3 h-3 rounded-sm" style={{ background: OTHERS_COLOR }} />
@@ -700,7 +908,14 @@ function SpaceXComparisonChart() {
               className="inline-block w-3 h-3 rounded-sm border border-muted-foreground/50"
               style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(var(--muted-foreground) / 0.6) 2px, hsl(var(--muted-foreground) / 0.6) 3px)' }}
             />
-            <span className="text-muted-foreground">Pending cataloguing (est.)</span>
+            <span className="text-muted-foreground">Falcon pending cataloguing (est.)</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span
+              className="inline-block w-3 h-3 rounded-sm border border-amber-400/50"
+              style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, hsl(35 100% 55% / 0.85) 2px, hsl(35 100% 55% / 0.85) 3px)' }}
+            />
+            <span className="text-muted-foreground">Provisional (estimated, not yet catalogued)</span>
           </span>
         </div>
 
@@ -730,10 +945,15 @@ function SpaceXComparisonChart() {
                   <rect width="6" height="6" fill={SPACEX_COLOR} fillOpacity="0.15" />
                   <line x1="0" y1="0" x2="0" y2="6" stroke={SPACEX_COLOR} strokeWidth="2" strokeOpacity="0.7" />
                 </pattern>
+                <pattern id="hatchYearStarship" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                  <rect width="6" height="6" fill={STARSHIP_COLOR} fillOpacity="0.15" />
+                  <line x1="0" y1="0" x2="0" y2="6" stroke={STARSHIP_COLOR} strokeWidth="2" strokeOpacity="0.85" />
+                </pattern>
               </defs>
               <Bar dataKey="others" name="Rest of World" stackId="a" fill={OTHERS_COLOR} radius={[0, 0, 0, 0]} />
               <Bar dataKey="spacex" name="SpaceX" stackId="a" fill={SPACEX_COLOR} />
-              <Bar dataKey="pendingSpacex" name="SpaceX pending (est.)" stackId="a" fill="url(#hatchSpacexPend)" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="pendingSpacex" name="Falcon pending (est.)" stackId="a" fill="url(#hatchSpacexPend)" />
+              <Bar dataKey="pendingStarship" name="Provisional (estimated, not yet catalogued)" stackId="a" fill="url(#hatchYearStarship)" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -1072,6 +1292,9 @@ export default function Analytics() {
 
         {/* Falcon vs Starship vehicle comparison */}
         <FalconVsStarshipChart />
+
+        {/* Sourced provisional masses and the calculation behind them */}
+        <ProvisionalEstimates />
 
         {/* SpaceX vs Rest-of-World comparison */}
         <SpaceXComparisonChart />

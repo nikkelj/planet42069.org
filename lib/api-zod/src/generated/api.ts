@@ -105,13 +105,15 @@ export const GetSatcatTleResponse = zod.object({
 
 
 /**
- * Predicted passes (SGP4-propagated) for the next N days over the given lat/lon
+ * Predicted passes for the next N days over the given lat/lon. When the satellite has a SpaceX public ephemeris, the newest file for that name is used. Otherwise the element set is propagated with SGP4.
+
  * @summary Upcoming passes over an observer location
  */
 export const getSatcatPassesQueryDaysDefault = 3;
 
 export const GetSatcatPassesQueryParams = zod.object({
-  "norad": zod.coerce.number(),
+  "norad": zod.coerce.number().optional().describe('NORAD catalog number. Optional when name is set.'),
+  "name": zod.coerce.string().optional().describe('Satellite name, used to pick the newest Starlink public ephemeris.'),
   "lat": zod.coerce.number().describe('Observer latitude in degrees (-90..90)'),
   "lon": zod.coerce.number().describe('Observer longitude in degrees (-180..180)'),
   "days": zod.coerce.number().default(getSatcatPassesQueryDaysDefault).describe('Days ahead to search (1-7)')
@@ -122,7 +124,10 @@ export const GetSatcatPassesResponse = zod.object({
   "lat": zod.number(),
   "lon": zod.number(),
   "days": zod.number(),
-  "epoch": zod.string().describe('Element-set epoch used for propagation (ISO 8601)'),
+  "epoch": zod.string().describe('Element-set epoch, or the start of the ephemeris file (ISO 8601)'),
+  "coverageEnd": zod.string().optional().describe('End of the ephemeris file when source is starlink-ephemeris (ISO 8601)'),
+  "source": zod.string().optional().describe('starlink-ephemeris or tle'),
+  "name": zod.string().optional(),
   "passes": zod.array(zod.object({
   "startTime": zod.string().describe('Pass start (rises above 0° elevation), ISO 8601'),
   "maxTime": zod.string().describe('Time of maximum elevation, ISO 8601'),
@@ -207,6 +212,7 @@ export const GetSatcatSummaryResponse = zod.object({
   "cacheAge": zod.number().describe('How old the in-memory catalog cache is in seconds'),
   "estimatedObjects": zod.number().describe('Number of objects whose mass is a Bureau estimate (not GCAT data)'),
   "estimatedMassKg": zod.number().describe('Total estimated (theorized) payload mass in kg'),
+  "pendingMassKg": zod.number().describe('Provisional mass (Falcon-median plus sourced Starship) not yet in the catalog. Not included in totalMassKg.'),
   "freshness": zod.object({
   "gcatSyncedAt": zod.string().nullable(),
   "spacetrackSyncedAt": zod.string().nullable(),
@@ -214,20 +220,21 @@ export const GetSatcatSummaryResponse = zod.object({
   "gunterSyncedAt": zod.string().nullable(),
   "gcatLastError": zod.string().nullable().describe('Latest GCAT sync-log error (null if the most recent GCAT attempt succeeded or never ran). Admin-safe; no secrets.'),
   "spacetrackLastError": zod.string().nullable().describe('Latest Space-Track sync-log error (null if the most recent Space-Track attempt succeeded or never ran). Admin-safe; no secrets.')
-}).describe('Last successful sync per upstream source (ISO timestamps, null if never), plus the latest GCAT/Space-Track errors when the most recent attempt failed')
+}).describe('Last successful sync per upstream source (ISO timestamps, null if never), plus the latest GCAT\/Space-Track errors when the most recent attempt failed')
 })
 
 
 /**
- * Payload mass to orbit per year, split between SpaceX (Falcon family) and the rest of the world
+ * Payload mass to orbit per year, split between SpaceX (Falcon and Starship) and the rest of the world. Falcon-median pending mass and sourced Starship provisional mass are separate series.
  * @summary Yearly payload mass by provider
  */
 export const GetSatcatByYearProviderResponse = zod.object({
   "byYearProvider": zod.array(zod.object({
   "year": zod.string(),
-  "spacex": zod.number().describe('SpaceX (Falcon family) payload mass in kg'),
+  "spacex": zod.number().describe('SpaceX (Falcon and Starship) catalogued payload mass in kg'),
   "others": zod.number().describe('Rest-of-world payload mass in kg'),
-  "pendingSpacex": zod.number().describe('Provisional SpaceX estimate for launches not yet catalogued'),
+  "pendingSpacex": zod.number().describe('Falcon-median provisional estimate for Falcon launches not yet catalogued'),
+  "pendingStarship": zod.number().describe('Sourced provisional Starship mass, not yet catalogued. Not included in pendingSpacex.'),
   "spacexCount": zod.number(),
   "othersCount": zod.number()
 }))
@@ -252,11 +259,13 @@ export const GetSatcatUpmassByProviderResponse = zod.object({
   "provider": zod.string(),
   "massKg": zod.number().describe('Confirmed (GCAT-catalogued) mass in kg'),
   "estMassKg": zod.number().describe('Additional theorized mass in kg (Bureau estimates)'),
-  "pendingMassKg": zod.number().describe('Provisional estimate for launches not yet catalogued'),
+  "pendingMassKg": zod.number().describe('Falcon-median provisional estimate for launches not yet catalogued'),
+  "pendingStarshipMassKg": zod.number().describe('Sourced provisional Starship mass in the window. Not included in pendingMassKg.'),
   "count": zod.number()
 })),
   "totalMassKg": zod.number(),
-  "totalPendingMassKg": zod.number().describe('Total provisional (pending cataloguing) estimate in kg'),
+  "totalPendingMassKg": zod.number().describe('Total Falcon-median provisional estimate in kg. Does not include Starship.'),
+  "totalPendingStarshipMassKg": zod.number().describe('Total sourced provisional Starship mass in the window. Not included in totalMassKg or totalPendingMassKg.'),
   "totalCount": zod.number()
 })
 
@@ -361,7 +370,8 @@ export const GetSatcatFalconVsStarshipResponse = zod.object({
   "year": zod.string(),
   "falcon": zod.number(),
   "starship": zod.number(),
-  "pendingFalcon": zod.number().describe('Provisional estimate for Falcon launches not yet catalogued')
+  "pendingFalcon": zod.number().describe('Falcon-median provisional estimate for Falcon launches not yet catalogued'),
+  "pendingStarship": zod.number().describe('Sourced provisional Starship mass, not yet catalogued. Not included in pendingFalcon or starship.')
 })),
   "starshipTotal": zod.number()
 })
@@ -381,10 +391,12 @@ export const GetSatcatSpacexBySiteMonthlyResponse = zod.object({
   "monthNum": zod.number(),
   "capeCanaveral": zod.number(),
   "vandenberg": zod.number(),
+  "starbase": zod.number().describe('Catalogued payload mass from Starbase (Boca Chica). Not folded into other.'),
   "other": zod.number(),
-  "pendingCapeCanaveral": zod.number().describe('Provisional estimate for launches not yet catalogued'),
-  "pendingVandenberg": zod.number().describe('Provisional estimate for launches not yet catalogued'),
-  "pendingOther": zod.number().describe('Provisional estimate for launches not yet catalogued')
+  "pendingCapeCanaveral": zod.number().describe('Falcon-median provisional estimate for launches not yet catalogued'),
+  "pendingVandenberg": zod.number().describe('Falcon-median provisional estimate for launches not yet catalogued'),
+  "pendingStarbase": zod.number().describe('Provisional (estimated, not yet catalogued) mass from Starbase, including sourced Starship estimates'),
+  "pendingOther": zod.number().describe('Falcon-median provisional estimate for launches not yet catalogued')
 }))
 })
 
@@ -397,10 +409,12 @@ export const GetSatcatSpacexBySiteResponse = zod.object({
   "year": zod.string(),
   "capeCanaveral": zod.number(),
   "vandenberg": zod.number(),
+  "starbase": zod.number().describe('Catalogued payload mass from Starbase (Boca Chica). Not folded into other.'),
   "other": zod.number(),
-  "pendingCapeCanaveral": zod.number().describe('Provisional estimate for launches not yet catalogued'),
-  "pendingVandenberg": zod.number().describe('Provisional estimate for launches not yet catalogued'),
-  "pendingOther": zod.number().describe('Provisional estimate for launches not yet catalogued')
+  "pendingCapeCanaveral": zod.number().describe('Falcon-median provisional estimate for launches not yet catalogued'),
+  "pendingVandenberg": zod.number().describe('Falcon-median provisional estimate for launches not yet catalogued'),
+  "pendingStarbase": zod.number().describe('Provisional (estimated, not yet catalogued) mass from Starbase, including sourced Starship estimates'),
+  "pendingOther": zod.number().describe('Falcon-median provisional estimate for launches not yet catalogued')
 }))
 })
 
@@ -414,8 +428,69 @@ export const GetSatcatSpacexByEntityResponse = zod.object({
   "starlink": zod.number(),
   "usGov": zod.number(),
   "commercial": zod.number(),
-  "pending": zod.number().describe('Provisional estimate for launches not yet catalogued (segment unknown)')
+  "pending": zod.number().describe('Falcon-median provisional estimate for launches not yet catalogued (segment unknown)'),
+  "pendingStarship": zod.number().describe('Sourced provisional Starship mass, not yet catalogued. Not included in pending or starlink.')
 }))
+})
+
+
+/**
+ * Checked-in provisional estimates for launches GCAT has not yet given a payload mass. Retired entries (catalogued payload mass already on file) stay in the list with retired=true and are excluded from chart totals.
+ * @summary Sourced provisional payload masses
+ */
+export const getSatcatProvisionalManifestResponseEntriesItemCalcRangeKgMin = 2;
+export const getSatcatProvisionalManifestResponseEntriesItemCalcRangeKgMax = 2;
+
+
+
+export const GetSatcatProvisionalManifestResponse = zod.object({
+  "calculatedOn": zod.string(),
+  "timezone": zod.string(),
+  "entries": zod.array(zod.object({
+  "id": zod.string(),
+  "launchDate": zod.string(),
+  "launchDateTimeUtc": zod.string(),
+  "vehicle": zod.string(),
+  "lvFamilyIncludes": zod.string(),
+  "site": zod.string(),
+  "siteClass": zod.enum(['capeCanaveral', 'vandenberg', 'starbase', 'other']),
+  "payloadName": zod.string(),
+  "payloadCount": zod.number(),
+  "perSatMassKg": zod.number(),
+  "perSatLowKg": zod.number(),
+  "perSatHighKg": zod.number(),
+  "massKg": zod.number().describe('Booked central batch mass in kg'),
+  "massLowKg": zod.number(),
+  "massHighKg": zod.number(),
+  "basis": zod.enum(['published', 'estimated']),
+  "sourceUrls": zod.array(zod.string()),
+  "note": zod.string(),
+  "calc": zod.object({
+  "title": zod.string(),
+  "formula": zod.string(),
+  "inputs": zod.array(zod.object({
+  "name": zod.string(),
+  "value": zod.string(),
+  "kind": zod.enum(['published', 'derived', 'editorial']),
+  "source": zod.string()
+})),
+  "resultKg": zod.number().describe('Booked central result in kg'),
+  "rangeKg": zod.array(zod.number()).min(getSatcatProvisionalManifestResponseEntriesItemCalcRangeKgMin).max(getSatcatProvisionalManifestResponseEntriesItemCalcRangeKgMax).describe('[low, high] booked range in kg'),
+  "markdownPath": zod.string()
+}),
+  "match": zod.object({
+  "ldate": zod.string(),
+  "lvFamilyIncludes": zod.string(),
+  "launchTag": zod.string().nullish(),
+  "payloadNameIncludes": zod.string().nullish(),
+  "siteHints": zod.array(zod.string()).optional()
+}),
+  "retired": zod.boolean().describe('True once GCAT lists payload mass for this launch. Excluded from totals.'),
+  "cataloguedMassKg": zod.number().describe('Sum of catalogued object-class P mass matched to this launch'),
+  "markdown": zod.string().describe('Published calculation write-up')
+})),
+  "activeMassKg": zod.number().describe('Booked kg of entries that are not retired'),
+  "note": zod.string()
 })
 
 
@@ -554,7 +629,7 @@ export const GetRpodEventsResponse = zod.object({
   "data": zod.array(zod.object({
   "id": zod.number(),
   "status": zod.string(),
-  "kind": zod.string().describe('conjunction (discrete close approach), coplanar (long-duration co-aligned shadowing), or docked (near-zero range and relative velocity — a physically joined stack, not a proximity operation)'),
+  "kind": zod.string().describe('conjunction (discrete close approach), coplanar (long-duration co-aligned shadowing), docked (near-zero range and relative velocity — a physically joined stack, not a proximity operation), or station-keeping (red-versus-blue pair holding a steady along-track offset)'),
   "windowStart": zod.string(),
   "windowEnd": zod.string(),
   "tca": zod.string().describe('Predicted time of closest approach (ISO)'),
@@ -652,6 +727,56 @@ export const GetRpodCountriesResponse = zod.object({
 
 
 /**
+ * Read-only list of would-be X citations. Default scan mode writes rows here instead of posting. status is pending, approved, rejected, or posted.
+
+ * @summary Queued RPOD citations
+ */
+export const getRpodAlertQueueQueryLimitDefault = 50;
+export const getRpodAlertQueueQueryLimitMax = 200;
+
+
+
+export const GetRpodAlertQueueQueryParams = zod.object({
+  "status": zod.enum(['pending', 'approved', 'rejected', 'posted']).optional(),
+  "limit": zod.coerce.number().min(1).max(getRpodAlertQueueQueryLimitMax).default(getRpodAlertQueueQueryLimitDefault)
+})
+
+export const GetRpodAlertQueueResponse = zod.object({
+  "total": zod.number(),
+  "data": zod.array(zod.object({
+  "id": zod.number(),
+  "eventId": zod.number(),
+  "objects": zod.array(zod.number()),
+  "text": zod.string(),
+  "score": zod.number(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'posted']),
+  "createdAt": zod.coerce.date(),
+  "postedAt": zod.coerce.date().nullish(),
+  "tweetId": zod.string().nullish()
+}))
+})
+
+
+/**
+ * Requires Authorization Bearer or X-RPOD-Admin-Token matching RPOD_ADMIN_TOKEN. Sets the row to approved and posts it to X. A failed post leaves the row approved so the call can be retried.
+
+ * @summary Approve and post a queued citation
+ */
+export const ApproveRpodAlertParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * Same admin token as approve. Posted rows cannot be rejected.
+ * @summary Reject a queued citation
+ */
+export const RejectRpodAlertParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * Archive row counts, backfill cursor position, recent-feed watermark, and last scan result
  * @summary TLE archive and scan status
  */
@@ -674,7 +799,7 @@ export const GetRpodStatusResponse = zod.object({
   "lastScanStatus": zod.string().nullish(),
   "lastScanEvents": zod.number().nullish(),
   "lastScanError": zod.string().nullish().describe('Short reason from the latest rpod-scan sync-log row (null when the scan stored none)'),
-  "buildCommit": zod.string().describe('Git commit SHA of the running server, or "unknown" when it could not be resolved. Computed once at startup; not a database read.')
+  "buildCommit": zod.string().describe('Git commit SHA of the running server, or \"unknown\" when it could not be resolved. Computed once at startup; not a database read.')
 })
 
 

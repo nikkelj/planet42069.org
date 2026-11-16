@@ -7,9 +7,12 @@
  */
 
 export type GetSatcatPassesParams = {
-norad: number;
 /**
- * Satellite name. When set, the newest Starlink public ephemeris for this name is preferred.
+ * NORAD catalog number. Optional when name is set.
+ */
+norad?: number;
+/**
+ * Satellite name, used to pick the newest Starlink public ephemeris.
  */
 name?: string;
 /**

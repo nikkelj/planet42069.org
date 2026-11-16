@@ -24,5 +24,7 @@ export interface SatcatSummary {
   estimatedObjects: number;
   /** Total estimated (theorized) payload mass in kg */
   estimatedMassKg: number;
+  /** Provisional mass (Falcon-median plus sourced Starship) not yet in the catalog. Not included in totalMassKg. */
+  pendingMassKg: number;
   freshness: ObcFreshness;
 }

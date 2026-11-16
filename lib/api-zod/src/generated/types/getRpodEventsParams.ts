@@ -20,7 +20,7 @@ limit?: number;
  */
 status?: GetRpodEventsStatus;
 /**
- * Filter by event kind (discrete conjunction, long-duration coplanar shadowing, or docked stack)
+ * Filter by event kind (discrete conjunction, long-duration coplanar shadowing, docked stack, or red-versus-blue station keeping)
  */
 kind?: GetRpodEventsKind;
 /**

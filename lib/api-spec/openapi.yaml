@@ -216,7 +216,7 @@ paths:
       operationId: getSatcatByYearProvider
       tags: [satcat]
       summary: Yearly payload mass by provider
-      description: Payload mass to orbit per year, split between SpaceX (Falcon family) and the rest of the world
+      description: Payload mass to orbit per year, split between SpaceX (Falcon and Starship) and the rest of the world. Falcon-median pending mass and sourced Starship provisional mass are separate series.
       responses:
         "200":
           description: Yearly provider split
@@ -352,6 +352,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SpacexByEntity"
+
+  /satcat/provisional-manifest:
+    get:
+      operationId: getSatcatProvisionalManifest
+      tags: [satcat]
+      summary: Sourced provisional payload masses
+      description: Checked-in provisional estimates for launches GCAT has not yet given a payload mass. Retired entries (catalogued payload mass already on file) stay in the list with retired=true and are excluded from chart totals.
+      responses:
+        "200":
+          description: Provisional manifest with calc inputs and retirement state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProvisionalManifest"
 
   /satcat/constellations:
     get:
@@ -1409,6 +1423,9 @@ components:
         estimatedMassKg:
           type: number
           description: Total estimated (theorized) payload mass in kg
+        pendingMassKg:
+          type: number
+          description: Provisional mass (Falcon-median plus sourced Starship) not yet in the catalog. Not included in totalMassKg.
         freshness:
           $ref: "#/components/schemas/ObcFreshness"
       required:
@@ -1424,6 +1441,7 @@ components:
         - cacheAge
         - estimatedObjects
         - estimatedMassKg
+        - pendingMassKg
         - freshness
 
     YearProviderRow:
@@ -1433,13 +1451,16 @@ components:
           type: string
         spacex:
           type: number
-          description: SpaceX (Falcon family) payload mass in kg
+          description: SpaceX (Falcon and Starship) catalogued payload mass in kg
         others:
           type: number
           description: Rest-of-world payload mass in kg
         pendingSpacex:
           type: number
-          description: Provisional SpaceX estimate for launches not yet catalogued
+          description: Falcon-median provisional estimate for Falcon launches not yet catalogued
+        pendingStarship:
+          type: number
+          description: Sourced provisional Starship mass, not yet catalogued. Not included in pendingSpacex.
         spacexCount:
           type: integer
         othersCount:
@@ -1449,6 +1470,7 @@ components:
         - spacex
         - others
         - pendingSpacex
+        - pendingStarship
         - spacexCount
         - othersCount
 
@@ -1475,7 +1497,10 @@ components:
           description: Additional theorized mass in kg (Bureau estimates)
         pendingMassKg:
           type: number
-          description: Provisional estimate for launches not yet catalogued
+          description: Falcon-median provisional estimate for launches not yet catalogued
+        pendingStarshipMassKg:
+          type: number
+          description: Sourced provisional Starship mass in the window. Not included in pendingMassKg.
         count:
           type: integer
       required:
@@ -1483,6 +1508,7 @@ components:
         - massKg
         - estMassKg
         - pendingMassKg
+        - pendingStarshipMassKg
         - count
 
     UpmassByProvider:
@@ -1506,7 +1532,10 @@ components:
           type: number
         totalPendingMassKg:
           type: number
-          description: Total provisional (pending cataloguing) estimate in kg
+          description: Total Falcon-median provisional estimate in kg. Does not include Starship.
+        totalPendingStarshipMassKg:
+          type: number
+          description: Total sourced provisional Starship mass in the window. Not included in totalMassKg or totalPendingMassKg.
         totalCount:
           type: integer
       required:
@@ -1514,6 +1543,7 @@ components:
         - providers
         - totalMassKg
         - totalPendingMassKg
+        - totalPendingStarshipMassKg
         - totalCount
 
     ShuttleAudit:
@@ -1778,12 +1808,16 @@ components:
                 type: number
               pendingFalcon:
                 type: number
-                description: Provisional estimate for Falcon launches not yet catalogued
+                description: Falcon-median provisional estimate for Falcon launches not yet catalogued
+              pendingStarship:
+                type: number
+                description: Sourced provisional Starship mass, not yet catalogued. Not included in pendingFalcon or starship.
             required:
               - year
               - falcon
               - starship
               - pendingFalcon
+              - pendingStarship
         starshipTotal:
           type: number
       required:
@@ -1808,25 +1842,33 @@ components:
                 type: number
               vandenberg:
                 type: number
+              starbase:
+                type: number
+                description: Catalogued payload mass from Starbase (Boca Chica). Not folded into other.
               other:
                 type: number
               pendingCapeCanaveral:
                 type: number
-                description: Provisional estimate for launches not yet catalogued
+                description: Falcon-median provisional estimate for launches not yet catalogued
               pendingVandenberg:
                 type: number
-                description: Provisional estimate for launches not yet catalogued
+                description: Falcon-median provisional estimate for launches not yet catalogued
+              pendingStarbase:
+                type: number
+                description: Provisional (estimated, not yet catalogued) mass from Starbase, including sourced Starship estimates
               pendingOther:
                 type: number
-                description: Provisional estimate for launches not yet catalogued
+                description: Falcon-median provisional estimate for launches not yet catalogued
             required:
               - month
               - monthNum
               - capeCanaveral
               - vandenberg
+              - starbase
               - other
               - pendingCapeCanaveral
               - pendingVandenberg
+              - pendingStarbase
               - pendingOther
       required:
         - year
@@ -1846,24 +1888,32 @@ components:
                 type: number
               vandenberg:
                 type: number
+              starbase:
+                type: number
+                description: Catalogued payload mass from Starbase (Boca Chica). Not folded into other.
               other:
                 type: number
               pendingCapeCanaveral:
                 type: number
-                description: Provisional estimate for launches not yet catalogued
+                description: Falcon-median provisional estimate for launches not yet catalogued
               pendingVandenberg:
                 type: number
-                description: Provisional estimate for launches not yet catalogued
+                description: Falcon-median provisional estimate for launches not yet catalogued
+              pendingStarbase:
+                type: number
+                description: Provisional (estimated, not yet catalogued) mass from Starbase, including sourced Starship estimates
               pendingOther:
                 type: number
-                description: Provisional estimate for launches not yet catalogued
+                description: Falcon-median provisional estimate for launches not yet catalogued
             required:
               - year
               - capeCanaveral
               - vandenberg
+              - starbase
               - other
               - pendingCapeCanaveral
               - pendingVandenberg
+              - pendingStarbase
               - pendingOther
       required:
         - rows
@@ -1886,15 +1936,194 @@ components:
                 type: number
               pending:
                 type: number
-                description: Provisional estimate for launches not yet catalogued (segment unknown)
+                description: Falcon-median provisional estimate for launches not yet catalogued (segment unknown)
+              pendingStarship:
+                type: number
+                description: Sourced provisional Starship mass, not yet catalogued. Not included in pending or starlink.
             required:
               - year
               - starlink
               - usGov
               - commercial
               - pending
+              - pendingStarship
       required:
         - rows
+
+    ProvisionalCalcInput:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+        kind:
+          type: string
+          enum: [published, derived, editorial]
+        source:
+          type: string
+      required:
+        - name
+        - value
+        - kind
+        - source
+
+    ProvisionalCalc:
+      type: object
+      properties:
+        title:
+          type: string
+        formula:
+          type: string
+        inputs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProvisionalCalcInput"
+        resultKg:
+          type: number
+          description: Booked central result in kg
+        rangeKg:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+          description: "[low, high] booked range in kg"
+        markdownPath:
+          type: string
+      required:
+        - title
+        - formula
+        - inputs
+        - resultKg
+        - rangeKg
+        - markdownPath
+
+    ProvisionalManifestMatch:
+      type: object
+      properties:
+        ldate:
+          type: string
+        lvFamilyIncludes:
+          type: string
+        launchTag:
+          type: string
+          nullable: true
+        payloadNameIncludes:
+          type: string
+          nullable: true
+        siteHints:
+          type: array
+          items:
+            type: string
+      required:
+        - ldate
+        - lvFamilyIncludes
+
+    ProvisionalManifestEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        launchDate:
+          type: string
+        launchDateTimeUtc:
+          type: string
+        vehicle:
+          type: string
+        lvFamilyIncludes:
+          type: string
+        site:
+          type: string
+        siteClass:
+          type: string
+          enum: [capeCanaveral, vandenberg, starbase, other]
+        payloadName:
+          type: string
+        payloadCount:
+          type: number
+        perSatMassKg:
+          type: number
+        perSatLowKg:
+          type: number
+        perSatHighKg:
+          type: number
+        massKg:
+          type: number
+          description: Booked central batch mass in kg
+        massLowKg:
+          type: number
+        massHighKg:
+          type: number
+        basis:
+          type: string
+          enum: [published, estimated]
+        sourceUrls:
+          type: array
+          items:
+            type: string
+        note:
+          type: string
+        calc:
+          $ref: "#/components/schemas/ProvisionalCalc"
+        match:
+          $ref: "#/components/schemas/ProvisionalManifestMatch"
+        retired:
+          type: boolean
+          description: True once GCAT lists payload mass for this launch. Excluded from totals.
+        cataloguedMassKg:
+          type: number
+          description: Sum of catalogued object-class P mass matched to this launch
+        markdown:
+          type: string
+          description: Published calculation write-up
+      required:
+        - id
+        - launchDate
+        - launchDateTimeUtc
+        - vehicle
+        - lvFamilyIncludes
+        - site
+        - siteClass
+        - payloadName
+        - payloadCount
+        - perSatMassKg
+        - perSatLowKg
+        - perSatHighKg
+        - massKg
+        - massLowKg
+        - massHighKg
+        - basis
+        - sourceUrls
+        - note
+        - calc
+        - match
+        - retired
+        - cataloguedMassKg
+        - markdown
+
+    ProvisionalManifest:
+      type: object
+      properties:
+        calculatedOn:
+          type: string
+        timezone:
+          type: string
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProvisionalManifestEntry"
+        activeMassKg:
+          type: number
+          description: Booked kg of entries that are not retired
+        note:
+          type: string
+      required:
+        - calculatedOn
+        - timezone
+        - entries
+        - activeMassKg
+        - note
 
     DeorbitObject:
       type: object

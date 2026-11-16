@@ -11,11 +11,15 @@ export type SpacexBySiteMonthlyRowsItem = {
   monthNum: number;
   capeCanaveral: number;
   vandenberg: number;
+  /** Catalogued payload mass from Starbase (Boca Chica). Not folded into other. */
+  starbase: number;
   other: number;
-  /** Provisional estimate for launches not yet catalogued */
+  /** Falcon-median provisional estimate for launches not yet catalogued */
   pendingCapeCanaveral: number;
-  /** Provisional estimate for launches not yet catalogued */
+  /** Falcon-median provisional estimate for launches not yet catalogued */
   pendingVandenberg: number;
-  /** Provisional estimate for launches not yet catalogued */
+  /** Provisional (estimated, not yet catalogued) mass from Starbase, including sourced Starship estimates */
+  pendingStarbase: number;
+  /** Falcon-median provisional estimate for launches not yet catalogued */
   pendingOther: number;
 };
