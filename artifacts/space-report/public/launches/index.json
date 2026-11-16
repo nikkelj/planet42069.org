@@ -545,6 +545,46 @@
       "id": "iqps-qps-sar19",
       "title": "iQPS news: QPS-SAR-19 'YAMATSUMI-II' launched 14 Nov 14:30 JST, separated ~50 min after launch, first contact ~8 min later",
       "url": "https://i-qps.net/news/4163/"
+    },
+    {
+      "id": "ll2-amazon-leo-lv01",
+      "title": "Launch Library 2: Vulcan VC6L | Amazon Leo (LV-01), Launch Failure, net 2026-11-15T17:40:30Z",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/?search=Amazon%20Leo%20LV-01"
+    },
+    {
+      "id": "sfn-amazon-leo-lv01-failure",
+      "title": "Spaceflight Now: ULA's first full-mission failure since 2006; quotes ULA — anomaly about 10 minutes into the flight, 40 Amazon Leo satellites not delivered",
+      "url": "https://spaceflightnow.com/2026/11/15/ula-suffers-first-total-mission-failure-with-loss-of-vulcan-rocket-carrying-40-amazon-leo-satellites/"
+    },
+    {
+      "id": "ll2-ussf-317",
+      "title": "Launch Library 2: Falcon 9 Block 5 | USSF-317, Go, NET 2026-11-19T03:00:00Z, window to 07:00Z",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/76617033-4dc0-4448-b50c-e5b0d5a18539/"
+    },
+    {
+      "id": "notamupdates-ussf-317",
+      "title": "NotamUpdates on X: FAA NOTAM covering USSF-317 2026-11-19 03:00-07:43Z",
+      "url": "https://x.com/NotamUpdates/status/2122337617257943183"
+    },
+    {
+      "id": "zla-carf-11-212",
+      "title": "FAA/ZLA CARF NOTAM 11/212-26 USSF-317 Area A (same polygon as 11/116-26; active on the space-notices entry, expires 2026-11-19T07:22:00Z)",
+      "url": "https://space-notices.com/entry/launch-f9-ussf-317"
+    },
+    {
+      "id": "ll2-lm2d-taiyuan",
+      "title": "Launch Library 2: Long March 2D | Unknown Payload, Taiyuan LC-9, Go, NET 2026-11-18T22:50:00Z, window 22:43-23:05Z, orbit Unknown",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/e0a11eb1-0bda-4872-b36b-140247fd5c60/"
+    },
+    {
+      "id": "notam-a5897",
+      "title": "NOTAM ZLHW/ZHWH A5897/26 temporary danger area, 2026-11-18 22:43-23:05Z, Q-line centre 33°22'N 110°36'E",
+      "url": "https://space-notices.com/notice/notam-ZLHW-A5897%2F26"
+    },
+    {
+      "id": "notam-a5898",
+      "title": "NOTAM ZHWH A5898/26 temporary danger area, 2026-11-18 22:44-23:10Z, Q-line centre 30°15'N 110°04'E",
+      "url": "https://space-notices.com/notice/notam-ZHWH-A5898%2F26"
     }
   ],
   "launches": [
@@ -1102,12 +1142,12 @@
       "slug": "amazon-leo-lv01",
       "name": "Amazon Leo LV-01 (Vulcan VC6L, SLC-41)",
       "vehicle": "Vulcan VC6L",
-      "t0_utc": "2026-11-15T17:11:00Z",
-      "t0_kind": "net",
-      "window_open_utc": "2026-11-15T17:11:00Z",
-      "window_close_utc": "2026-11-15T17:40:00Z",
-      "status": "Go",
-      "phase": "upcoming",
+      "t0_utc": "2026-11-15T17:40:30Z",
+      "t0_kind": "liftoff",
+      "window_open_utc": "2026-11-15T17:11:30Z",
+      "window_close_utc": "2026-11-15T17:40:30Z",
+      "status": "Failure",
+      "phase": "recent",
       "files": {
         "csv": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-15_trajectory.csv",
         "kml": "/launches/amazon-leo-lv01/amazon-leo-lv01_2026-11-15_trajectory.kml",
@@ -1128,11 +1168,14 @@
         "https://en.wikipedia.org/wiki/Vulcan_Centaur",
         "https://x.com/ulalaunch/status/2120895023067639859",
         "https://x.com/ulalaunch/status/2121252131172671506",
-        "https://x.com/ulalaunch/status/2121603937232879787"
+        "https://x.com/ulalaunch/status/2121603937232879787",
+        "https://ll.thespacedevs.com/2.3.0/launches/?search=Amazon%20Leo%20LV-01",
+        "https://ll.thespacedevs.com/2.3.0/launches/ef9850ad-1096-425b-9d27-f7bbd186e61a/",
+        "https://spaceflightnow.com/2026/11/15/ula-suffers-first-total-mission-failure-with-loss-of-vulcan-rocket-carrying-40-amazon-leo-satellites/"
       ],
       "method": {
-        "csv": "event-surrogate parametric: NG catalog GEM 63XL burn 87.3 s and ULA UG Fig. 2.1.1-2 TYPICAL CCSFS times (SRB jettison 100 s, BECO 292 s, sep 298 s, MES1 308 s, fairing 316 s); MES1 cutoff T+908 s ASSUMED (308+600 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; azimuth 43.69 deg from NAVAREA IV 1078/26 Area A far-edge midpoint; ends at MES1 cutoff; T0 2026-11-15T17:11:00Z (ULA Vulcan Leo 1 page, window 17:11-17:40Z; RETIMED 2026-11-14 from 17:32Z Nov 14 after the ground-network delay, and 2026-11-13 from 17:54Z Nov 13; utc shift only)",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: UG-typical CCSFS event times as hard events (not flight-specific); 6x GEM 63XL catalog time-average thrust; 2x BE-4 550k-lbf SL; CV-L propellant derived as one-third less than the 120,000 lb CV-HE; MES1 cutoff ASSUMED 908 s, steering/payload fitted to a 180 x 460 km transfer (460 km from ULA, 180 km perigee ASSUMED); azimuth 43.69 deg from NAVAREA IV 1078/26 Area A; MES1 residual: geodetic alt 180.16 km (target 180), FPA 0.00 deg, SMA error ~0 vs 180x460; osculating 163 x 478 km at MES2 ignition (equatorial-radius, after J2/drag coast), i=49.66 deg vs ULA-published 51.9 deg (residual -2.24 deg; commanded NAVAREA azimuth gives non-rotating 52.66 deg, known sim track bias; azimuth kept NOTAM-first, not retuned); MES2 at first apoapsis T+3628 s, 13.0 s at 2x RL10, solves perigee to 460.0 km (osculating 460.0 x 478.1 km after flattening); deploy time unpublished, so +2 revs on the inferred insertion orbit, file ends T+14919 s; fitted payload 20.14 t is NOT an estimate of the 40-sat stack; ILLUSTRATIVE; RETIMED 2026-11-13 to T0 2026-11-14T17:32:00Z by utc shift only (+85080 s; Earth-fixed geometry unchanged); RETIMED 2026-11-14 to T0 2026-11-15T17:11:00Z by utc shift only (+85140 s)"
+        "csv": "FLOWN AND FAILED at liftoff 2026-11-15T17:40:30Z. This file is the PLANNED nominal profile (utc shift +1770 s only); the vehicle did not reach orbit (anomaly ~T+10 min, cause unknown; 40 Amazon Leo satellites not delivered). event-surrogate parametric: NG catalog GEM 63XL burn 87.3 s and ULA UG Fig. 2.1.1-2 TYPICAL CCSFS times (SRB jettison 100 s, BECO 292 s, sep 298 s, MES1 308 s, fairing 316 s); MES1 cutoff T+908 s ASSUMED (308+600 s); altitudes unpublished, so knot altitudes ASSUMED from this board's sim; azimuth 43.69 deg from NAVAREA IV 1078/26 Area A far-edge midpoint; ends at MES1 cutoff; T0 2026-11-15T17:11:00Z (ULA Vulcan Leo 1 page, window 17:11-17:40Z; RETIMED 2026-11-14 from 17:32Z Nov 14 after the ground-network delay, and 2026-11-13 from 17:54Z Nov 13; utc shift only) Retimed 2026-11-16 from the 17:11:00Z window-open T0.",
+        "csv_sim": "FLOWN AND FAILED at liftoff 2026-11-15T17:40:30Z. This file is the PLANNED nominal profile (utc shift +1770 s only); the vehicle did not reach orbit (anomaly ~T+10 min, cause unknown; 40 Amazon Leo satellites not delivered). first-principles 3DOF sim, TIMELINE mode: UG-typical CCSFS event times as hard events (not flight-specific); 6x GEM 63XL catalog time-average thrust; 2x BE-4 550k-lbf SL; CV-L propellant derived as one-third less than the 120,000 lb CV-HE; MES1 cutoff ASSUMED 908 s, steering/payload fitted to a 180 x 460 km transfer (460 km from ULA, 180 km perigee ASSUMED); azimuth 43.69 deg from NAVAREA IV 1078/26 Area A; MES1 residual: geodetic alt 180.16 km (target 180), FPA 0.00 deg, SMA error ~0 vs 180x460; osculating 163 x 478 km at MES2 ignition (equatorial-radius, after J2/drag coast), i=49.66 deg vs ULA-published 51.9 deg (residual -2.24 deg; commanded NAVAREA azimuth gives non-rotating 52.66 deg, known sim track bias; azimuth kept NOTAM-first, not retuned); MES2 at first apoapsis T+3628 s, 13.0 s at 2x RL10, solves perigee to 460.0 km (osculating 460.0 x 478.1 km after flattening); deploy time unpublished, so +2 revs on the inferred insertion orbit, file ends T+14919 s; fitted payload 20.14 t is NOT an estimate of the 40-sat stack; ILLUSTRATIVE; RETIMED 2026-11-13 to T0 2026-11-14T17:32:00Z by utc shift only (+85080 s; Earth-fixed geometry unchanged); RETIMED 2026-11-14 to T0 2026-11-15T17:11:00Z by utc shift only (+85140 s) Retimed 2026-11-16 from the 17:11:00Z window-open T0."
       },
       "reference_ids": [
         "ula-vulcan-leo-1",
@@ -1145,9 +1188,11 @@
         "kml",
         "ula-leo1-target-x",
         "ula-leo1-delay-x",
-        "ula-leo1-delay2-x"
+        "ula-leo1-delay2-x",
+        "ll2-amazon-leo-lv01",
+        "sfn-amazon-leo-lv01-failure"
       ],
-      "note": "Pre-flight ILLUSTRATIVE. ULA Vulcan VC6L (first 6-SRB / first LEO-optimized Centaur V), 40 Amazon Leo satellites from SLC-41; T0 Fri Nov 13 9:54 a.m. PST = 2026-11-13T17:54:00Z (ULA / LL2 Go, window to 18:24Z; FAA KV-01 backup Sat 9:32 a.m. PST). UPDATED 2026-11-12: ULA published the target 'near-circular low Earth orbit of approximately 285 miles (460km) inclined at 51.9 degrees' (replacing the earlier ASSUMED 450 km KA-01 analog); sim retuned to 460 km. Sim inclination 49.66 deg vs the published 51.9 deg (-2.24 deg; azimuth kept NOTAM-first from NAVAREA IV 1078/26, not retuned). RETIMED 2026-11-13: ULA delayed the launch to Sat Nov 14, window 12:32-1:01 p.m. EST (9:32-10:01 a.m. PST, 1732-1801 UTC) after a power interruption at the Air Liquide gaseous-nitrogen plant; files shifted in UTC only (+85080 s). LL2 lists NET 17:32:30Z, 30 s after ULA's window open. RETIMED 2026-11-14: ULA scrubbed Sat Nov 14 (network communication issue between ground equipment and the vehicle; reconfiguration would exceed the 29-minute window) and now targets Sun Nov 15, 12:11-12:40 p.m. EST (9:11-9:40 a.m. PST, 1711-1740 UTC). Files shifted in UTC only (+85140 s). LL2 lists NET 17:11:30Z, 30 s after ULA's window open; Spaceflight Now's feed (generated 07:32Z Nov 14) still showed Sat 17:32:30Z.",
+      "note": "FLOWN AND FAILED. Vulcan VC6L lifted off from SLC-41 at 2026-11-15T17:40:30Z (Sun 15 Nov 9:40:30 a.m. PST; LL2 net, status Launch Failure, id ef9850ad-1096-425b-9d27-f7bbd186e61a, window 17:11:30-17:40:30Z). ULA statement, quoted by Spaceflight Now: the vehicle suffered an anomaly about 10 minutes into the flight and did not deliver the 40 Amazon Leo satellites to orbit. Cause unknown. Spaceflight Now: ULA's first full-mission failure since 2006. Both trajectory files are the PLANNED nominal profile retimed +1770 s from the 17:11:00Z window-open T0; ECEF geometry unchanged. The vehicle did not reach orbit. ILLUSTRATIVE, not a reconstruction. Earlier ULA window was Sun 15 Nov 12:11-12:40 p.m. EST (17:11-17:40Z) after the Nov 14 ground-network scrub and the Nov 13 GN2 delay. Published target remained ~460 km at 51.9 deg; sim inclination 49.66 deg (azimuth kept NOTAM-first, not retuned).",
       "assumptions": [
         "Booster/Centaur event times = ULA UG Fig. 2.1.1-2 TYPICAL CCSFS two-burn sequence (Approximate Times), not LV-01's unpublished timeline",
         "460 km near-circular insertion is PUBLISHED by ULA (X post 2026-11-12, 285 miles / 460 km at 51.9 deg); treated as exactly circular (eccentricity unpublished). Replaces the earlier 450 km Amazon KA-01 assumption",
@@ -1164,7 +1209,8 @@
         "Cd 0.4 fixed, generic",
         "Azimuth from NAVAREA IV 1078/26 Area A, deliberately NOT retuned to the ULA-published 51.9 deg; sim i=49.66 deg vs 51.9 deg (residual -2.24 deg; non-rotating 52.66 deg from the commanded azimuth, known sim track bias)",
         "Deploy time unpublished (NSF-forum 1 h 17 min STA quote not independently verified) -> after MES2, +2 revs on the inferred 460 km insertion orbit",
-        "T0 = ULA window open 2026-11-15T17:11:00Z (LL2 gives 17:11:30Z, unsourced 30 s offset); retimed by utc shift, sim not re-run (sim output is Earth-fixed and T0-independent). Azimuth still from NAVAREA IV 1078/26 (daily backups); no newer hazard notice checked for the Nov 15 window"
+        "Pre-flight T0 was the ULA window open 2026-11-15T17:11:00Z (LL2 then listed 17:11:30Z). Liftoff used now is LL2 net 2026-11-15T17:40:30Z. The Nov 15 retimes before liftoff were utc shifts; the sim was not re-run (Earth-fixed, T0-independent). Azimuth still from NAVAREA IV 1078/26.",
+        "FLOWN AND FAILED at 2026-11-15T17:40:30Z (LL2). Both files are the PLANNED nominal profile shifted in UTC only (+1770 s); the vehicle did not reach orbit. Anomaly about T+10 min per the ULA statement quoted by Spaceflight Now; 40 Amazon Leo satellites not delivered; cause unknown. No anomaly details beyond that statement are used."
       ]
     },
     {
@@ -1353,17 +1399,17 @@
       "slug": "ussf-317",
       "name": "USSF-317",
       "vehicle": "Falcon 9 Block 5",
-      "t0_utc": "2026-11-18T03:14:00Z",
+      "t0_utc": "2026-11-19T03:00:00Z",
       "t0_kind": "net",
-      "window_open_utc": "2026-11-18T03:14:00Z",
-      "window_close_utc": "2026-11-18T07:14:00Z",
+      "window_open_utc": "2026-11-19T03:00:00Z",
+      "window_close_utc": "2026-11-19T07:00:00Z",
       "status": "Go",
       "phase": "upcoming",
       "files": {
-        "csv": "/launches/ussf-317/ussf-317_2026-11-18_trajectory.csv",
-        "kml": "/launches/ussf-317/ussf-317_2026-11-18_trajectory.kml",
-        "csv_sim": "/launches/ussf-317/ussf-317_2026-11-18_trajectory_sim.csv",
-        "kml_sim": "/launches/ussf-317/ussf-317_2026-11-18_trajectory_sim.kml",
+        "csv": "/launches/ussf-317/ussf-317_2026-11-19_trajectory.csv",
+        "kml": "/launches/ussf-317/ussf-317_2026-11-19_trajectory.kml",
+        "csv_sim": "/launches/ussf-317/ussf-317_2026-11-19_trajectory_sim.csv",
+        "kml_sim": "/launches/ussf-317/ussf-317_2026-11-19_trajectory_sim.kml",
         "track_lite": "/launches/ussf-317/track_lite.json"
       },
       "illustrative": true,
@@ -1377,11 +1423,13 @@
         "https://ll.thespacedevs.com/2.3.0/launches/",
         "https://www.spacex.com/launches/sl-15-18",
         "https://www.nextspaceflight.com/launches/details/8335/",
-        "https://space-notices.com/notice/notam-ZLA-11%2F149-26"
+        "https://space-notices.com/notice/notam-ZLA-11%2F149-26",
+        "https://ll.thespacedevs.com/2.3.0/launches/76617033-4dc0-4448-b50c-e5b0d5a18539/",
+        "https://x.com/NotamUpdates/status/2122337617257943183"
       ],
       "method": {
-        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, identical rows to USSF-627; SpaceX ussf317 timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:58, MECO matches the telemetry's T+146 s); ZLA CARF 11/116-26 Area A azimuth 153.56 deg (same polygon as USSF-627); ends at T+508 s (telemetry end) because SECO is unpublished; T0 SpaceX/LL2 NET 2026-11-18T03:14:00Z (Tue Nov 17 7:14 pm PST; window to 07:14Z; backup Wed Nov 18 8:54 pm PT; RETIMED 2026-11-13 from 2026-11-15T03:55Z, utc shift only)",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf317 MECO 146 s, sep 149 s, SES-1 156 s, fairing 178 s as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are ASSUMED, BORROWED from the USSF-627 config (itself a Starlink Group 15 analog; LL2: drop zones match Group 15), not USSF-317 sources; azimuth 153.56 deg from ZLA CARF 11/116-26 Area A (inclination unpublished) gives i=68.27 deg; payload fitted ~16.4 t-class (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit; sim ground track runs ~+5.3 deg east of the commanded azimuth (pad->insertion bearing 158.85 deg vs 153.56 deg, known sim bug); ILLUSTRATIVE; RETIMED 2026-11-13 to T0 2026-11-18T03:14:00Z by utc shift only (+256740 s)"
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, identical rows to USSF-627; SpaceX ussf317 timeline MECO 2:26 / sep 2:29 / SES-1 2:36 / fairing 2:58, MECO matches the telemetry's T+146 s); ZLA CARF 11/116-26 Area A azimuth 153.56 deg (polygon re-issued unchanged as 11/212-26 for the Nov 19 window); ends at T+508 s (telemetry end) because SECO is unpublished; T0 LL2 NET 2026-11-19T03:00:00Z (Wed Nov 18 7:00 p.m. PST; LL2 window 03:00-07:00Z; RETIMED 2026-11-16 from 2026-11-18T03:14:00Z, utc shift +85560 s only)",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf317 MECO 146 s, sep 149 s, SES-1 156 s, fairing 178 s as hard events; SECO-1 (519 s) and the 177 x 266 km parking orbit are ASSUMED, BORROWED from the USSF-627 config (itself a Starlink Group 15 analog; LL2: drop zones match Group 15), not USSF-317 sources; azimuth 153.56 deg from ZLA CARF 11/116-26 / 11/212-26 Area A (identical polygon; inclination unpublished) gives i=68.265 deg; re-run 2026-11-16 reproduced the previous fit (cost 22.93; geodetic alt 177.30 km, FPA ~0, SMA error -0.016 km; osculating at cutoff 174.5 x 268.7 km vs the assumed 177.3 x 266.2 km); payload fitted 16.87 t (not an estimate of the real payload); deploy unpublished, so propagated 2 revs on the inferred insertion orbit, file ends T+11191 s; sim ground track runs ~+5.3 deg east of the commanded azimuth (pad->insertion bearing 158.85 deg vs 153.56 deg, known sim bug); T0 = NET 2026-11-19T03:00:00Z (re-run, geometry unchanged from the 03:14Z Nov 18 fit); ILLUSTRATIVE"
       },
       "reference_ids": [
         "spacex-ussf317",
@@ -1393,7 +1441,10 @@
         "wp-falcon9-b5",
         "ll2",
         "kml",
-        "zla-carf-11-149"
+        "zla-carf-11-149",
+        "ll2-ussf-317",
+        "notamupdates-ussf-317",
+        "zla-carf-11-212"
       ],
       "assumptions": [
         "SECO-1 time T+519 s and parking orbit 177x266 km BORROWED from the USSF-627 config / Starlink Group 15-18 analog (LL2: drop zones match Group 15; possible Starshield); not USSF-317 sources",
@@ -1404,9 +1455,66 @@
         "Surrogate rows are identical to USSF-627's (same loft, pad, azimuth); only UTC differs",
         "Known sim ground-track azimuth residual: pad->insertion bearing 158.85 deg vs commanded 153.56 deg (+5.3 deg)",
         "T0 is NET (SpaceX page / LL2); booster 11th flight (B1100 per Next Spaceflight, secondary)",
-        "Retimed by utc shift only (+256740 s); azimuth still from the Nov 15/16 CARF polygon because no NOTAM for the Nov 18 03:14Z window was published as of 2026-11-13 08:00 PST"
+        "RETIMED 2026-11-16 from 2026-11-18T03:14:00Z to 2026-11-19T03:00:00Z. Surrogate utc shift only (+85560 s). Sim re-run with the existing config and only t0 changed; fitted parameters and Earth-fixed geometry reproduced the previous fit. Azimuth still 153.56 deg: ZLA CARF 11/212-26 repeats the 11/116-26 Area A polygon. LL2 window is 03:00-07:00Z; the NotamUpdates post cites an FAA NOTAM window 03:00-07:43Z. The 11/212-26 expiry on the space-notices entry is 07:22Z."
       ],
-      "note": "Pre-flight ILLUSTRATIVE. SpaceX targets Sat Nov 14, four-hour window opens 7:55 pm PT (backup Sun Nov 15 7:41 pm PT) = 2026-11-15T03:55:00Z; LL2 Go. Falcon 9 from Vandenberg SLC-4E, 11th booster flight, OCISLY landing. Classified USSF mission; LL2: stage drop zones match Starlink Group 15, so the USSF-627 analog (Group 15 SECO/orbit) is reused and labelled. ZLA CARF Area A polygon identical to USSF-627's. SECO/orbit/deploy unpublished. Slips so far: Nov 12 8:23p -> Nov 13 8:09p -> Nov 14 7:55p PT. -> Tue Nov 17 7:14p PT (RETIMED 2026-11-13: SpaceX ussf317 page 'targeting Tuesday, November 17 ... window opens at 7:14 p.m. PT', backup Wed Nov 18 8:54 p.m. PT; LL2 Go). SpaceX timeline unchanged. ZLA CARF 11/149-26 (Nov 16 slot) repeats the 11/116-26 polygon; no NOTAM yet for Nov 18 03:14Z."
+      "note": "Pre-flight ILLUSTRATIVE. NET moved to 2026-11-19T03:00:00Z (Wed 18 Nov 7:00 p.m. PST). LL2 id 76617033-4dc0-4448-b50c-e5b0d5a18539, status Go, window 03:00-07:00Z. A new FAA NOTAM covers 2026-11-19 03:00-07:43Z (https://x.com/NotamUpdates/status/2122337617257943183; space-notices entry launch-f9-ussf-317). On that entry the active Area A notice is ZLA CARF 11/212-26, the same polygon as 11/116-26 (expires 2026-11-19T07:22:00Z), so the 153.56 deg azimuth is unchanged. Surrogate retimed by utc shift (+85560 s). Sim re-run with only t0 changed; the fit reproduced (insertion osculating 174.5 x 268.7 km, i=68.265 deg, pad->insertion bearing 158.85 deg vs commanded 153.56 deg). Classified USSF mission; SECO/orbit/deploy unpublished; Group 15 analog still borrowed from the USSF-627 config. Earlier: SpaceX Tue Nov 17 7:14 p.m. PT window (2026-11-18T03:14:00Z) after slips from Nov 14/15."
+    },
+    {
+      "slug": "lm2d-taiyuan-2026-11-18",
+      "name": "Unknown Payload (Long March 2D, Taiyuan LC-9)",
+      "vehicle": "Long March 2D",
+      "t0_utc": "2026-11-18T22:50:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-18T22:43:00Z",
+      "window_close_utc": "2026-11-18T23:05:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/lm2d-taiyuan-2026-11-18/lm2d-taiyuan-2026-11-18_2026-11-18_trajectory.csv",
+        "kml": "/launches/lm2d-taiyuan-2026-11-18/lm2d-taiyuan-2026-11-18_2026-11-18_trajectory.kml",
+        "csv_sim": "/launches/lm2d-taiyuan-2026-11-18/lm2d-taiyuan-2026-11-18_2026-11-18_trajectory_sim.csv",
+        "kml_sim": "/launches/lm2d-taiyuan-2026-11-18/lm2d-taiyuan-2026-11-18_2026-11-18_trajectory_sim.kml",
+        "track_lite": "/launches/lm2d-taiyuan-2026-11-18/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://ll.thespacedevs.com/2.3.0/launches/e0a11eb1-0bda-4872-b36b-140247fd5c60/",
+        "https://space-notices.com/notice/notam-ZLHW-A5897%2F26",
+        "https://space-notices.com/notice/notam-ZHWH-A5898%2F26",
+        "https://sat.huijiwiki.com/wiki/长征二号丁",
+        "https://en.wikipedia.org/wiki/Long_March_2D",
+        "https://en.wikipedia.org/wiki/YF-20",
+        "https://en.wikipedia.org/wiki/Long_March_3B"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: SAST TYPICAL LM-2D sequence times (pitch-over 17.0 s, S1 cutoff 153.9 s, sep 155.1 s, fairing 185.1 s, S2 main cutoff 324.1 s, vernier cutoff 705.1 s), reused from the lm2d-jiuquan vehicle file; altitudes unpublished, so knot altitudes ASSUMED from this board's sim rounded to 0.1 km and the final altitude is the ASSUMED 500 km orbit; azimuth 188.65 deg = mean bearing from Taiyuan LC-9 to the A5897/26 and A5898/26 Q-line centres; ends at vernier cutoff; ILLUSTRATIVE",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SAST typical sequence as hard events (vehicles/lm2d.json, same stage data as lm2d-jiuquan); configuration-2 stage data (World Launch Vehicles 2007 via huijiwiki), S1 vac via YF-20 ratio; verniers ASSUMED to run from S2 ignition to 705.1 s; 3.35 m fairing 860 kg ASSUMED; Cd 0.667 from the LM-3B fit; TARGET ASSUMED 500 km circular (orbit unpublished); azimuth 188.65 deg from NOTAM A5897/26 (188.57 deg, 618 km) and A5898/26 (188.73 deg, 968 km) Q-line centres; vernier cutoff geodetic alt 500.01 km, FPA 0.00 deg, SMA error ~0; osculating 499.2 x 500.9 km, i=95.407 deg vs ~96.7 deg non-rotating from the commanded azimuth and vs ~97.4 deg for a 500 km SSO; ground track at the NOTAM ranges bears ~190.2 deg vs commanded 188.65 deg (+1.6 deg); fitted payload 314 kg is NOT an estimate (payload unknown); deploy unpublished, so +2 revs on the inferred insertion orbit, file ends T+12059 s; ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "ll2-lm2d-taiyuan",
+        "notam-a5897",
+        "notam-a5898",
+        "huiji-lm2d",
+        "wp-lm2d",
+        "wp-yf20",
+        "wp-lm3b",
+        "ll2",
+        "kml"
+      ],
+      "assumptions": [
+        "TARGET ORBIT ASSUMED: 500 km circular, sun-synchronous type. LL2 orbit is Unknown and no insertion elements are published. 500 km is a round SSO-class altitude consistent with the southbound azimuth, not a mission source. LL2's Long March 2D configuration record has a generic vehicle apogee field of 500 km; that field is not this flight's orbit and is not used as a source",
+        "Azimuth 188.65 deg = mean of great-circle bearings from the LL2 LC-9 pad to the NOTAM Q-line centres: A5897/26 33°22'N 110°36'E, 188.57 deg, 618 km; A5898/26 30°15'N 110°04'E, 188.73 deg, 968 km. Non-rotating inclination from this pad and azimuth is about 96.7 deg. SSO at 500 km is about 97.4 deg. Azimuth not retuned to either",
+        "Pad is LL2 Launch Complex 9, 38.863128N 111.589567E. The same LL2 record's Taiyuan location centroid is 38.8491N 111.608E. No pad table in this repo",
+        "Event times are the SAST TYPICAL LM-2D sequence (huijiwiki), the same vehicle file as lm2d-jiuquan, not this flight's",
+        "Verniers modelled firing from S2 ignition (155.1 s) to typical vernier cutoff 705.1 s (same ASSUMPTION as lm2d-jiuquan / the vehicle file)",
+        "Fairing type unknown: 3.35 m, 860 kg ASSUMED; drag Cd 0.667 transferred from the LM-3B fit",
+        "Payload mass FITTED at 314 kg inside the 200-4000 kg bounds so the typical-sequence cutoff reaches the ASSUMED 500 km circle — NOT an estimate of the real payload",
+        "Surrogate horizontal speed ASSUMED linear to circular-orbit ground speed at 500 km minus Earth rotation along the azimuth; surrogate knot altitudes taken from this sim (0.1 km), final knot forced to the ASSUMED 500 km",
+        "No deploy time is published (LL2 payload and orbit Unknown). The typical-sequence separation at 737.1 s is not this flight's and is not used. deploy.t_s null; coast +2 revs on the inferred insertion orbit. Post-cutoff drag Cd 2.2 and area 8.81 m2 are the same ASSUMPTIONS as lm2d-jiuquan",
+        "Sim ground track at the NOTAM downranges bears about 190.2 deg versus the commanded 188.65 deg (+1.6 deg). Achieved inclination 95.41 deg versus about 96.7 deg non-rotating from the azimuth. Known class of sim track bias; azimuth kept NOTAM-first"
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. Long March 2D, unknown payload, Taiyuan LC-9. LL2 id e0a11eb1-0bda-4872-b36b-140247fd5c60, status Go, NET 2026-11-18T22:50:00Z (Wed 18 Nov 2:50 p.m. PST), window 22:43-23:05Z, orbit Unknown (LL2 net precision Hour). Hazard areas: NOTAM A5897/26 (22:43-23:05Z, centre 33°22'N 110°36'E, 618 km, bearing 188.57 deg) and A5898/26 (22:44-23:10Z, centre 30°15'N 110°04'E, 968 km, bearing 188.73 deg). Azimuth used is their mean, 188.65 deg. Target 500 km circular is ASSUMED. Vehicle/stage data reused from lm2d-jiuquan. Sim reaches 499.2 x 500.9 km, i=95.41 deg; deploy time unpublished, so the sim ends two revolutions later."
     }
   ],
   "globe": {
