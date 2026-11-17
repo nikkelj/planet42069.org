@@ -585,6 +585,46 @@
       "id": "notam-a5898",
       "title": "NOTAM ZHWH A5898/26 temporary danger area, 2026-11-18 22:44-23:10Z, Q-line centre 30°15'N 110°04'E",
       "url": "https://space-notices.com/notice/notam-ZHWH-A5898%2F26"
+    },
+    {
+      "id": "ll2-lm8a-hainan",
+      "title": "Launch Library 2: Long March 8A | SatNet LEO Group TBD?, Commercial LC-1, TBC, NET 2026-11-20T11:00:00Z, window 11:00-14:00Z, LEO",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/a2975167-7c6f-4403-99e1-b40df17c8140/"
+    },
+    {
+      "id": "notam-b5829",
+      "title": "NOTAM RPHI B5829/26 China aerospace debris fall area, South China Sea, daily 1100-1400Z 20-23 Nov 2026",
+      "url": "https://space-notices.com/notice/notam-RPHI-B5829%2F26"
+    },
+    {
+      "id": "notam-b5830",
+      "title": "NOTAM RPHI B5830/26 China aerospace debris fall area, Sulu Sea, daily 1100-1400Z 20-23 Nov 2026",
+      "url": "https://space-notices.com/notice/notam-RPHI-B5830%2F26"
+    },
+    {
+      "id": "hydropac-3352-26",
+      "title": "HYDROPAC 3352/26 space debris, South China Sea and Sulu Sea, 20 Nov 1000-1600Z (NGA MSI navArea P; text via sealagom)",
+      "url": "https://www.sealagom.com/coastal/21/message/55606/3352-26-south-china-sea/"
+    },
+    {
+      "id": "navarea-xi-26-0515",
+      "title": "NAVAREA XI 26-0515 space debris, northern South China Sea and Sulu Sea, 20 Nov 1000-1600Z (same polygons as HYDROPAC 3352/26)",
+      "url": "https://www.sealagom.com/navarea/11/message/25768/26-0515-northern-part-and-sulu-sea/"
+    },
+    {
+      "id": "cnspaceflight-lm8a-y13",
+      "title": "CNSpaceflight on X: Long March 8A rolled out for launch on Nov 20",
+      "url": "https://x.com/CNSpaceflight/status/2122528744011338126"
+    },
+    {
+      "id": "thespaceroad-lm8a-y13",
+      "title": "The Space Road on X: Long March 8A Y13 moved to pad 1 at the Hainan commercial site, 16 Nov Beijing time",
+      "url": "https://x.com/thespaceroad/status/2122705731724206232"
+    },
+    {
+      "id": "space-notices-lm8a-satnet",
+      "title": "Space Notices: SatNet LEO Group TBD? — Long March 8A from Commercial LC-1",
+      "url": "https://space-notices.com/entry/launch-long-march-8a-satnet-leo-group-tbd"
     }
   ],
   "launches": [
@@ -1515,6 +1555,67 @@
         "Sim ground track at the NOTAM downranges bears about 190.2 deg versus the commanded 188.65 deg (+1.6 deg). Achieved inclination 95.41 deg versus about 96.7 deg non-rotating from the azimuth. Known class of sim track bias; azimuth kept NOTAM-first"
       ],
       "note": "Pre-flight ILLUSTRATIVE. Long March 2D, unknown payload, Taiyuan LC-9. LL2 id e0a11eb1-0bda-4872-b36b-140247fd5c60, status Go, NET 2026-11-18T22:50:00Z (Wed 18 Nov 2:50 p.m. PST), window 22:43-23:05Z, orbit Unknown (LL2 net precision Hour). Hazard areas: NOTAM A5897/26 (22:43-23:05Z, centre 33°22'N 110°36'E, 618 km, bearing 188.57 deg) and A5898/26 (22:44-23:10Z, centre 30°15'N 110°04'E, 968 km, bearing 188.73 deg). Azimuth used is their mean, 188.65 deg. Target 500 km circular is ASSUMED. Vehicle/stage data reused from lm2d-jiuquan. Sim reaches 499.2 x 500.9 km, i=95.41 deg; deploy time unpublished, so the sim ends two revolutions later."
+    },
+    {
+      "slug": "lm8a-hainan-2026-11-20",
+      "name": "SatNet LEO Group TBD? (Long March 8A, Hainan Commercial LC-1)",
+      "vehicle": "Long March 8A",
+      "t0_utc": "2026-11-20T11:00:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-20T11:00:00Z",
+      "window_close_utc": "2026-11-20T14:00:00Z",
+      "status": "TBC",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/lm8a-hainan-2026-11-20/lm8a-hainan-2026-11-20_2026-11-20_trajectory.csv",
+        "kml": "/launches/lm8a-hainan-2026-11-20/lm8a-hainan-2026-11-20_2026-11-20_trajectory.kml",
+        "csv_sim": "/launches/lm8a-hainan-2026-11-20/lm8a-hainan-2026-11-20_2026-11-20_trajectory_sim.csv",
+        "kml_sim": "/launches/lm8a-hainan-2026-11-20/lm8a-hainan-2026-11-20_2026-11-20_trajectory_sim.kml",
+        "track_lite": "/launches/lm8a-hainan-2026-11-20/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://ll.thespacedevs.com/2.3.0/launches/a2975167-7c6f-4403-99e1-b40df17c8140/",
+        "https://space-notices.com/notice/notam-RPHI-B5829%2F26",
+        "https://space-notices.com/notice/notam-RPHI-B5830%2F26",
+        "https://www.sealagom.com/coastal/21/message/55606/3352-26-south-china-sea/",
+        "https://www.sealagom.com/navarea/11/message/25768/26-0515-northern-part-and-sulu-sea/",
+        "https://x.com/CNSpaceflight/status/2122528744011338126",
+        "https://x.com/thespaceroad/status/2122705731724206232",
+        "https://space-notices.com/entry/launch-long-march-8a-satnet-leo-group-tbd",
+        "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+        "https://en.wikipedia.org/wiki/Long_March_8"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: the same CALT LM-3B typical GTO loft as lm8a-wenchang (2011 manual Tables 3-5/3-6; liftoff altitude removed; cut at Stage-3 first shutdown T+615.7 s, 202.5 km, 2466.2 km), laid on a constant-azimuth spherical rhumb (R=6371.0088 km) at 142.99 deg. That azimuth is the mean bearing from Commercial LC-1 to the area centroids of NOTAM RPHI B5829/26 (142.920 deg, 944 km) and B5830/26 (143.061 deg, 1565 km). Family stand-in, not an LM-8A profile. ILLUSTRATIVE",
+        "csv_sim": "first-principles 3DOF sim, energy-cutoff mode (no published LM-8A timeline): vehicles/lm8a.json reused unchanged from lm8a-wenchang (SatNet LEO Group 28); Cd 0.667 from the LM-3B fit; TARGET ASSUMED 700 km circular; payload 5000 kg ASSUMED and not fitted; azimuth 142.99 deg from NOTAM B5829/26 and B5830/26 centroids (NOTAM-first; HYDROPAC 3352/26 at 140.17/140.30/140.30 deg not used); pitch kick 4.779 deg, tan(theta)=0.5795-0.001431*(t-t_ign); insertion T+764 s, geodetic alt 699.95 km, FPA 0.003 deg, osculating 699.7 x 700.4 km, i=56.356 deg vs 55.45 deg non-rotating from the commanded azimuth; pad->insertion bearing 150.00 deg vs commanded 142.99 deg (+7.01 deg), the same ~7 deg track bias as the Group 28 sim; deploy unpublished (deploy.t_s null), so +2 revs on the inferred insertion orbit, file ends T+12617 s at 699.8 x 700.2 km, i=56.356 deg; ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "ll2-lm8a-hainan",
+        "notam-b5829",
+        "notam-b5830",
+        "hydropac-3352-26",
+        "navarea-xi-26-0515",
+        "cnspaceflight-lm8a-y13",
+        "thespaceroad-lm8a-y13",
+        "space-notices-lm8a-satnet",
+        "calt-lm3a",
+        "wp-lm8",
+        "wp-lm3b",
+        "ll2",
+        "kml"
+      ],
+      "assumptions": [
+        "TARGET ORBIT ASSUMED: 700 km circular, borrowed from the lm8a-wenchang (SatNet LEO Group 28) config, where it was the LM-8A 700 km capability-reference altitude and not a mission orbit. LL2 lists this flight as LEO with no altitude and no inclination. Wikipedia's Guowang page gives earlier LM-8A SatNet groups a 1,156 km / 50.0 deg shell and leaves altitude blank for Group 28 and later while still listing 50.0 deg. That shell is not this flight's published elements and was not used; the azimuth was not retuned toward 50 deg",
+        "Payload 5000 kg, borrowed from the Group 28 config ('unknown payload; below 7 t / 700 km SSO'). This flight is 9 satellites and no mass is published. Wikipedia's '~700 kg' LM-8A SatNet type (about 6.3 t for nine) is not this flight's and was not used. Energy-cutoff mode does not fit payload, so 5000 kg is an input, not an estimate",
+        "Stage data reused unchanged from vehicles/lm8a.json. Thrusts, Isp and GLOW are sourced on that file (Wikipedia: Long March 8). Booster, stage-1 and stage-2 propellant and dry masses are DERIVED there from GLOW differences with ASSUMED propellant fractions (0.90 / 0.92 / 0.88). Fairing 1500 kg, the 3 s coast before stage 2, and the guidance (vertical rise until 60 m/s, 10 s kick) are ASSUMPTIONS on that file. Cd 0.667 is the fitted LM-3B value transferred for aero only. No LM-8A event sequence is published, so the sim stays in energy-cutoff mode rather than timeline mode",
+        "Surrogate loft is the CALT LM-3B typical GTO table (2011 manual Tables 3-5/3-6), the same family stand-in as lm8a-wenchang, not an LM-8A profile. It ends at stage-3 first shutdown (T+615.7 s, 202.5 km, 2466.2 km), not at the assumed 700 km orbit. The one horizontal assumption is that the published ground range lies on this flight's constant-azimuth rhumb (spherical, R=6371.0088 km). LM-3B itself doglegs",
+        "Pad elevation 0 m. LL2's Commercial LC-1 record gives latitude and longitude and no elevation; 0 m is the same value as the Group 28 config. The pad point 19.597275N 110.930753E is LL2's, which files the pad under Wenchang Space Launch Site; Hainan Commercial Launch Site is the name used by CNSpaceflight and The Space Road for this commercial pad",
+        "No payload-deploy time is published (LL2 has no separation time; CASC/CALT have not published one). deploy.t_s is null for that reason, and the sim coasts two revolutions on the inferred insertion orbit. Post-cutoff drag Cd 2.2 and area 8.8 m2 are the same ASSUMPTIONS as lm8a-wenchang (free-molecular Cd 2.2; rounded frontal area of a 3.35 m upper stage). Residual venting after cutoff is not modelled",
+        "Azimuth 142.99 deg is sourced from the NOTAM centroids and is not an assumption. It was not retuned to cancel the sim's track bias: pad->insertion bearing 150.00 deg versus commanded 142.99 deg (+7.01 deg), the same ~7 deg bias as the Group 28 sim (147.50 vs 140.4). At the NOTAM downranges the sim track bears about 151 deg and misses the B5829 and B5830 centroids by about 138 km and 212 km. HYDROPAC 3352/26 / NAVAREA XI 26-0515 (areas A/B/C at 140.17/140.30/140.30 deg) were not used for the azimuth"
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. Long March 8A Y13, SatNet LEO Group TBD?, Hainan Commercial Launch Site LC-1 (LL2 pad Commercial LC-1). LL2 id a2975167-7c6f-4403-99e1-b40df17c8140, status TBC, NET 2026-11-20T11:00:00Z (Fri 20 Nov 3:00 a.m. PST), window 11:00-14:00Z, orbit LEO with no altitude (net precision Hour). LL2 mission text: a batch of 9 LEO communications satellites for China SatNet. Y13 and the move to pad 1 on 16 Nov Beijing time are from The Space Road; CNSpaceflight posted the rollout for a 20 Nov launch. Azimuth 142.99 deg is the mean bearing to NOTAM RPHI B5829/26 (142.920 deg, 944 km, South China Sea) and B5830/26 (143.061 deg, 1565 km, Sulu Sea), daily 1100-1400Z on 20-23 Nov. HYDROPAC 3352/26 (debris 20 Nov 1000-1600Z, South China Sea and Sulu Sea; same polygons as NAVAREA XI 26-0515) bears 140.17/140.30/140.30 deg and was not used. Target 700 km circular and the stage data are borrowed from the Group 28 config. Sim insertion T+764 s: 699.7 x 700.4 km, i=56.356 deg; pad->insertion bearing 150.00 deg vs commanded 142.99 deg. No deploy time, so the sim ends two revolutions later (T+12617 s)."
     }
   ],
   "globe": {
