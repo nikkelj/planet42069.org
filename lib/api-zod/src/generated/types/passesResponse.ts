@@ -14,7 +14,7 @@ export interface PassesResponse {
   days: number;
   /** Element-set epoch, or the start of the ephemeris file (ISO 8601) */
   epoch: string;
-  /** End of the ephemeris file when source is starlink-ephemeris */
+  /** End of the ephemeris file when source is starlink-ephemeris (ISO 8601) */
   coverageEnd?: string;
   /** starlink-ephemeris or tle */
   source?: string;

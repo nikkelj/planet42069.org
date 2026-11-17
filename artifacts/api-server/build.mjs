@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
 import { execFileSync } from "node:child_process";
-import { rm } from "node:fs/promises";
+import { cp, rm } from "node:fs/promises";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
@@ -143,6 +143,10 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+
+  // Checked-in provisional manifest + calc markdown. The bundle resolves
+  // these from dist/data (import.meta.url is dist/index.mjs).
+  await cp(path.resolve(artifactDir, "data"), path.resolve(distDir, "data"), { recursive: true });
 }
 
 buildAll().catch((err) => {

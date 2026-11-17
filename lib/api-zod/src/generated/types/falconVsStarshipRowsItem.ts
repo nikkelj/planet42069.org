@@ -10,6 +10,8 @@ export type FalconVsStarshipRowsItem = {
   year: string;
   falcon: number;
   starship: number;
-  /** Provisional estimate for Falcon launches not yet catalogued */
+  /** Falcon-median provisional estimate for Falcon launches not yet catalogued */
   pendingFalcon: number;
+  /** Sourced provisional Starship mass, not yet catalogued. Not included in pendingFalcon or starship. */
+  pendingStarship: number;
 };

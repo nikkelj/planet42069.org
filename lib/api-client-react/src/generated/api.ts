@@ -6,11 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
@@ -19,6 +23,8 @@ import type {
   ConstellationAnalytics,
   DeorbitHistory,
   FalconVsStarship,
+  GetRpodAlertQueue200,
+  GetRpodAlertQueueParams,
   GetRpodCountries200,
   GetRpodEventsParams,
   GetSatcatParams,
@@ -30,6 +36,7 @@ import type {
   MassCdf,
   OrbitalMap,
   PassesResponse,
+  ProvisionalManifest,
   RpodEventDetail,
   RpodEventList,
   RpodStatus,
@@ -316,7 +323,8 @@ export const getGetSatcatPassesUrl = (params: GetSatcatPassesParams,) => {
 }
 
 /**
- * Predicted passes (SGP4-propagated) for the next N days over the given lat/lon
+ * Predicted passes for the next N days over the given lat/lon. When the satellite has a SpaceX public ephemeris, the newest file for that name is used. Otherwise the element set is propagated with SGP4.
+
  * @summary Upcoming passes over an observer location
  */
 export const getSatcatPasses = async (params: GetSatcatPassesParams, options?: RequestInit): Promise<PassesResponse> => {
@@ -550,7 +558,7 @@ export const getGetSatcatByYearProviderUrl = () => {
 }
 
 /**
- * Payload mass to orbit per year, split between SpaceX (Falcon family) and the rest of the world
+ * Payload mass to orbit per year, split between SpaceX (Falcon and Starship) and the rest of the world. Falcon-median pending mass and sourced Starship provisional mass are separate series.
  * @summary Yearly payload mass by provider
  */
 export const getSatcatByYearProvider = async ( options?: RequestInit): Promise<SatcatByYearProvider> => {
@@ -1253,6 +1261,84 @@ export function useGetSatcatSpacexByEntity<TData = Awaited<ReturnType<typeof get
 
 
 
+export const getGetSatcatProvisionalManifestUrl = () => {
+
+
+
+
+  return `/api/satcat/provisional-manifest`
+}
+
+/**
+ * Checked-in provisional estimates for launches GCAT has not yet given a payload mass. Retired entries (catalogued payload mass already on file) stay in the list with retired=true and are excluded from chart totals.
+ * @summary Sourced provisional payload masses
+ */
+export const getSatcatProvisionalManifest = async ( options?: RequestInit): Promise<ProvisionalManifest> => {
+
+  return customFetch<ProvisionalManifest>(getGetSatcatProvisionalManifestUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSatcatProvisionalManifestQueryKey = () => {
+    return [
+    `/api/satcat/provisional-manifest`
+    ] as const;
+    }
+
+
+export const getGetSatcatProvisionalManifestQueryOptions = <TData = Awaited<ReturnType<typeof getSatcatProvisionalManifest>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatProvisionalManifest>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSatcatProvisionalManifestQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSatcatProvisionalManifest>>> = ({ signal }) => getSatcatProvisionalManifest({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSatcatProvisionalManifest>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSatcatProvisionalManifestQueryResult = NonNullable<Awaited<ReturnType<typeof getSatcatProvisionalManifest>>>
+export type GetSatcatProvisionalManifestQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Sourced provisional payload masses
+ */
+
+export function useGetSatcatProvisionalManifest<TData = Awaited<ReturnType<typeof getSatcatProvisionalManifest>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSatcatProvisionalManifest>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSatcatProvisionalManifestQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getGetConstellationAnalyticsUrl = () => {
 
 
@@ -1881,6 +1967,235 @@ export function useGetRpodCountries<TData = Awaited<ReturnType<typeof getRpodCou
 
 
 
+
+export const getGetRpodAlertQueueUrl = (params?: GetRpodAlertQueueParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/rpod/alert-queue?${stringifiedParams}` : `/api/rpod/alert-queue`
+}
+
+/**
+ * Read-only list of would-be X citations. Default scan mode writes rows here instead of posting. status is pending, approved, rejected, or posted.
+
+ * @summary Queued RPOD citations
+ */
+export const getRpodAlertQueue = async (params?: GetRpodAlertQueueParams, options?: RequestInit): Promise<GetRpodAlertQueue200> => {
+
+  return customFetch<GetRpodAlertQueue200>(getGetRpodAlertQueueUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRpodAlertQueueQueryKey = (params?: GetRpodAlertQueueParams,) => {
+    return [
+    `/api/rpod/alert-queue`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRpodAlertQueueQueryOptions = <TData = Awaited<ReturnType<typeof getRpodAlertQueue>>, TError = ErrorType<unknown>>(params?: GetRpodAlertQueueParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRpodAlertQueue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRpodAlertQueueQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRpodAlertQueue>>> = ({ signal }) => getRpodAlertQueue(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRpodAlertQueue>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRpodAlertQueueQueryResult = NonNullable<Awaited<ReturnType<typeof getRpodAlertQueue>>>
+export type GetRpodAlertQueueQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Queued RPOD citations
+ */
+
+export function useGetRpodAlertQueue<TData = Awaited<ReturnType<typeof getRpodAlertQueue>>, TError = ErrorType<unknown>>(
+ params?: GetRpodAlertQueueParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRpodAlertQueue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRpodAlertQueueQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getApproveRpodAlertUrl = (id: number,) => {
+
+
+
+
+  return `/api/rpod/alert-queue/${id}/approve`
+}
+
+/**
+ * Requires Authorization Bearer or X-RPOD-Admin-Token matching RPOD_ADMIN_TOKEN. Sets the row to approved and posts it to X. A failed post leaves the row approved so the call can be retried.
+
+ * @summary Approve and post a queued citation
+ */
+export const approveRpodAlert = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getApproveRpodAlertUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getApproveRpodAlertMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveRpodAlert>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveRpodAlert>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['approveRpodAlert'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveRpodAlert>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  approveRpodAlert(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveRpodAlertMutationResult = NonNullable<Awaited<ReturnType<typeof approveRpodAlert>>>
+
+    export type ApproveRpodAlertMutationError = ErrorType<void>
+
+    /**
+ * @summary Approve and post a queued citation
+ */
+export const useApproveRpodAlert = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveRpodAlert>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveRpodAlert>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getApproveRpodAlertMutationOptions(options));
+    }
+
+export const getRejectRpodAlertUrl = (id: number,) => {
+
+
+
+
+  return `/api/rpod/alert-queue/${id}/reject`
+}
+
+/**
+ * Same admin token as approve. Posted rows cannot be rejected.
+ * @summary Reject a queued citation
+ */
+export const rejectRpodAlert = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRejectRpodAlertUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRejectRpodAlertMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectRpodAlert>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectRpodAlert>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['rejectRpodAlert'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectRpodAlert>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  rejectRpodAlert(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectRpodAlertMutationResult = NonNullable<Awaited<ReturnType<typeof rejectRpodAlert>>>
+
+    export type RejectRpodAlertMutationError = ErrorType<void>
+
+    /**
+ * @summary Reject a queued citation
+ */
+export const useRejectRpodAlert = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectRpodAlert>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectRpodAlert>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRejectRpodAlertMutationOptions(options));
+    }
 
 export const getGetRpodStatusUrl = () => {
 

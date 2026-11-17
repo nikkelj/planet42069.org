@@ -8,12 +8,14 @@
 
 export interface YearProviderRow {
   year: string;
-  /** SpaceX (Falcon family) payload mass in kg */
+  /** SpaceX (Falcon and Starship) catalogued payload mass in kg */
   spacex: number;
   /** Rest-of-world payload mass in kg */
   others: number;
-  /** Provisional SpaceX estimate for launches not yet catalogued */
+  /** Falcon-median provisional estimate for Falcon launches not yet catalogued */
   pendingSpacex: number;
+  /** Sourced provisional Starship mass, not yet catalogued. Not included in pendingSpacex. */
+  pendingStarship: number;
   spacexCount: number;
   othersCount: number;
 }

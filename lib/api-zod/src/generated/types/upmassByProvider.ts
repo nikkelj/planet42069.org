@@ -12,7 +12,9 @@ export interface UpmassByProvider {
   window: UpmassByProviderWindow;
   providers: ProviderUpmassRow[];
   totalMassKg: number;
-  /** Total provisional (pending cataloguing) estimate in kg */
+  /** Total Falcon-median provisional estimate in kg. Does not include Starship. */
   totalPendingMassKg: number;
+  /** Total sourced provisional Starship mass in the window. Not included in totalMassKg or totalPendingMassKg. */
+  totalPendingStarshipMassKg: number;
   totalCount: number;
 }

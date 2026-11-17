@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "calculatedOn": "2026-11-16",
+  "timezone": "America/Los_Angeles",
+  "entries": [
+    {
+      "id": "starship-flight-14",
+      "launchDate": "2026-09-28",
+      "launchDateTimeUtc": "2026-09-28T12:48:59Z",
+      "vehicle": "Starship",
+      "lvFamilyIncludes": "starship",
+      "site": "Starbase",
+      "siteClass": "starbase",
+      "payloadName": "Starlink Group 31-1",
+      "payloadCount": 26,
+      "perSatMassKg": 1500,
+      "perSatLowKg": 1500,
+      "perSatHighKg": 2500,
+      "massKg": 39000,
+      "massLowKg": 39000,
+      "massHighKg": 65000,
+      "basis": "estimated",
+      "sourceUrls": [
+        "https://www.spacex.com/launches/starship-flight-14",
+        "https://ll.thespacedevs.com/2.2.0/launch/7d1afb26-6f9c-429b-9ccf-29012fd1e519/",
+        "https://content.spacex.com/cms-assets/FINAL_Documents%20and%20Updates/SpaceX%20-%20EU%20Prospectus%20%28Approved%20by%20Bafin%29%20-%20June%205%2C%202026.pdf",
+        "https://starlink.com/public-files/starlinkProgressReport_2024.pdf",
+        "https://www.spacex.com/vehicles/starship/technical-specifications",
+        "https://yfarmx.com/space/hardware/starlink-gen3/",
+        "https://www.space.com/space-exploration/satellites/spacex-wants-to-launch-100-000-starlink-satellites-to-orbit"
+      ],
+      "note": "ESTIMATED / provisional. 26 Starlink V3 on Flight 14 (Starlink Group 31-1, COSPAR 2026-225, Starbase, 28 Sep 2026 12:48:59Z). Booked 1,500 kg/sat is an editorial pick set below the 1,667 kg prospectus ceiling (100 t / 60 sats). Range 1,500–2,500 kg/sat. Tension we don't hide: 60 × 2,000 kg = 120 t exceeds the 100 t V3 rating, so either the flown V3 is lighter than 2 t, \"up to 60\" assumes a later Starship, or the FCC numbers are envelopes. Flight 13 is not booked (suborbital by design). This row drops out of every total automatically once GCAT lists a payload mass for launch 2026-225.",
+      "calc": {
+        "title": "Starship Flight 14 — Starlink V3 provisional mass",
+        "formula": "26 × 1,500 kg = 39,000 kg booked; range 26 × 1,500 kg to 26 × 2,500 kg = 39,000–65,000 kg",
+        "inputs": [
+          {
+            "name": "Satellite count",
+            "value": "26 Starlink V3 deployed (Starlink Group 31-1)",
+            "kind": "published",
+            "source": "https://www.spacex.com/launches/starship-flight-14"
+          },
+          {
+            "name": "Liftoff",
+            "value": "2026-09-28T12:48:59Z (SpaceX recap: 7:48 a.m. CT; Launch Library 2 net). No mass stated.",
+            "kind": "published",
+            "source": "https://ll.thespacedevs.com/2.2.0/launch/7d1afb26-6f9c-429b-9ccf-29012fd1e519/"
+          },
+          {
+            "name": "Launch tag",
+            "value": "COSPAR 2026-225 — the GCAT launch tag this estimate retires against",
+            "kind": "published",
+            "source": "https://www.spacex.com/launches/starship-flight-14"
+          },
+          {
+            "name": "Prospectus ceiling",
+            "value": "100,000 kg / 60 sats = 1,667 kg per sat, if the fully-reusable 100 t rating and \"up to 60 V3\" apply together",
+            "kind": "derived",
+            "source": "https://content.spacex.com/cms-assets/FINAL_Documents%20and%20Updates/SpaceX%20-%20EU%20Prospectus%20%28Approved%20by%20Bafin%29%20-%20June%205%2C%202026.pdf"
+          },
+          {
+            "name": "FCC Gen3 modelling envelope",
+            "value": "2,000 kg / 300 m2 and 2,500 kg / 400 m2. Modelling envelopes, not a confirmed flown mass. SpaceX does not officially equate Gen3 with V3. Primary PDF not re-opened by us.",
+            "kind": "published",
+            "source": "https://www.space.com/space-exploration/satellites/spacex-wants-to-launch-100-000-starlink-satellites-to-orbit"
+          },
+          {
+            "name": "Booked unit mass",
+            "value": "1,500 kg — conservative editorial pick, set below the 1,667 kg prospectus ceiling",
+            "kind": "editorial",
+            "source": "planet42069 desk, 16 Nov 2026 (America/Los_Angeles)"
+          },
+          {
+            "name": "Range",
+            "value": "1,500–2,500 kg per sat (low = booked figure; top = upper FCC envelope)",
+            "kind": "editorial",
+            "source": "https://yfarmx.com/space/hardware/starlink-gen3/"
+          }
+        ],
+        "resultKg": 39000,
+        "rangeKg": [39000, 65000],
+        "markdownPath": "provisional-calcs/starship-flight-14.md"
+      },
+      "match": {
+        "ldate": "2026-09-28",
+        "lvFamilyIncludes": "starship",
+        "launchTag": "2026-225",
+        "payloadNameIncludes": "STARLINK",
+        "siteHints": ["BC", "STARBASE", "BOCA"]
+      }
+    },
+    {
+      "id": "starship-flight-15",
+      "launchDate": "2026-11-13",
+      "launchDateTimeUtc": "2026-11-13T22:47:36Z",
+      "vehicle": "Starship",
+      "lvFamilyIncludes": "starship",
+      "site": "Starbase",
+      "siteClass": "starbase",
+      "payloadName": "Starlink Group 31-2",
+      "payloadCount": 26,
+      "perSatMassKg": 1500,
+      "perSatLowKg": 1500,
+      "perSatHighKg": 2500,
+      "massKg": 39000,
+      "massLowKg": 39000,
+      "massHighKg": 65000,
+      "basis": "estimated",
+      "sourceUrls": [
+        "https://www.spacex.com/launches/starship-flight-15",
+        "https://planet4589.com/space/jsr/latest.html",
+        "https://content.spacex.com/cms-assets/FINAL_Documents%20and%20Updates/SpaceX%20-%20EU%20Prospectus%20%28Approved%20by%20Bafin%29%20-%20June%205%2C%202026.pdf",
+        "https://starlink.com/public-files/starlinkProgressReport_2024.pdf",
+        "https://www.spacex.com/vehicles/starship/technical-specifications",
+        "https://yfarmx.com/space/hardware/starlink-gen3/",
+        "https://www.space.com/space-exploration/satellites/spacex-wants-to-launch-100-000-starlink-satellites-to-orbit"
+      ],
+      "note": "ESTIMATED / provisional. 26 Starlink V3 on Flight 15 (Starlink Group 31-2, Ship 42, COSPAR 2026-256, 13 Nov 2026 22:47:36Z, 261 x 272 km, 30.5 deg). Booked 1,500 kg/sat is an editorial pick set below the 1,667 kg prospectus ceiling (100 t / 60 sats). Range 1,500–2,500 kg/sat. Tension we don't hide: 60 × 2,000 kg = 120 t exceeds the 100 t V3 rating, so either the flown V3 is lighter than 2 t, \"up to 60\" assumes a later Starship, or the FCC numbers are envelopes. This row drops out of every total automatically once GCAT lists a payload mass for launch 2026-256.",
+      "calc": {
+        "title": "Starship Flight 15 — Starlink V3 provisional mass",
+        "formula": "26 × 1,500 kg = 39,000 kg booked; range 26 × 1,500 kg to 26 × 2,500 kg = 39,000–65,000 kg",
+        "inputs": [
+          {
+            "name": "Satellite count",
+            "value": "26 Starlink V3 deployed (Starlink Group 31-2, Ship 42)",
+            "kind": "published",
+            "source": "https://www.spacex.com/launches/starship-flight-15"
+          },
+          {
+            "name": "McDowell identity",
+            "value": "Group 31-2, Ship 42, COSPAR 2026-256, 261 x 272 km, 30.5 deg. Neither source states a mass.",
+            "kind": "published",
+            "source": "https://planet4589.com/space/jsr/latest.html"
+          },
+          {
+            "name": "Prospectus ceiling",
+            "value": "100,000 kg / 60 sats = 1,667 kg per sat, if the fully-reusable 100 t rating and \"up to 60 V3\" apply together",
+            "kind": "derived",
+            "source": "https://content.spacex.com/cms-assets/FINAL_Documents%20and%20Updates/SpaceX%20-%20EU%20Prospectus%20%28Approved%20by%20Bafin%29%20-%20June%205%2C%202026.pdf"
+          },
+          {
+            "name": "FCC Gen3 modelling envelope",
+            "value": "2,000 kg / 300 m2 and 2,500 kg / 400 m2. Modelling envelopes, not a confirmed flown mass. SpaceX does not officially equate Gen3 with V3. Primary PDF not re-opened by us.",
+            "kind": "published",
+            "source": "https://www.space.com/space-exploration/satellites/spacex-wants-to-launch-100-000-starlink-satellites-to-orbit"
+          },
+          {
+            "name": "Booked unit mass",
+            "value": "1,500 kg — conservative editorial pick, set below the 1,667 kg prospectus ceiling",
+            "kind": "editorial",
+            "source": "planet42069 desk, 16 Nov 2026 (America/Los_Angeles)"
+          },
+          {
+            "name": "Range",
+            "value": "1,500–2,500 kg per sat (low = booked figure; top = upper FCC envelope)",
+            "kind": "editorial",
+            "source": "https://yfarmx.com/space/hardware/starlink-gen3/"
+          }
+        ],
+        "resultKg": 39000,
+        "rangeKg": [39000, 65000],
+        "markdownPath": "provisional-calcs/starship-flight-15.md"
+      },
+      "match": {
+        "ldate": "2026-11-13",
+        "lvFamilyIncludes": "starship",
+        "launchTag": "2026-256",
+        "payloadNameIncludes": "STARLINK",
+        "siteHints": ["BC", "STARBASE", "BOCA"]
+      }
+    }
+  ]
+}

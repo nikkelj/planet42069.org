@@ -11,6 +11,8 @@ export type SpacexByEntityRowsItem = {
   starlink: number;
   usGov: number;
   commercial: number;
-  /** Provisional estimate for launches not yet catalogued (segment unknown) */
+  /** Falcon-median provisional estimate for launches not yet catalogued (segment unknown) */
   pending: number;
+  /** Sourced provisional Starship mass, not yet catalogued. Not included in pending or starlink. */
+  pendingStarship: number;
 };
