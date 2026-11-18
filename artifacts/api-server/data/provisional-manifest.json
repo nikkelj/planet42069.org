@@ -29,7 +29,7 @@
         "https://yfarmx.com/space/hardware/starlink-gen3/",
         "https://www.space.com/space-exploration/satellites/spacex-wants-to-launch-100-000-starlink-satellites-to-orbit"
       ],
-      "note": "ESTIMATED / provisional. 26 Starlink V3 on Flight 14 (Starlink Group 31-1, COSPAR 2026-225, Starbase, 28 Sep 2026 12:48:59Z). Booked 1,500 kg/sat is an editorial pick set below the 1,667 kg prospectus ceiling (100 t / 60 sats). Range 1,500–2,500 kg/sat. Tension we don't hide: 60 × 2,000 kg = 120 t exceeds the 100 t V3 rating, so either the flown V3 is lighter than 2 t, \"up to 60\" assumes a later Starship, or the FCC numbers are envelopes. Flight 13 is not booked (suborbital by design). This row drops out of every total automatically once GCAT lists a payload mass for launch 2026-225.",
+      "note": "ESTIMATED / provisional. 26 Starlink V3 on Flight 14 (Starlink Group 31-1, COSPAR 2026-225, Starbase, 28 Sep 2026 12:48:59Z). Booked 1,500 kg/sat is an editorial pick set below the 1,667 kg prospectus ceiling (100 t / 60 sats). Range 1,500–2,500 kg/sat. Tension we don't hide: 60 × 2,000 kg = 120 t exceeds the 100 t V3 rating, so either the flown V3 is lighter than 2 t, \"up to 60\" assumes a later Starship, or the FCC numbers are envelopes. Flight 13 is not booked (suborbital by design). This row drops out of every total automatically once GCAT lists a catalogued payload mass for launch 2026-225. A Bureau name-family estimate does not count as catalogued and does not retire the row.",
       "calc": {
         "title": "Starship Flight 14 — Starlink V3 provisional mass",
         "formula": "26 × 1,500 kg = 39,000 kg booked; range 26 × 1,500 kg to 26 × 2,500 kg = 39,000–65,000 kg",
@@ -115,7 +115,7 @@
         "https://yfarmx.com/space/hardware/starlink-gen3/",
         "https://www.space.com/space-exploration/satellites/spacex-wants-to-launch-100-000-starlink-satellites-to-orbit"
       ],
-      "note": "ESTIMATED / provisional. 26 Starlink V3 on Flight 15 (Starlink Group 31-2, Ship 42, COSPAR 2026-256, 13 Nov 2026 22:47:36Z, 261 x 272 km, 30.5 deg). Booked 1,500 kg/sat is an editorial pick set below the 1,667 kg prospectus ceiling (100 t / 60 sats). Range 1,500–2,500 kg/sat. Tension we don't hide: 60 × 2,000 kg = 120 t exceeds the 100 t V3 rating, so either the flown V3 is lighter than 2 t, \"up to 60\" assumes a later Starship, or the FCC numbers are envelopes. This row drops out of every total automatically once GCAT lists a payload mass for launch 2026-256.",
+      "note": "ESTIMATED / provisional. 26 Starlink V3 on Flight 15 (Starlink Group 31-2, Ship 42, COSPAR 2026-256, 13 Nov 2026 22:47:36Z, 261 x 272 km, 30.5 deg). Booked 1,500 kg/sat is an editorial pick set below the 1,667 kg prospectus ceiling (100 t / 60 sats). Range 1,500–2,500 kg/sat. Tension we don't hide: 60 × 2,000 kg = 120 t exceeds the 100 t V3 rating, so either the flown V3 is lighter than 2 t, \"up to 60\" assumes a later Starship, or the FCC numbers are envelopes. This row drops out of every total automatically once GCAT lists a catalogued payload mass for launch 2026-256. A Bureau name-family estimate does not count as catalogued and does not retire the row.",
       "calc": {
         "title": "Starship Flight 15 — Starlink V3 provisional mass",
         "formula": "26 × 1,500 kg = 39,000 kg booked; range 26 × 1,500 kg to 26 × 2,500 kg = 39,000–65,000 kg",

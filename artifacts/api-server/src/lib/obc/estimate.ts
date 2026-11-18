@@ -5,6 +5,11 @@
  *  2. object-class + LV-family median — e.g. rocket bodies of "Falcon 9"
  *  3. object-class median — global median for P / R rows
  * Debris and components are never estimated (too heterogeneous, tiny masses).
+ *
+ * Starship-launched payloads are left unestimated. The name-family median for
+ * "STARLINK" is the Falcon-era fleet, and the sourced provisional manifest
+ * already covers Starship flights. Applying that median would retire the
+ * manifest row with a mass GCAT never published.
  */
 
 export interface EstimatableRow {
@@ -16,6 +21,11 @@ export interface EstimatableRow {
 }
 
 const MIN_SAMPLES = 3;
+
+/** Payload on a Starship-family launcher. The manifest covers these; do not estimate them. */
+export function isStarshipLaunchedPayload(row: Pick<EstimatableRow, "objectClass" | "lvFamily">): boolean {
+  return row.objectClass === "P" && (row.lvFamily ?? "").toLowerCase().includes("starship");
+}
 
 /** "STARLINK-38128" / "STARLINK 11433" / "ONEWEB-0644" → "STARLINK", "ONEWEB" */
 export function nameFamilyKey(name: string): string | null {
@@ -50,8 +60,10 @@ export function buildMassModel(rows: EstimatableRow[]): MassModel {
     if (cls !== "P" && cls !== "R") continue;
     const m = r.massKg as number;
 
+    // Keep the STARLINK median Falcon-era. A catalogued Starship V3 must not
+    // pull the name-family figure used for Falcon flights.
     const fam = nameFamilyKey(r.name);
-    if (fam) {
+    if (fam && !isStarshipLaunchedPayload(r)) {
       const k = `${cls}|${fam}`;
       (familySamples.get(k) ?? familySamples.set(k, []).get(k)!).push(m);
     }
@@ -76,6 +88,9 @@ export function buildMassModel(rows: EstimatableRow[]): MassModel {
     estimate(row) {
       const cls = row.objectClass;
       if (cls !== "P" && cls !== "R") return null;
+      // Name-family, class+vehicle, and class medians all stay off Starship
+      // payloads. Falcon Starlinks still use the name-family median below.
+      if (isStarshipLaunchedPayload(row)) return null;
 
       const fam = nameFamilyKey(row.name);
       if (fam) {

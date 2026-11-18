@@ -166,7 +166,7 @@ function FalconVsStarshipChart() {
         <div className="space-y-1 text-card-foreground">
           <p><span style={{ color: FALCON_COLOR }}>■</span> <span className="text-muted-foreground">Falcon 9 / Heavy:</span> {(falcon / 1000).toFixed(1)}t</p>
           {pending > 0 && <p><span style={{ color: FALCON_COLOR, opacity: 0.5 }}>▨</span> <span className="text-muted-foreground">Falcon pending cataloguing:</span> ~{(pending / 1000).toFixed(1)}t est.</p>}
-          <p><span style={{ color: STARSHIP_COLOR }}>■</span> <span className="text-muted-foreground">Starship (catalogued):</span> {starship > 0 ? `${(starship / 1000).toFixed(1)}t` : '—'}</p>
+          <p><span style={{ color: STARSHIP_COLOR }}>■</span> <span className="text-muted-foreground">Starship (GCAT mass):</span> {starship > 0 ? `${(starship / 1000).toFixed(1)}t` : '—'}</p>
           {pendingSs > 0 && <p><span style={{ color: STARSHIP_COLOR, opacity: 0.55 }}>▨</span> <span className="text-muted-foreground">Provisional (estimated, not yet catalogued):</span> ~{(pendingSs / 1000).toFixed(1)}t</p>}
         </div>
       </div>
@@ -204,7 +204,7 @@ function FalconVsStarshipChart() {
             </div>
             <div className="text-xs text-muted-foreground">
               {data.starshipTotal > 0
-                ? 'Catalogued payloads'
+                ? 'GCAT payload mass'
                 : pendingStarship > 0
                   ? 'Provisional (estimated)'
                   : 'Not yet in GCAT'}
@@ -276,9 +276,9 @@ function FalconVsStarshipChart() {
           <p className="text-xs font-mono text-muted-foreground/60">
             <span className="text-amber-400/70">// </span>
             {data.starshipTotal > 0
-              ? 'Catalogued Starship payload mass is the solid bar. Hatched amber is a sourced provisional estimate for flights GCAT has not given a mass yet, and it drops out on its own once that mass lands.'
+              ? 'The solid bar is GCAT-catalogued Starship payload mass. Bureau estimates on a flight that still has a provisional row are not counted there and are not stacked on top of it. Hatched amber is that provisional figure, and it drops out once GCAT lists a real payload mass.'
               : pendingStarship > 0
-                ? `GCAT has not catalogued a Starship payload mass yet. The hatched bar is a sourced provisional estimate (~${(pendingStarship / 1000).toFixed(0)}t booked), kept separate from the Falcon-median pending series. It is replaced automatically once GCAT lists the mass. The calculation is below.`
+                ? `GCAT has not catalogued a Starship payload mass yet. The hatched bar is a sourced provisional estimate (~${(pendingStarship / 1000).toFixed(0)}t booked), kept separate from the Falcon-median pending series. A Bureau name-family estimate does not retire it. It is replaced automatically once GCAT lists a real payload mass. The calculation is below.`
                 : 'Starship has conducted orbital test flights but has not yet deployed commercially catalogued payloads in the GCAT database. When it does, a single Starship flight (~150t LEO) will dwarf an entire Falcon 9 year from before 2020.'
             }
           </p>
@@ -513,7 +513,7 @@ function SpaceXBySiteChart() {
                   Each bar = Falcon 9 / Heavy / Starship payload mass for that month.
                   Starbase is its own site. Hatched amber is a sourced Starship provisional
                   (estimated, not yet catalogued) — it is not a Falcon-median guess, and it is
-                  replaced automatically once GCAT lists a payload mass. Hatched Cape and
+                  replaced automatically once GCAT lists a payload mass (a Bureau estimate does not count as catalogued). Hatched Cape and
                   Vandenberg segments are Falcon-median estimates for recent launches the
                   catalogs haven't processed yet.
                   Empty bars ahead are open launch windows — waiting to be filled.
@@ -703,7 +703,7 @@ function ProvisionalEstimates() {
         <p className="text-muted-foreground leading-relaxed">
           <span className="text-amber-400/80">// </span>
           These figures are <span className="text-amber-300">ESTIMATED / provisional</span>. They are not in the catalog total.
-          Entries are replaced automatically once GCAT lists a payload mass for the launch, and a retired row is excluded from every chart.
+          A row is replaced automatically once GCAT lists a payload mass for the launch (a Bureau estimate does not count as catalogued), and a retired row is excluded from every chart.
         </p>
         {isLoading && (
           <p className="text-muted-foreground uppercase tracking-wider animate-pulse">Loading the calculation…</p>
@@ -724,7 +724,8 @@ function ProvisionalEstimates() {
             </p>
             {entry.retired ? (
               <p className="text-primary">
-                GCAT now lists {entry.cataloguedMassKg.toLocaleString()} kg of payload mass for this launch.
+                GCAT lists {entry.cataloguedMassKg.toLocaleString()} kg of catalogued payload mass for this launch.
+                Bureau estimates are not included in that figure.
                 The provisional {entry.massKg.toLocaleString()} kg is excluded from every total.
               </p>
             ) : (
@@ -733,6 +734,12 @@ function ProvisionalEstimates() {
                 {' '}({(entry.calc.resultKg / 1000).toFixed(1)} t).
                 Range {entry.calc.rangeKg[0].toLocaleString()}–{entry.calc.rangeKg[1].toLocaleString()} kg
                 {' '}({entry.perSatLowKg.toLocaleString()}–{entry.perSatHighKg.toLocaleString()} kg per sat).
+                {(entry.estimatedMassKg ?? 0) > 0 && (
+                  <>
+                    {' '}Matched objects carry {entry.estimatedMassKg.toLocaleString()} kg of Bureau estimates.
+                    That is not catalogued mass, so it does not retire this row and is not added on top of the booked figure.
+                  </>
+                )}
               </p>
             )}
             <p className="text-muted-foreground">
@@ -832,11 +839,11 @@ function SpaceXComparisonChart() {
       <div className="bg-card border-2 border-primary p-3 box-glow-cyan shadow-xl font-mono text-sm z-50">
         <p className="text-primary font-bold mb-2 pb-1 border-b border-primary/30 uppercase">{label}</p>
         <div className="space-y-1 text-card-foreground">
-          <p><span style={{ color: SPACEX_COLOR }}>■</span> <span className="text-muted-foreground">SpaceX (Falcon + Starship, catalogued):</span> {(spacexVal / 1000).toFixed(1)}t</p>
+          <p><span style={{ color: SPACEX_COLOR }}>■</span> <span className="text-muted-foreground">SpaceX (Falcon + Starship):</span> {(spacexVal / 1000).toFixed(1)}t</p>
           {pendVal > 0 && <p><span style={{ color: SPACEX_COLOR, opacity: 0.5 }}>▨</span> <span className="text-muted-foreground">Falcon pending cataloguing:</span> ~{(pendVal / 1000).toFixed(1)}t est.</p>}
           {pendSs > 0 && <p><span style={{ color: STARSHIP_COLOR, opacity: 0.7 }}>▨</span> <span className="text-muted-foreground">Provisional (estimated, not yet catalogued):</span> ~{(pendSs / 1000).toFixed(1)}t</p>}
           <p><span style={{ color: OTHERS_COLOR }}>■</span> <span className="text-muted-foreground">Rest of World:</span> {(othersVal / 1000).toFixed(1)}t</p>
-          <p className="border-t border-border/50 mt-1 pt-1"><span className="text-muted-foreground">SpaceX share (catalogued):</span> <span style={{ color: SPACEX_COLOR }}>{pct}%</span></p>
+          <p className="border-t border-border/50 mt-1 pt-1"><span className="text-muted-foreground">SpaceX share:</span> <span style={{ color: SPACEX_COLOR }}>{pct}%</span></p>
         </div>
       </div>
     );

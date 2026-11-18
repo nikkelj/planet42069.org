@@ -435,7 +435,7 @@ export const GetSatcatSpacexByEntityResponse = zod.object({
 
 
 /**
- * Checked-in provisional estimates for launches GCAT has not yet given a payload mass. Retired entries (catalogued payload mass already on file) stay in the list with retired=true and are excluded from chart totals.
+ * Checked-in provisional estimates for launches GCAT has not yet given a payload mass. Retired entries (a real GCAT payload mass is on file; a Bureau estimate does not count) stay in the list with retired=true and are excluded from chart totals.
  * @summary Sourced provisional payload masses
  */
 export const getSatcatProvisionalManifestResponseEntriesItemCalcRangeKgMin = 2;
@@ -485,8 +485,9 @@ export const GetSatcatProvisionalManifestResponse = zod.object({
   "payloadNameIncludes": zod.string().nullish(),
   "siteHints": zod.array(zod.string()).optional()
 }),
-  "retired": zod.boolean().describe('True once GCAT lists payload mass for this launch. Excluded from totals.'),
-  "cataloguedMassKg": zod.number().describe('Sum of catalogued object-class P mass matched to this launch'),
+  "retired": zod.boolean().describe('True once GCAT lists a real payload mass for this launch (not a Bureau estimate). Excluded from totals.'),
+  "cataloguedMassKg": zod.number().describe('Sum of GCAT-catalogued object-class P mass matched to this launch (massKg > 0 and massEstimated is not true)'),
+  "estimatedMassKg": zod.number().describe('Sum of Bureau estimator mass matched to this launch. Does not retire the row, and is not added on top of the booked figure while the row is active.'),
   "markdown": zod.string().describe('Published calculation write-up')
 })),
   "activeMassKg": zod.number().describe('Booked kg of entries that are not retired'),

@@ -32,10 +32,12 @@ export interface ProvisionalManifestEntry {
   note: string;
   calc: ProvisionalCalc;
   match: ProvisionalManifestMatch;
-  /** True once GCAT lists payload mass for this launch. Excluded from totals. */
+  /** True once GCAT lists a real payload mass for this launch (not a Bureau estimate). Excluded from totals. */
   retired: boolean;
-  /** Sum of catalogued object-class P mass matched to this launch */
+  /** Sum of GCAT-catalogued object-class P mass matched to this launch (massKg > 0 and massEstimated is not true) */
   cataloguedMassKg: number;
+  /** Sum of Bureau estimator mass matched to this launch. Does not retire the row, and is not added on top of the booked figure while the row is active. */
+  estimatedMassKg: number;
   /** Published calculation write-up */
   markdown: string;
 }

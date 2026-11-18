@@ -1270,7 +1270,7 @@ export const getGetSatcatProvisionalManifestUrl = () => {
 }
 
 /**
- * Checked-in provisional estimates for launches GCAT has not yet given a payload mass. Retired entries (catalogued payload mass already on file) stay in the list with retired=true and are excluded from chart totals.
+ * Checked-in provisional estimates for launches GCAT has not yet given a payload mass. Retired entries (a real GCAT payload mass is on file; a Bureau estimate does not count) stay in the list with retired=true and are excluded from chart totals.
  * @summary Sourced provisional payload masses
  */
 export const getSatcatProvisionalManifest = async ( options?: RequestInit): Promise<ProvisionalManifest> => {

@@ -6,8 +6,12 @@ import {
   activeProvisional,
   classifySite,
   getProvisionalManifest,
+  manifestVehicleLabel,
+  objectChartMass,
+  replacementMassByLabel,
   selectPendingFalcon,
   type PendingLaunch,
+  type ProvisionalManifest,
   type SiteClass,
 } from "../lib/provisional";
 
@@ -26,9 +30,11 @@ function getYear(ldate: string | null): string | null {
 // Falcon launches inside the lag window with zero catalogued payload mass get
 // a Falcon-median estimate (pendingFalcon / pendingSpacex). Starship never
 // uses that median. Starship flights in data/provisional-manifest.json get a
-// sourced figure (pendingStarship) until GCAT lists a payload mass, at which
-// point getProvisionalManifest retires the row. A manifest entry is excluded
-// from the Falcon estimator so the two cannot both count the same launch.
+// sourced figure (pendingStarship) until GCAT lists a real payload mass
+// (massEstimated !== true), at which point getProvisionalManifest retires the
+// row. A Bureau estimate on objects matched by an active row is not added
+// again: the manifest figure replaces it. A manifest entry is excluded from
+// the Falcon estimator so the two cannot both count the same launch.
 
 function isSpacexFamily(fam: string | null | undefined): boolean {
   const f = (fam ?? "").toLowerCase();
@@ -39,10 +45,27 @@ function isSpacexFamily(fam: string | null | undefined): boolean {
  * Falcon-median estimates for recent Falcon launches still missing payload
  * mass. Starship is not estimated here; see getProvisionalManifest.
  */
-async function getPendingSpacexLaunches(data: SatcatEntry[]): Promise<PendingLaunch[]> {
+async function getPendingSpacexLaunches(
+  data: SatcatEntry[],
+  manifest?: ProvisionalManifest,
+): Promise<PendingLaunch[]> {
   const launchMap = await getLaunchMap();
-  const manifest = getProvisionalManifest(data);
-  return selectPendingFalcon(data, launchMap.values(), Date.now(), manifest.entries);
+  const entries = (manifest ?? getProvisionalManifest(data)).entries;
+  return selectPendingFalcon(data, launchMap.values(), Date.now(), entries);
+}
+
+function addReplacement(
+  rows: { label: string; massKg: number; estMassKg: number; count: number; payloadCount: number }[],
+  extra: Map<string, number>,
+): void {
+  for (const [label, kg] of extra) {
+    let row = rows.find((r) => r.label === label);
+    if (!row) {
+      row = { label, massKg: 0, estMassKg: 0, count: 0, payloadCount: 0 };
+      rows.push(row);
+    }
+    row.estMassKg += kg;
+  }
 }
 
 router.get("/satcat/summary", async (req, res): Promise<void> => {
@@ -59,23 +82,30 @@ router.get("/satcat/summary", async (req, res): Promise<void> => {
     e.name.toUpperCase().includes("STARLINK"),
   ).length;
 
-  const totalMassKg = payloads.reduce(
-    (sum, e) => sum + (e.massKg ?? 0),
-    0,
-  );
-
-  const estimatedRows = data.filter((e) => e.massEstimated);
-  const estimatedMassKg = estimatedRows.reduce((s, e) => s + (e.massKg ?? 0), 0);
-
   const owners = new Set(data.map((e) => e.owner).filter(Boolean));
   const lvs = new Set(data.map((e) => e.lv).filter(Boolean));
 
   // Provisional mass is reported beside the catalog total, never added to it.
-  const pendingFalcon = await getPendingSpacexLaunches(data);
+  // Estimator mass already covered by an active manifest row is left out of
+  // both totalMassKg and estimatedMassKg so pendingMassKg is the only copy.
   const manifest = getProvisionalManifest(data);
+  const active = activeProvisional(manifest);
+  const pendingFalcon = await getPendingSpacexLaunches(data, manifest);
+  let totalMassKg = 0;
+  let estimatedMassKg = 0;
+  let estimatedObjects = 0;
+  for (const e of data) {
+    const parts = objectChartMass(e, active);
+    if (e.objectClass === "P") totalMassKg += parts.cataloguedKg + parts.estimatedKg;
+    if (!e.massEstimated) continue;
+    const suppressed = (e.massKg ?? 0) > 0 && parts.cataloguedKg === 0 && parts.estimatedKg === 0;
+    if (suppressed) continue;
+    estimatedObjects += 1;
+    estimatedMassKg += parts.estimatedKg;
+  }
   const pendingMassKg =
     pendingFalcon.reduce((s, p) => s + p.estMassKg, 0) +
-    activeProvisional(manifest).reduce((s, e) => s + e.massKg, 0);
+    active.reduce((s, e) => s + e.massKg, 0);
 
   const years = data
     .map((e) => getYear(e.ldate))
@@ -93,7 +123,7 @@ router.get("/satcat/summary", async (req, res): Promise<void> => {
     firstLaunchYear: years.length ? Math.min(...years) : 0,
     lastLaunchYear: years.length ? Math.max(...years) : 0,
     cacheAge: getCacheAge(),
-    estimatedObjects: estimatedRows.length,
+    estimatedObjects,
     estimatedMassKg: Math.round(estimatedMassKg),
     pendingMassKg: Math.round(pendingMassKg),
     freshness,
@@ -108,65 +138,106 @@ router.get("/satcat/stats", async (_req, res): Promise<void> => {
     (e) => e.objectClass === "P",
   );
 
-  type Agg = { massKg: number; estMassKg: number; count: number; payloadCount: number };
+  const manifest = getProvisionalManifest(data);
+  const active = activeProvisional(manifest);
+
+  type Agg = { label: string; massKg: number; estMassKg: number; count: number; payloadCount: number };
   const addTo = (existing: Agg, e: SatcatEntry) => {
-    if (e.massEstimated) existing.estMassKg += e.massKg ?? 0;
-    else existing.massKg += e.massKg ?? 0;
+    const parts = objectChartMass(e, active);
+    existing.massKg += parts.cataloguedKg;
+    existing.estMassKg += parts.estimatedKg;
     existing.count += 1;
     existing.payloadCount += e.objectClass === "P" ? 1 : 0;
   };
-  const finish = (label: string, v: Agg) => ({
-    label, ...v, massKg: Math.round(v.massKg), estMassKg: Math.round(v.estMassKg),
-  });
+  const finishRows = (rows: Agg[], byMass: boolean): Agg[] => {
+    const rounded = rows.map((r) => ({
+      ...r,
+      massKg: Math.round(r.massKg),
+      estMassKg: Math.round(r.estMassKg),
+    }));
+    return byMass
+      ? rounded.sort((a, b) => (b.massKg + b.estMassKg) - (a.massKg + a.estMassKg))
+      : rounded.sort((a, b) => a.label.localeCompare(b.label));
+  };
   const agg = (
     entries: SatcatEntry[],
     keyFn: (e: SatcatEntry) => string | null,
-  ): { label: string; massKg: number; estMassKg: number; count: number; payloadCount: number }[] => {
+    extra: Map<string, number>,
+  ): Agg[] => {
     const map = new Map<string, Agg>();
     for (const e of entries) {
       const key = keyFn(e) ?? "Unknown";
-      const existing = map.get(key) ?? { massKg: 0, estMassKg: 0, count: 0, payloadCount: 0 };
+      const existing = map.get(key) ?? { label: key, massKg: 0, estMassKg: 0, count: 0, payloadCount: 0 };
       addTo(existing, e);
       map.set(key, existing);
     }
-    return Array.from(map.entries())
-      .map(([label, v]) => finish(label, v))
-      .sort((a, b) => (b.massKg + b.estMassKg) - (a.massKg + a.estMassKg));
+    const rows = Array.from(map.values());
+    addReplacement(rows, extra);
+    return finishRows(rows, true);
   };
 
-  // byYear — use all data for count, payloads for mass
+  // byYear — use all data for count. Active manifest mass replaces estimator
+  // mass on the launch year, including flights that have no catalog objects yet.
   const yearMap = new Map<string, Agg>();
   for (const e of data) {
     const key = getYear(e.ldate) ?? "Unknown";
-    const existing = yearMap.get(key) ?? { massKg: 0, estMassKg: 0, count: 0, payloadCount: 0 };
+    const existing = yearMap.get(key) ?? { label: key, massKg: 0, estMassKg: 0, count: 0, payloadCount: 0 };
     addTo(existing, e);
     yearMap.set(key, existing);
   }
-  const byYear = Array.from(yearMap.entries())
-    .map(([label, v]) => finish(label, v))
-    .sort((a, b) => a.label.localeCompare(b.label))
-    .filter((y) => y.label !== "Unknown");
+  const yearRows = Array.from(yearMap.values());
+  addReplacement(
+    yearRows,
+    replacementMassByLabel(data, active, (e) => getYear(e.ldate), (entry) => getYear(entry.launchDate)),
+  );
+  const byYear = finishRows(yearRows, false).filter((y) => y.label !== "Unknown");
 
-  const byCountry = agg(payloads, (e) => e.state).slice(0, 30);
-  const byOrbit = agg(payloads, (e) => e.opOrbit).slice(0, 20);
+  const byCountry = agg(
+    payloads,
+    (e) => e.state,
+    replacementMassByLabel(payloads, active, (e) => e.state),
+  ).slice(0, 30);
+  const byOrbit = agg(
+    payloads,
+    (e) => e.opOrbit,
+    replacementMassByLabel(payloads, active, (e) => e.opOrbit),
+  ).slice(0, 20);
 
   // Object class breakdown across all objects (not just payloads)
   const classLabels: Record<string, string> = {
     P: "Payload", R: "Rocket Body", D: "Debris", C: "Component", Z: "Other",
   };
-  const byObjectClass = agg(data, (e) => {
+  const classKey = (e: SatcatEntry): string => {
     const c = e.objectClass ?? "-";
     return classLabels[c] ?? c;
-  });
+  };
+  const byObjectClass = agg(
+    data,
+    classKey,
+    replacementMassByLabel(data, active, classKey),
+  );
 
-  // LV family for readability, fall back to LV
-  const byLaunchVehicle = agg(payloads, (e) => e.lvFamily ?? e.lv).slice(0, 25);
+  // LV family for readability, fall back to LV. Flights with no objects yet
+  // still land on the booked vehicle so the manifest figure is not dropped.
+  const byLaunchVehicle = agg(
+    payloads,
+    (e) => e.lvFamily ?? e.lv,
+    replacementMassByLabel(
+      payloads,
+      active,
+      (e) => e.lvFamily ?? e.lv,
+      (entry) => manifestVehicleLabel(entry, payloads),
+    ),
+  ).slice(0, 25);
 
   // Gunter's Space Page Type/Application breakdown (payloads only).
   // Payloads without a Gunter match fall back to the existing GCAT
   // object-class bucket ("Payload (unclassified)") so nothing is dropped.
-  const byGunterType = agg(payloads, (e) =>
-    e.gunterType ?? "Payload (unclassified)",
+  const gunterKey = (e: SatcatEntry) => e.gunterType ?? "Payload (unclassified)";
+  const byGunterType = agg(
+    payloads,
+    gunterKey,
+    replacementMassByLabel(payloads, active, gunterKey),
   ).slice(0, 15);
   const gunterCoverage = {
     matchedPayloads: payloads.filter((e) => e.gunterType != null).length,
@@ -196,10 +267,13 @@ router.get("/satcat/by-year-provider", async (_req, res): Promise<void> => {
     year, spacex: 0, others: 0, pendingSpacex: 0, pendingStarship: 0, spacexCount: 0, othersCount: 0,
   });
 
+  const manifest = getProvisionalManifest(data);
+  const active = activeProvisional(manifest);
   for (const e of payloads) {
     const year = getYear(e.ldate);
     if (!year) continue;
-    const mass = e.massKg ?? 0;
+    const parts = objectChartMass(e, active);
+    const mass = parts.cataloguedKg + parts.estimatedKg;
     const isSpaceX = isSpacexFamily(e.lvFamily);
     const row = map.get(year) ?? emptyRow(year);
     if (isSpaceX) {
@@ -213,15 +287,16 @@ router.get("/satcat/by-year-provider", async (_req, res): Promise<void> => {
   }
 
   // Falcon-median estimates stay in pendingSpacex. Sourced Starship estimates
-  // are their own series and are not folded in.
-  for (const p of await getPendingSpacexLaunches(data)) {
+  // are their own series and are not folded in. Estimator mass of an active
+  // manifest launch is omitted above so pendingStarship is the only copy.
+  for (const p of await getPendingSpacexLaunches(data, manifest)) {
     const year = getYear(p.ldate);
     if (!year) continue;
     const row = map.get(year) ?? emptyRow(year);
     row.pendingSpacex += p.estMassKg;
     map.set(year, row);
   }
-  for (const p of activeProvisional(getProvisionalManifest(data))) {
+  for (const p of active) {
     const year = getYear(p.launchDate);
     if (!year) continue;
     const row = map.get(year) ?? emptyRow(year);
@@ -318,24 +393,28 @@ router.get("/satcat/upmass-by-provider", async (req, res): Promise<void> => {
   const emptyRow = (provider: string): Row => ({
     provider, massKg: 0, estMassKg: 0, pendingMassKg: 0, pendingStarshipMassKg: 0, count: 0,
   });
+  const manifest = getProvisionalManifest(data);
+  const active = activeProvisional(manifest);
   for (const e of payloads) {
     const provider = classifyProvider(e);
     const row = map.get(provider) ?? emptyRow(provider);
-    if (e.massEstimated) row.estMassKg += e.massKg ?? 0;
-    else row.massKg += e.massKg ?? 0;
+    const parts = objectChartMass(e, active);
+    row.massKg += parts.cataloguedKg;
+    row.estMassKg += parts.estimatedKg;
     row.count += 1;
     map.set(provider, row);
   }
 
   // Falcon-median pending stays in pendingMassKg. Sourced Starship provisional
   // mass is pendingStarshipMassKg and is not folded into the Falcon series.
-  for (const p of await getPendingSpacexLaunches(data)) {
+  // Estimator mass covered by an active manifest row is omitted above.
+  for (const p of await getPendingSpacexLaunches(data, manifest)) {
     if (p.ldate < start || p.ldate > end) continue;
     const row = map.get("SpaceX") ?? emptyRow("SpaceX");
     row.pendingMassKg += p.estMassKg;
     map.set("SpaceX", row);
   }
-  for (const p of activeProvisional(getProvisionalManifest(data))) {
+  for (const p of active) {
     if (p.launchDate < start || p.launchDate > end) continue;
     const row = map.get("SpaceX") ?? emptyRow("SpaceX");
     row.pendingStarshipMassKg += p.massKg;
@@ -673,10 +752,13 @@ router.get("/satcat/falcon-vs-starship", async (_req, res): Promise<void> => {
   const map = new Map<string, Row>();
   const emptyRow = (year: string): Row => ({ year, falcon: 0, starship: 0, pendingFalcon: 0, pendingStarship: 0 });
 
+  const manifest = getProvisionalManifest(data);
+  const active = activeProvisional(manifest);
   for (const e of payloads) {
     const year = getYear(e.ldate);
     if (!year || parseInt(year) < 2010) continue;
-    const mass = e.massKg ?? 0;
+    const parts = objectChartMass(e, active);
+    const mass = parts.cataloguedKg + parts.estimatedKg;
     const lv = ((e.lvFamily ?? "") + " " + (e.lv ?? "")).toLowerCase();
     if (!lv.includes("falcon") && !lv.includes("starship")) continue;
     const row = map.get(year) ?? emptyRow(year);
@@ -689,15 +771,16 @@ router.get("/satcat/falcon-vs-starship", async (_req, res): Promise<void> => {
   }
 
   // Falcon-median pending stays on pendingFalcon. Sourced Starship provisional
-  // mass is pendingStarship — not folded into the Falcon series.
-  for (const p of await getPendingSpacexLaunches(data)) {
+  // mass is pendingStarship — not folded into the Falcon series. Estimator
+  // mass covered by an active manifest row is omitted above.
+  for (const p of await getPendingSpacexLaunches(data, manifest)) {
     const year = getYear(p.ldate);
     if (!year) continue;
     const row = map.get(year) ?? emptyRow(year);
     row.pendingFalcon += p.estMassKg;
     map.set(year, row);
   }
-  for (const p of activeProvisional(getProvisionalManifest(data))) {
+  for (const p of active) {
     const year = getYear(p.launchDate);
     if (!year) continue;
     const row = map.get(year) ?? emptyRow(year);
@@ -746,11 +829,14 @@ router.get("/satcat/spacex-by-site-monthly", async (req, res): Promise<void> => 
     pendingCapeCanaveral: 0, pendingVandenberg: 0, pendingStarbase: 0, pendingOther: 0,
   }));
 
+  const manifest = getProvisionalManifest(data);
+  const active = activeProvisional(manifest);
   for (const e of payloads) {
     if (!e.ldate) continue;
     const monthNum = parseInt(e.ldate.split("-")[1] ?? "0", 10);
     if (monthNum < 1 || monthNum > 12) continue;
-    const mass = e.massKg ?? 0;
+    const parts = objectChartMass(e, active);
+    const mass = parts.cataloguedKg + parts.estimatedKg;
     const row = rows[monthNum - 1];
     row[classifySite(e.site)] += mass;
   }
@@ -761,13 +847,13 @@ router.get("/satcat/spacex-by-site-monthly", async (req, res): Promise<void> => 
     starbase: "pendingStarbase",
     other: "pendingOther",
   };
-  for (const p of await getPendingSpacexLaunches(data)) {
+  for (const p of await getPendingSpacexLaunches(data, manifest)) {
     if (getYear(p.ldate) !== year) continue;
     const monthNum = parseInt(p.ldate.split("-")[1] ?? "0", 10);
     if (monthNum < 1 || monthNum > 12) continue;
     rows[monthNum - 1][PENDING_KEY[p.siteClass]] += p.estMassKg;
   }
-  for (const p of activeProvisional(getProvisionalManifest(data))) {
+  for (const p of active) {
     if (getYear(p.launchDate) !== year) continue;
     const monthNum = parseInt(p.launchDate.split("-")[1] ?? "0", 10);
     if (monthNum < 1 || monthNum > 12) continue;
@@ -808,10 +894,13 @@ router.get("/satcat/spacex-by-site", async (_req, res): Promise<void> => {
     pendingCapeCanaveral: 0, pendingVandenberg: 0, pendingStarbase: 0, pendingOther: 0,
   });
 
+  const manifest = getProvisionalManifest(data);
+  const active = activeProvisional(manifest);
   for (const e of payloads) {
     const year = getYear(e.ldate);
     if (!year || parseInt(year) < 2010) continue;
-    const mass = e.massKg ?? 0;
+    const parts = objectChartMass(e, active);
+    const mass = parts.cataloguedKg + parts.estimatedKg;
     const row = map.get(year) ?? emptyRow(year);
     row[classifySite(e.site)] += mass;
     map.set(year, row);
@@ -823,14 +912,14 @@ router.get("/satcat/spacex-by-site", async (_req, res): Promise<void> => {
     starbase: "pendingStarbase",
     other: "pendingOther",
   };
-  for (const p of await getPendingSpacexLaunches(data)) {
+  for (const p of await getPendingSpacexLaunches(data, manifest)) {
     const year = getYear(p.ldate);
     if (!year) continue;
     const row = map.get(year) ?? emptyRow(year);
     row[PENDING_KEY[p.siteClass]] += p.estMassKg;
     map.set(year, row);
   }
-  for (const p of activeProvisional(getProvisionalManifest(data))) {
+  for (const p of active) {
     const year = getYear(p.launchDate);
     if (!year) continue;
     const row = map.get(year) ?? emptyRow(year);
@@ -880,10 +969,13 @@ router.get("/satcat/spacex-by-entity", async (_req, res): Promise<void> => {
     year, starlink: 0, usGov: 0, commercial: 0, pending: 0, pendingStarship: 0,
   });
 
+  const manifest = getProvisionalManifest(data);
+  const active = activeProvisional(manifest);
   for (const e of payloads) {
     const year = getYear(e.ldate);
     if (!year || parseInt(year) < 2010) continue;
-    const mass = e.massKg ?? 0;
+    const parts = objectChartMass(e, active);
+    const mass = parts.cataloguedKg + parts.estimatedKg;
     const row = map.get(year) ?? emptyRow(year);
 
     if (e.name.toUpperCase().includes("STARLINK")) {
@@ -899,14 +991,15 @@ router.get("/satcat/spacex-by-entity", async (_req, res): Promise<void> => {
   // Falcon launches still missing a catalog: segment is unknown, so the
   // median stays in `pending` and is not guessed into Starlink. Sourced
   // Starship provisional mass is `pendingStarship`, not folded into either.
-  for (const p of await getPendingSpacexLaunches(data)) {
+  // Estimator mass covered by an active manifest row is omitted above.
+  for (const p of await getPendingSpacexLaunches(data, manifest)) {
     const year = getYear(p.ldate);
     if (!year) continue;
     const row = map.get(year) ?? emptyRow(year);
     row.pending += p.estMassKg;
     map.set(year, row);
   }
-  for (const p of activeProvisional(getProvisionalManifest(data))) {
+  for (const p of active) {
     const year = getYear(p.launchDate);
     if (!year) continue;
     const row = map.get(year) ?? emptyRow(year);
