@@ -358,7 +358,7 @@ paths:
       operationId: getSatcatProvisionalManifest
       tags: [satcat]
       summary: Sourced provisional payload masses
-      description: Checked-in provisional estimates for launches GCAT has not yet given a payload mass. Retired entries (catalogued payload mass already on file) stay in the list with retired=true and are excluded from chart totals.
+      description: Checked-in provisional estimates for launches GCAT has not yet given a payload mass. Retired entries (a real GCAT payload mass is on file; a Bureau estimate does not count) stay in the list with retired=true and are excluded from chart totals.
       responses:
         "200":
           description: Provisional manifest with calc inputs and retirement state
@@ -2070,10 +2070,13 @@ components:
           $ref: "#/components/schemas/ProvisionalManifestMatch"
         retired:
           type: boolean
-          description: True once GCAT lists payload mass for this launch. Excluded from totals.
+          description: True once GCAT lists a real payload mass for this launch (not a Bureau estimate). Excluded from totals.
         cataloguedMassKg:
           type: number
-          description: Sum of catalogued object-class P mass matched to this launch
+          description: Sum of GCAT-catalogued object-class P mass matched to this launch (massKg > 0 and massEstimated is not true)
+        estimatedMassKg:
+          type: number
+          description: Sum of Bureau estimator mass matched to this launch. Does not retire the row, and is not added on top of the booked figure while the row is active.
         markdown:
           type: string
           description: Published calculation write-up
@@ -2100,6 +2103,7 @@ components:
         - match
         - retired
         - cataloguedMassKg
+        - estimatedMassKg
         - markdown
 
     ProvisionalManifest:

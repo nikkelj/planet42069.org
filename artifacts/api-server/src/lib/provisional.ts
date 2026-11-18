@@ -11,7 +11,9 @@ import type { SatcatEntry } from "./satcat";
  * catalog lists object-class P mass for that launch.
  *
  * The Falcon-median estimator stays Falcon-only. A manifest row and that
- * estimator never both count the same launch.
+ * estimator never both count the same launch. A Bureau name-family mass
+ * (massEstimated) is not a GCAT mass: it does not retire a row, and charts
+ * do not add it on top of an active manifest figure.
  */
 
 export type SiteClass = "capeCanaveral" | "vandenberg" | "starbase" | "other";
@@ -68,7 +70,10 @@ export interface ManifestEntry {
 
 export interface ProvisionalEntry extends ManifestEntry {
   retired: boolean;
+  /** Sum of real GCAT payload mass (massKg > 0 and massEstimated !== true). */
   cataloguedMassKg: number;
+  /** Sum of Bureau estimator mass matched to this launch. Does not retire the row. */
+  estimatedMassKg: number;
   /** Full calc markdown, so the site can publish the write-up with the numbers. */
   markdown: string;
 }
@@ -95,7 +100,7 @@ const BASES: readonly MassBasis[] = ["published", "estimated"];
 const KINDS: readonly InputKind[] = ["published", "derived", "editorial"];
 
 const RETIRE_NOTE =
-  "Entries are replaced automatically once GCAT lists a payload mass for the launch (object class P, mass > 0). Retired rows stay on this manifest with retired=true and are excluded from every total. Starship is never given the Falcon-median estimate.";
+  "A row is replaced automatically once GCAT lists a payload mass for the launch (object class P, mass > 0, and not a Bureau estimate). A name-family or other Bureau estimate is reported as estimatedMassKg and does not count as catalogued: it does not retire the row, and charts do not add it on top of the booked figure. Retired rows stay on this manifest with retired=true and are excluded from every total. Starship is never given the Falcon-median estimate.";
 
 export function classifySite(site: string | null): SiteClass {
   const s = (site ?? "").toUpperCase();
@@ -312,21 +317,118 @@ export function launchCoveredByManifest(l: LaunchEntry, entries: ManifestEntry[]
   return entries.some((e) => launchMatchesManifest(l, e.match));
 }
 
+/** Vehicle label for a manifest row: the matched objects' family, else the booked vehicle. */
+export function manifestVehicleLabel(entry: ManifestEntry, payloads: SatcatEntry[]): string {
+  for (const e of payloads) {
+    if (!objectMatchesManifest(e, entry.match)) continue;
+    const label = e.lvFamily ?? e.lv;
+    if (label) return label;
+  }
+  return entry.vehicle;
+}
+
+function positiveMass(e: SatcatEntry): number {
+  const mass = e.massKg ?? 0;
+  return mass > 0 ? mass : 0;
+}
+
+/**
+ * Real GCAT payload mass for this launch.
+ * Rows with massEstimated === true are the Bureau estimator, not GCAT, and
+ * are excluded even when massKg > 0.
+ */
 export function cataloguedPayloadMassKg(data: SatcatEntry[], entry: ManifestEntry): number {
   let sum = 0;
   for (const e of data) {
     if (!objectMatchesManifest(e, entry.match)) continue;
-    sum += e.massKg ?? 0;
+    if (e.massEstimated === true) continue;
+    sum += positiveMass(e);
   }
   return sum;
+}
+
+/** Bureau estimator mass matched to this launch. Reported beside the GCAT sum. */
+export function estimatedPayloadMassKg(data: SatcatEntry[], entry: ManifestEntry): number {
+  let sum = 0;
+  for (const e of data) {
+    if (!objectMatchesManifest(e, entry.match)) continue;
+    if (e.massEstimated !== true) continue;
+    sum += positiveMass(e);
+  }
+  return sum;
+}
+
+export interface ChartMass {
+  /** Real GCAT mass. Bureau estimates are never placed here. */
+  cataloguedKg: number;
+  /** Bureau estimate not already covered by an active manifest entry. */
+  estimatedKg: number;
+}
+
+/**
+ * Mass a chart may add for this object.
+ * Estimator mass matched by an active manifest entry is omitted. The booked
+ * manifest figure is what the chart adds instead, once.
+ */
+export function objectChartMass(e: SatcatEntry, active: readonly ManifestEntry[]): ChartMass {
+  const mass = positiveMass(e);
+  if (mass === 0) return { cataloguedKg: 0, estimatedKg: 0 };
+  if (e.massEstimated === true) {
+    if (active.some((entry) => objectMatchesManifest(e, entry.match))) {
+      return { cataloguedKg: 0, estimatedKg: 0 };
+    }
+    return { cataloguedKg: 0, estimatedKg: mass };
+  }
+  return { cataloguedKg: mass, estimatedKg: 0 };
+}
+
+/**
+ * Booked kg of active manifest entries, keyed for one breakdown.
+ * `labelForEntry` wins when it returns a label (launch year, vehicle).
+ * Otherwise the label shared by the matched objects is used, so a chart that
+ * used to sum the estimator masses shows the manifest figure once instead.
+ * Entries with no label are skipped — there is no object bucket to replace.
+ */
+export function replacementMassByLabel(
+  data: SatcatEntry[],
+  active: readonly ManifestEntry[],
+  labelForObject: (e: SatcatEntry) => string | null,
+  labelForEntry?: (entry: ManifestEntry) => string | null,
+): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const entry of active) {
+    let label = labelForEntry?.(entry) ?? null;
+    if (!label) {
+      const counts = new Map<string, number>();
+      for (const e of data) {
+        if (!objectMatchesManifest(e, entry.match)) continue;
+        const k = labelForObject(e) ?? "Unknown";
+        counts.set(k, (counts.get(k) ?? 0) + 1);
+      }
+      let best: string | null = null;
+      let n = 0;
+      for (const [k, c] of counts) {
+        if (c > n) {
+          best = k;
+          n = c;
+        }
+      }
+      label = best;
+    }
+    if (!label) continue;
+    out.set(label, (out.get(label) ?? 0) + entry.massKg);
+  }
+  return out;
 }
 
 export function annotateManifest(data: SatcatEntry[], entries: ManifestEntry[]): ProvisionalEntry[] {
   return entries.map((entry) => {
     const cataloguedMassKg = cataloguedPayloadMassKg(data, entry);
+    const estimatedMassKg = estimatedPayloadMassKg(data, entry);
     return {
       ...entry,
       cataloguedMassKg,
+      estimatedMassKg,
       retired: cataloguedMassKg > 0,
       markdown: "",
     };

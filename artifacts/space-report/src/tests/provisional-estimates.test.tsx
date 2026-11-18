@@ -59,6 +59,7 @@ const manifest = {
       match: { ldate: "2026-11-13", lvFamilyIncludes: "starship", launchTag: "2026-256" },
       retired: false,
       cataloguedMassKg: 0,
+      estimatedMassKg: 15450,
       markdown: "ESTIMATED / provisional.\n26 x 1,500 = 39,000 kg booked.",
     },
     {
@@ -93,6 +94,7 @@ const manifest = {
       match: { ldate: "2026-09-28", lvFamilyIncludes: "starship", launchTag: "2026-225" },
       retired: true,
       cataloguedMassKg: 41000,
+      estimatedMassKg: 0,
       markdown: "retired write-up",
     },
   ],
@@ -157,7 +159,10 @@ describe("provisional estimates section", () => {
     expect(source.length).toBeGreaterThan(0);
     expect(source[0]).toHaveAttribute("href", "https://www.spacex.com/launches/starship-flight-15");
     expect(screen.getByText(/Retired — GCAT has the mass/i)).toBeInTheDocument();
-    expect(screen.getByText(/41,000 kg of payload mass/i)).toBeInTheDocument();
+    expect(screen.getByText(/41,000 kg of catalogued payload mass/i)).toBeInTheDocument();
+    expect(screen.getByText(/Bureau estimates are not included/i)).toBeInTheDocument();
+    expect(screen.getByText(/15,450 kg of Bureau estimates/i)).toBeInTheDocument();
+    expect(screen.getByText(/does not count as catalogued/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Provisional \(estimated, not yet catalogued\)/i).length).toBeGreaterThan(0);
   });
 });

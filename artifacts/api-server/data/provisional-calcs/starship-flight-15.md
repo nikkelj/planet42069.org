@@ -18,4 +18,4 @@ SpaceX has not published a unit mass for the flown Starlink V3 satellites. We ch
 
 **Not used:** Wikipedia's ~34,100 kg for Flight 13 (cited to a SpaceX recap that states no mass); a Falcon-median batch (~14 t, wrong vehicle and sat class); Starship capacity as if it were this flight's cargo.
 
-This row is excluded from every total automatically once GCAT lists a payload mass (object class P, mass > 0) for launch 2026-256. Label everything ESTIMATED / provisional.
+This row is excluded from every total automatically once GCAT lists a catalogued payload mass (object class P, mass > 0, not a Bureau estimate) for launch 2026-256. A name-family estimate on space-track objects does not count as catalogued, does not retire this row, and is not added on top of the booked figure. Label everything ESTIMATED / provisional.
