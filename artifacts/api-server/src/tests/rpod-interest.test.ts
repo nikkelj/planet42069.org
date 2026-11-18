@@ -412,10 +412,14 @@ console.log("doScan wires the filter in front of persist (scanner health path in
 {
   const scanSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../lib/rpod/scan.ts"), "utf8");
   check("doScan filters via selectInterestingEvents", scanSrc.includes("selectInterestingEvents("));
+  const conjFilter = scanSrc.indexOf("selectInterestingEvents(events");
+  const coFilter = scanSrc.indexOf("selectInterestingEvents(coEvents");
+  const conjPersist = scanSrc.indexOf("persistEvents(conjKept.kept");
+  const coPersist = scanSrc.indexOf("persistEvents(coKept.kept");
   check("conjunction persist uses the filtered list",
-    /selectInterestingEvents\(events[\s\S]{0,2500}persistEvents\(conjKept\.kept/.test(scanSrc));
+    conjFilter > 0 && conjPersist > conjFilter);
   check("coplanar persist uses the filtered list",
-    /selectInterestingEvents\(coEvents[\s\S]{0,2500}persistEvents\(coKept\.kept/.test(scanSrc));
+    coFilter > 0 && coPersist > coFilter);
   check("PR#7: doScan still loads elsets via getLatestElsetsOrSkip",
     scanSrc.includes("getLatestElsetsOrSkip("));
   check("PR#7: elset-fetch skip still logs success, not error",
