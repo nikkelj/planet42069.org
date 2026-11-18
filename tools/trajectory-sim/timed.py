@@ -80,7 +80,7 @@ class TimedSim:
         evts = sorted([e_ for e_ in evts if 0 < e_[0] <= t_end+1e-9], key=lambda z: z[0])
         mass = lambda: s.payload+(s.fairing if fair else 0)+sum(st.dry+prop[i] for i, st in enumerate(s.st) if att[i])
         diam = max(st.diam for st in s.st)
-        t = 0.; ev = [s._state("Liftoff", t, r, v, mass())]; rows = []; k = 0
+        t = 0.; ev = [s._state("Liftoff", t, r, v, mass())]; rows = []; k = 0; steps = 0
         def acc(tt, rr, vv, m):
             hh = np.linalg.norm(rr)-A*(1-E2*0.5*(rr[2]/np.linalg.norm(rr))**2)
             rho, P = atmos(hh); vrel = vv-np.cross(w, rr); vr = np.linalg.norm(vrel)
@@ -95,9 +95,13 @@ class TimedSim:
                 a = a+F/m*dirn
             return a
         while t < t_end-1e-9:
+            steps += 1
+            if steps > 5000: return None, None, ev  # nominal ascents are ~1e3 steps; bail out instead of spinning
             if record and abs(t/5-round(t/5)) < 1e-6: rows.append((t, r.copy(), v.copy()))
             nxt = min([e_[0] for e_ in evts[k:]]+[t_end, (math.floor(t/5+1e-9)+1)*5 if record else 1e9])
-            h = min(dt_, nxt-t); m = mass(); tm = t+h/2
+            h = min(dt_, nxt-t)
+            if h <= 1e-8: return None, None, ev
+            m = mass(); tm = t+h/2
             k1v = acc(t, r, v, m); k1r = v
             k2v = acc(tm, r+k1r*h/2, v+k1v*h/2, m); k2r = v+k1v*h/2
             k3v = acc(tm, r+k2r*h/2, v+k2v*h/2, m); k3r = v+k2v*h/2

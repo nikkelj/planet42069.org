@@ -1,0 +1,53 @@
+{
+  "slug": "lm6c-taiyuan-2026-11-21",
+  "title": "Long March 6C / Unknown Payload (Taiyuan LC-9A)",
+  "vehicle": "lm6c",
+  "t0_utc": "2026-11-21T03:50:00Z",
+  "pad": {
+    "lat": 38.8583,
+    "lon": 111.5802,
+    "alt_m": 0,
+    "src": "https://ll.thespacedevs.com/2.3.0/launches/13270554-4bdb-42ae-916f-1bb54492204f/",
+    "note": "LL2 pad Launch Complex 9A, latitude 38.8583, longitude 111.5802. Same pad point as the lm6a-yaogan50-03 config. LL2 gives no elevation; alt_m 0."
+  },
+  "azimuth_deg": {
+    "value": 189.52,
+    "assumption": "No hazard-area coordinates were found for the 21 Nov 03:46-04:15Z window (space-notices has no Long March 6C entry; public NOTAM indexes and X posts checked 2026-11-18 did not give a polygon). Southbound sun-synchronous ASSUMPTION. Non-rotating azimuth from LC-9A for a 500 km SSO inclination of 97.402 deg is 189.52 deg (sin(az)=cos(i)/cos(lat), southbound branch). Prior LM-6C Taiyuan flights (Y2 on 2024-05-07 and Y1 on 2026-08-25) were SSO and this repo's LM-6A from the same pad point used an assumed 190 deg. Not retuned after the sim."
+  },
+  "payload_kg": {
+    "value": 1000,
+    "assumption": "LL2 mission name is 'Unknown Payload' and no mass is published. 1000 kg is inside the published 2400 kg to 500 km SSO capability (Wikipedia Long March 6C, citing SpaceNews 7 May 2024) and is NOT an estimate of this flight. Energy-cutoff mode does not fit payload. The same 1000 kg is the figure used to close the vehicle mass budget."
+  },
+  "target": {
+    "insertion_alt_km": {
+      "value": 500,
+      "assumption": "Orbit is Unknown on LL2. 500 km circular is the LM-6C published SSO capability altitude (2400 kg), not this flight's insertion elements. Both previous LM-6C flights from LA-9A were SSO (Wikipedia launch table). Circular ASSUMED."
+    },
+    "cutoff": "energy"
+  },
+  "header_notes": [
+    "ILLUSTRATIVE. PRE-FLIGHT. Long March 6C, unknown payload, Taiyuan Launch Complex 9A. LL2 id 13270554-4bdb-42ae-916f-1bb54492204f, status Go, NET 2026-11-21T03:50:00Z (Fri 20 Nov 7:50 p.m. PST), window 03:46-04:15Z, orbit Unknown (net precision Hour). Wikipedia's launch table lists this row as Y3, payload unknown, planned.",
+    "No Chinese NOTAM or navigation-warning polygon for this window was found, so the azimuth is an ASSUMPTION: 189.52 deg, the non-rotating southbound azimuth for a 97.40 deg / 500 km SSO from this pad. Prior LM-6C Taiyuan flights were SSO.",
+    "Vehicle is vehicles/lm6c.json. Energy-cutoff (no published timeline). Target 500 km circular is ASSUMED. Payload 1000 kg is ASSUMED. No deploy time is published."
+  ],
+  "post_cutoff": {
+    "deploy": {
+      "t_s": null,
+      "note": "No payload-deploy time is published. LL2 gives the mission as Unknown Payload with no separation time."
+    },
+    "drag": {
+      "cd": {
+        "value": 2.2,
+        "assumption": "free-molecular Cd 2.2, the same assumption as the other Long March post-cutoff blocks"
+      },
+      "area_m2": {
+        "value": 6.605,
+        "derived": "pi*(2.9 m/2)^2, LM-6C second-stage diameter from Wikipedia Long March 6C"
+      }
+    },
+    "notes": [
+      "Upper-stage residual venting after cutoff is not modelled."
+    ]
+  },
+  "t0_note": "NET 2026-11-21T03:50:00Z per LL2 id 13270554-4bdb-42ae-916f-1bb54492204f (Go, window 03:46:00Z-04:15:00Z)."
+}

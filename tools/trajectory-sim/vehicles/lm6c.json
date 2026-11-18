@@ -1,0 +1,105 @@
+{
+  "id": "lm6c",
+  "name": "Long March 6C (2x YF-100 / YF-115, no boosters)",
+  "cd": {
+    "value": 0.66658,
+    "derived": "FITTED LM-3B family Cd transferred (aero only). LM-6C flies YF-100/YF-115 kerolox and has no published event sequence, so engine timing is not transferred. Same transfer as vehicles/lm6a.json."
+  },
+  "glow_kg": {
+    "value": 217000,
+    "src": "https://en.wikipedia.org/wiki/Long_March_6C"
+  },
+  "stages": [
+    {
+      "name": "Stage 1 (2x YF-100)",
+      "diameter_m": {
+        "value": 3.35,
+        "src": "https://en.wikipedia.org/wiki/Long_March_6C"
+      },
+      "propellant_kg": {
+        "value": 180000,
+        "derived": "GLOW 217000 minus fairing 1200, payload 1000, S2 gross 17000 = 197800 kg S1 gross. Propellant fraction 0.910 ASSUMED (180000/197800). No LM-6C propellant load is published."
+      },
+      "dry_kg": {
+        "value": 17800,
+        "derived": "S1 gross 197800 kg minus propellant 180000 kg"
+      },
+      "thrust_sl_N": {
+        "value": 2376000,
+        "src": "https://en.wikipedia.org/wiki/Long_March_6C",
+        "note": "Infobox 2376 kN, cited to Zhang & Wang, Aerospace Shanghai 2016. Equals 2 x the Long March 6 infobox's 1188 kN per YF-100, so this is the sea-level total."
+      },
+      "thrust_vac_N": {
+        "value": 2653200,
+        "derived": "2376 kN SL x (1340/1200), the YF-100 vacuum/sea-level pair on https://en.wikipedia.org/wiki/Long_March_8 already used for LM-6A and LM-8A in this repo"
+      },
+      "isp_vac_s": {
+        "value": 335,
+        "src": "https://en.wikipedia.org/wiki/Long_March_6",
+        "note": "YF-100 vacuum Isp 335 s (sea level 300 s) on the Long March 6 page, same spacepac citation the LM-6C infobox uses. The LM-6C infobox prints 300 and 335 with a kN unit; that is the seconds figure passed through the wiki's unit converter. Not used as a thrust."
+      }
+    },
+    {
+      "name": "Stage 2 (1x YF-115)",
+      "diameter_m": {
+        "value": 2.9,
+        "src": "https://en.wikipedia.org/wiki/Long_March_6C"
+      },
+      "coast_before_s": {
+        "value": 3,
+        "assumption": "not published; same 3 s pre-ignition coast used for LM-6A and LM-8A in this repo"
+      },
+      "propellant_kg": {
+        "value": 15000,
+        "src": "https://en.wikipedia.org/wiki/Long_March_6",
+        "note": "BORROWED from the Long March 6 YF-115 stage (published 15,000 kg). LM-6C's second stage is 2.9 m in diameter, not the LM-6 stage's 2.25 m, and no LM-6C propellant load is published. Stand-in, not this vehicle's measured load."
+      },
+      "dry_kg": {
+        "value": 2000,
+        "assumption": "not published. 15 t propellant at an assumed 0.882 propellant fraction gives a 17 t stage and a 2 t dry mass."
+      },
+      "thrust_vac_N": {
+        "value": 180000,
+        "src": "https://en.wikipedia.org/wiki/Long_March_6C",
+        "note": "Infobox 180 kN, same 2016 paper as the Long March 6 YF-115 figure"
+      },
+      "thrust_sl_N": {
+        "value": 180000,
+        "src": "https://en.wikipedia.org/wiki/Long_March_6C",
+        "note": "Vacuum engine; sea-level figure not published. Vac thrust used at both ends so Ae is 0, same treatment as other upper stages in this repo."
+      },
+      "isp_vac_s": {
+        "value": 341.5,
+        "src": "https://en.wikipedia.org/wiki/Long_March_6",
+        "note": "YF-115 vacuum Isp 341.5 s. The LM-6C infobox prints 341.5 kN; the Long March 6 page, with the same shenkong.net citation, gives 341.5 seconds."
+      }
+    }
+  ],
+  "fairing": {
+    "mass_kg": {
+      "value": 1200,
+      "assumption": "not published. Below the 1500 kg assumption used for the 3.35 m LM-8A fairing; LM-6C's upper stage is 2.9 m."
+    },
+    "jettison_alt_km": {
+      "value": 110,
+      "assumption": "default altitude rule; no LM-6C fairing time is published"
+    }
+  },
+  "guidance": {
+    "kick_duration_s": {
+      "value": 10,
+      "assumption": "not published"
+    },
+    "linear_tangent_from_stage": 1,
+    "kick_grid": [0.5, 1.5, 3],
+    "x0": [2.5, 0.6, 0.002],
+    "vertical_rise_until_vrel_mps": {
+      "value": 60,
+      "assumption": "pitch-over once Earth-relative speed reaches 60 m/s. Liftoff thrust-to-weight is about 1.12 (2376 kN on 217 t), so a timed vertical rise is a poor fit. Same rule as LM-6A/LM-8A."
+    }
+  },
+  "header_notes": [
+    "LM-6C stage data: GLOW 217 t, diameters, 2x YF-100 and 1x YF-115 from Wikipedia 'Long March 6C'. Sea-level thrust 2376 kN is that infobox. Vacuum thrust is derived with the YF-100 1340/1200 kN pair from Wikipedia 'Long March 8'. Isp 335 s and 341.5 s are from Wikipedia 'Long March 6' (the LM-6C infobox mis-labels those second figures as kN).",
+    "Propellant and dry masses are not published for LM-6C. S2 propellant 15 t is borrowed from the Long March 6 YF-115 stage. S2 dry 2 t, fairing 1.2 t, payload 1 t and the S1 0.910 propellant fraction are ASSUMPTIONS chosen so the pieces sum to the 217 t GLOW. Energy-cutoff mode: no ignition/cutoff sequence is published."
+  ]
+}

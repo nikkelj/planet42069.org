@@ -1,0 +1,216 @@
+{
+ "slug": "nrol-136",
+ "title": "Falcon 9 NROL-136 (SLC-4E)",
+ "vehicle": "falcon9",
+ "t0_utc": "2026-11-21T12:30:00Z",
+ "pad": {
+  "lat": 34.632,
+  "lon": -120.611,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/951a341f-236b-42fe-a667-4ab2fcf36eac/ (SLC-4E, Vandenberg SFB)"
+ },
+ "azimuth_deg": {
+  "value": 155.15,
+  "derived": "Great-circle bearing from the LL2 SLC-4E pad to the midpoint of the far edge of USCG Local Notice to Mariners 58668 Hazard Area A (SpaceX NROL-136 launch operations). Far-edge vertices 30.9500N 118.6833W (447.3 km, bearing 155.72 deg) and 31.0167N 118.6167W (443.1 km, bearing 154.58 deg). Midpoint 30.9833N 118.6500W, bearing 155.15 deg, 445.2 km. Primary window on that notice is 21 Nov 1230-1325Z, matching the LL2 open. Area B of the same notice and NOTAM MMFR B4576/26 are the further stage-1 boxes and were not used to set the azimuth. Non-rotating inclination from this pad and 155.15 deg is 69.77 deg.",
+  "src": "https://space-notices.com/notice/lnm-58668"
+ },
+ "payload_kg": {
+  "value": 8000,
+  "assumption": "Fixed, not fitted. The shared Falcon 9 fit bounds start at 13.0 t (a 27-satellite Starlink V2 mini band). At 13 t, after this flight's RTLS MECO at T+131 s, steering cannot reach the assumed 310 x 425 km orbit (SMA about 161 km low, geodetic altitude 182 km). 8000 kg is a round mass inside an unpublished Starshield batch at which the fitted steering does reach that assumed orbit. It is NOT an estimate of the NROL-136 payload."
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 310,
+   "assumption": "NROL-136 elements are unpublished. 310 km perigee is borrowed from the early orbit reported for the first proliferated-architecture batch, NROL-146: Langbroek, launch-night shadow entry near 300 km and a cautious elset of 310 x 311 km at 69.72 deg (https://sattrackcam.blogspot.com/2024/05/the-nrol-146-payloads-observing-train.html). Wikipedia's proliferated-architecture table lists 425 x 310 km at 69.7 deg for NROL-146, NROL-149, NROL-153 and NROL-57 (https://en.wikipedia.org/wiki/NRO_Proliferated_Architecture_Mission). Those are not this flight's elements."
+  },
+  "apoapsis_alt_km": {
+   "value": 425,
+   "assumption": "Apogee borrowed from the same Wikipedia table (425 x 310 km) for prior proliferated batches. Not an NROL-136 source. The 155.15 deg hazard azimuth is not retuned toward 69.7 deg; the non-rotating inclination from the azimuth is already 69.77 deg."
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 2,
+  "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude"
+ },
+ "header_notes": [
+  "ILLUSTRATIVE. PRE-FLIGHT. NROL-136, fifteenth NRO proliferated-architecture batch, Falcon 9 from SLC-4E. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac, status Go, NET 2026-11-21T12:30:00Z (Sat 21 Nov 4:30 a.m. PST), window 12:30-13:00Z. SpaceX nrol136 page: 30-minute window opens 4:30 a.m. PT, backup Sunday 22 Nov 4:16 a.m. PT, booster 14th flight, landing LZ-4. FAA advisory primary 21 Nov 1230-1343Z.",
+  "Published timeline (SpaceX nrol136, checked 2026-11-18): Max-Q 1:02, MECO 2:11, stage sep 2:14, SES-1 2:22, fairing 2:59, boostback 2:27-3:22, entry 5:53-6:10, landing burn 7:09, LZ-4 landing 7:34. SECO, orbit and deploy are NOT published.",
+  "INFERRED/ASSUMED: SECO-1 at T+510 s (near a full S2 load; the time itself is not published) and a 310 x 425 km parking orbit borrowed from prior proliferated batches, not from an NROL-136 source. Azimuth 155.15 deg is from LNM 58668 Hazard Area A. File ends 2 revs after cutoff (deploy unpublished). There is no prior NROL Vandenberg trajectory in this repo; USSF-317 is a different, droneship profile."
+ ],
+ "final_cutoff_s": {
+  "value": 510,
+  "assumption": "NROL-136 SECO-1 is not on the SpaceX timeline. 510 s is inside the stage-2 propellant limit implied by the vehicle file (SES-1 at 142 s, mdot about 287 kg/s, 107.5 t load, burnout near 516 s) and is NOT a published time."
+ },
+ "knots": [
+  {
+   "event": "MECO (F9 family telemetry, Iridium NEXT-7, sampled at this flight's MECO)",
+   "t_s": 131,
+   "alt_km": 49.89,
+   "range_km": 37.4,
+   "alt_sigma_km": 8,
+   "range_sigma_km": 25,
+   "src": "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207 loft, interpolated at T+131 s. FAMILY stand-in. That flight's MECO was T+146 s, so this is the curve at this mission's published MECO, not a matching event."
+  },
+  {
+   "event": "SES-1 (F9 family telemetry)",
+   "t_s": 142,
+   "alt_km": 60.07,
+   "range_km": 52.13,
+   "alt_sigma_km": 8,
+   "range_sigma_km": 25,
+   "src": "same loft, interpolated at T+142 s"
+  },
+  {
+   "event": "Fairing sep (F9 family telemetry)",
+   "t_s": 179,
+   "alt_km": 93.56,
+   "range_km": 112.95,
+   "alt_sigma_km": 8,
+   "range_sigma_km": 25,
+   "src": "same loft, interpolated at T+179 s"
+  }
+ ],
+ "post_cutoff": {
+  "drag": {
+   "cd": {
+    "value": 0.4,
+    "assumption": "same Cd as the ascent fit (fixed 0.4)"
+   },
+   "area_m2": {
+    "value": 10.75,
+    "derived": "pi*(3.7 m/2)^2, Falcon 9 diameter (vehicle config)"
+   }
+  },
+  "deploy": {
+   "t_s": null,
+   "note": "SpaceX publishes no SECO, restart or deploy time for NROL-136; propagated 2 revs on the inferred insertion orbit"
+  }
+ },
+ "fairing_jettison_s": {
+  "value": 179,
+  "src": "https://www.spacex.com/launches/nrol136 fairing separation T+00:02:59 (checked 2026-11-18)"
+ },
+ "stage_event_overrides": {
+  "0": {
+   "cutoff_s": {
+    "value": 131,
+    "src": "https://www.spacex.com/launches/nrol136 MECO T+00:02:11 (checked 2026-11-18)"
+   },
+   "separation_s": {
+    "value": 134,
+    "src": "https://www.spacex.com/launches/nrol136 stage separation T+00:02:14 (checked 2026-11-18)"
+   }
+  },
+  "1": {
+   "ignition_s": {
+    "value": 142,
+    "src": "https://www.spacex.com/launches/nrol136 SES-1 T+00:02:22 (checked 2026-11-18)"
+   }
+  }
+ },
+ "t0_note": "NET 2026-11-21T12:30:00Z per LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac (Go, window 12:30:00Z-13:00:00Z) and the SpaceX nrol136 page (4:30 a.m. PT).",
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "vertical_rise_s": {
+    "value": 13.98433,
+    "bounds": [
+     4,
+     30
+    ],
+    "basis": "ASSUMPTION bound (F9 pitch-over time unpublished)"
+   },
+   "kick_deg": {
+    "value": 1.085891,
+    "bounds": [
+     0.2,
+     10
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "tan0": {
+    "value": 0.427536,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": 0.001097,
+    "bounds": [
+     -0.05,
+     0.05
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "cd": 0.4,
+   "payload_kg": 8000.0
+  },
+  "knot_residuals": [
+   {
+    "event": "MECO (F9 family telemetry, Iridium NEXT-7, sampled at this flight's MECO)",
+    "t_pub": 131,
+    "t_sim": 131.0,
+    "alt_pub": 49.89,
+    "alt_sim": 74.91,
+    "rng_pub": 37.4,
+    "rng_sim": 14.4
+   },
+   {
+    "event": "SES-1 (F9 family telemetry)",
+    "t_pub": 142,
+    "t_sim": 142.0,
+    "alt_pub": 60.07,
+    "alt_sim": 92.65,
+    "rng_pub": 52.13,
+    "rng_sim": 19.2
+   },
+   {
+    "event": "Fairing sep (F9 family telemetry)",
+    "t_pub": 179,
+    "t_sim": 179.0,
+    "alt_pub": 93.56,
+    "alt_sim": 146.1,
+    "rng_pub": 112.95,
+    "rng_sim": 40.0
+   }
+  ],
+  "final": {
+   "alt_km": 310.0072597971726,
+   "fpa_deg": 0.0002882733014144264,
+   "sma_err_km": 0.040473084589466454,
+   "mass_kg": 13716.7
+  },
+  "cost": 40.29760202644878,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "Stage 1 (9x Merlin 1D)",
+     "loaded_kg": 410900,
+     "burned_kg": 352239,
+     "residual_kg": 58661,
+     "dry_kg": 22200,
+     "flag": null
+    },
+    {
+     "name": "Stage 2 (1x Merlin Vacuum)",
+     "loaded_kg": 107500,
+     "burned_kg": 105783,
+     "residual_kg": 1717,
+     "dry_kg": 4000,
+     "flag": null
+    }
+   ],
+   "glow_kg": 554500
+  },
+  "orbit_at_cutoff": {
+   "perigee_km": 305.9,
+   "apogee_km": 429.2,
+   "incl_deg": 69.046,
+   "pad_to_insertion_bearing_deg": 160.45
+  }
+ }
+}
