@@ -1,8 +1,8 @@
 {
  "slug": "lm2d-taiyuan-2026-11-18",
- "title": "Long March 2D / Unknown Payload (Taiyuan LC-9)",
+ "title": "Long March 2D / Shijian-24 (Taiyuan LC-9)",
  "vehicle": "lm2d",
- "t0_utc": "2026-11-18T22:50:00Z",
+ "t0_utc": "2026-11-18T22:51:00Z",
  "pad": {
   "lat": 38.863128,
   "lon": 111.589567,
@@ -22,15 +22,15 @@
  "target": {
   "insertion_alt_km": {
    "value": 500,
-   "assumption": "Target orbit is NOT published (LL2 orbit Unknown). 500 km circular is an ASSUMED sun-synchronous-type insertion consistent with the southbound NOTAM azimuth. Not a mission source. LL2's Long March 2D configuration record has a generic vehicle apogee field of 500 km; that field is not this flight's orbit and is not used as a source."
+   "assumption": "Altitude is NOT published. LL2 orbit is now Sun-Synchronous (no altitude). 500 km circular remains an ASSUMED insertion consistent with the southbound NOTAM azimuth. Not a mission altitude. LL2's Long March 2D configuration record has a generic vehicle apogee field of 500 km; that field is not this flight's orbit and is not used as a source. CASC's 1.3 t / 700 km SSO capability figure (China News, 2026-11-19) is the vehicle's, not this flight's, and was not used."
   },
   "cutoff": "energy",
   "sma_sigma_km": 5
  },
  "header_notes": [
-  "ILLUSTRATIVE. PRE-FLIGHT. Long March 2D, unknown payload, Taiyuan Launch Complex 9. LL2 id e0a11eb1-0bda-4872-b36b-140247fd5c60, status Go, NET 2026-11-18T22:50:00Z (Wed 18 Nov 2:50 p.m. PST), window 22:43-23:05Z, orbit Unknown (net precision on the record is Hour). NOTAM windows match the LL2 window.",
+  "ILLUSTRATIVE. FLOWN. Shijian-24, Long March 2D, Taiyuan Launch Complex 9. Actual liftoff 2026-11-18T22:51:00Z (Wed 18 Nov 2:51 p.m. PST; 19 Nov 6:51 BJT). LL2 id e0a11eb1-0bda-4872-b36b-140247fd5c60, Launch Successful, net precision Minute, orbit Sun-Synchronous (no altitude). Xinhua and CCTV: satellite reached the planned orbit; Long March flight 678. Public trajectory files were utc-shifted +60 s from the 22:50:00Z NET; the sim was not re-run (Earth-fixed geometry unchanged). Window was 22:43-23:05Z.",
   "Vehicle and stage data reused from the lm2d-jiuquan entry (vehicles/lm2d.json): configuration-2 masses and the SAST TYPICAL sequence via huijiwiki, S1 vacuum via the YF-20 ratio, verniers ASSUMED to run from S2 ignition to 705.1 s, 3.35 m fairing 860 kg ASSUMED, Cd transferred from the LM-3B fit. Event times are the typical sequence, not this flight's. No altitude/range knots are published.",
-  "TARGET ASSUMED: 500 km circular SSO-class. Azimuth 188.65 deg is the mean bearing from the pad through the A5897/26 and A5898/26 Q-line centres (188.57 and 188.73 deg). No deploy time is published."
+  "TARGET ASSUMED: 500 km circular. LL2 now lists Sun-Synchronous Orbit and publishes no altitude, so the 500 km circle is still an assumption. A CASC figure of 1.3 t to 700 km SSO is the LM-2D capability, not this flight's altitude, and was not used. Azimuth 188.65 deg is the mean bearing from the pad through the A5897/26 and A5898/26 Q-line centres (188.57 and 188.73 deg). No deploy time is published."
  ],
  "post_cutoff": {
   "deploy": {
@@ -51,7 +51,7 @@
    "Typical-sequence residual-propellant venting after separation is not modelled."
   ]
  },
- "t0_note": "NET 2026-11-18T22:50:00Z per LL2 id e0a11eb1-0bda-4872-b36b-140247fd5c60 (Go, window 22:43:00Z-23:05:00Z).",
+ "t0_note": "ACTUAL liftoff 2026-11-18T22:51:00Z. LL2 id e0a11eb1-0bda-4872-b36b-140247fd5c60, Launch Successful, net precision Minute (last_updated 2026-11-18T23:26:42Z). Xinhua and CCTV: 19 Nov 6:51 BJT, planned orbit. Public files utc-shifted +60 s; sim not re-run.",
  "fitted": {
   "status": "FITTED",
   "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
