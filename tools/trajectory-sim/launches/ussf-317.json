@@ -2,7 +2,7 @@
  "slug": "ussf-317",
  "title": "Falcon 9 USSF-317 (SLC-4E)",
  "vehicle": "falcon9",
- "t0_utc": "2026-11-20T02:46:00Z",
+ "t0_utc": "2026-11-20T04:28:00Z",
  "pad": {
   "lat": 34.632,
   "lon": -120.611,
@@ -33,6 +33,7 @@
   "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude (~3 km difference at insertion latitude, accepted via 1 km-weight)"
  },
  "header_notes": [
+  "RETIMED 2026-11-19: operator (SpaceX) window open is 2026-11-20T04:28:00Z (Thu 19 Nov 8:28 p.m. PT), four-hour window to 08:28:00Z; backup Fri 20 Nov 8:26 p.m. PT = 2026-11-21T04:26:00Z. Sources: https://www.spacex.com/launches/ussf317 and https://content.spacex.com/api/spacex-website/missions/ussf317. SOURCE CONFLICT: LL2 net and Spaceflight Now both give T-0 2026-11-20T04:32:55Z; LL2 window is still 02:46:00Z-06:46:00Z (id 76617033-4dc0-4448-b50c-e5b0d5a18539, status Go, last_updated 2026-11-19T15:08:34Z, https://ll.thespacedevs.com/2.3.0/launches/76617033-4dc0-4448-b50c-e5b0d5a18539/, https://spaceflightnow.com/launch-schedule/). This file uses the operator window open as T0. Timeline re-checked 2026-11-19 and unchanged (Max-Q 1:07, MECO 2:26, sep 2:29, SES-1 2:36, fairing 2:58). SpaceX: 11th flight of the booster, landing on the Of Course I Still Love You droneship in the Pacific (not RTLS, not LZ-4). The ascent sim does not model booster recovery; the unburned stage-1 residual stands in for entry/landing propellant. Azimuth still 153.56 deg (ZLA CARF 11/238-26 Area A polygon unchanged). Re-run of the existing config with only t0 changed. ILLUSTRATIVE.",
   "RETIMED 2026-11-18: NET 2026-11-20T02:46:00Z (Thu 19 Nov 6:46 p.m. PST), LL2 window 02:46-06:46Z, status Go, last_updated 2026-11-18T15:15:09Z. ZLA CARF 11/238-26 Area A (2611200246-2611200708) repeats the 11/212-26 polygon, so azimuth 153.56 deg is unchanged. Public files are the previous fit with utc shifted +85560 s. Not re-run.",
   "RETIMED 2026-11-16: NET moved from 2026-11-18T03:14:00Z to 2026-11-19T03:00:00Z (Wed 18 Nov 7:00 p.m. PST). LL2 id 76617033-4dc0-4448-b50c-e5b0d5a18539, status Go, window 2026-11-19T03:00:00Z-07:00:00Z. A new FAA NOTAM window 2026-11-19 03:00-07:43Z is cited via https://space-notices.com/entry/launch-f9-ussf-317 and https://x.com/NotamUpdates/status/2122337617257943183. On that space-notices entry the active Area A notice is ZLA CARF 11/212-26 (same polygon as 11/116-26, expires 2026-11-19T07:22:00Z), so the 153.56 deg azimuth is unchanged. Re-run of the existing config with only t0 changed. ILLUSTRATIVE.",
   "NEW 2026-11-12: SpaceX ussf317 page: 'targeting Saturday, November 14 ... four-hour launch window opens at 7:55 p.m. PT' (backup Sun Nov 15 7:41 p.m. PT); LL2 NET 2026-11-15T03:55:00Z Go. Booster: 11th flight (B1100 per Next Spaceflight), OCISLY landing. ILLUSTRATIVE.",
