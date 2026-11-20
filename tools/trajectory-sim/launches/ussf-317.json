@@ -2,7 +2,7 @@
  "slug": "ussf-317",
  "title": "Falcon 9 USSF-317 (SLC-4E)",
  "vehicle": "falcon9",
- "t0_utc": "2026-11-20T04:28:00Z",
+ "t0_utc": "2026-11-21T02:32:00Z",
  "pad": {
   "lat": 34.632,
   "lon": -120.611,
@@ -33,6 +33,7 @@
   "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude (~3 km difference at insertion latitude, accepted via 1 km-weight)"
  },
  "header_notes": [
+  "RETIMED 2026-11-20: SpaceX and LL2 now agree. Operator window open is 2026-11-21T02:32:00Z (Fri 20 Nov 6:32 p.m. PT), four-hour window to 2026-11-21T06:32:00Z; backup Sat 21 Nov 8:12 p.m. PT = 2026-11-22T04:12:00Z. Sources checked 2026-11-20T03:35:00Z (7:35 p.m. PST Thu 19 Nov): https://www.spacex.com/launches/ussf317 ('targeting Friday, November 20 ... four-hour launch window opens at 6:32 p.m. PT') and LL2 id 76617033-4dc0-4448-b50c-e5b0d5a18539, status Go, NET 2026-11-21T02:32:00Z, window 02:32-06:32Z, last_updated 2026-11-20T03:26:30Z. The 2026-11-19 LL2/Spaceflight Now 04:32:55Z disagreement is closed. Published timeline moved to MECO 2:25 (145 s), stage sep 2:28 (148 s), SES-1 2:35 (155 s), fairing 2:56 (176 s), entry burn 6:03-6:27, landing burn 7:59, landing 8:21. Those four ascent events are the hard events; the sim was re-fit. Family-telemetry comparison knots stay at the Iridium NEXT-7 sample times (MECO 146 s, SES-1 156 s, fairing 176 s) and are not this flight. Entry and landing are not modelled. SpaceX: 11th flight, Of Course I Still Love You in the Pacific. Azimuth still 153.56 deg. Surrogate utc shifted +79440 s from 2026-11-20T04:28:00Z; its ECEF geometry is unchanged. ILLUSTRATIVE.",
   "RETIMED 2026-11-19: operator (SpaceX) window open is 2026-11-20T04:28:00Z (Thu 19 Nov 8:28 p.m. PT), four-hour window to 08:28:00Z; backup Fri 20 Nov 8:26 p.m. PT = 2026-11-21T04:26:00Z. Sources: https://www.spacex.com/launches/ussf317 and https://content.spacex.com/api/spacex-website/missions/ussf317. SOURCE CONFLICT: LL2 net and Spaceflight Now both give T-0 2026-11-20T04:32:55Z; LL2 window is still 02:46:00Z-06:46:00Z (id 76617033-4dc0-4448-b50c-e5b0d5a18539, status Go, last_updated 2026-11-19T15:08:34Z, https://ll.thespacedevs.com/2.3.0/launches/76617033-4dc0-4448-b50c-e5b0d5a18539/, https://spaceflightnow.com/launch-schedule/). This file uses the operator window open as T0. Timeline re-checked 2026-11-19 and unchanged (Max-Q 1:07, MECO 2:26, sep 2:29, SES-1 2:36, fairing 2:58). SpaceX: 11th flight of the booster, landing on the Of Course I Still Love You droneship in the Pacific (not RTLS, not LZ-4). The ascent sim does not model booster recovery; the unburned stage-1 residual stands in for entry/landing propellant. Azimuth still 153.56 deg (ZLA CARF 11/238-26 Area A polygon unchanged). Re-run of the existing config with only t0 changed. ILLUSTRATIVE.",
   "RETIMED 2026-11-18: NET 2026-11-20T02:46:00Z (Thu 19 Nov 6:46 p.m. PST), LL2 window 02:46-06:46Z, status Go, last_updated 2026-11-18T15:15:09Z. ZLA CARF 11/238-26 Area A (2611200246-2611200708) repeats the 11/212-26 polygon, so azimuth 153.56 deg is unchanged. Public files are the previous fit with utc shifted +85560 s. Not re-run.",
   "RETIMED 2026-11-16: NET moved from 2026-11-18T03:14:00Z to 2026-11-19T03:00:00Z (Wed 18 Nov 7:00 p.m. PST). LL2 id 76617033-4dc0-4448-b50c-e5b0d5a18539, status Go, window 2026-11-19T03:00:00Z-07:00:00Z. A new FAA NOTAM window 2026-11-19 03:00-07:43Z is cited via https://space-notices.com/entry/launch-f9-ussf-317 and https://x.com/NotamUpdates/status/2122337617257943183. On that space-notices entry the active Area A notice is ZLA CARF 11/212-26 (same polygon as 11/116-26, expires 2026-11-19T07:22:00Z), so the 153.56 deg azimuth is unchanged. Re-run of the existing config with only t0 changed. ILLUSTRATIVE.",
@@ -90,24 +91,24 @@
   }
  },
  "fairing_jettison_s": {
-  "value": 178,
-  "src": "https://www.spacex.com/launches/ussf317 fairing separation T+00:02:58 (checked 2026-11-12)"
+  "value": 176,
+  "src": "https://www.spacex.com/launches/ussf317 fairing separation T+00:02:56 (checked 2026-11-20)"
  },
  "stage_event_overrides": {
   "0": {
    "cutoff_s": {
-    "value": 146,
-    "src": "https://www.spacex.com/launches/ussf317 MECO T+00:02:26 (checked 2026-11-12)"
+    "value": 145,
+    "src": "https://www.spacex.com/launches/ussf317 MECO T+00:02:25 (checked 2026-11-20)"
    },
    "separation_s": {
-    "value": 149,
-    "src": "https://www.spacex.com/launches/ussf317 stage separation T+00:02:29 (checked 2026-11-12)"
+    "value": 148,
+    "src": "https://www.spacex.com/launches/ussf317 stage separation T+00:02:28 (checked 2026-11-20)"
    }
   },
   "1": {
    "ignition_s": {
-    "value": 156,
-    "src": "https://www.spacex.com/launches/ussf317 SES-1 T+00:02:36 (checked 2026-11-12)"
+    "value": 155,
+    "src": "https://www.spacex.com/launches/ussf317 SES-1 T+00:02:35 (checked 2026-11-20)"
    }
   }
  },
@@ -116,7 +117,7 @@
   "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
   "params": {
    "vertical_rise_s": {
-    "value": 9.895913,
+    "value": 9.565446,
     "bounds": [
      4,
      30
@@ -124,7 +125,7 @@
     "basis": "ASSUMPTION bound (F9 pitch-over time unpublished)"
    },
    "kick_deg": {
-    "value": 3.657169,
+    "value": 3.377955,
     "bounds": [
      0.2,
      10
@@ -132,7 +133,7 @@
     "basis": "ASSUMPTION bound"
    },
    "payload_kg": {
-    "value": 16869.001316,
+    "value": 16713.565862,
     "bounds": [
      13000,
      21600
@@ -140,7 +141,7 @@
     "basis": "27 V2 Mini Optimized: ~575 kg each community-reported (spacex.com.pl) = 15.5 t; MaxQ lists 800 kg each = 21.6 t (upper bound). Mass not published by SpaceX"
    },
    "tan0": {
-    "value": 0.5564,
+    "value": 0.54412,
     "bounds": [
      -2,
      5
@@ -148,7 +149,7 @@
     "basis": "guidance law"
    },
    "tan_rate": {
-    "value": 0.001378,
+    "value": 0.001324,
     "bounds": [
      -0.05,
      0.05
@@ -163,58 +164,58 @@
    {
     "event": "MECO (F9 family telemetry, Iridium NEXT-7)",
     "t_pub": 146,
-    "t_sim": 146.0,
+    "t_sim": 145.0,
     "alt_pub": 63.98,
-    "alt_sim": 66.3,
+    "alt_sim": 66.21,
     "rng_pub": 58.6,
-    "rng_sim": 85.9
+    "rng_sim": 82.8
    },
    {
     "event": "SES-1 (F9 family telemetry)",
     "t_pub": 156,
-    "t_sim": 156.0,
+    "t_sim": 155.0,
     "alt_pub": 73.78,
-    "alt_sim": 76.26,
+    "alt_sim": 76.33,
     "rng_pub": 74.8,
-    "rng_sim": 107.8
+    "rng_sim": 104.1
    },
    {
     "event": "Fairing sep (F9 family telemetry)",
     "t_pub": 176,
-    "t_sim": 178.0,
+    "t_sim": 176.0,
     "alt_pub": 91.15,
-    "alt_sim": 96.01,
+    "alt_sim": 95.53,
     "rng_pub": 108.7,
-    "rng_sim": 157.3
+    "rng_sim": 150.0
    }
   ],
   "final": {
-   "alt_km": 177.2964803304579,
-   "fpa_deg": -0.0002602546598940025,
-   "sma_err_km": -0.01606328584719449,
-   "mass_kg": 24023.0
+   "alt_km": 177.2855771189155,
+   "fpa_deg": -0.00035971499274764106,
+   "sma_err_km": -0.03432049621082842,
+   "mass_kg": 23580.1
   },
-  "cost": 22.934213105289587,
+  "cost": 17.452699348004327,
   "mass_budget": {
    "stages": [
     {
      "name": "Stage 1 (9x Merlin 1D)",
      "loaded_kg": 410900,
-     "burned_kg": 392572,
-     "residual_kg": 18328,
+     "burned_kg": 389883,
+     "residual_kg": 21017,
      "dry_kg": 22200,
      "flag": null
     },
     {
      "name": "Stage 2 (1x Merlin Vacuum)",
      "loaded_kg": 107500,
-     "burned_kg": 104346,
-     "residual_kg": 3154,
+     "burned_kg": 104633,
+     "residual_kg": 2867,
      "dry_kg": 4000,
      "flag": null
     }
    ],
-   "glow_kg": 563369
+   "glow_kg": 563214
   }
  }
 }
