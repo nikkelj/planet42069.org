@@ -6,7 +6,7 @@
     },
     "sim": {
       "title": "First-principles 3DOF sim",
-      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry. Long March vehicles run in timeline mode: published ignition/cutoff/separation times are hard events, burn rates from published thrust/Isp, and remaining free parameters fitted (bounded least squares) to the CALT manual LM-3B profile (altitude within 3.4 km at all events). Falcon 9 also runs in timeline mode: SpaceX's published MECO, stage-separation, SES-1, fairing and SECO-1 times are hard events, Block 5 masses and Merlin thrust/Isp from open sources, and steering and payload are fitted (bounded least squares) to the parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP), along an azimuth tuned so the orbit plane reaches the state vector's inclination (15-16: 155.87° for 70.007°; 15-18: 155.80° for 70.004°), inside the NAVAREA hazard corridor. Sims run through payload deploy: after final cutoff the stage coasts under the same WGS-84/J2/US76-drag model, with any published restart or kick-stage burn modelled from its published timing, to the provider's published deploy time (Starlink 15-16: SES-2/SECO-2 at T+53:01-53:03, deploy T+1:01:53; Starlink 15-18: SES-2/SECO-2 at T+53:07-53:08, deploy T+1:01:59; Kinetica-2 Y2 and LM-2C Xichang: CAS Space / CALT TYPICAL-sequence payload separation at T+514.7 s and T+545.7 s, not flight-specific). Where no deploy time is published (Electron HawkEye 360, Electron iQPS 9, USSF-432, LM-4B, LM-6A, LM-8A) the stage is propagated from insertion for two revolutions on the inferred insertion orbit (same J2 + drag model) and the file ends labelled 'inferred insertion orbit, +2 revs (deploy time unpublished)'."
+      "summary": "Point-mass ascent simulator: rotating WGS-84 Earth with J2 gravity, US76 atmosphere drag, pressure-dependent thrust, staging/boosters/fairing/coasts; vertical rise, pitch kick, gravity turn then linear-tangent guidance optimized (Nelder-Mead) to reach the target orbit along the launch azimuth. Stage parameters from OSINT, each number sourced, derived or labelled an assumption. ILLUSTRATIVE, not telemetry. Long March vehicles run in timeline mode: published ignition/cutoff/separation times are hard events, burn rates from published thrust/Isp, and remaining free parameters fitted (bounded least squares) to the CALT manual LM-3B profile (altitude within 3.4 km at all events). Falcon 9 also runs in timeline mode: SpaceX's published MECO, stage-separation, SES-1, fairing and SECO-1 times are hard events, Block 5 masses and Merlin thrust/Isp from open sources, and steering and payload are fitted (bounded least squares) to the parking orbit implied by SpaceX's pre-launch state vector (CelesTrak SupGP), along an azimuth tuned so the orbit plane reaches the state vector's inclination (15-16: 155.87° for 70.007°; 15-18: 155.80° for 70.004°), inside the NAVAREA hazard corridor. Sims run through payload deploy: after final cutoff the stage coasts under the same WGS-84/J2/US76-drag model, with any published restart or kick-stage burn modelled from its published timing, to the provider's published deploy time (Starlink 15-16: SES-2/SECO-2 at T+53:01-53:03, deploy T+1:01:53; Starlink 15-18: SES-2/SECO-2 at T+53:07-53:08, deploy T+1:01:59; Kinetica-2 Y2 and LM-2C Xichang: CAS Space / CALT TYPICAL-sequence payload separation at T+514.7 s and T+545.7 s, not flight-specific). Where no deploy time is published (Electron HawkEye 360, Electron iQPS 9, USSF-432, LM-4B, LM-6A, LM-8A) the stage is propagated from insertion for two revolutions on the inferred insertion orbit (same J2 + drag model) and the file ends labelled 'inferred insertion orbit, +2 revs (deploy time unpublished)'. Ariane 64 Block 2 (VA271) also runs in timeline mode: ESA's booster separation, fairing jettison, core MECO, first Vinci cutoff and the 18 s second Vinci burn are hard events, and the file ends at the published deployment start."
     },
     "methods_doc": "/launches/METHODS.md"
   },
@@ -715,6 +715,106 @@
       "id": "chinanews-shijian-24-casc",
       "title": "China News quoting CASC: Shijian-24 reached the planned orbit; LM-2D capability 1.3 t to 700 km SSO (vehicle figure, not this flight's altitude)",
       "url": "https://www.chinanews.com.cn/gn/2026/11-19/10734524.shtml"
+    },
+    {
+      "id": "arianespace-va271",
+      "title": "Arianespace: Mission VA271 launch window on 23 November 2026",
+      "url": "https://www.arianespace.com/news/mission-va271-launch-window-on-november-23-2026/"
+    },
+    {
+      "id": "esa-va271",
+      "title": "ESA: Ariane 6 VA271 / Amazon Leo LE-04 live timeline",
+      "url": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit"
+    },
+    {
+      "id": "ll2-ariane64-le04",
+      "title": "LL2: Ariane 64 Block 2 | Amazon Leo (LE-04), id 7bdc412b-c965-4517-a131-f57a01189803",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/7bdc412b-c965-4517-a131-f57a01189803/"
+    },
+    {
+      "id": "navarea-iv-1118-26",
+      "title": "NAVAREA IV 1118/26 (VA271 space-debris areas A/B, North Atlantic)",
+      "url": "https://www.sealagom.com/navarea/4/message/26012/1118-26-north-atlantic/"
+    },
+    {
+      "id": "navarea-iv-1115-26",
+      "title": "NAVAREA IV 1115/26 (VA271 near-field launch area off French Guiana)",
+      "url": "https://www.sealagom.com/navarea/4/message/25988/1115-26-north-atlantic/"
+    },
+    {
+      "id": "hydrolant-2324-26",
+      "title": "HYDROLANT 2324/26 (VA271 core-stage fallout, North Atlantic; same polygon as NAVAREA II 407/26)",
+      "url": "https://www.sealagom.com/coastal/14/message/57551/2324-26-north-atlantic/"
+    },
+    {
+      "id": "wp-ariane6",
+      "title": "Wikipedia: Ariane 6",
+      "url": "https://en.wikipedia.org/wiki/Ariane_6"
+    },
+    {
+      "id": "wp-p160c",
+      "title": "Wikipedia: P160C",
+      "url": "https://en.wikipedia.org/wiki/P160C"
+    },
+    {
+      "id": "wp-vinci",
+      "title": "Wikipedia: Vinci (rocket engine)",
+      "url": "https://en.wikipedia.org/wiki/Vinci_(rocket_engine)"
+    },
+    {
+      "id": "esa-ariane6-made-of",
+      "title": "ESA: Ariane 6, what's it made of (LLPM dry mass 23 t; upper stage 30 t)",
+      "url": "https://www.esa.int/fr/articles/about-us/directorates/space-transportation/ariane/ariane-6-what-s-it-made-of"
+    },
+    {
+      "id": "cnes-ariane6",
+      "title": "CNES: Ariane 6 models (LLPM 150 t, Vulcain 2.1 liftoff thrust 135 t)",
+      "url": "https://cnes.fr/projets/ariane-6/modeles"
+    },
+    {
+      "id": "eoportal-ariane6",
+      "title": "eoPortal: Ariane 6 (Vulcain 2.1 vacuum thrust and 432 s)",
+      "url": "https://www.eoportal.org/other-space-activities/ariane6"
+    },
+    {
+      "id": "beyondgravity-ariane6-fairing",
+      "title": "Beyond Gravity: Ariane 6 fairings, 1.8 to 2.6 t",
+      "url": "https://www.beyondgravity.com/en/news/shaping-next-generation-european-launch-vehicles-contract-won-ariane-6"
+    },
+    {
+      "id": "arianegroup-ariane6",
+      "title": "ArianeGroup: Ariane 6 (Vulcain 2.1 to about 275 km)",
+      "url": "https://www.ariane.group/en/space-transportation/ariane-6/"
+    },
+    {
+      "id": "ariane-va267-kit",
+      "title": "ArianeGroup launch kit VA267 / LE-01 (about 20 t, about 465 km)",
+      "url": "https://www.ariane.group/app/uploads/2026/02/LAUNCH-KIT-VA267-EN_FINAL.pdf"
+    },
+    {
+      "id": "nsf-le01",
+      "title": "NASASpaceflight: LE-01 Ariane 64, 465 km at 51.9 deg, booster sep ~87 km, fairing ~127 km",
+      "url": "https://www.nasaspaceflight.com/2026/02/le-01-launch/"
+    },
+    {
+      "id": "space-le03",
+      "title": "Space.com: LE-03 36-satellite mass estimate and 465 km deployment",
+      "url": "https://www.space.com/space-exploration/launches-spacecraft/ariane-6-rocket-record-breaking-launch-amazon-leo-le-03"
+    },
+    {
+      "id": "xinhua-satnet-leo-30",
+      "title": "Xinhua: Long March 8A launches SatNet LEO Group 30, 20 Nov 2026 19:59 BJT",
+      "url": "https://www.news.cn/tech/20261120/c110f118f12744e0acacf4a506a7584e/c.html"
+    },
+    {
+      "id": "chinanews-satnet-leo-30",
+      "title": "China News (CCTV): Long March 8A SatNet LEO Group 30, 20 Nov 2026",
+      "url": "https://www.chinanews.com.cn/gn/2026/11-20/10735563.shtml"
+    },
+    {
+      "id": "spacex-nrol136-api",
+      "title": "SpaceX content API: NROL-136 mission body (21 Nov 4:30 a.m. PT, backup 22 Nov 4:16 a.m. PT)",
+      "url": "https://content.spacex.com/api/spacex-website/missions/nrol136"
     }
   ],
   "launches": [
@@ -1674,14 +1774,14 @@
     },
     {
       "slug": "lm8a-hainan-2026-11-20",
-      "name": "SatNet LEO Group TBD? (Long March 8A, Hainan Commercial LC-1)",
+      "name": "SatNet LEO Group 30 (卫星互联网低轨30组) (Long March 8A, Hainan Commercial LC-1)",
       "vehicle": "Long March 8A",
       "t0_utc": "2026-11-20T11:59:00Z",
-      "t0_kind": "net",
+      "t0_kind": "actual",
       "window_open_utc": "2026-11-20T11:51:00Z",
       "window_close_utc": "2026-11-20T12:17:00Z",
-      "status": "Go",
-      "phase": "upcoming",
+      "status": "Success",
+      "phase": "flown",
       "files": {
         "csv": "/launches/lm8a-hainan-2026-11-20/lm8a-hainan-2026-11-20_2026-11-20_trajectory.csv",
         "kml": "/launches/lm8a-hainan-2026-11-20/lm8a-hainan-2026-11-20_2026-11-20_trajectory.kml",
@@ -1701,7 +1801,9 @@
         "https://x.com/thespaceroad/status/2122705731724206232",
         "https://space-notices.com/entry/launch-long-march-8a-satnet-leo-group-tbd",
         "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
-        "https://en.wikipedia.org/wiki/Long_March_8"
+        "https://en.wikipedia.org/wiki/Long_March_8",
+        "https://www.news.cn/tech/20261120/c110f118f12744e0acacf4a506a7584e/c.html",
+        "https://www.chinanews.com.cn/gn/2026/11-20/10735563.shtml"
       ],
       "method": {
         "csv": "event-surrogate parametric: the same CALT LM-3B typical GTO loft as lm8a-wenchang (2011 manual Tables 3-5/3-6; liftoff altitude removed; cut at Stage-3 first shutdown T+615.7 s, 202.5 km, 2466.2 km), laid on a constant-azimuth spherical rhumb (R=6371.0088 km) at 142.99 deg. That azimuth is the mean bearing from Commercial LC-1 to the area centroids of NOTAM RPHI B5829/26 (142.920 deg, 944 km) and B5830/26 (143.061 deg, 1565 km). Family stand-in, not an LM-8A profile. ILLUSTRATIVE RETIMED 2026-11-18: T0 LL2 NET 2026-11-20T11:59:00Z (status Go, was TBC; window 11:51-12:17Z); utc shift +3540 s only. B5829/26 re-checked, same polygon, daily 1100-1400Z still covers the new window, so azimuth 142.99 deg is unchanged.",
@@ -1720,19 +1822,22 @@
         "wp-lm8",
         "wp-lm3b",
         "ll2",
-        "kml"
+        "kml",
+        "xinhua-satnet-leo-30",
+        "chinanews-satnet-leo-30"
       ],
       "assumptions": [
         "TARGET ORBIT ASSUMED: 700 km circular, borrowed from the lm8a-wenchang (SatNet LEO Group 28) config, where it was the LM-8A 700 km capability-reference altitude and not a mission orbit. LL2 lists this flight as LEO with no altitude and no inclination. Wikipedia's Guowang page gives earlier LM-8A SatNet groups a 1,156 km / 50.0 deg shell and leaves altitude blank for Group 28 and later while still listing 50.0 deg. That shell is not this flight's published elements and was not used; the azimuth was not retuned toward 50 deg",
-        "Payload 5000 kg, borrowed from the Group 28 config ('unknown payload; below 7 t / 700 km SSO'). This flight is 9 satellites and no mass is published. Wikipedia's '~700 kg' LM-8A SatNet type (about 6.3 t for nine) is not this flight's and was not used. Energy-cutoff mode does not fit payload, so 5000 kg is an input, not an estimate",
+        "Payload 5000 kg, borrowed from the Group 28 config ('unknown payload; below 7 t / 700 km SSO'). Xinhua and the China News copy of CCTV do not give a satellite count. LL2's mission text still says a batch of 9; that count is unconfirmed and is not used. Wikipedia's '~700 kg' LM-8A SatNet type (about 6.3 t for nine) is not this flight's and was not used. Energy-cutoff mode does not fit payload, so 5000 kg is an input, not an estimate",
         "Stage data reused unchanged from vehicles/lm8a.json. Thrusts, Isp and GLOW are sourced on that file (Wikipedia: Long March 8). Booster, stage-1 and stage-2 propellant and dry masses are DERIVED there from GLOW differences with ASSUMED propellant fractions (0.90 / 0.92 / 0.88). Fairing 1500 kg, the 3 s coast before stage 2, and the guidance (vertical rise until 60 m/s, 10 s kick) are ASSUMPTIONS on that file. Cd 0.667 is the fitted LM-3B value transferred for aero only. No LM-8A event sequence is published, so the sim stays in energy-cutoff mode rather than timeline mode",
         "Surrogate loft is the CALT LM-3B typical GTO table (2011 manual Tables 3-5/3-6), the same family stand-in as lm8a-wenchang, not an LM-8A profile. It ends at stage-3 first shutdown (T+615.7 s, 202.5 km, 2466.2 km), not at the assumed 700 km orbit. The one horizontal assumption is that the published ground range lies on this flight's constant-azimuth rhumb (spherical, R=6371.0088 km). LM-3B itself doglegs",
         "Pad elevation 0 m. LL2's Commercial LC-1 record gives latitude and longitude and no elevation; 0 m is the same value as the Group 28 config. The pad point 19.597275N 110.930753E is LL2's, which files the pad under Wenchang Space Launch Site; Hainan Commercial Launch Site is the name used by CNSpaceflight and The Space Road for this commercial pad",
         "No payload-deploy time is published (LL2 has no separation time; CASC/CALT have not published one). deploy.t_s is null for that reason, and the sim coasts two revolutions on the inferred insertion orbit. Post-cutoff drag Cd 2.2 and area 8.8 m2 are the same ASSUMPTIONS as lm8a-wenchang (free-molecular Cd 2.2; rounded frontal area of a 3.35 m upper stage). Residual venting after cutoff is not modelled",
         "Azimuth 142.99 deg is sourced from the NOTAM centroids and is not an assumption. It was not retuned to cancel the sim's track bias: pad->insertion bearing 150.00 deg versus commanded 142.99 deg (+7.01 deg), the same ~7 deg bias as the Group 28 sim (147.50 vs 140.4). At the NOTAM downranges the sim track bears about 151 deg and misses the B5829 and B5830 centroids by about 138 km and 212 km. HYDROPAC 3352/26 / NAVAREA XI 26-0515 (areas A/B/C at 140.17/140.30/140.30 deg) were not used for the azimuth",
-        "RETIMED 2026-11-18 from 2026-11-20T11:00:00Z to 2026-11-20T11:59:00Z. Status Go, was TBC. LL2 window 11:51-12:17Z, last_updated 2026-11-18T08:29:42Z. Surrogate and sim utc shift only (+3540 s). Azimuth remains 142.99 deg from the B5829/26 and B5830/26 centroids: B5829/26 was re-checked and still reads daily 1100-1400Z on 20-23 Nov with the same South China Sea polygon, which covers 11:51-12:17Z. HYDROPAC 3352/26 was not the azimuth on the previous file (areas A/B/C bear 140.17/140.30/140.30 deg) and no newer notice replacing those polygons was found."
+        "RETIMED 2026-11-18 from 2026-11-20T11:00:00Z to 2026-11-20T11:59:00Z. Status Go, was TBC. LL2 window 11:51-12:17Z, last_updated 2026-11-18T08:29:42Z. Surrogate and sim utc shift only (+3540 s). Azimuth remains 142.99 deg from the B5829/26 and B5830/26 centroids: B5829/26 was re-checked and still reads daily 1100-1400Z on 20-23 Nov with the same South China Sea polygon, which covers 11:51-12:17Z. HYDROPAC 3352/26 was not the azimuth on the previous file (areas A/B/C bear 140.17/140.30/140.30 deg) and no newer notice replacing those polygons was found.",
+        "FLOWN 2026-11-20. Xinhua: liftoff 20 Nov 19:59 Beijing time, which is 2026-11-20T11:59:00Z, from the Hainan commercial launch site on a Long March 8A. Payload name 卫星互联网低轨30组 (SatNet LEO Group 30). The satellites entered the planned orbit and the launch was a complete success. China News carrying CCTV reports the same and also gives no satellite count. T0 already was 11:59:00Z, so the trajectory files were not shifted. LL2 id a2975167-7c6f-4403-99e1-b40df17c8140 was still Launch in Flight at last_updated 2026-11-20T12:04:15Z and the mission name was still SatNet LEO Group TBD?. That is a source lag. The geometry remains the pre-flight ILLUSTRATIVE model, not flight data."
       ],
-      "note": "Pre-flight ILLUSTRATIVE. Long March 8A Y13, SatNet LEO Group TBD?, Hainan Commercial Launch Site LC-1 (LL2 pad Commercial LC-1). LL2 id a2975167-7c6f-4403-99e1-b40df17c8140, status Go (was TBC), NET 2026-11-20T11:59:00Z (Fri 20 Nov 3:59 a.m. PST), window 11:51-12:17Z, orbit LEO with no altitude, last_updated 2026-11-18T08:29:42Z. LL2 mission text: a batch of 9 LEO communications satellites for China SatNet. Azimuth 142.99 deg is unchanged: NOTAM RPHI B5829/26 (re-checked 2026-11-18, same polygon, daily 1100-1400Z on 20-23 Nov, which covers the new window) and B5830/26. HYDROPAC 3352/26 (140.17/140.30/140.30 deg) was not the azimuth and no newer hazard notice changed it. Target 700 km circular and the stage data are borrowed from the Group 28 config. Sim insertion T+764 s: 699.7 x 700.4 km, i=56.356 deg; pad->insertion bearing 150.00 deg vs commanded 142.99 deg. Files retimed by utc shift only (+3540 s); the sim was not re-run. No deploy time, so the sim ends two revolutions later (T+12617 s)."
+      "note": "FLOWN. Long March 8A lifted SatNet LEO Group 30 (卫星互联网低轨30组) from the Hainan commercial launch site at 2026-11-20T11:59:00Z (Fri 20 Nov 3:59 a.m. PST; 19:59 BJT). Xinhua: the satellites entered the planned orbit and the launch was a complete success. China News (CCTV) reports the same. Neither gives a satellite count, so LL2's mission text ('a batch of 9') is unconfirmed and is not used. LL2 id a2975167-7c6f-4403-99e1-b40df17c8140 was still Launch in Flight at last_updated 2026-11-20T12:04:15Z, and the mission name there was still SatNet LEO Group TBD?. That is a source lag. T0 already matched 11:59:00Z, so the trajectory files were not shifted. The track is still the pre-flight ILLUSTRATIVE model, not flight data. Azimuth 142.99 deg is unchanged (NOTAM RPHI B5829/26 and B5830/26). Target 700 km circular and the stage data are borrowed from the Group 28 config. Sim insertion T+764 s: 699.7 x 700.4 km, i=56.356 deg; pad->insertion bearing 150.00 deg vs commanded 142.99 deg. No deploy time, so the sim ends two revolutions later (T+12617 s)."
     },
     {
       "slug": "lm6c-taiyuan-2026-11-21",
@@ -1795,6 +1900,7 @@
       "t0_kind": "net",
       "window_open_utc": "2026-11-21T12:30:00Z",
       "window_close_utc": "2026-11-21T13:00:00Z",
+      "backup_utc": "2026-11-22T12:16:00Z",
       "status": "Go",
       "phase": "upcoming",
       "files": {
@@ -1808,6 +1914,7 @@
       "confidence": "low",
       "sources": [
         "https://www.spacex.com/launches/nrol136",
+        "https://content.spacex.com/api/spacex-website/missions/nrol136",
         "https://ll.thespacedevs.com/2.3.0/launches/951a341f-236b-42fe-a667-4ab2fcf36eac/",
         "https://spaceflightnow.com/launch-schedule/",
         "https://space-notices.com/notice/lnm-58668",
@@ -1823,6 +1930,7 @@
       },
       "reference_ids": [
         "spacex-nrol136",
+        "spacex-nrol136-api",
         "ll2-nrol-136",
         "sfn-schedule",
         "lnm-58668",
@@ -1845,9 +1953,86 @@
         "Deploy time unpublished -> deploy.t_s null; coast +2 revs on the inferred insertion orbit. Post-cutoff Cd 0.4 and area 10.75 m2 are the same assumptions as the other Falcon 9 coasts.",
         "Known sim ground-track azimuth residual, same sign and size as USSF-317: pad->insertion bearing 160.45 deg vs commanded 155.15 deg (+5.30 deg). Achieved inclination 69.046 deg versus 69.77 deg non-rotating from the azimuth and versus 69.7 deg for the prior batches. Azimuth kept on the hazard area.",
         "The osculating 305.9 x 429.2 km versus the assumed 310 x 425 km is the equatorial-radius definition of perigee/apogee against a geodetic altitude of 310.01 km at 26 N. SMA error against the assumed orbit is +0.04 km and flight-path angle is 0.000 deg.",
-        "Stage-1 residual propellant after the T+131 s MECO stands in for the boostback, entry and landing burns. The vehicle file was built for a droneship recovery; this flight lands on LZ-4. The burns themselves are not modelled."
+        "Stage-1 residual propellant after the T+131 s MECO stands in for the boostback, entry and landing burns. The vehicle file was built for a droneship recovery; this flight lands on LZ-4. The burns themselves are not modelled.",
+        "SOURCE CONFLICT, no retime. The SpaceX mission-page body, confirmed 2026-11-20 from https://content.spacex.com/api/spacex-website/missions/nrol136, says Saturday, November 21, 30-minute window opens 4:30 a.m. PT (2026-11-21T12:30:00Z), backup Sunday, November 22 at 4:16 a.m. PT (2026-11-22T12:16:00Z). The same page's header and upcoming table already show November 22, 2026 07:16-07:46 ET, which is that backup slot (4:16-4:46 a.m. PT), not the Saturday primary. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac remains Go at 12:30Z, last_updated 2026-11-14. T0 stays 2026-11-21T12:30:00Z. backup_utc is the Sunday slot. Trajectory files were not moved."
       ],
-      "note": "Pre-flight ILLUSTRATIVE. NROL-136, the fifteenth NRO proliferated-architecture batch, Falcon 9 from SLC-4E. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac, status Go, NET 2026-11-21T12:30:00Z (Sat 21 Nov 4:30 a.m. PST), window 12:30-13:00Z. SpaceX: 30-minute window opens 4:30 a.m. PT, backup Sunday 22 Nov 4:16 a.m. PT, 14th flight of the booster, landing LZ-4. FAA advisory primary 21 Nov 1230-1343Z. Azimuth 155.15 deg is the bearing to the far-edge midpoint of USCG LNM 58668 Hazard Area A (primary 1230-1325Z). No NROL-136 elements are published; the 310 x 425 km target is borrowed from prior proliferated batches and SECO-1 is an assumed T+510 s. Payload is a fixed 8000 kg assumption. Sim insertion: 305.9 x 429.2 km, i=69.046 deg, pad->insertion bearing 160.45 deg vs commanded 155.15 deg. Deploy unpublished, so the sim ends two revolutions later (T+11538 s)."
+      "note": "Pre-flight ILLUSTRATIVE. NROL-136, the fifteenth NRO proliferated-architecture batch, Falcon 9 from SLC-4E. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac, status Go, NET 2026-11-21T12:30:00Z (Sat 21 Nov 4:30 a.m. PST), window 12:30-13:00Z. SpaceX: 30-minute window opens 4:30 a.m. PT, backup Sunday 22 Nov 4:16 a.m. PT, 14th flight of the booster, landing LZ-4. FAA advisory primary 21 Nov 1230-1343Z. Azimuth 155.15 deg is the bearing to the far-edge midpoint of USCG LNM 58668 Hazard Area A (primary 1230-1325Z). No NROL-136 elements are published; the 310 x 425 km target is borrowed from prior proliferated batches and SECO-1 is an assumed T+510 s. Payload is a fixed 8000 kg assumption. Sim insertion: 305.9 x 429.2 km, i=69.046 deg, pad->insertion bearing 160.45 deg vs commanded 155.15 deg. Deploy unpublished, so the sim ends two revolutions later (T+11538 s). SOURCE CONFLICT, no retime. The SpaceX mission-page body, confirmed 2026-11-20 from https://content.spacex.com/api/spacex-website/missions/nrol136, says Saturday, November 21, 30-minute window opens 4:30 a.m. PT (2026-11-21T12:30:00Z), backup Sunday, November 22 at 4:16 a.m. PT (2026-11-22T12:16:00Z). The same page's header and upcoming table already show November 22, 2026 07:16-07:46 ET, which is that backup slot (4:16-4:46 a.m. PT), not the Saturday primary. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac remains Go at 12:30Z, last_updated 2026-11-14. T0 stays 2026-11-21T12:30:00Z. backup_utc is the Sunday slot. Trajectory files were not moved."
+    },
+    {
+      "slug": "ariane64-le04-2026-11-23",
+      "name": "Amazon Leo LE-04 (Ariane 64 Block 2, VA271)",
+      "vehicle": "Ariane 64 Block 2",
+      "t0_utc": "2026-11-23T11:09:00Z",
+      "t0_kind": "window_open",
+      "window_open_utc": "2026-11-23T11:09:00Z",
+      "window_close_utc": "2026-11-23T11:38:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/ariane64-le04-2026-11-23/ariane64-le04-2026-11-23_2026-11-23_trajectory.csv",
+        "kml": "/launches/ariane64-le04-2026-11-23/ariane64-le04-2026-11-23_2026-11-23_trajectory.kml",
+        "csv_sim": "/launches/ariane64-le04-2026-11-23/ariane64-le04-2026-11-23_2026-11-23_trajectory_sim.csv",
+        "kml_sim": "/launches/ariane64-le04-2026-11-23/ariane64-le04-2026-11-23_2026-11-23_trajectory_sim.kml",
+        "track_lite": "/launches/ariane64-le04-2026-11-23/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://www.arianespace.com/news/mission-va271-launch-window-on-november-23-2026/",
+        "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit",
+        "https://ll.thespacedevs.com/2.3.0/launches/7bdc412b-c965-4517-a131-f57a01189803/",
+        "https://www.sealagom.com/navarea/4/message/26012/1118-26-north-atlantic/",
+        "https://www.sealagom.com/navarea/4/message/25988/1115-26-north-atlantic/",
+        "https://www.sealagom.com/coastal/14/message/57551/2324-26-north-atlantic/",
+        "https://en.wikipedia.org/wiki/Ariane_6",
+        "https://en.wikipedia.org/wiki/P160C",
+        "https://en.wikipedia.org/wiki/Vinci_(rocket_engine)",
+        "https://www.esa.int/fr/articles/about-us/directorates/space-transportation/ariane/ariane-6-what-s-it-made-of",
+        "https://cnes.fr/projets/ariane-6/modeles",
+        "https://www.eoportal.org/other-space-activities/ariane6",
+        "https://www.beyondgravity.com/en/news/shaping-next-generation-european-launch-vehicles-contract-won-ariane-6",
+        "https://www.ariane.group/en/space-transportation/ariane-6/",
+        "https://www.ariane.group/app/uploads/2026/02/LAUNCH-KIT-VA267-EN_FINAL.pdf",
+        "https://www.nasaspaceflight.com/2026/02/le-01-launch/",
+        "https://www.space.com/space-exploration/launches-spacecraft/ariane-6-rocket-record-breaking-launch-amazon-leo-le-03"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: ESA VA271 times (booster sep 143 s, fairing 192 s, core MECO 465 s, Vinci cutoff 1 1071 s) with borrowed or assumed altitudes (143 s: 87 km from NASASpaceflight LE-01; 192 s: 127 km from the same LE-01 note; 465 s: 275 km generic ArianeGroup Vulcain altitude; 1071 s: 150 km ASSUMED transfer height), linear between knots, on a constant-azimuth spherical rhumb at 37.23 deg (mean bearing to NAVAREA IV 1118/26 area A and B centroids). Horizontal speed ASSUMED linear to 7.527 km/s at T+1071. Ends at Vinci cutoff 1; the second burn and deployment are not on this rhumb. T0 window open 2026-11-23T11:09:00Z. ILLUSTRATIVE",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: ESA times are hard events (P160C cutoff 137 s from the published burn, separation 143 s, fairing 192 s, MECO 465 s, core sep 471 s, Vinci-1 479-1071 s). Second Vinci burn open-loop T+4012-4030 at rated 180 kN. Fit target ASSUMED geodetic 150 km, apogee parameter 445 km, FPA -0.55 deg so that burn finishes near the borrowed 465 km. Result: cutoff-1 alt 150.00 km, FPA -0.550 deg, SMA error -0.019 km; osculating at second-burn ignition 124.1 x 465.6 km; after the 18 s burn 451.7 x 481.9 km (mean 466.8 km, +1.8 km vs 465), i=51.089 deg. Deploy start T+5969 s per ESA (deployment ends T+7719 s, not in the file): osculating 463.9 x 489.1 km, geodetic alt 488.4 km, i=51.122 deg. Knot residuals: booster sep +0.51 km vs borrowed 87 km; fairing +23.7 km vs borrowed 127 km. Early track heading 35.7 deg vs commanded 37.23 deg (-1.5 deg). Payload fixed at the provisional 20,855 kg. ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "arianespace-va271",
+        "esa-va271",
+        "ll2-ariane64-le04",
+        "navarea-iv-1118-26",
+        "navarea-iv-1115-26",
+        "hydrolant-2324-26",
+        "wp-ariane6",
+        "wp-p160c",
+        "wp-vinci",
+        "esa-ariane6-made-of",
+        "cnes-ariane6",
+        "eoportal-ariane6",
+        "beyondgravity-ariane6-fairing",
+        "arianegroup-ariane6",
+        "ariane-va267-kit",
+        "nsf-le01",
+        "space-le03",
+        "ll2",
+        "kml"
+      ],
+      "assumptions": [
+        "T0 is the window open 2026-11-23T11:09:00Z, not a liftoff. Arianespace and LL2 agree on 11:09-11:38Z. ESA's timeline liftoff is 11:09:22. ESA labels that column CET, but 11:09:22 matches UTC: Arianespace lists 12:09-12:38 Paris, and ESA's own window line says 11:09-11:38 GMT / 12:09-12:38 CET. Both figures are recorded. The offsets are counted from the 11:09:22 row and applied to the 11:09:00Z T0 (22 s of label ambiguity, not retimed).",
+        "AZIMUTH 37.23 deg is from NAVAREA IV 1118/26, not an assumption: mean of bearings from LL2 ELA-4 (5.256319N, 52.786838W) to the vertex-average centroids of areas A (37.30 deg, 823 km) and B (37.17 deg, 976 km). HYDROLANT 2324/26, the same polygon as NAVAREA II 407/26, bears 37.05 deg at 3373 km and was not averaged in. NAVAREA IV 1115/26 is the near-field launch box and was not used. Non-rotating inclination from 37.23 deg is 52.95 deg. The 51.9 deg Amazon Leo shell would be azimuth 38.29 deg. The azimuth was not retuned.",
+        "INSERTION ORBIT ASSUMED. VA271 does not publish a target orbit. Prior Ariane 64 Amazon Leo flights were inserted near 465 km (VA267 launch kit 'approximately 465 km'; NASASpaceflight LE-01: the second burn delivers 465 km at 51.9 deg; Space.com LE-03: deployment about 465 km / 289 mi). LL2 lists LEO with no altitude and describes the operational shells at 590, 610 and 630 km; those are where the satellites raise themselves, and 590 km was not used. The fit target at Vinci cutoff 1 (geodetic 150 km, apogee parameter 445 km, FPA -0.55 deg) is an assumption chosen so the published 18 s burn at rated Vinci thrust ends near 465 km. It is not a published state.",
+        "PAYLOAD 20,855 kg is a PROVISIONAL ILLUSTRATIVE estimate, not a VA271 mass and not a fit. Space.com, on the previous 36-satellite Ariane 64 Block 2 flight (LE-03), says the press kit gives no mass and that 29 Amazon Leo satellites are 37,000 lb (16,800 kg), so 36 are roughly 20,820 kg. The figure used is the unrounded product 16800/29*36 = 20,855 kg. Cross-check not used: the VA267 launch kit says approximately 20 tons for 32 satellites, and 36/32*20 t = 22.5 t. That stack was Block 1 and the 20 t is approximate. The 20 m fairing is ASSUMED to be 2,600 kg, the top of Beyond Gravity's 1.8-2.6 t range; the source does not say which end is the long shell.",
+        "P160C constant thrust is the average that consumes the published 155.6 t in 137 s at 278.5 s (3,102 kN), not the 4,780 kN maximum. Sea-level and vacuum thrust are set equal because a separate sea-level figure is not published, so atmospheric thrust loss on the boosters is not modelled. LLPM propellant is CNES's 150 t, not Wikipedia's 140 t, because 1,370 kN at 432 s over the 465 s MECO consumes 150,373 kg. The sim raises the load by that 373 kg (0.25%). The P160C flag is a sub-kilogram rounding residue; displayed burned and loaded masses match. ULPM propellant is ESA's 30 t, not Wikipedia's 32 t. Vinci sea-level thrust is set equal to vacuum because it lights after core separation.",
+        "Surrogate altitudes are not this flight's. 87 km and 127 km are NASASpaceflight's LE-01 figures (P120C, 32 satellites). 275 km is ArianeGroup's generic Vulcain altitude ('around 275 km'). 150 km at T+1071 is the assumed transfer height. Altitude is linear between those knots. Horizontal speed is ASSUMED linear to circular ground speed at 150 km. The rhumb ends at Vinci cutoff 1 because a constant-azimuth rhumb cannot carry the half-revolution coast.",
+        "No VA271 deploy-end state is modelled. deploy.t_s is 5969 s, ESA's deployment start. Deployment ends at T+2:08:39 (7719 s). The APU (a CNES slide quotes about 250 N) and the deorbit burn LE-01 flew near T+2:42 are not on this timeline and are not modelled. Post-cutoff Cd 0.4 and area 22.902 m2 (pi*(5.4/2)^2) are assumptions.",
+        "Pad elevation 0 m. LL2's ELA-4 record gives latitude and longitude and no height.",
+        "Sim track bias left in place: early heading 35.7 deg versus commanded 37.23 deg (-1.5 deg). Achieved inclination 51.09 deg versus 52.95 deg non-rotating from the azimuth and versus 51.9 deg for the Amazon Leo shell. Azimuth kept on the hazard areas."
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. Ariane 64 Block 2, flight VA271, 36 Amazon Leo satellites (LE-04), four P160C boosters, ELA-4. T0 is the window open 2026-11-23T11:09:00Z (Mon 23 Nov 3:09 a.m. PST), window to 11:38Z. Arianespace and LL2 (id 7bdc412b-c965-4517-a131-f57a01189803, Go, last_updated 2026-11-20T14:23:25Z) agree. ESA's timeline lists liftoff at 11:09:22 under a column labelled CET; that number matches UTC, because Arianespace puts Paris at 12:09-12:38 and ESA's window line says 11:09-11:38 GMT. The 11:09:22 figure is recorded and is not T0. Azimuth 37.23 deg is the mean bearing to NAVAREA IV 1118/26 areas A and B. No VA271 orbit is published; the borrowed insertion is about 465 km from VA267, LE-01 and LE-03, not the 590/610/630 km operational shells. Payload 20,855 kg is a provisional estimate (16,800 kg / 29 x 36). Sim: Vinci cutoff 1 at geodetic 150.00 km, FPA -0.550 deg, SMA error -0.019 km; after the open-loop 18 s second burn, 451.7 x 481.9 km (mean 466.8 km) at i=51.089 deg. Booster-sep altitude 87.5 km versus 87 km borrowed from LE-01; fairing 150.7 km versus 127 km borrowed (+23.7 km). Early track heading 35.7 deg versus commanded 37.23 deg. Deployment starts at ESA's T+1:39:29 and the file ends there; deployment ends at T+2:08:39. ILLUSTRATIVE."
     }
   ],
   "globe": {

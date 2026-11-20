@@ -1,0 +1,242 @@
+{
+ "slug": "ariane64-le04-2026-11-23",
+ "title": "Ariane 64 Block 2 VA271 / Amazon Leo LE-04 (ELA-4)",
+ "vehicle": "ariane64_block2",
+ "t0_utc": "2026-11-23T11:09:00Z",
+ "pad": {
+  "lat": 5.256319,
+  "lon": -52.786838,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/7bdc412b-c965-4517-a131-f57a01189803/ Ariane Launch Area 4 (ELA-4). Altitude not on the LL2 pad record; 0 m ASSUMED."
+ },
+ "azimuth_deg": {
+  "value": 37.23,
+  "derived": "Mean of great-circle bearings from the LL2 ELA-4 pad (5.256319N, 52.786838W) to the vertex-average centroids of NAVAREA IV 1118/26 areas A and B (space debris, daily 0617-1208Z, 23 Nov-23 Dec 2026). Area A vertices 11-47N 047-53W, 11-36N 047-39W, 10-28N 048-34W, 10-38N 048-48W: centroid 11.1208N 48.2250W, bearing 37.30 deg, 823 km. Area B vertices 12-52N 047-00W, 12-45N 046-50W, 11-34N 047-45W, 11-41N 047-55W: centroid 12.2167N 47.3750W, bearing 37.17 deg, 976 km. Mean 37.23 deg. HYDROLANT 2324/26 (same polygon as NAVAREA II 407/26; core-stage fallout, daily 0725-1252Z) centroid bearing is 37.05 deg at 3373 km, 0.18 deg south of this azimuth, and was not averaged in. NAVAREA IV 1115/26 is the near-field launch area (about 37 km from the pad) and was not used. Non-rotating inclination from 37.23 deg at this pad is 52.95 deg. The Amazon Leo shell inclination 51.9 deg would be azimuth 38.29 deg; the hazard azimuth was not retuned toward it.",
+  "src": "https://www.sealagom.com/navarea/4/message/26012/1118-26-north-atlantic/"
+ },
+ "payload_kg": {
+  "value": 20855,
+  "assumption": "PROVISIONAL ILLUSTRATIVE estimate, not a VA271 mass and not fitted. Space.com on LE-03 (the previous 36-satellite Ariane 64 Block 2 flight; the press kit does not give the mass) says 29 Amazon Leo satellites are 37,000 lb (16,800 kg), about 578 kg each, and 36 of them are roughly 20,820 kg. Exact arithmetic used here: 16800/29*36 = 20,855 kg. https://www.space.com/space-exploration/launches-spacecraft/ariane-6-rocket-record-breaking-launch-amazon-leo-le-03 . Cross-check not used: VA267 launch kit 'approximately 20 tons' for 32 satellites is 625 kg each, and 36*625 = 22,500 kg (https://www.ariane.group/app/uploads/2026/02/LAUNCH-KIT-VA267-EN_FINAL.pdf). That figure is approximate and is the 32-satellite Block 1 stack."
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 150,
+   "assumption": "VA271 insertion elements are not published. Prior Ariane 64 Amazon Leo flights inserted near 465 km (VA267 launch kit 'approximately 465 km'; NASASpaceflight LE-01: second burn delivers the 465 km, 51.9 deg orbit; Space.com LE-03: deployment about 465 km). This 150 km is the ASSUMED geodetic height at Vinci cutoff 1, not a published state. It was lowered from a first pass at 175 km so the open-loop 18 s Vinci burn at rated 180 kN finishes with a mean altitude near that borrowed 465 km."
+  },
+  "apoapsis_alt_km": {
+   "value": 445,
+   "assumption": "ASSUMED fit target for apogee altitude at Vinci cutoff 1, not a published element and not the 465 km insertion itself. Set to 445 km so that, with the small negative flight-path angle, the osculating apogee when the second burn starts is the borrowed 465 km (VA267 launch kit 'approximately 465 km'; NASASpaceflight LE-01; Space.com LE-03). LL2's 590/610/630 km shells are the operational constellation after the satellites raise themselves, and were not used as the insertion."
+  },
+  "fpa_deg": {
+   "value": -0.55,
+   "assumption": "ASSUMED flight-path angle at Vinci cutoff 1. Slightly negative so the 2,941 s coast from T+1071 s to the second burn at T+4012 s arrives near apogee. Not published. -0.55 deg is the value at which that coast meets the borrowed 465 km apogee."
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 8,
+  "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude"
+ },
+ "header_notes": [
+  "ILLUSTRATIVE. PRE-FLIGHT. Ariane 64 Block 2, flight VA271, Amazon Leo LE-04, 36 satellites, ELA-4. T0 is the window open 2026-11-23T11:09:00Z (t0_kind window_open), window to 11:38:00Z. Arianespace: 11:09-11:38 UTC, which is 12:09-12:38 Paris. LL2 id 7bdc412b-c965-4517-a131-f57a01189803 is Go, net 2026-11-23T11:09:00Z, window 11:09-11:38Z, last_updated 2026-11-20T14:23:25Z.",
+  "TIME CONFLICT: ESA's VA271 timeline labels its clock column 'CET' but the liftoff row 11:09:22 matches UTC, not Paris. Arianespace lists 12:09-12:38 Paris and 11:09-11:38 UTC. ESA also writes the window as 11:09-11:38 GMT / 12:09-12:38 CET, so the timeline's 11:09:22 liftoff is the UTC/GMT figure with a CET label. Both are recorded. This file uses 11:09:00Z, the window open, not ESA's 11:09:22.",
+  "Published timeline (ESA, offsets from that liftoff): booster sep T+2:23, fairing sep T+3:12, core MECO T+7:45, core sep T+7:51, Vinci ignition 1 T+7:59, Vinci cutoff 1 T+17:51, Vinci ignition 2 T+1:06:52, Vinci cutoff 2 T+1:07:10, deployment starts T+1:39:29, ends T+2:08:39.",
+  "Azimuth 37.23 deg from NAVAREA IV 1118/26 areas A and B. The Vinci-cutoff-1 fit target (geodetic 150 km, apogee parameter 445 km, FPA -0.55 deg) is an ASSUMPTION chosen so the open-loop 18 s Vinci burn finishes near the borrowed 465 km. Payload 20,855 kg is a provisional estimate. ILLUSTRATIVE."
+ ],
+ "final_cutoff_s": {
+  "value": 1071,
+  "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit first Vinci cutoff T+17:51. The second burn is modelled in post_cutoff."
+ },
+ "knots": [
+  {
+   "event": "Booster separation (altitude borrowed from LE-01)",
+   "t_s": 143,
+   "alt_km": 87,
+   "alt_sigma_km": 20,
+   "src": "Time is ESA VA271 T+2:23. Altitude ~87 km is NASASpaceflight's LE-01 (VA267, P120C, 32 satellites) figure at T+2:25, not this flight. https://www.nasaspaceflight.com/2026/02/le-01-launch/"
+  },
+  {
+   "event": "Fairing separation (altitude borrowed from LE-01)",
+   "t_s": 192,
+   "alt_km": 127,
+   "alt_sigma_km": 20,
+   "src": "Time is ESA VA271 T+3:12. Altitude ~127 km is NASASpaceflight's LE-01 fairing altitude at T+3:11, not this flight. https://www.nasaspaceflight.com/2026/02/le-01-launch/"
+  }
+ ],
+ "post_cutoff": {
+  "drag": {
+   "cd": {
+    "value": 0.4,
+    "assumption": "same Cd as the ascent (fixed 0.4); not published"
+   },
+   "area_m2": {
+    "value": 22.902,
+    "derived": "pi*(5.4 m/2)^2, Ariane 6 stage diameter (Wikipedia)"
+   }
+  },
+  "burns": [
+   {
+    "name": "Vinci boost 2",
+    "t_ign_s": {
+     "value": 4012,
+     "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit second Vinci ignition T+1:06:52"
+    },
+    "duration_s": {
+     "value": 18,
+     "src": "ESA VA271: ignition T+1:06:52, cutoff T+1:07:10 (18 s)"
+    },
+    "thrust_N": {
+     "value": 180000,
+     "src": "https://en.wikipedia.org/wiki/Vinci_(rocket_engine) rated vacuum thrust 180 kN. Flown open-loop for the published 18 s; throttle is not published and thrust is not solved."
+    },
+    "isp_s": {
+     "value": 457.2,
+     "src": "https://en.wikipedia.org/wiki/Vinci_(rocket_engine)"
+    },
+    "basis": "ESA VA271 published second-burn timing, rated Vinci thrust and Isp, open-loop. Not solved to a target perigee. The APU (CNES slide: about 250 N) is not modelled."
+   }
+  ],
+  "deploy": {
+   "t_s": {
+    "value": 5969,
+    "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit Amazon Leo deployment starts T+1:39:29"
+   },
+   "src": "ESA VA271 timeline: deployment starts T+1:39:29 (5969 s). Deployment ends T+2:08:39 (7719 s); the file ends at the start.",
+   "label": "Amazon Leo deployment starts"
+  },
+  "notes": [
+   "Deployment ends at T+2:08:39 (7719 s) per the same ESA timeline. This file ends when deployment starts.",
+   "ESA labels the timeline column CET, but 11:09:22 matches the UTC/GMT liftoff (Arianespace: 12:09 Paris). Offsets are counted from that liftoff row.",
+   "No deorbit burn is published on this timeline (LE-01 had a third burn near T+2:42). It is not modelled."
+  ]
+ },
+ "fairing_jettison_s": {
+  "value": 192,
+  "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit fairing separation T+3:12"
+ },
+ "stage_event_overrides": {
+  "0": {
+   "cutoff_s": {
+    "value": 137,
+    "src": "https://en.wikipedia.org/wiki/P160C burn time 137 s. ESA publishes separation at T+2:23, not burnout."
+   },
+   "separation_s": {
+    "value": 143,
+    "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit booster separation T+2:23"
+   }
+  },
+  "1": {
+   "cutoff_s": {
+    "value": 465,
+    "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit core stage MECO T+7:45"
+   },
+   "separation_s": {
+    "value": 471,
+    "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit core stage separation T+7:51"
+   }
+  },
+  "2": {
+   "ignition_s": {
+    "value": 479,
+    "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit first Vinci ignition T+7:59"
+   }
+  }
+ },
+ "t0_note": "Window open 2026-11-23T11:09:00Z. Arianespace and LL2 agree. ESA timeline liftoff 11:09:22 is recorded and not used as T0.",
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "vertical_rise_s": {
+    "value": 7.368104,
+    "bounds": [
+     4,
+     25
+    ],
+    "basis": "ASSUMPTION bound (pitch-over time unpublished)"
+   },
+   "kick_deg": {
+    "value": 8.155173,
+    "bounds": [
+     0.2,
+     12
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "tan0": {
+    "value": 1.874898,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": 0.00297,
+    "bounds": [
+     -0.02,
+     0.02
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "cd": 0.4,
+   "payload_kg": 20855.0
+  },
+  "knot_residuals": [
+   {
+    "event": "Booster separation (altitude borrowed from LE-01)",
+    "t_pub": 143,
+    "t_sim": 143.0,
+    "alt_pub": 87,
+    "alt_sim": 87.51,
+    "rng_pub": null,
+    "rng_sim": 101.0
+   },
+   {
+    "event": "Fairing separation (altitude borrowed from LE-01)",
+    "t_pub": 192,
+    "t_sim": 192.0,
+    "alt_pub": 127,
+    "alt_sim": 150.65,
+    "rng_pub": null,
+    "rng_sim": 220.7
+   }
+  ],
+  "final": {
+   "alt_km": 149.99607961454987,
+   "fpa_deg": -0.5499455503126998,
+   "sma_err_km": -0.018952502317726612,
+   "mass_kg": 33088.4
+  },
+  "cost": 0.6994893338939794,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "P160C",
+     "loaded_kg": 622400,
+     "burned_kg": 622400,
+     "residual_kg": 0,
+     "dry_kg": 45600,
+     "flag": "published load 622400 kg < burned 622400 kg; load raised to burned"
+    },
+    {
+     "name": "LLPM (Vulcain 2.1)",
+     "loaded_kg": 150373,
+     "burned_kg": 150373,
+     "residual_kg": 0,
+     "dry_kg": 23000,
+     "flag": "published load 150000 kg < burned 150373 kg; load raised to burned"
+    },
+    {
+     "name": "ULPM (Vinci)",
+     "loaded_kg": 30000,
+     "burned_kg": 23767,
+     "residual_kg": 6233,
+     "dry_kg": 6000,
+     "flag": null
+    }
+   ],
+   "glow_kg": 900828
+  }
+ }
+}
