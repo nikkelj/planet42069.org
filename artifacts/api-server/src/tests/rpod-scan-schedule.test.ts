@@ -22,8 +22,11 @@ import { fileURLToPath } from "node:url";
 import {
   rpodScanIsDue, withDeadline, RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_ERROR_RETRY_MS, RPOD_SCAN_CHECK_INTERVAL_MS,
   RPOD_SCAN_BOOT_DELAY_MS, MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS,
-  RPOD_POST_SGP4_RESERVE_MS, sgp4ShouldStop, screenStopDeadlineMs,
+  RPOD_POST_SGP4_RESERVE_MS, RPOD_POST_SCREEN_TAIL_MS, RPOD_POST_SCREEN_STOP_WAIT_MS,
+  sgp4ShouldStop, screenStopDeadlineMs,
   cancelScanAttempt, markScanLogged,
+  catalogScreenCountsAsScreened, syncLogForHardCap, isRpodScanHardCapError,
+  dispositionAfterHardCap,
 } from "../lib/rpod/scanPolicy";
 
 let failures = 0;
@@ -69,6 +72,16 @@ console.log("rpodScanIsDue: overdue lastScanAt must not wait for the next hourly
     RPOD_POST_SGP4_RESERVE_MS > RPOD_ALERT_TIMEOUT_MS
     && RPOD_POST_SGP4_RESERVE_MS < MAX_RPOD_SCAN_MS / 2,
     String(RPOD_POST_SGP4_RESERVE_MS));
+  check("post-SGP4 reserve stays 3 minutes so the screen cut does not get deeper",
+    RPOD_POST_SGP4_RESERVE_MS === 3 * 60_000);
+  check("screened tail budget starts at the hard cap and outlasts the reserve",
+    RPOD_POST_SCREEN_TAIL_MS > RPOD_POST_SGP4_RESERVE_MS
+    && RPOD_POST_SCREEN_TAIL_MS <= 10 * 60_000,
+    String(RPOD_POST_SCREEN_TAIL_MS));
+  check("stop-wait outlasts alert posting so cancellation is noticed",
+    RPOD_POST_SCREEN_STOP_WAIT_MS >= RPOD_ALERT_TIMEOUT_MS
+    && RPOD_POST_SCREEN_STOP_WAIT_MS < RPOD_POST_SCREEN_TAIL_MS,
+    String(RPOD_POST_SCREEN_STOP_WAIT_MS));
   check("SGP4 stops once only the reserve remains",
     sgp4ShouldStop(1_000, 1_000 + RPOD_POST_SGP4_RESERVE_MS - 1) === true
     && sgp4ShouldStop(1_000, 1_000 + RPOD_POST_SGP4_RESERVE_MS + 60_000) === false);
@@ -172,8 +185,22 @@ console.log("scheduler + scan source: staleness checks, skip logging, timeouts")
     && /screenCandidatePairs\(elsets, DEFAULT_SCREEN, SCREEN_YIELD_EVERY, screenDeadlineMs/.test(scanSrc)
     && /screenCoAlignedPairs\(elsets, DEFAULT_COALIGNED, nowMs, SCREEN_YIELD_EVERY, screenDeadlineMs/.test(scanSrc));
   check("co-aligned screen and station-keeping wait while the persist reserve is open",
-    /if \(!sgp4ShouldStop\(Date\.now\(\), deadlineMs\)\) \{\s*coRaw = await screenCoAlignedPairs/.test(scanSrc)
+    /if \(!sgp4ShouldStop\(Date\.now\(\), deadlineMs\)\) \{\s*coInvoked = true;\s*coRaw = await screenCoAlignedPairs/.test(scanSrc)
     && /if \(!sgp4ShouldStop\(Date\.now\(\), deadlineMs\)\) \{\s*try \{\s*const samples: ElementSample\[]/.test(scanSrc));
+  const tallyAt = scanSrc.indexOf("publishScanTally(abort");
+  const skAt = scanSrc.indexOf("screenStationKeeping(");
+  const persistAt = scanSrc.indexOf("persistEvents(conjKept.kept");
+  check("screen tally is published before station-keeping and persist",
+    tallyAt > 0 && skAt > tallyAt && persistAt > skAt);
+  check("outer hard cap asks how to record a screened hour before the error row",
+    /if \(isRpodScanHardCapError\(err\)\) \{\s*const disposition = await dispositionAfterHardCap\(/.test(scanSrc));
+  check("a screened hard cap can write success instead of error/null",
+    /disposition\.kind === "write"/.test(scanSrc)
+    && /disposition\.row\.status/.test(scanSrc)
+    && /via === "pool"/.test(scanSrc));
+  check("persist stops between events once the hard-cap tail budget is spent",
+    /shouldStop: \(\) => abort\.cancelled/.test(scanSrc)
+    && /if \(opts\.shouldStop\?\.\(\)\) break;/.test(scanSrc));
   const skSrc = readFileSync(join(here, "../lib/rpod/stationKeeping.ts"), "utf8");
   check("station-keeping history seek is statement-capped inside the persist reserve",
     /STATION_KEEPING_HISTORY_TIMEOUT_MS = 20_000/.test(skSrc)
@@ -194,6 +221,119 @@ console.log("scheduler + scan source: staleness checks, skip logging, timeouts")
     && /LATEST_ELSETS_CLIENT_TIMEOUT_MS = 30_000/.test(tleSrc));
   check("client deadline destroys the pg socket",
     /stream\?\.destroy\(err\)/.test(tleSrc));
+}
+
+console.log("hard cap after a screened catalog is success with a numeric count");
+{
+  const cap = "rpod-scan timed out after 1500000ms";
+  check("live 2026-11-18 string is the outer cap", isRpodScanHardCapError(new Error(cap)));
+  check("an SGP4 stage throw is not the outer cap",
+    isRpodScanHardCapError(new Error("rpod-scan timed out during SGP4")) === false);
+  check("an elset-fetch failure is not the outer cap",
+    isRpodScanHardCapError(new Error("latest-elset fetch exceeded 30000ms client deadline")) === false);
+
+  const none = syncLogForHardCap(null, cap);
+  check("no tally stays error with null events", none.status === "error" && none.rowCount === null && none.error === cap);
+  const skipped = syncLogForHardCap(
+    { catalogScreened: false, rowCount: 0, warnings: [] },
+    cap,
+  );
+  check("a skipped screen is not success with 0", skipped.status === "error" && skipped.rowCount === null);
+  const emptyBoard = syncLogForHardCap(
+    { catalogScreened: true, rowCount: 0, warnings: ["screen stopped early to leave time for persist"] },
+    cap,
+  );
+  check("a finished screen that kept nothing is success with 0",
+    emptyBoard.status === "success" && emptyBoard.rowCount === 0 && emptyBoard.error.includes(cap));
+  const live = syncLogForHardCap(
+    { catalogScreened: true, rowCount: 117, warnings: ["sgp4 stopped early to stay inside the scan deadline"] },
+    cap,
+  );
+  check("live-sized screened hour keeps the event count",
+    live.status === "success" && live.rowCount === 117 && live.error.includes("sgp4 stopped early"));
+
+  const walked = {
+    stage1Invoked: true, stage1Pairs: 0, stage1Truncated: false,
+    coInvoked: true, coPairs: 0, coTruncated: false,
+    skRan: false, rowCount: 0,
+  };
+  check("a finished walk that accepted no pairs was screened", catalogScreenCountsAsScreened(walked));
+  check("a deadline that returned before any pair is not a screened catalog",
+    catalogScreenCountsAsScreened({ ...walked, stage1Truncated: true, coInvoked: false, coTruncated: true }) === false);
+  check("a partial walk that already accepted pairs was screened",
+    catalogScreenCountsAsScreened({ ...walked, stage1Truncated: true, stage1Pairs: 4, coInvoked: false }));
+  check("kept events are persistable even if the walk flags say skipped",
+    catalogScreenCountsAsScreened({
+      stage1Invoked: false, stage1Pairs: 0, stage1Truncated: true,
+      coInvoked: false, coPairs: 0, coTruncated: true,
+      skRan: false, rowCount: 3,
+    }));
+  check("neither screen invoked and nothing kept is not screened",
+    catalogScreenCountsAsScreened({
+      stage1Invoked: false, stage1Pairs: 0, stage1Truncated: true,
+      coInvoked: false, coPairs: 0, coTruncated: true,
+      skRan: false, rowCount: 0,
+    }) === false);
+}
+
+console.log("a screened tail that finishes after the cap is not rewritten as error/null");
+{
+  const cap = "rpod-scan timed out after 1500000ms";
+  const tally = {
+    catalogScreened: true,
+    rowCount: 4,
+    warnings: ["sgp4 stopped early to stay inside the scan deadline"],
+  };
+  // Events were already being written when the 25-minute timer won. doScan
+  // logs success a moment later. The waiter must not queue an error row.
+  const finished = { cancelled: false, logged: false, loggedStatus: undefined as "success" | "error" | undefined };
+  const finishedScan = (async () => {
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    finished.logged = true;
+    finished.loggedStatus = "success";
+  })();
+  const kept = await dispositionAfterHardCap(tally, cap, finishedScan, finished, 500, 200);
+  check("late success is kept and the tail is not cancelled",
+    kept.kind === "keep" && kept.failed === false && finished.cancelled === false);
+  check("a kept success does not allocate another row", kept.kind !== "write");
+
+  const failed = { cancelled: false, logged: false, loggedStatus: undefined as "success" | "error" | undefined };
+  const failedScan = (async () => {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    failed.logged = true;
+    failed.loggedStatus = "error";
+    throw new Error("connection terminated");
+  })();
+  const retry = await dispositionAfterHardCap(tally, cap, failedScan, failed, 500, 200);
+  check("a real persist failure after the cap still retries",
+    retry.kind === "keep" && retry.failed === true);
+
+  const stopped = { cancelled: false, logged: false, loggedStatus: undefined as "success" | "error" | undefined };
+  const stoppedScan = (async () => {
+    while (!stopped.cancelled) await new Promise((resolve) => setTimeout(resolve, 10));
+  })();
+  const ready = await dispositionAfterHardCap(tally, cap, stoppedScan, stopped, 30, 500);
+  check("a tail that stops when cancelled is ready to log success on the lock client",
+    ready.kind === "write" && ready.via === "client" && ready.row.status === "success" && ready.row.rowCount === 4
+    && stopped.cancelled === true && stopped.logged === false,
+    JSON.stringify(ready));
+
+  const stuckFlag = { cancelled: false, logged: false, loggedStatus: undefined as "success" | "error" | undefined };
+  const stuckScan = new Promise<void>(() => {});
+  const stuck = await dispositionAfterHardCap(tally, cap, stuckScan, stuckFlag, 20, 20);
+  check("a tail that never releases the client logs success on another connection",
+    stuck.kind === "write" && stuck.via === "pool" && stuck.row.status === "success"
+    && stuck.row.rowCount === 4 && stuckFlag.logged === true && stuckFlag.cancelled === true);
+
+  const unscreened = { cancelled: false, logged: false };
+  const hungFetch = new Promise<void>(() => {});
+  const started = Date.now();
+  const rethrow = await dispositionAfterHardCap(null, cap, hungFetch, unscreened, 2_000, 2_000);
+  check("an unscreened cap does not wait out the tail budget",
+    rethrow.kind === "rethrow" && Date.now() - started < 500);
+  const skippedTally = { catalogScreened: false, rowCount: 0, warnings: [] as string[] };
+  const skippedDisposition = await dispositionAfterHardCap(skippedTally, cap, hungFetch, unscreened, 2_000, 2_000);
+  check("a skipped screen does not become a quiet success", skippedDisposition.kind === "rethrow");
 }
 
 if (failures > 0) {

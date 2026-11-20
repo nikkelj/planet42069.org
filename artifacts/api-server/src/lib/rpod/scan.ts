@@ -4,7 +4,12 @@ import { sql, eq, and, inArray, lt, desc } from "drizzle-orm";
 import { logger } from "../logger";
 import { getLatestElsetsOrSkip, formatDbError, withAdvisoryLock, LOCK_RPOD_SCAN, ELSET_FUTURE_SLACK_MS, retryOnceOnTransient, retryTransientConnection, isTransientConnectionError, ensureAdvisoryLockClient, DB_CONNECT_RETRY_ATTEMPTS, DB_CONNECT_RETRY_DELAYS_MS, type LatestElset } from "../obc/tleArchive";
 import { getSatcatFromStore } from "../obc/store";
-import { MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, withDeadline, cancelScanAttempt, markScanLogged, sgp4ShouldStop, screenStopDeadlineMs } from "./scanPolicy";
+import {
+  MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, RPOD_POST_SCREEN_TAIL_MS, RPOD_POST_SCREEN_STOP_WAIT_MS,
+  withDeadline, cancelScanAttempt, markScanLogged, sgp4ShouldStop, screenStopDeadlineMs,
+  isRpodScanHardCapError, dispositionAfterHardCap, catalogScreenCountsAsScreened,
+  type ScreenedScanTally, type ScanAttemptFlag,
+} from "./scanPolicy";
 import {
   screenCandidatePairs, screenCoAlignedPairs, closeApproach, clusterPairs,
   DEFAULT_SCREEN, DEFAULT_COALIGNED, RPOD_MAX_RANGE_KM, RPOD_MAX_RELVEL_KM_S,
@@ -40,7 +45,9 @@ import {
 export {
   rpodScanIsDue, RPOD_SCAN_INTERVAL_MS, RPOD_SCAN_ERROR_RETRY_MS, RPOD_SCAN_CHECK_INTERVAL_MS, RPOD_SCAN_BOOT_DELAY_MS,
   MAX_RPOD_SCAN_MS, RPOD_ALERT_TIMEOUT_MS, RPOD_POST_SGP4_RESERVE_MS, sgp4ShouldStop, screenStopDeadlineMs,
+  RPOD_POST_SCREEN_TAIL_MS, RPOD_POST_SCREEN_STOP_WAIT_MS,
   withDeadline, cancelScanAttempt, markScanLogged,
+  isRpodScanHardCapError, dispositionAfterHardCap, catalogScreenCountsAsScreened, syncLogForHardCap,
 } from "./scanPolicy";
 export { DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry };
 
@@ -60,6 +67,9 @@ export { DOCKED_MAX_RANGE_KM, DOCKED_MAX_RELVEL_KM_S, isDockedGeometry };
  *  - every pre-persist stage stops RPOD_POST_SGP4_RESERVE_MS before the
  *    hard cap so a long hour still persists what it found instead of
  *    logging "timed out before persist"
+ *  - once that screen has a tally, the outer 25-minute cap does not store
+ *    error / null. The persist / alert / retire tail finishes under
+ *    RPOD_POST_SCREEN_TAIL_MS and the hour is success with that count
  *  - persist only interesting events (red paired with blue or neutral,
  *    exercise-flagged blue-on-blue, messy clusters, ultra-close
  *    near-misses, docked geometry, known stations) — see interest.ts
@@ -94,14 +104,61 @@ export function runRpodScan(): Promise<void> {
         // pg-pool aborts as "Connection terminated due to connection timeout".
         await runWithDbClient(client, async () => {
           const deadlineMs = Date.now() + MAX_RPOD_SCAN_MS;
+          const scanPromise = doScan(deadlineMs, abort);
           try {
-            await withDeadline(doScan(deadlineMs, abort), MAX_RPOD_SCAN_MS, "rpod-scan");
+            await withDeadline(scanPromise, MAX_RPOD_SCAN_MS, "rpod-scan");
           } catch (err) {
-            // withDeadline does not cancel doScan. Set cancelled so a late inner
-            // return cannot insert a second row after the lock is released — but
-            // still write one row here, or lastScanAt stays on the previous success.
+            // withDeadline does not cancel doScan. A cap before the catalog
+            // was screened still logs error / null (the hour retries). A cap
+            // after the screen published a tally lets persist, alerts, and
+            // retire finish; the sync-log row is success with that count.
+            // Live 2026-11-18 17:09Z wrote events at 17:07Z and then stored
+            // "rpod-scan timed out after 1500000ms" with lastScanEvents null.
+            const timeoutError = formatDbError(err);
+            if (isRpodScanHardCapError(err)) {
+              const disposition = await dispositionAfterHardCap(
+                abort.tally,
+                timeoutError,
+                scanPromise,
+                abort,
+                RPOD_POST_SCREEN_TAIL_MS,
+                RPOD_POST_SCREEN_STOP_WAIT_MS,
+              );
+              if (disposition.kind === "keep") {
+                if (disposition.failed) throw err;
+                return;
+              }
+              if (disposition.kind === "write") {
+                try {
+                  if (disposition.via === "pool") {
+                    abort.loggedStatus = disposition.row.status;
+                    await insertRpodScanSyncLog(
+                      {
+                        status: disposition.row.status,
+                        startedAt: started,
+                        rowCount: disposition.row.rowCount,
+                        error: disposition.row.error,
+                      },
+                      async (values) => { await poolDb.insert(obcSyncLog).values(values); },
+                    );
+                  } else if (cancelScanAttempt(abort)) {
+                    await logScanRow(
+                      disposition.row.status, started, disposition.row.rowCount, disposition.row.error, abort, true,
+                    );
+                  }
+                } catch (logErr) {
+                  logger.error({ err: logErr }, "rpod-scan: failed to write sync log");
+                  throw err;
+                }
+                return;
+              }
+            }
+            // Unscreened cap, or a failure that is not the outer timer.
+            // Set cancelled so a late inner return cannot insert a second
+            // row after the lock is released — but still write one row here,
+            // or lastScanAt stays on the previous success.
             if (cancelScanAttempt(abort)) {
-              await logScanRow("error", started, null, formatDbError(err), abort, true).catch((logErr) => {
+              await logScanRow("error", started, null, timeoutError, abort, true).catch((logErr) => {
                 logger.error({ err: logErr }, "rpod-scan: failed to write sync log");
               });
             }
@@ -223,7 +280,43 @@ function throwIfScanDeadline(deadlineMs: number, where: string, abort?: ScanAbor
   if (Date.now() > deadlineMs) throw new Error(`rpod-scan timed out ${where}`);
 }
 
-type ScanAbort = { cancelled: boolean; logged: boolean };
+function screenBudgetWarnings(
+  stage1Truncated: boolean,
+  coTruncated: boolean,
+  sgp4Truncated: boolean,
+  skNotes: string[],
+): string[] {
+  const warnings = [...skNotes];
+  if (stage1Truncated || coTruncated) warnings.push("screen stopped early to leave time for persist");
+  if (sgp4Truncated) warnings.push("sgp4 stopped early to stay inside the scan deadline");
+  return warnings;
+}
+
+/**
+ * Publish the screened tally before any await the outer cap might win.
+ * Updates the same object when one was already published: the hard-cap
+ * waiter holds that reference and reads the count when it writes.
+ */
+function publishScanTally(
+  abort: ScanAbort,
+  input: Parameters<typeof catalogScreenCountsAsScreened>[0] & { warnings: string[] },
+): void {
+  const catalogScreened = catalogScreenCountsAsScreened(input);
+  if (abort.tally) {
+    abort.tally.catalogScreened = catalogScreened;
+    abort.tally.rowCount = input.rowCount;
+    abort.tally.warnings = input.warnings;
+    return;
+  }
+  abort.tally = { catalogScreened, rowCount: input.rowCount, warnings: input.warnings };
+}
+
+type ScanAbort = ScanAttemptFlag & {
+  /** Set once the catalog walk has a persistable tally. Read by the hard cap. */
+  tally?: ScreenedScanTally;
+  /** Which row logScanRow claimed, so a hard cap can tell success from error. */
+  loggedStatus?: "success" | "error";
+};
 
 interface CatalogMeta extends InterestCatalogMeta {
   launchTag: string | null;
@@ -474,8 +567,10 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     const sgp4Truncated = { current: false };
     const stage1Stop: ScreenStop = { truncated: false };
     const screenDeadlineMs = screenStopDeadlineMs(deadlineMs);
+    let stage1Invoked = false;
     let stage1Pairs: { a: ScreenElset; b: ScreenElset }[] = [];
     if (!sgp4ShouldStop(Date.now(), deadlineMs)) {
+      stage1Invoked = true;
       stage1Pairs = await screenCandidatePairs(elsets, DEFAULT_SCREEN, SCREEN_YIELD_EVERY, screenDeadlineMs, undefined, stage1Stop);
     } else {
       stage1Stop.truncated = true;
@@ -506,8 +601,10 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     // cap is what stored "rpod-scan timed out before persist".
     const flaggedKeys = new Set(flagged.map((f) => pairKey(f.a, f.b)));
     const coStop: ScreenStop = { truncated: false };
+    let coInvoked = false;
     let coRaw: { a: ScreenElset; b: ScreenElset }[] = [];
     if (!sgp4ShouldStop(Date.now(), deadlineMs)) {
+      coInvoked = true;
       coRaw = await screenCoAlignedPairs(elsets, DEFAULT_COALIGNED, nowMs, SCREEN_YIELD_EVERY, screenDeadlineMs, coStop);
     } else {
       coStop.truncated = true;
@@ -587,6 +684,30 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
 
     const coEvents = clusterPairs(coFlagged, MEMBER_CAP, COALIGNED_MERGE_WINDOW_MS);
 
+    // Interesting-only filter is pure. Publish a tally before station-keeping
+    // so a hard cap during that history read still sees a screened catalog.
+    // Boring same-operator routine RPOD must not land in rpod_events.
+    const conjKept = selectInterestingEvents(events, meta);
+    const coKept = selectInterestingEvents(coEvents, meta);
+    const interestStats = {
+      conjunction: conjKept.stats,
+      coplanar: coKept.stats,
+    };
+    const tallyInput = {
+      stage1Invoked,
+      stage1Pairs: stage1Pairs.length,
+      stage1Truncated: stage1Stop.truncated,
+      coInvoked,
+      coPairs: coRaw.length,
+      coTruncated: coStop.truncated,
+    };
+    publishScanTally(abort, {
+      ...tallyInput,
+      skRan: false,
+      rowCount: conjKept.kept.length + coKept.kept.length,
+      warnings: screenBudgetWarnings(stage1Stop.truncated, coStop.truncated, sgp4Truncated.current, []),
+    });
+
     // Station keeping uses the latest elsets already loaded, then one
     // bounded history seek for the red-versus-blue plane matches. It does
     // not relabel a pair this hour already flagged as conjunction or coplanar.
@@ -640,20 +761,19 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       skNotes.push("skipped station-keeping to stay inside the scan deadline");
     }
 
-    // Persist only interesting encounters. Boring same-operator routine
-    // RPOD must not land in rpod_events or on the public board.
-    const conjKept = selectInterestingEvents(events, meta);
-    const coKept = selectInterestingEvents(coEvents, meta);
-    const interestStats = {
-      conjunction: conjKept.stats,
-      coplanar: coKept.stats,
-    };
+    publishScanTally(abort, {
+      ...tallyInput,
+      skRan,
+      rowCount: conjKept.kept.length + coKept.kept.length + skEvents.length,
+      warnings: screenBudgetWarnings(stage1Stop.truncated, coStop.truncated, sgp4Truncated.current, skNotes),
+    });
 
     // Persist what this hour already flagged. The hard cap used to throw
     // here ("rpod-scan timed out before persist") and store lastScanEvents
-    // null after screening had finished. The outer withDeadline is the
-    // backstop if persist itself hangs; a cancelled attempt must not add
-    // a second sync-log row.
+    // null after screening had finished. The outer cap does not set
+    // cancelled until RPOD_POST_SCREEN_TAIL_MS has elapsed, so a screened
+    // hour still persists. This return is the unscreened abort (and a tail
+    // that is still stuck when that budget finally runs out).
     if (abort.cancelled) return;
     const crossTagPairs = new Set<string>();
     for (const p of [...flagged, ...coFlagged]) {
@@ -671,21 +791,26 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
     };
     const forceByNorad = new Map<number, Force>();
     for (const norad of meta.keys()) forceByNorad.set(norad, forceOfNorad(norad));
-    const persistOpts = { crossTagPairs, elsetEpochs, forceOfNorad };
+    const persistOpts = {
+      crossTagPairs, elsetEpochs, forceOfNorad,
+      shouldStop: () => abort.cancelled,
+    };
     const conjResult = await persistEvents(conjKept.kept, "conjunction", persistOpts);
+    if (abort.cancelled) return;
     const coResult = await persistEvents(coKept.kept, "coplanar", persistOpts);
+    if (abort.cancelled) return;
     const skResult = await persistEvents(skEvents, "station-keeping", {
       ...persistOpts,
       stationKeeping: skGeom,
       stationKeepingSignificantKm: skOpts.significantChangeKm,
     });
-    const warnings = [...conjResult.errors, ...coResult.errors, ...skResult.errors, ...skNotes];
-    if (stage1Stop.truncated || coStop.truncated) {
-      warnings.push("screen stopped early to leave time for persist");
-    }
-    if (sgp4Truncated.current) {
-      warnings.push("sgp4 stopped early to stay inside the scan deadline");
-    }
+    if (abort.cancelled) return;
+    const warnings = [
+      ...conjResult.errors,
+      ...coResult.errors,
+      ...skResult.errors,
+      ...screenBudgetWarnings(stage1Stop.truncated, coStop.truncated, sgp4Truncated.current, skNotes),
+    ];
     // Alert on genuinely NEW cases (never routine updates/reopens), plus
     // one follow-up when an ACTIVE case escalates (min range tightening
     // sharply). Failures are swallowed inside — posting must never fail
@@ -708,6 +833,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       warnings.push(`alerts: ${String(err)}`.slice(0, 300));
       logger.warn({ err }, "rpod-scan: alert posting failed");
     }
+    if (abort.cancelled) return;
     for (const [label, fn] of [
       ["reclassify", () => reclassifyDockedEvents(forceByNorad)],
       ["markStale", markStaleEvents],
@@ -720,6 +846,7 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
         logger.warn({ err }, `rpod-scan: ${label} failed (scan otherwise ok)`);
       }
     }
+    if (abort.cancelled) return;
     // A partial SGP4 pass did not re-see every coplanar pair. Retire uses
     // lastSeenAt, so ending cases off a truncated hour would drop shadowers
     // the scan simply did not get to.
@@ -780,9 +907,10 @@ async function doScan(deadlineMs: number, abort: ScanAbort): Promise<void> {
       "rpod-scan: complete",
     );
   } catch (err) {
-    // Deadline already logged and released the lock. Returning (instead of
-    // rethrowing) keeps the orphaned doScan promise from becoming an
-    // unhandled rejection, and skips a second sync-log row.
+    // The outer waiter has claimed the sync-log row, or it will write the
+    // screened success row on this client once we return. Returning
+    // (instead of rethrowing) keeps doScan from rejecting and skips a
+    // second row.
     if (abort.cancelled) return;
     await logScanRow("error", started, null, formatDbError(err), abort).catch((logErr) => {
       logger.error({ err: logErr }, "rpod-scan: failed to write sync log");
@@ -805,7 +933,10 @@ async function logScanRow(
   if (abort?.logged) return;
   if (abort?.cancelled && !force) return;
   // Set before the insert so a deadline firing mid-write does not add another row.
-  if (abort) markScanLogged(abort);
+  if (abort) {
+    markScanLogged(abort);
+    abort.loggedStatus = status;
+  }
   await insertRpodScanSyncLog({ status, startedAt, rowCount, error: error ?? null });
 }
 
@@ -850,6 +981,8 @@ export interface PersistOptions {
   /** Verdicts for this hour's station-keeping pairs, keyed by stationPairKey. */
   stationKeeping?: Map<string, StationKeepingVerdict>;
   stationKeepingSignificantKm?: number;
+  /** Stop between events once the hard-cap tail budget has been spent. */
+  shouldStop?: () => boolean;
 }
 
 export interface PersistResult {
@@ -1054,6 +1187,7 @@ export async function persistEvents(
   let lapsedDocked: LapsedRpodCase[] = kind === "station-keeping" ? [] : await loadLapsedDockedCases();
 
   for (const ev of events) {
+    if (opts.shouldStop?.()) break;
     if (
       ev.members.length < 2 ||
       !ev.members.every((n) => Number.isFinite(n)) ||
