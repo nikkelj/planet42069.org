@@ -1,0 +1,166 @@
+{
+ "id": "ariane64_block2",
+ "name": "Ariane 64 Block 2 (4x P160C, Vulcain 2.1, Vinci) — TIMELINE mode",
+ "stages": [
+  {
+   "name": "P160C",
+   "count": 4,
+   "parallel": true,
+   "propellant_kg": {
+    "value": 155600,
+    "src": "https://en.wikipedia.org/wiki/P160C (155,600 kg; also https://en.wikipedia.org/wiki/Ariane_6 Block 2 booster table)"
+   },
+   "dry_kg": {
+    "value": 11400,
+    "derived": "Wikipedia P160C gross mass 167,000 kg minus propellant mass 155,600 kg (https://en.wikipedia.org/wiki/P160C)"
+   },
+   "thrust_vac_N": {
+    "value": 3101951,
+    "derived": "Average thrust so the published load is consumed in the published burn: 155600 kg * 278.5 s * 9.80665 m/s^2 / 137 s = 3,101,951 N. Wikipedia's 4,780 kN is the maximum, not this average; using the maximum at Isp 278.5 s would burn far more than 155.6 t in 137 s. https://en.wikipedia.org/wiki/P160C"
+   },
+   "thrust_sl_N": {
+    "value": 3101951,
+    "assumption": "Sea-level thrust of the P160C is not published separately from the 4,780 kN maximum. The constant-thrust model uses the same average for SL and vacuum, so nozzle atmospheric loss is not modelled."
+   },
+   "isp_vac_s": {
+    "value": 278.5,
+    "src": "https://en.wikipedia.org/wiki/P160C (278.5 s)"
+   },
+   "diameter_m": {
+    "value": 3.4,
+    "src": "https://en.wikipedia.org/wiki/P160C"
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit liftoff; boosters burn from T0"
+   },
+   "cutoff_s": {
+    "value": 137,
+    "src": "https://en.wikipedia.org/wiki/P160C burn time 137 s. ESA VA271 publishes booster separation at T+2:23 (143 s), not burnout; separation is a launch override."
+   },
+   "note": "TIMELINE: constant average thrust. Four boosters in parallel with the LLPM from T0."
+  },
+  {
+   "name": "LLPM (Vulcain 2.1)",
+   "propellant_kg": {
+    "value": 150000,
+    "src": "https://cnes.fr/projets/ariane-6/modeles (LLPM '150 tonnes' of LOX/LH2). Wikipedia's infobox says 140,000 kg and eoPortal 140,000 kg; those do not close with 1,370 kN at 432 s over the 465 s VA271 MECO (that product is 150,373 kg). CNES 150 t is the figure used."
+   },
+   "dry_kg": {
+    "value": 23000,
+    "src": "https://www.esa.int/fr/articles/about-us/directorates/space-transportation/ariane/ariane-6-what-s-it-made-of (main stage 'weighing 23000kg without propellants')"
+   },
+   "thrust_vac_N": {
+    "value": 1370000,
+    "src": "https://en.wikipedia.org/wiki/Ariane_6 (Vulcain 2.1 maximum thrust 1,370 kN). eoPortal quotes 1,371 kN vacuum."
+   },
+   "thrust_sl_N": {
+    "value": 1323898,
+    "derived": "CNES 'poussée au décollage de 135 tonnes' for Vulcain 2.1: 135 * 9.80665e3 = 1,323,898 N. https://cnes.fr/projets/ariane-6/modeles"
+   },
+   "isp_vac_s": {
+    "value": 432,
+    "src": "https://www.eoportal.org/other-space-activities/ariane6 (Vulcain 2.1 vacuum specific impulse 432 s)"
+   },
+   "diameter_m": {
+    "value": 5.4,
+    "src": "https://en.wikipedia.org/wiki/Ariane_6"
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit core burns from liftoff; MECO is T+7:45 on VA271"
+   },
+   "cutoff_s": {
+    "value": 468,
+    "src": "https://en.wikipedia.org/wiki/Ariane_6 LLPM burn time 468 s (generic). VA271 MECO T+7:45 (465 s) is a launch override."
+   }
+  },
+  {
+   "name": "ULPM (Vinci)",
+   "propellant_kg": {
+    "value": 30000,
+    "src": "https://www.esa.int/fr/articles/about-us/directorates/space-transportation/ariane/ariane-6-what-s-it-made-of (upper stage 'fuelled by 30 tonnes'). Wikipedia infobox says 32,000 kg; eoPortal 31,000 kg. 30 t covers the VA271 burns (about 24.5 t at 180 kN / 457.2 s) with residual for the APU and deorbit."
+   },
+   "dry_kg": {
+    "value": 6000,
+    "src": "https://en.wikipedia.org/wiki/Ariane_6 ULPM empty mass 6,000 kg"
+   },
+   "thrust_vac_N": {
+    "value": 180000,
+    "src": "https://en.wikipedia.org/wiki/Vinci_(rocket_engine) vacuum thrust 180 kN"
+   },
+   "thrust_sl_N": {
+    "value": 180000,
+    "assumption": "Vinci ignites after core separation, above the atmosphere. Sea-level thrust is not used; set equal to vacuum so Ae is 0."
+   },
+   "isp_vac_s": {
+    "value": 457.2,
+    "src": "https://en.wikipedia.org/wiki/Vinci_(rocket_engine) vacuum specific impulse 457.2 s"
+   },
+   "diameter_m": {
+    "value": 5.4,
+    "src": "https://en.wikipedia.org/wiki/Ariane_6"
+   },
+   "ignition_s": {
+    "value": 479,
+    "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit VA271 first Vinci ignition T+7:59. Generic ignition is not published; this is the VA271 time and launches may override it."
+   },
+   "cutoff_s": {
+    "value": 1071,
+    "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit VA271 first Vinci cutoff T+17:51. The second burn is post-cutoff, not this cutoff."
+   }
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 2600,
+   "assumption": "Beyond Gravity says Ariane 6 fairings weigh 1.8 to 2.6 t and describes them as up to 20 m and 1,800 kg light (https://www.beyondgravity.com/en/news/shaping-next-generation-european-launch-vehicles-contract-won-ariane-6). The source does not assign which end of the range is the 20 m shell. Amazon Leo uses the long 20 m fairing (Wikipedia: Ariane 6). The 20 m shell is ASSUMED to be 2,600 kg, the top of that range."
+  },
+  "jettison_time_s": {
+   "value": 192,
+   "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit VA271 fairing separation T+3:12"
+  }
+ },
+ "guidance": {
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "pitch-kick duration not published"
+  },
+  "linear_tangent_from_stage": 2
+ },
+ "header_notes": [
+  "Ariane 64 Block 2. P160C propellant, gross mass, Isp and 137 s burn from Wikipedia P160C. Constant thrust is the average that consumes that load, not the 4,780 kN maximum.",
+  "LLPM propellant 150 t from CNES (Wikipedia 140 t does not close with 1,370 kN at 432 s over a 465 s MECO). Dry mass 23 t from ESA. Vulcain vacuum thrust 1,370 kN (Wikipedia) and 432 s (eoPortal). Sea-level thrust 135 tonnes-force (CNES).",
+  "ULPM 30 t / Vinci 180 kN / 457.2 s. Dry mass 6 t from Wikipedia. Fairing 2.6 t is an ASSUMPTION inside Beyond Gravity's 1.8-2.6 t range for the 20 m shell.",
+  "TIMELINE mode: ignition, cutoff, separation and fairing times are hard events. mdot = F_vac/(Isp_vac*g0). Full thrust; throttle unpublished."
+ ],
+ "timeline": true,
+ "fixed_params": {
+  "cd": {
+   "value": 0.4,
+   "assumption": "drag coefficient not published; same generic slender-launcher Cd used for Falcon 9 in this repo. Not fitted."
+  }
+ },
+ "fit": {
+  "vertical_rise_s": {
+   "x0": 10,
+   "bounds": [4, 25],
+   "basis": "ASSUMPTION bound (pitch-over time unpublished)"
+  },
+  "kick_deg": {
+   "x0": 2.0,
+   "bounds": [0.2, 12],
+   "basis": "ASSUMPTION bound"
+  },
+  "tan0": {
+   "x0": 0.35,
+   "bounds": [-2, 5],
+   "basis": "guidance law"
+  },
+  "tan_rate": {
+   "x0": 0.0008,
+   "bounds": [-0.02, 0.02],
+   "basis": "guidance law"
+  }
+ }
+}
