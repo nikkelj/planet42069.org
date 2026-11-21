@@ -2,7 +2,7 @@
  "slug": "nrol-136",
  "title": "Falcon 9 NROL-136 (SLC-4E)",
  "vehicle": "falcon9",
- "t0_utc": "2026-11-21T12:30:00Z",
+ "t0_utc": "2026-11-22T12:16:00Z",
  "pad": {
   "lat": 34.632,
   "lon": -120.611,
@@ -32,7 +32,8 @@
   "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude"
  },
  "header_notes": [
-  "ILLUSTRATIVE. PRE-FLIGHT. NROL-136, fifteenth NRO proliferated-architecture batch, Falcon 9 from SLC-4E. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac, status Go, NET 2026-11-21T12:30:00Z (Sat 21 Nov 4:30 a.m. PST), window 12:30-13:00Z. SpaceX nrol136 page: 30-minute window opens 4:30 a.m. PT, backup Sunday 22 Nov 4:16 a.m. PT, booster 14th flight, landing LZ-4. FAA advisory primary 21 Nov 1230-1343Z.",
+  "RETIMED 2026-11-21 (board run ~7:50 a.m. PST): T0 is the window open 2026-11-22T12:16:00Z (Sun 22 Nov 4:16 a.m. PT), 30-minute window to 12:46Z. Backup Mon 23 Nov 4:02 a.m. PT = 2026-11-23T12:02:00Z. SpaceX https://www.spacex.com/launches/nrol136 and LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac (last_updated 2026-11-20T17:43:00Z) agree. utc shift +85560 s from 2026-11-21T12:30:00Z. ECEF unchanged. Sim not re-run. Ascent events unchanged (MECO 131 s, sep 134 s, SES-1 142 s, fairing 179 s), so knots were not moved. 14th booster flight, landing LZ-4. The Saturday-versus-Sunday conflict is closed. ILLUSTRATIVE.",
+  "ILLUSTRATIVE. PRE-FLIGHT note kept as history. Previous T0 was 2026-11-21T12:30:00Z.",
   "Published timeline (SpaceX nrol136, checked 2026-11-18): Max-Q 1:02, MECO 2:11, stage sep 2:14, SES-1 2:22, fairing 2:59, boostback 2:27-3:22, entry 5:53-6:10, landing burn 7:09, LZ-4 landing 7:34. SECO, orbit and deploy are NOT published.",
   "INFERRED/ASSUMED: SECO-1 at T+510 s (near a full S2 load; the time itself is not published) and a 310 x 425 km parking orbit borrowed from prior proliferated batches, not from an NROL-136 source. Azimuth 155.15 deg is from LNM 58668 Hazard Area A. File ends 2 revs after cutoff (deploy unpublished). There is no prior NROL Vandenberg trajectory in this repo; USSF-317 is a different, droneship profile."
  ],
@@ -107,7 +108,7 @@
    }
   }
  },
- "t0_note": "NET 2026-11-21T12:30:00Z per LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac (Go, window 12:30:00Z-13:00:00Z) and the SpaceX nrol136 page (4:30 a.m. PT).",
+ "t0_note": "Window open 2026-11-22T12:16:00Z. SpaceX nrol136: Sunday 22 Nov, 30-minute window opens 4:16 a.m. PT, backup Monday 23 Nov 4:02 a.m. PT. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac agrees on 12:16Z, last_updated 2026-11-20T17:43:00Z.",
  "fitted": {
   "status": "FITTED",
   "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",

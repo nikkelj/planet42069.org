@@ -1,0 +1,201 @@
+{
+ "slug": "progress-ms-36",
+ "title": "Soyuz-2.1b Progress MS-36 (97P, Baikonur 31/6)",
+ "vehicle": "soyuz21b",
+ "t0_utc": "2026-11-24T05:03:00Z",
+ "pad": {
+  "lat": 45.996034,
+  "lon": 63.564003,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/8dd5de11-831b-445f-86f0-bffefe0550d9/ (pad 31/6). Elevation is not on that record; 0 m is an ASSUMPTION."
+ },
+ "azimuth_deg": {
+  "value": 63.39,
+  "assumption": "No Baikonur hazard polygon for 24 Nov 2026 05:03Z was found. 63.39 deg is the non-rotating northeast azimuth for a 51.6 deg inclination from this pad: sin(az)=cos(51.6)/cos(45.996034). The southeast supplement (116.61 deg) was not used; Progress ISS launches head northeast. Not retuned after the sim. RussianSpaceWeb's prior Progress insertions were 51.67 deg, not 51.6."
+ },
+ "payload_kg": {
+  "value": 7280,
+  "assumption": "Wikipedia Progress MS-36 lists a launch mass of 7,280 kg and cites Next Spaceflight. That page also says Soyuz-2.1a, 09:03 UTC and a Zvezda docking, which disagree with LL2 (05:03Z, Soyuz-2.1b) and with Poisk. No Roscosmos mass for this ship was found. 7,280 kg is used as that Wikipedia figure and is not a weighed MS-36 mass. Fixed, not fitted."
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 193,
+   "assumption": "MS-36 insertion elements are unpublished. 193 km perigee is borrowed from Progress MS-19 (193 x 240 km) and Progress MS-27 (193.2 x 239.8 km), both Soyuz-2.1a. https://www.russianspaceweb.com/progress-ms-19.html https://www.russianspaceweb.com/progress-ms-27.html"
+  },
+  "apoapsis_alt_km": {
+   "value": 240,
+   "assumption": "Apogee borrowed from the same Progress MS-19 / MS-27 parking orbits. Not an MS-36 source. The ISS altitude is not the insertion orbit."
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 5,
+  "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude"
+ },
+ "header_notes": [
+  "ILLUSTRATIVE. Progress MS-36 (97P), Baikonur Site 31/6, T0 2026-11-24T05:03:00Z. LL2 id 8dd5de11-831b-445f-86f0-bffefe0550d9, status To Be Confirmed, net precision Minute, window start=end 05:03Z, last_updated 2026-06-08T21:46:36Z. Next Spaceflight lists the same 05:03Z.",
+  "VEHICLE CONFLICT, not silent: this file flies Soyuz-2.1b (RD-0124). LL2 and Next Spaceflight name Soyuz-2.1b. Interfax, dateline 22 September with no year printed, quotes Roscosmos: Soyuz-2.1b was adapted for Progress MS, the first such launch was 16 September, and Soyuz-2.1a continues for satellites and crewed flights (https://www.interfax.ru/russia/1117752). Roscosmos TV http://www.tvroscosmos.ru/2833/ lists Progress MS-36 from Baikonur 31 on 24 Nov 2026 and does not name 2.1a or 2.1b. Wikipedia EN says Soyuz-2.1a, 09:03 UTC and Zvezda aft. Prior Progress flights cited here (MS-19, MS-23, MS-27, MS-28) flew Soyuz-2.1a.",
+  "Event times and the 193 x 240 km parking orbit are BORROWED from those Soyuz-2.1a flights. No MS-36 or Soyuz-2.1b Progress timeline was found. Docking target is Poisk (task / Next Spaceflight class of reports). Wikipedia says Zvezda. Docking is not modelled.",
+  "Stage-3 cutoff is ignition 286.159 s plus Wikipedia's 270 s RD-0124 burn (556.159 s). The Soyuz-2.1a cutoff 525.45 s and the 8 min 49 s separation are recorded and are not the hard events: that shorter burn left this model suborbital. Separation is 4 s after the 2.1b cutoff (560.159 s), the same gap as MS-19's 525.45 s to 529 s."
+ ],
+ "final_cutoff_s": {
+  "value": 556.159,
+  "derived": "Borrowed Stage III ignition 286.159 s (Progress MS-19) plus Wikipedia's generic Soyuz-2.1b RD-0124 burn of 270 s (https://en.wikipedia.org/wiki/Soyuz-2). The MS-19 cutoff 525.45 s is a Soyuz-2.1a RD-0110 time. Using it on RD-0124 in this model shut down 31 s early and the fit could not reach orbit (161 km, flight-path angle -1.5 deg, perigee below the surface). That 2.1a clock is recorded and is not the hard cutoff."
+ },
+ "knots": [
+  {
+   "event": "Booster separation (Progress MS-19, borrowed)",
+   "t_s": 117.848,
+   "alt_km": 43,
+   "alt_sigma_km": 8,
+   "src": "https://www.russianspaceweb.com/progress-ms-19.html altitude of around 43 km. Range not published."
+  },
+  {
+   "event": "Fairing separation (Progress MS-19 altitude, MS-27 range)",
+   "t_s": 183.079,
+   "alt_km": 91,
+   "range_km": 200,
+   "alt_sigma_km": 8,
+   "range_sigma_km": 40,
+   "src": "https://www.russianspaceweb.com/progress-ms-19.html about 91 km; https://www.russianspaceweb.com/progress-ms-27.html around 200 km downrange. Both around-figures, both Soyuz-2.1a."
+  },
+  {
+   "event": "Core separation (Progress MS-19 altitude, MS-27 range)",
+   "t_s": 287.419,
+   "alt_km": 143,
+   "range_km": 500,
+   "alt_sigma_km": 8,
+   "range_sigma_km": 50,
+   "src": "https://www.russianspaceweb.com/progress-ms-19.html about 143 km; https://www.russianspaceweb.com/progress-ms-27.html some 500 km downrange."
+  }
+ ],
+ "post_cutoff": {
+  "drag": {
+   "cd": {
+    "value": 2.2,
+    "assumption": "Free-molecular Cd. The coast from cutoff to separation is about 4 s, so the value barely moves the state."
+   },
+   "area_m2": {
+    "value": 5.56,
+    "derived": "pi*(2.66 m/2)^2 from the Block I diameter on https://en.wikipedia.org/wiki/Soyuz-2"
+   }
+  },
+  "deploy": {
+   "t_s": {
+    "value": 560.159,
+    "derived": "2.1b cutoff 556.159 s plus 4 s. The 4 s is the gap from Progress MS-19 cutoff 525.45 s to the prose separation at 8 min 49 s (529 s). https://www.russianspaceweb.com/progress-ms-19.html The absolute 529 s is the 2.1a flight's separation and is not this file's deploy time. RIA on Progress MS-28 also says 8 min 49 s (https://ria.ru/20240815/korabl-1966304630.html)."
+   },
+   "src": "https://en.wikipedia.org/wiki/Soyuz-2 (270 s RD-0124 burn) and https://www.russianspaceweb.com/progress-ms-19.html (4 s from cutoff to separation, borrowed)",
+   "label": "Spacecraft separation (borrowed Progress timeline)"
+  }
+ },
+ "fairing_jettison_s": {
+  "value": 183.079,
+  "src": "https://www.russianspaceweb.com/progress-ms-19.html fairing separation 183.079 s. BORROWED."
+ },
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "vertical_rise_s": {
+    "value": 9.383203,
+    "bounds": [
+     2,
+     20
+    ],
+    "basis": "ASSUMPTION bound (Soyuz pitch-over time unpublished for this flight)"
+   },
+   "kick_deg": {
+    "value": 5.942772,
+    "bounds": [
+     0.2,
+     8
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "tan0": {
+    "value": 0.398767,
+    "bounds": [
+     -1,
+     3
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": 0.001188,
+    "bounds": [
+     -0.02,
+     0.02
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "cd": 0.4,
+   "payload_kg": 7280.0
+  },
+  "knot_residuals": [
+   {
+    "event": "Booster separation (Progress MS-19, borrowed)",
+    "t_pub": 117.848,
+    "t_sim": 117.848,
+    "alt_pub": 43,
+    "alt_sim": 50.61,
+    "rng_pub": null,
+    "rng_sim": 50.6
+   },
+   {
+    "event": "Fairing separation (Progress MS-19 altitude, MS-27 range)",
+    "t_pub": 183.079,
+    "t_sim": 183.079,
+    "alt_pub": 91,
+    "alt_sim": 111.6,
+    "rng_pub": 200,
+    "rng_sim": 172.2
+   },
+   {
+    "event": "Core separation (Progress MS-19 altitude, MS-27 range)",
+    "t_pub": 287.419,
+    "t_sim": 287.419,
+    "alt_pub": 143,
+    "alt_sim": 173.09,
+    "rng_pub": 500,
+    "rng_sim": 479.7
+   }
+  ],
+  "final": {
+   "alt_km": 191.77172848408668,
+   "fpa_deg": -0.033830016082753274,
+   "sma_err_km": -17.714465961939656,
+   "mass_kg": 12464.6
+  },
+  "cost": 18.42444760486823,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "Boosters (4x RD-107A)",
+     "loaded_kg": 156640,
+     "burned_kg": 153333,
+     "residual_kg": 3307,
+     "dry_kg": 15136,
+     "flag": null
+    },
+    {
+     "name": "Core (RD-108A)",
+     "loaded_kg": 90653,
+     "burned_kg": 90653,
+     "residual_kg": 0,
+     "dry_kg": 6545,
+     "flag": "published load 90100 kg < burned 90653 kg; load raised to burned"
+    },
+    {
+     "name": "Block I (RD-0124)",
+     "loaded_kg": 25400,
+     "burned_kg": 22570,
+     "residual_kg": 2830,
+     "dry_kg": 2355,
+     "flag": null
+    }
+   ],
+   "glow_kg": 305509
+  }
+ }
+}

@@ -815,6 +815,76 @@
       "id": "spacex-nrol136-api",
       "title": "SpaceX content API: NROL-136 mission body (21 Nov 4:30 a.m. PT, backup 22 Nov 4:16 a.m. PT)",
       "url": "https://content.spacex.com/api/spacex-website/missions/nrol136"
+    },
+    {
+      "id": "spacex-ussf266",
+      "title": "SpaceX: USSF-266 mission page and timeline",
+      "url": "https://www.spacex.com/launches/ussf266"
+    },
+    {
+      "id": "ll2-ussf-266",
+      "title": "Launch Library 2: USSF-266 (460d9db7-eaf6-4cd9-b095-cff433534c09)",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/460d9db7-eaf6-4cd9-b095-cff433534c09/"
+    },
+    {
+      "id": "nttt-a1483-26",
+      "title": "NOTAM NTTT A1483/26 (USSF266-TH3 debris return, Tahiti FIR)",
+      "url": "https://space-notices.com/notice/notam-NTTT-A1483%2F26"
+    },
+    {
+      "id": "mmfo-b4504-26",
+      "title": "NOTAM MMFO B4504/26 (USSF266-TH3 stage-1 reentry; not used for azimuth)",
+      "url": "https://space-notices.com/notice/notam-MMFO-B4504%2F26"
+    },
+    {
+      "id": "ll2-progress-ms-36",
+      "title": "Launch Library 2: Progress MS-36 (8dd5de11-831b-445f-86f0-bffefe0550d9)",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/8dd5de11-831b-445f-86f0-bffefe0550d9/"
+    },
+    {
+      "id": "nsf-progress-ms-36",
+      "title": "Next Spaceflight: Progress MS-36",
+      "url": "https://www.nextspaceflight.com/launches/details/8233/"
+    },
+    {
+      "id": "interfax-soyuz21b-progress",
+      "title": "Interfax, 22 September (year not printed): Roscosmos adapted Soyuz-2.1b for Progress MS",
+      "url": "https://www.interfax.ru/russia/1117752"
+    },
+    {
+      "id": "tvroscosmos-progress-ms-36",
+      "title": "Roscosmos TV studio launch list (Progress MS-36, variant not named)",
+      "url": "http://www.tvroscosmos.ru/2833/"
+    },
+    {
+      "id": "wp-soyuz-2",
+      "title": "Wikipedia: Soyuz-2 (stage masses, RD-107A/RD-108A/RD-0124)",
+      "url": "https://en.wikipedia.org/wiki/Soyuz-2"
+    },
+    {
+      "id": "wp-progress-ms-36",
+      "title": "Wikipedia: Progress MS-36 (mass 7,280 kg; also the conflicting 2.1a / 09:03Z / Zvezda text)",
+      "url": "https://en.wikipedia.org/wiki/Progress_MS-36"
+    },
+    {
+      "id": "rsw-progress-ms-19",
+      "title": "RussianSpaceWeb: Progress MS-19 launch profile (Soyuz-2.1a timeline and 193 x 240 km)",
+      "url": "https://www.russianspaceweb.com/progress-ms-19.html"
+    },
+    {
+      "id": "rsw-progress-ms-27",
+      "title": "RussianSpaceWeb: Progress MS-27 (downrange figures, 193.2 x 239.8 km, Poisk)",
+      "url": "https://www.russianspaceweb.com/progress-ms-27.html"
+    },
+    {
+      "id": "rsw-progress-ms-23",
+      "title": "RussianSpaceWeb: Progress MS-23 (stage-3 cutoff 525.74 s)",
+      "url": "https://www.russianspaceweb.com/progress-ms-23.html"
+    },
+    {
+      "id": "ria-progress-ms-28",
+      "title": "RIA Novosti: Progress MS-28 separated at 8 min 49 s on Soyuz-2.1a",
+      "url": "https://ria.ru/20240815/korabl-1966304630.html"
     }
   ],
   "launches": [
@@ -1629,12 +1699,12 @@
       "slug": "ussf-317",
       "name": "USSF-317",
       "vehicle": "Falcon 9 Block 5",
-      "t0_utc": "2026-11-21T04:20:00Z",
-      "t0_kind": "window_open",
+      "t0_utc": "2026-11-21T04:20:35Z",
+      "t0_kind": "actual",
       "window_open_utc": "2026-11-21T04:20:00Z",
       "backup_utc": "2026-11-22T04:12:00Z",
-      "status": "Go",
-      "phase": "upcoming",
+      "status": "Success",
+      "phase": "flown",
       "files": {
         "csv": "/launches/ussf-317/ussf-317_2026-11-21_trajectory.csv",
         "kml": "/launches/ussf-317/ussf-317_2026-11-21_trajectory.kml",
@@ -1664,8 +1734,8 @@
         "https://spaceflightnow.com/launch-schedule/"
       ],
       "method": {
-        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, identical rows to USSF-627; SpaceX ussf317 timeline checked 2026-11-20 is MECO 2:25 / sep 2:28 / SES-1 2:35 / fairing 2:56, while the family loft still samples MECO at T+146 s and SES-1 at T+156 s, 1 s later, and fairing at T+176 s); ZLA CARF 11/238-26 Area A azimuth 153.56 deg (polygon identical to 11/212-26 and 11/116-26; valid 2026-11-20T02:46:00Z-07:08:00Z); ends at T+508 s (telemetry end) because SECO is unpublished; T0 is the SpaceX window open 2026-11-21T04:20:00Z (Fri 20 Nov 8:20 p.m. PT; SpaceX says a four-hour launch window and does not publish a separate close; backup Sat 21 Nov 8:12 p.m. PT = 2026-11-22T04:12:00Z; RETIMED 2026-11-20 from 2026-11-21T02:32:00Z, utc shift +6480 s only). LL2 NET 2026-11-21T04:20:35Z is recorded and not used as T0; LL2 still lists window 02:32-06:32Z (conflict). ILLUSTRATIVE",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf317 MECO 145 s, sep 148 s, SES-1 155 s, fairing 176 s as hard events (timeline checked 2026-11-20; previously 146/149/156/178); SECO-1 (519 s) and the 177 x 266 km parking orbit are ASSUMED, BORROWED from the USSF-627 config (itself a Starlink Group 15 analog; LL2: drop zones match Group 15), not USSF-317 sources, ILLUSTRATIVE; azimuth 153.56 deg from ZLA CARF 11/238-26 Area A (identical polygon to 11/212-26 / 11/116-26; inclination unpublished) gives i=68.288 deg; re-fit 2026-11-20 cost 17.453 (previous fit 22.934); geodetic alt 177.29 km, FPA -0.0004 deg, SMA error -0.034 km; osculating at cutoff 174.5 x 268.8 km vs the assumed 177.3 x 266.2 km; payload fitted 16.71 t (not an estimate of the real payload); family-knot residuals, Iridium sample times, altitudes not retuned, ILLUSTRATIVE: MECO t 146 vs 145 s, alt 63.98 vs 66.21 km, range 58.6 vs 82.8 km; SES-1 t 156 vs 155 s, alt 73.78 vs 76.33 km, range 74.8 vs 104.1 km; fairing t 176 vs 176 s, alt 91.15 vs 95.53 km, range 108.7 vs 150.0 km; deploy unpublished, so propagated 2 revs on the inferred insertion orbit, file ends T+11191 s; sim ground track runs +5.41 deg east of the commanded azimuth (pad->insertion bearing 158.97 deg vs 153.56 deg). Booster recovery is not modelled (published entry burn 6:03-6:27, landing burn 7:59, landing 8:21, OCISLY). deploy.t_s remains null. RETIMED 2026-11-20 by utc shift +6480 s to window open 2026-11-21T04:20:00Z; sim not re-run; ECEF unchanged. ILLUSTRATIVE."
+        "csv": "FLOWN. utc shift +35 s to the actual liftoff 2026-11-21T04:20:35Z; ECEF geometry unchanged. event-surrogate (Falcon 9 family webcast telemetry loft, identical rows to USSF-627; SpaceX ussf317 timeline checked 2026-11-20 is MECO 2:25 / sep 2:28 / SES-1 2:35 / fairing 2:56, while the family loft still samples MECO at T+146 s and SES-1 at T+156 s, 1 s later, and fairing at T+176 s); ZLA CARF 11/238-26 Area A azimuth 153.56 deg (polygon identical to 11/212-26 and 11/116-26; valid 2026-11-20T02:46:00Z-07:08:00Z); ends at T+508 s (telemetry end) because SECO is unpublished; T0 is the SpaceX window open 2026-11-21T04:20:00Z (Fri 20 Nov 8:20 p.m. PT; SpaceX says a four-hour launch window and does not publish a separate close; backup Sat 21 Nov 8:12 p.m. PT = 2026-11-22T04:12:00Z; RETIMED 2026-11-20 from 2026-11-21T02:32:00Z, utc shift +6480 s only). LL2 NET 2026-11-21T04:20:35Z is recorded and not used as T0; LL2 still lists window 02:32-06:32Z (conflict). ILLUSTRATIVE",
+        "csv_sim": "FLOWN. utc shift +35 s to the actual liftoff 2026-11-21T04:20:35Z; sim not re-run; ECEF geometry unchanged. first-principles 3DOF sim, TIMELINE mode: SpaceX ussf317 MECO 145 s, sep 148 s, SES-1 155 s, fairing 176 s as hard events (timeline checked 2026-11-20; previously 146/149/156/178); SECO-1 (519 s) and the 177 x 266 km parking orbit are ASSUMED, BORROWED from the USSF-627 config (itself a Starlink Group 15 analog; LL2: drop zones match Group 15), not USSF-317 sources, ILLUSTRATIVE; azimuth 153.56 deg from ZLA CARF 11/238-26 Area A (identical polygon to 11/212-26 / 11/116-26; inclination unpublished) gives i=68.288 deg; re-fit 2026-11-20 cost 17.453 (previous fit 22.934); geodetic alt 177.29 km, FPA -0.0004 deg, SMA error -0.034 km; osculating at cutoff 174.5 x 268.8 km vs the assumed 177.3 x 266.2 km; payload fitted 16.71 t (not an estimate of the real payload); family-knot residuals, Iridium sample times, altitudes not retuned, ILLUSTRATIVE: MECO t 146 vs 145 s, alt 63.98 vs 66.21 km, range 58.6 vs 82.8 km; SES-1 t 156 vs 155 s, alt 73.78 vs 76.33 km, range 74.8 vs 104.1 km; fairing t 176 vs 176 s, alt 91.15 vs 95.53 km, range 108.7 vs 150.0 km; deploy unpublished, so propagated 2 revs on the inferred insertion orbit, file ends T+11191 s; sim ground track runs +5.41 deg east of the commanded azimuth (pad->insertion bearing 158.97 deg vs 153.56 deg). Booster recovery is not modelled (published entry burn 6:03-6:27, landing burn 7:59, landing 8:21, OCISLY). deploy.t_s remains null. RETIMED 2026-11-20 by utc shift +6480 s to window open 2026-11-21T04:20:00Z; sim not re-run; ECEF unchanged. ILLUSTRATIVE."
       },
       "reference_ids": [
         "spacex-ussf317",
@@ -1702,9 +1772,10 @@
         "Booster recovery: SpaceX ussf317 page (checked 2026-11-20) says this is the booster's 11th flight and that it lands on the Of Course I Still Love You droneship in the Pacific. Published entry burn 6:03-6:27, landing burn 7:59, landing 8:21. The vehicle file was already the droneship-recovery Falcon 9, not an RTLS or LZ-4 profile, so no landing-mode change was made. The ascent does not model entry, the landing burn, or the droneship. Unburned stage-1 residual stands in for that propellant. Booster serial B1100 remains a Next Spaceflight secondary; SpaceX does not name the booster. ILLUSTRATIVE.",
         "RETIMED 2026-11-19 from 2026-11-20T02:46:00Z to 2026-11-20T04:28:00Z. Surrogate utc shift only (+6120 s). Sim re-run with the existing config and only t0 changed; knot residuals and the Earth-fixed track reproduced the previous fit. Azimuth still 153.56 deg from ZLA CARF 11/238-26 Area A. No newer polygon was applied.",
         "RETIMED 2026-11-20 from 2026-11-20T04:28:00Z to 2026-11-21T02:32:00Z (+79440 s). Surrogate utc shift only; ECEF geometry unchanged. Sim re-run because the published hard events moved (MECO 145 s, sep 148 s, SES-1 155 s, fairing 176 s). Family-telemetry comparison knots were not moved (MECO 146 s, SES-1 156 s, fairing 176 s). Azimuth still 153.56 deg. No newer polygon was applied. ILLUSTRATIVE.",
-        "RETIMED 2026-11-20 (checked ~2026-11-20T22:10:00Z, 2:10 p.m. PST) from 2026-11-21T02:32:00Z to 2026-11-21T04:20:00Z (+6480 s). Surrogate and sim utc shift only; ECEF geometry unchanged; sim not re-run. Published timeline unchanged (MECO 2:25, sep 2:28, SES-1 2:35, fairing 2:56, entry burn 6:03-6:27, landing burn 7:59, landing 8:21). Azimuth still 153.56 deg. Orbit, azimuth and deploy remain ILLUSTRATIVE. SOURCE CONFLICT: follow SpaceX for T0 / window open. LL2 id 76617033-4dc0-4448-b50c-e5b0d5a18539 status Go, NET 2026-11-21T04:20:35Z (second precision), last_updated 2026-11-20T17:41:31Z, window_start still 2026-11-21T02:32:00Z, window_end still 2026-11-21T06:32:00Z."
+        "RETIMED 2026-11-20 (checked ~2026-11-20T22:10:00Z, 2:10 p.m. PST) from 2026-11-21T02:32:00Z to 2026-11-21T04:20:00Z (+6480 s). Surrogate and sim utc shift only; ECEF geometry unchanged; sim not re-run. Published timeline unchanged (MECO 2:25, sep 2:28, SES-1 2:35, fairing 2:56, entry burn 6:03-6:27, landing burn 7:59, landing 8:21). Azimuth still 153.56 deg. Orbit, azimuth and deploy remain ILLUSTRATIVE. SOURCE CONFLICT: follow SpaceX for T0 / window open. LL2 id 76617033-4dc0-4448-b50c-e5b0d5a18539 status Go, NET 2026-11-21T04:20:35Z (second precision), last_updated 2026-11-20T17:41:31Z, window_start still 2026-11-21T02:32:00Z, window_end still 2026-11-21T06:32:00Z.",
+        "FLOWN 2026-11-21. Actual liftoff 2026-11-21T04:20:35Z (LL2 id 76617033-4dc0-4448-b50c-e5b0d5a18539, Launch Successful, last_updated 2026-11-21T06:26:03Z). SpaceX ussf317 page: first stage landed on Of Course I Still Love You. Files were timed at the window open 2026-11-21T04:20:00Z and were shifted +35 s. Geometry is the pre-flight ILLUSTRATIVE model, not flight data. Payload stays classified. No satellite count was added. The pre-flight window open and the unused backup 2026-11-22T04:12:00Z stay on the record."
       ],
-      "note": "Pre-flight ILLUSTRATIVE. T0 is the SpaceX window open 2026-11-21T04:20:00Z (Fri 20 Nov 8:20 p.m. PT). SpaceX ussf317 page, checked ~2026-11-20T22:10:00Z (2:10 p.m. PST Fri 20 Nov): targeting Friday, November 20; the four-hour launch window opens at 8:20 p.m. PT. No separate close instant is published, so window_close_utc is omitted and 08:20Z is not derived. Backup Saturday, November 21 at 8:12 p.m. PT (2026-11-22T04:12:00Z). Booster lands on OCISLY. SOURCE CONFLICT: LL2 id 76617033-4dc0-4448-b50c-e5b0d5a18539 is Go, NET 2026-11-21T04:20:35Z (second precision; not used as T0), last_updated 2026-11-20T17:41:31Z, and still lists window_start 2026-11-21T02:32:00Z and window_end 2026-11-21T06:32:00Z. Those leftover bounds are a source note, not T0. Timeline unchanged from the 2026-11-20 check: MECO 2:25, sep 2:28, SES-1 2:35, fairing 2:56, entry burn 6:03-6:27, landing burn 7:59, landing 8:21. Files utc-shifted +6480 s from 2026-11-21T02:32:00Z; ECEF geometry unchanged; sim not re-run (previous fit cost 17.453; cutoff osculating 174.5 x 268.8 km, i=68.288 deg, pad->insertion bearing 158.97 deg vs commanded 153.56 deg, file ends T+11191 s). SpaceX: 11th flight, first stage lands on Of Course I Still Love You in the Pacific. The ascent does not model the landing. SECO, orbit and deploy remain unpublished; deploy.t_s is null. Group 15 analog still borrowed from the USSF-627 config. ILLUSTRATIVE."
+      "note": "FLOWN. Falcon 9 USSF-317 lifted off from SLC-4E at 2026-11-21T04:20:35Z (Fri 20 Nov 8:20:35 p.m. PST), 35 s after the SpaceX window open of 8:20 p.m. PT. LL2 id 76617033-4dc0-4448-b50c-e5b0d5a18539, status Launch Successful, last_updated 2026-11-21T06:26:03Z. SpaceX: the first stage landed on the Of Course I Still Love You droneship. Payload is classified. No satellite count is recorded. Surrogate and sim were utc-shifted +35 s from 2026-11-21T04:20:00Z. ECEF geometry is unchanged and the sim was not re-run. The track is still the pre-flight ILLUSTRATIVE model (cutoff osculating 174.5 x 268.8 km, i=68.288 deg, pad->insertion bearing 158.97 deg vs commanded 153.56 deg, file ends T+11191 s). SECO, orbit and deploy were unpublished, so deploy.t_s stays null."
     },
     {
       "slug": "lm2d-taiyuan-2026-11-18",
@@ -1896,18 +1967,18 @@
       "slug": "nrol-136",
       "name": "NROL-136",
       "vehicle": "Falcon 9 Block 5",
-      "t0_utc": "2026-11-21T12:30:00Z",
-      "t0_kind": "net",
-      "window_open_utc": "2026-11-21T12:30:00Z",
-      "window_close_utc": "2026-11-21T13:00:00Z",
-      "backup_utc": "2026-11-22T12:16:00Z",
+      "t0_utc": "2026-11-22T12:16:00Z",
+      "t0_kind": "window_open",
+      "window_open_utc": "2026-11-22T12:16:00Z",
+      "window_close_utc": "2026-11-22T12:46:00Z",
+      "backup_utc": "2026-11-23T12:02:00Z",
       "status": "Go",
       "phase": "upcoming",
       "files": {
-        "csv": "/launches/nrol-136/nrol-136_2026-11-21_trajectory.csv",
-        "kml": "/launches/nrol-136/nrol-136_2026-11-21_trajectory.kml",
-        "csv_sim": "/launches/nrol-136/nrol-136_2026-11-21_trajectory_sim.csv",
-        "kml_sim": "/launches/nrol-136/nrol-136_2026-11-21_trajectory_sim.kml",
+        "csv": "/launches/nrol-136/nrol-136_2026-11-22_trajectory.csv",
+        "kml": "/launches/nrol-136/nrol-136_2026-11-22_trajectory.kml",
+        "csv_sim": "/launches/nrol-136/nrol-136_2026-11-22_trajectory_sim.csv",
+        "kml_sim": "/launches/nrol-136/nrol-136_2026-11-22_trajectory_sim.kml",
         "track_lite": "/launches/nrol-136/track_lite.json"
       },
       "illustrative": true,
@@ -1925,8 +1996,8 @@
         "https://en.wikipedia.org/wiki/NRO_Proliferated_Architecture_Mission"
       ],
       "method": {
-        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, the same Iridium NEXT-7 rows as USSF-317, laid on this flight's azimuth); SpaceX nrol136 timeline MECO 2:11 / sep 2:14 / SES-1 2:22 / fairing 2:59; azimuth 155.15 deg = bearing from SLC-4E to the far-edge midpoint of USCG LNM 58668 Hazard Area A (30.9833N 118.6500W, 445 km; primary 21 Nov 1230-1325Z); ends at T+508 s (telemetry end) because SECO is unpublished; T0 LL2 NET 2026-11-21T12:30:00Z (Sat 21 Nov 4:30 a.m. PST; window 12:30-13:00Z). ILLUSTRATIVE",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX nrol136 MECO 131 s, sep 134 s, SES-1 142 s, fairing 179 s as hard events; SECO-1 fixed at an ASSUMED T+510 s (unpublished; near the stage-2 propellant limit of about 516 s); target 310 x 425 km ASSUMED, borrowed from prior proliferated batches, not this flight; azimuth 155.15 deg from LNM 58668 Hazard Area A (non-rotating i=69.77 deg; not retuned); steering fitted, payload FIXED at 8000 kg because the shared F9 fit floor of 13 t cannot reach that orbit after MECO at 131 s; result geodetic alt 310.01 km, FPA 0.000 deg, SMA error +0.04 km, osculating 305.9 x 429.2 km, i=69.046 deg; pad->insertion bearing 160.45 deg vs commanded 155.15 deg (+5.30 deg); family-loft knots at the earlier MECO are not matched (sim 75 km and 14 km downrange vs the droneship loft's 50 km and 37 km at T+131 s) and were given wide sigmas; deploy unpublished, so +2 revs on the inferred insertion orbit, file ends T+11538 s; ILLUSTRATIVE"
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, the same Iridium NEXT-7 rows as USSF-317, laid on this flight's azimuth); SpaceX nrol136 timeline MECO 2:11 / sep 2:14 / SES-1 2:22 / fairing 2:59, unchanged on the 2026-11-21 check, so the surrogate knots were not moved; azimuth 155.15 deg = bearing from SLC-4E to the far-edge midpoint of USCG LNM 58668 Hazard Area A (30.9833N 118.6500W, 445 km). That notice lists 22 Nov 1216-1311Z on the same polygon (it had been a backup day). Ends at T+508 s (telemetry end) because SECO is unpublished. T0 is the window open 2026-11-22T12:16:00Z (Sun 22 Nov 4:16 a.m. PT, 30-minute window to 12:46Z; backup Mon 23 Nov 4:02 a.m. PT = 2026-11-23T12:02:00Z). RETIMED +85560 s from 2026-11-21T12:30:00Z; ECEF unchanged. ILLUSTRATIVE",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX nrol136 MECO 131 s, sep 134 s, SES-1 142 s, fairing 179 s as hard events; SECO-1 fixed at an ASSUMED T+510 s (unpublished; near the stage-2 propellant limit of about 516 s); target 310 x 425 km ASSUMED, borrowed from prior proliferated batches, not this flight; azimuth 155.15 deg from LNM 58668 Hazard Area A (non-rotating i=69.77 deg; not retuned); steering fitted, payload FIXED at 8000 kg because the shared F9 fit floor of 13 t cannot reach that orbit after MECO at 131 s; result geodetic alt 310.01 km, FPA 0.000 deg, SMA error +0.04 km, osculating 305.9 x 429.2 km, i=69.046 deg; pad->insertion bearing 160.45 deg vs commanded 155.15 deg (+5.30 deg); family-loft knots at the earlier MECO are not matched (sim 75 km and 14 km downrange vs the droneship loft's 50 km and 37 km at T+131 s) and were given wide sigmas; deploy unpublished, so +2 revs on the inferred insertion orbit, file ends T+11538 s; RETIMED 2026-11-21 by utc shift +85560 s only; sim not re-run. ILLUSTRATIVE"
       },
       "reference_ids": [
         "spacex-nrol136",
@@ -1954,9 +2025,9 @@
         "Known sim ground-track azimuth residual, same sign and size as USSF-317: pad->insertion bearing 160.45 deg vs commanded 155.15 deg (+5.30 deg). Achieved inclination 69.046 deg versus 69.77 deg non-rotating from the azimuth and versus 69.7 deg for the prior batches. Azimuth kept on the hazard area.",
         "The osculating 305.9 x 429.2 km versus the assumed 310 x 425 km is the equatorial-radius definition of perigee/apogee against a geodetic altitude of 310.01 km at 26 N. SMA error against the assumed orbit is +0.04 km and flight-path angle is 0.000 deg.",
         "Stage-1 residual propellant after the T+131 s MECO stands in for the boostback, entry and landing burns. The vehicle file was built for a droneship recovery; this flight lands on LZ-4. The burns themselves are not modelled.",
-        "SOURCE CONFLICT, no retime. The SpaceX mission-page body, confirmed 2026-11-20 from https://content.spacex.com/api/spacex-website/missions/nrol136, says Saturday, November 21, 30-minute window opens 4:30 a.m. PT (2026-11-21T12:30:00Z), backup Sunday, November 22 at 4:16 a.m. PT (2026-11-22T12:16:00Z). The same page's header and upcoming table already show November 22, 2026 07:16-07:46 ET, which is that backup slot (4:16-4:46 a.m. PT), not the Saturday primary. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac remains Go at 12:30Z, last_updated 2026-11-14. T0 stays 2026-11-21T12:30:00Z. backup_utc is the Sunday slot. Trajectory files were not moved."
+        "RETIMED 2026-11-21 from 2026-11-21T12:30:00Z to the window open 2026-11-22T12:16:00Z (+85560 s). SpaceX nrol136: Sunday 22 Nov, 30-minute window opens 4:16 a.m. PT, backup Monday 23 Nov 4:02 a.m. PT. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac agrees on 12:16Z, last_updated 2026-11-20T17:43:00Z. The earlier Saturday-versus-Sunday conflict is closed and is not repeated here. Published ascent events still match the file (MECO 131 s, sep 134 s, SES-1 142 s, fairing 179 s), so knots were not moved. ECEF geometry unchanged. Sim not re-run. 14th flight of the booster, landing LZ-4. LNM 58668 Area A is the same polygon; 22 Nov 1216-1311Z is a listed day on that notice. FAA advisory primary is now 22 Nov 1216-1329Z, which is the airspace window, longer than the 30-minute launch window."
       ],
-      "note": "Pre-flight ILLUSTRATIVE. NROL-136, the fifteenth NRO proliferated-architecture batch, Falcon 9 from SLC-4E. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac, status Go, NET 2026-11-21T12:30:00Z (Sat 21 Nov 4:30 a.m. PST), window 12:30-13:00Z. SpaceX: 30-minute window opens 4:30 a.m. PT, backup Sunday 22 Nov 4:16 a.m. PT, 14th flight of the booster, landing LZ-4. FAA advisory primary 21 Nov 1230-1343Z. Azimuth 155.15 deg is the bearing to the far-edge midpoint of USCG LNM 58668 Hazard Area A (primary 1230-1325Z). No NROL-136 elements are published; the 310 x 425 km target is borrowed from prior proliferated batches and SECO-1 is an assumed T+510 s. Payload is a fixed 8000 kg assumption. Sim insertion: 305.9 x 429.2 km, i=69.046 deg, pad->insertion bearing 160.45 deg vs commanded 155.15 deg. Deploy unpublished, so the sim ends two revolutions later (T+11538 s). SOURCE CONFLICT, no retime. The SpaceX mission-page body, confirmed 2026-11-20 from https://content.spacex.com/api/spacex-website/missions/nrol136, says Saturday, November 21, 30-minute window opens 4:30 a.m. PT (2026-11-21T12:30:00Z), backup Sunday, November 22 at 4:16 a.m. PT (2026-11-22T12:16:00Z). The same page's header and upcoming table already show November 22, 2026 07:16-07:46 ET, which is that backup slot (4:16-4:46 a.m. PT), not the Saturday primary. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac remains Go at 12:30Z, last_updated 2026-11-14. T0 stays 2026-11-21T12:30:00Z. backup_utc is the Sunday slot. Trajectory files were not moved."
+      "note": "Pre-flight ILLUSTRATIVE. NROL-136, the fifteenth NRO proliferated-architecture batch, Falcon 9 from SLC-4E. T0 is the window open 2026-11-22T12:16:00Z (Sun 22 Nov 4:16 a.m. PST), 30-minute window to 12:46Z. Backup Monday 23 Nov 4:02 a.m. PT (2026-11-23T12:02:00Z). SpaceX and LL2 agree (LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac, last_updated 2026-11-20T17:43:00Z). The Saturday 21 Nov 12:30Z conflict is closed. Files utc-shifted +85560 s; ECEF unchanged; sim not re-run. Ascent events unchanged (MECO 2:11, sep 2:14, SES-1 2:22, fairing 2:59), so knots were not moved. 14th flight, landing LZ-4. Azimuth 155.15 deg is still the bearing to the far-edge midpoint of USCG LNM 58668 Hazard Area A; 22 Nov 1216-1311Z is a listed day on that same polygon. Sim insertion unchanged: 305.9 x 429.2 km, i=69.046 deg, pad->insertion bearing 160.45 deg vs commanded 155.15 deg. Deploy unpublished, so the sim ends two revolutions later (T+11538 s)."
     },
     {
       "slug": "ariane64-le04-2026-11-23",
@@ -2033,6 +2104,125 @@
         "Sim track bias left in place: early heading 35.7 deg versus commanded 37.23 deg (-1.5 deg). Achieved inclination 51.09 deg versus 52.95 deg non-rotating from the azimuth and versus 51.9 deg for the Amazon Leo shell. Azimuth kept on the hazard areas."
       ],
       "note": "Pre-flight ILLUSTRATIVE. Ariane 64 Block 2, flight VA271, 36 Amazon Leo satellites (LE-04), four P160C boosters, ELA-4. T0 is the window open 2026-11-23T11:09:00Z (Mon 23 Nov 3:09 a.m. PST), window to 11:38Z. Arianespace and LL2 (id 7bdc412b-c965-4517-a131-f57a01189803, Go, last_updated 2026-11-20T14:23:25Z) agree. ESA's timeline lists liftoff at 11:09:22 under a column labelled CET; that number matches UTC, because Arianespace puts Paris at 12:09-12:38 and ESA's window line says 11:09-11:38 GMT. The 11:09:22 figure is recorded and is not T0. Azimuth 37.23 deg is the mean bearing to NAVAREA IV 1118/26 areas A and B. No VA271 orbit is published; the borrowed insertion is about 465 km from VA267, LE-01 and LE-03, not the 590/610/630 km operational shells. Payload 20,855 kg is a provisional estimate (16,800 kg / 29 x 36). Sim: Vinci cutoff 1 at geodetic 150.00 km, FPA -0.550 deg, SMA error -0.019 km; after the open-loop 18 s second burn, 451.7 x 481.9 km (mean 466.8 km) at i=51.089 deg. Booster-sep altitude 87.5 km versus 87 km borrowed from LE-01; fairing 150.7 km versus 127 km borrowed (+23.7 km). Early track heading 35.7 deg versus commanded 37.23 deg. Deployment starts at ESA's T+1:39:29 and the file ends there; deployment ends at T+2:08:39. ILLUSTRATIVE."
+    },
+    {
+      "slug": "ussf-266",
+      "name": "USSF-266",
+      "vehicle": "Falcon 9 Block 5",
+      "t0_utc": "2026-11-24T15:55:00Z",
+      "t0_kind": "window_open",
+      "window_open_utc": "2026-11-24T15:55:00Z",
+      "window_close_utc": "2026-11-24T19:55:00Z",
+      "backup_utc": "2026-11-25T15:46:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/ussf-266/ussf-266_2026-11-24_trajectory.csv",
+        "kml": "/launches/ussf-266/ussf-266_2026-11-24_trajectory.kml",
+        "csv_sim": "/launches/ussf-266/ussf-266_2026-11-24_trajectory_sim.csv",
+        "kml_sim": "/launches/ussf-266/ussf-266_2026-11-24_trajectory_sim.kml",
+        "track_lite": "/launches/ussf-266/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://www.spacex.com/launches/ussf266",
+        "https://ll.thespacedevs.com/2.3.0/launches/460d9db7-eaf6-4cd9-b095-cff433534c09/",
+        "https://space-notices.com/notice/notam-NTTT-A1483%2F26",
+        "https://space-notices.com/notice/notam-MMFO-B4504%2F26",
+        "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
+        "https://www.spacex.com/launches/sl-15-16"
+      ],
+      "method": {
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, the same Iridium NEXT-7 rows as USSF-317, laid on this azimuth). SpaceX ussf266 times match the loft samples: MECO 2:26, SES-1 2:36, fairing 2:56. Azimuth 193.41 deg is the bearing from SLC-4E to the centroid of NOTAM NTTT A1483/26 (USSF266-TH3 debris return, 28.779S 134.454W, 7199 km). Ends at T+508 s because SECO is unpublished. T0 window open 2026-11-24T15:55:00Z, four-hour window to 19:55Z, backup 2026-11-25T15:46:00Z. ILLUSTRATIVE",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf266 MECO 146 s, sep 149 s, SES-1 156 s, fairing 176 s as hard events. SECO-1 fixed at a BORROWED T+519 s (sl-15-16) and the target 177.3 x 266.2 km is BORROWED from the Group 15 analog, not this flight. Azimuth 193.41 deg from NTTT A1483/26 (non-rotating i=101.00 deg; not retuned). Result: geodetic alt 177.30 km, FPA +0.001 deg, SMA error +0.030 km, osculating 174.7 x 268.6 km, i=99.47 deg. Pad->insertion bearing 195.11 deg vs commanded 193.41 deg (+1.70 deg). Family-knot residuals: MECO alt 63.98 vs 67.08 km, range 58.6 vs 86.5 km; SES-1 alt 73.78 vs 77.17 km, range 74.8 vs 108.6 km; fairing alt 91.15 vs 95.43 km, range 108.7 vs 153.9 km. Event times match exactly. Payload fitted 15.02 t inside the Starlink-band bounds and is not an estimate. Deploy unpublished, so +2 revs, file ends T+11191 s. Cost 22.010. ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "spacex-ussf266",
+        "ll2-ussf-266",
+        "nttt-a1483-26",
+        "mmfo-b4504-26",
+        "shahar603-tel",
+        "spacex-sl-15-16",
+        "wp-falcon9",
+        "wp-falcon9-b5",
+        "ll2",
+        "kml"
+      ],
+      "assumptions": [
+        "SECO-1 T+519 s and parking orbit 177.3 x 266.2 km are BORROWED from the Starlink 15-16 timeline and the Group 15 analog used for USSF-317. USSF-266 publishes MECO, separation, SES-1 and fairing, which match that family timeline through fairing (separation here is 2:29, one second earlier than sl-15-16). They are not USSF-266 elements. Inclination was not tuned to 70 deg.",
+        "AZIMUTH 193.41 deg is from NOTAM NTTT A1483/26, the bearing to the vertex-average centroid (28.779S 134.454W, 7199 km). Non-rotating inclination 101.00 deg. The notice's 24 Nov period is 1740-2218Z, which starts 1 h 45 min after the 15:55Z window open. No nearer ascent polygon was found.",
+        "NOTAM MMFO B4504/26, the stage-1 reentry box, was not used for the azimuth. Its centroid bears about 169.4 deg at 672 km. A 193.41 deg rhumb misses that box by about 280 km at 670 km, so the two notices are not one constant-azimuth track. The box's 24 Nov period is 1555-2038Z, the older FAA backup close, not the current 19:55Z window close. Same rule as NROL-136: the stage-1 box does not set the azimuth.",
+        "Payload mass is FITTED at 15,021 kg inside the shared 13.0-21.6 t bounds (a Starlink V2 mini band, not this payload). It is an assumption of the fit, not an estimate. No satellite count is used. The payload is classified.",
+        "Family Iridium NEXT-7 webcast telemetry is the surrogate loft and the sim knots. This flight's MECO, SES-1 and fairing times happen to be the same sample times. The loft is still not this flight.",
+        "Deploy time unpublished -> deploy.t_s null; coast +2 revs on the inferred insertion orbit. Post-cutoff Cd 0.4 and area 10.75 m2 are the same assumptions as the other Falcon 9 coasts. Entry burn, landing burn and the droneship are not modelled. Unburned stage-1 residual stands in for that propellant.",
+        "Sim track bias left in place: pad->insertion bearing 195.11 deg versus commanded 193.41 deg (+1.70 deg). Achieved inclination 99.47 deg versus 101.00 deg non-rotating from the azimuth. Azimuth kept on the debris-return notice.",
+        "Booster serial is not taken from SpaceX. The page says the 29th flight and names earlier missions. A serial such as B1081 appears only on secondary sites and is not recorded here."
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. USSF-266, Falcon 9 from SLC-4E. T0 is the window open 2026-11-24T15:55:00Z (Tue 24 Nov 7:55 a.m. PST), four-hour window to 19:55Z. Backup Wednesday 25 Nov 7:46 a.m. PT (2026-11-25T15:46:00Z). SpaceX: 29th flight of the first stage, landing on Of Course I Still Love You. LL2 id 460d9db7-eaf6-4cd9-b095-cff433534c09 is Go at 15:55Z. Payload is classified. No satellite count. Azimuth 193.41 deg is the bearing to the centroid of NOTAM NTTT A1483/26. The stage-1 box MMFO B4504/26 (about 169.4 deg) was not used; a rhumb at 193.41 deg misses it by about 280 km. SECO and the 177 x 266 km target are borrowed from the Group 15 / sl-15-16 family. Sim insertion: geodetic 177.30 km, FPA +0.001 deg, SMA error +0.030 km, osculating 174.7 x 268.6 km, i=99.47 deg versus 101.00 deg non-rotating. Pad->insertion bearing 195.11 deg versus commanded 193.41 deg. Payload fitted 15,021 kg is not an estimate. Deploy unpublished, so the sim ends two revolutions later (T+11191 s)."
+    },
+    {
+      "slug": "progress-ms-36",
+      "name": "Progress MS-36 (97P)",
+      "vehicle": "Soyuz-2.1b",
+      "t0_utc": "2026-11-24T05:03:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-24T05:03:00Z",
+      "window_close_utc": "2026-11-24T05:03:00Z",
+      "status": "TBC",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/progress-ms-36/progress-ms-36_2026-11-24_trajectory.csv",
+        "kml": "/launches/progress-ms-36/progress-ms-36_2026-11-24_trajectory.kml",
+        "csv_sim": "/launches/progress-ms-36/progress-ms-36_2026-11-24_trajectory_sim.csv",
+        "kml_sim": "/launches/progress-ms-36/progress-ms-36_2026-11-24_trajectory_sim.kml",
+        "track_lite": "/launches/progress-ms-36/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://ll.thespacedevs.com/2.3.0/launches/8dd5de11-831b-445f-86f0-bffefe0550d9/",
+        "https://www.nextspaceflight.com/launches/details/8233/",
+        "https://www.interfax.ru/russia/1117752",
+        "http://www.tvroscosmos.ru/2833/",
+        "https://en.wikipedia.org/wiki/Soyuz-2",
+        "https://en.wikipedia.org/wiki/Progress_MS-36",
+        "https://www.russianspaceweb.com/progress-ms-19.html",
+        "https://www.russianspaceweb.com/progress-ms-27.html",
+        "https://www.russianspaceweb.com/progress-ms-23.html",
+        "https://ria.ru/20240815/korabl-1966304630.html"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: linear altitude and range between borrowed Soyuz-2.1a Progress knots (booster sep 117.848 s / ~43 km; fairing 183.079 s / ~91 km / ~200 km; core sep 287.419 s / ~143 km / ~500 km), on a constant-azimuth spherical rhumb at 63.39 deg. Booster-sep range 128.7 km is ASSUMED (linear in time to the fairing knot). Ends at core separation. The third stage is only in the sim. Azimuth 63.39 deg is ASSUMED (no hazard polygon): non-rotating northeast heading for 51.6 deg from the LL2 pad. T0 LL2 NET 2026-11-24T05:03:00Z. ILLUSTRATIVE",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode, vehicles/soyuz21b.json (Wikipedia Soyuz-2 masses and RD-0124). Booster, core and fairing times are the Progress MS-19 Soyuz-2.1a sequence, borrowed. Block I cutoff is ignition 286.159 s plus Wikipedia's 270 s RD-0124 burn (556.159 s). The 2.1a cutoff 525.45 s was tried and left this model suborbital (161 km, FPA -1.5 deg), so it is not the hard cutoff. Separation T+560.159 s is that cutoff plus the 4 s MS-19 gap from 525.45 s to 529 s. Target 193 x 240 km is borrowed from MS-19 / MS-27. Azimuth 63.39 deg ASSUMED for 51.6 deg, not retuned. Result: geodetic alt 191.77 km (target 193, -1.2 km), FPA -0.034 deg, SMA error -17.7 km, osculating 179.3 x 218.0 km versus 193 x 240, i=49.083 deg versus 51.6 deg. Knot residuals, times exact: booster alt 43 vs 50.6 km; fairing 91 vs 111.6 km and range 200 vs 172 km; core sep 143 vs 173.1 km and range 500 vs 480 km. Pad->insertion bearing 69.99 deg vs commanded 63.39 deg (+6.6 deg). Payload fixed at 7,280 kg (Wikipedia). Core propellant load raised 553 kg so mdot times the borrowed burn closes. Cost 18.42. ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "ll2-progress-ms-36",
+        "nsf-progress-ms-36",
+        "interfax-soyuz21b-progress",
+        "tvroscosmos-progress-ms-36",
+        "wp-soyuz-2",
+        "wp-progress-ms-36",
+        "rsw-progress-ms-19",
+        "rsw-progress-ms-27",
+        "rsw-progress-ms-23",
+        "ria-progress-ms-28",
+        "ll2",
+        "kml"
+      ],
+      "assumptions": [
+        "VEHICLE CONFLICT, recorded, not silent. This trajectory uses Soyuz-2.1b (RD-0124). LL2 (id 8dd5de11-831b-445f-86f0-bffefe0550d9, last_updated 2026-06-08T21:46:36Z) and Next Spaceflight name Soyuz-2.1b. Interfax, dateline 22 September with no year printed on the page, quotes Roscosmos: Soyuz-2.1b was adapted for Progress MS, the first such launch was 16 September, and Soyuz-2.1a continues for satellites and crewed flights. Roscosmos TV lists Progress MS-36 from Baikonur Site 31 on 24 Nov 2026 and does not name 2.1a or 2.1b. Wikipedia EN says Soyuz-2.1a, and also says 09:03 UTC and a Zvezda docking, which disagree with LL2's 05:03Z and with Poisk. Progress MS-19, MS-23, MS-27 and MS-28 flew Soyuz-2.1a.",
+        "AZIMUTH ASSUMED: 63.39 deg. No Baikonur hazard polygon for 24 Nov 2026 05:03Z was found. sin(az)=cos(51.6 deg)/cos(45.996034 deg), the non-rotating northeast heading. The southeast supplement was not used. Not retuned after the sim. RussianSpaceWeb's prior Progress insertions were 51.67 deg. The 51.6 deg figure is the ISS inclination used for the heading.",
+        "TARGET ORBIT BORROWED: 193 x 240 km from Progress MS-19, with MS-27 at 193.2 x 239.8 km and 51.67 deg as a cross-check. Not MS-36 elements. The ISS altitude is not the insertion orbit. Docking is Poisk on the MS-27 class of reports. Wikipedia says Zvezda aft. Docking is not modelled.",
+        "EVENT TIMES for the boosters, core and fairing are the Progress MS-19 table (Soyuz-2.1a), borrowed. Altitudes are that page's 'around' figures. Fairing and core downranges are MS-27's 'around 200 km' and 'some 500 km'. Booster-sep range is not published; the surrogate uses 128.7 km, linear in time from liftoff to the fairing knot.",
+        "STAGE-3 CUTOFF is not the borrowed 525.45 s. That RD-0110 time on this RD-0124 model ended at 161 km with flight-path angle -1.5 deg and a perigee below the surface. Cutoff is 286.159 s plus Wikipedia's generic 270 s RD-0124 burn = 556.159 s. Separation is 560.159 s: the same 4 s gap as MS-19's 525.45 s to the prose '8 min 49 s'. The absolute 529 s (and RIA's 8 min 49 s for MS-28, and the MS-19 table's 530.24 s) are the 2.1a flights' times and are not this file's deploy time.",
+        "PAYLOAD 7,280 kg is Wikipedia's launch mass for Progress MS-36, citing Next Spaceflight. No Roscosmos mass for this ship was found. It is fixed, not fitted. The same Wikipedia page is the one that says Soyuz-2.1a.",
+        "FAIRING 1,500 kg is an ASSUMPTION. No Progress shroud mass was found. Cd 0.4 is the same generic assumption as Falcon 9. Drag uses the 2.95 m core diameter, not the 10.3 m booster span. Post-cutoff Cd 2.2 and area 5.56 m2 (the 2.66 m Block I) apply only to the 4 s coast.",
+        "CORE PROPELLANT: Wikipedia's 90,100 kg is 553 kg short of mdot times the 286.399 s burn at the published vacuum thrust and Isp. The sim raises the load to 90,653 kg. Booster and Block I loads cover their burns (residuals 3,307 kg and 2,830 kg). Modelled GLOW 305,509 kg against Wikipedia's round 312,000 kg.",
+        "Pad elevation 0 m. LL2 Site 31/6 gives 45.996034N 63.564003E and no height.",
+        "Sim track bias left in place. Pad->insertion bearing 69.99 deg versus commanded 63.39 deg (+6.6 deg). Achieved inclination 49.083 deg versus 51.6 deg. Geodetic altitude 191.77 km versus 193 km. Osculating 179.3 x 218.0 km versus the borrowed 193 x 240 km (SMA error -17.7 km). Knot altitudes run high: booster +7.6 km, fairing +20.6 km, core separation +30.1 km. Those 'around' figures were not retuned, and the azimuth was not retuned."
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. Progress MS-36 (97P) from Baikonur Site 31/6. T0 is the LL2 NET 2026-11-24T05:03:00Z (Mon 23 Nov 9:03 p.m. PST), status To Be Confirmed, minute precision, window start and end both 05:03Z, last_updated 2026-06-08T21:46:36Z. Next Spaceflight agrees on 05:03Z. VEHICLE CONFLICT: this file flies Soyuz-2.1b. LL2 and Next Spaceflight say 2.1b. Interfax (22 September, year not printed) quotes Roscosmos that 2.1b has been adapted for Progress and first flew one on 16 September, while 2.1a continues for crew and satellites. Roscosmos TV lists the launch and does not name the variant. Wikipedia EN says Soyuz-2.1a, 09:03 UTC and Zvezda, which also disagree with 05:03Z and with Poisk. The booster, core and fairing times, and the 193 x 240 km target, are borrowed from Soyuz-2.1a Progress flights. Block I runs Wikipedia's 270 s RD-0124 burn because the 2.1a cutoff left this model suborbital. Separation is T+560.159 s. Azimuth 63.39 deg is ASSUMED from 51.6 deg. No hazard polygon was found. Sim at cutoff: geodetic 191.77 km, FPA -0.034 deg, SMA error -17.7 km, osculating 179.3 x 218.0 km, i=49.083 deg. Pad->insertion bearing 69.99 deg versus 63.39 deg. Payload 7,280 kg is the Wikipedia figure, not a Roscosmos mass for this ship."
     }
   ],
   "globe": {
