@@ -1,0 +1,171 @@
+{
+  "id": "soyuz21b",
+  "name": "Soyuz-2.1b (RD-107A / RD-108A / RD-0124), no Fregat — TIMELINE mode",
+  "timeline": true,
+  "stages": [
+    {
+      "name": "Boosters (4x RD-107A)",
+      "count": 4,
+      "parallel": true,
+      "propellant_kg": {
+        "value": 39160,
+        "derived": "LOX 27,900 kg + RP-1 11,260 kg (https://en.wikipedia.org/wiki/Soyuz-2 Block B/V/G/D)"
+      },
+      "dry_kg": {
+        "value": 3784,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (empty mass 3,784 kg). Gross mass on the same table is 44,413 kg, which is 1,469 kg above empty+propellant; that gap is not added."
+      },
+      "thrust_sl_N": {
+        "value": 838500,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (RD-107A SL 838.5 kN)"
+      },
+      "thrust_vac_N": {
+        "value": 1021300,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (RD-107A vac 1,021.3 kN)"
+      },
+      "isp_vac_s": {
+        "value": 319,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (RD-107A vac 319 s)"
+      },
+      "diameter_m": {
+        "value": 2.68,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (booster diameter 2.68 m)"
+      },
+      "ignition_s": {
+        "value": 0,
+        "src": "https://www.russianspaceweb.com/progress-ms-19.html (liftoff; boosters burn from T0)"
+      },
+      "cutoff_s": {
+        "value": 117.418,
+        "src": "https://www.russianspaceweb.com/progress-ms-19.html (Stage I engine cutoff 117.418 s). BORROWED from a Soyuz-2.1a Progress flight. Wikipedia lists a generic 118 s booster burn."
+      },
+      "separation_s": {
+        "value": 117.848,
+        "src": "https://www.russianspaceweb.com/progress-ms-19.html (Stage I separation 117.848 s, about 43 km). BORROWED."
+      }
+    },
+    {
+      "name": "Core (RD-108A)",
+      "propellant_kg": {
+        "value": 90100,
+        "derived": "LOX 63,800 kg + RP-1 26,300 kg (https://en.wikipedia.org/wiki/Soyuz-2 Block A). Empty 6,545 + this propellant is 96,645 kg, 3,120 kg under the table gross of 99,765 kg; the gap is not added."
+      },
+      "dry_kg": {
+        "value": 6545,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (Block A empty mass 6,545 kg)"
+      },
+      "thrust_sl_N": {
+        "value": 792500,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (RD-108A SL 792.5 kN)"
+      },
+      "thrust_vac_N": {
+        "value": 990200,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (RD-108A vac 990.2 kN)"
+      },
+      "isp_vac_s": {
+        "value": 319,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (RD-108A vac 319 s)"
+      },
+      "diameter_m": {
+        "value": 2.95,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (core diameter 2.95 m). Drag in this sim uses the maximum stage diameter, so the 10.3 m booster span is not the reference area."
+      },
+      "ignition_s": {
+        "value": 0,
+        "src": "https://www.russianspaceweb.com/progress-ms-19.html (core burns from liftoff)"
+      },
+      "cutoff_s": {
+        "value": 286.399,
+        "src": "https://www.russianspaceweb.com/progress-ms-19.html (Stage II engine cutoff 286.399 s). BORROWED from a Soyuz-2.1a Progress flight. Wikipedia lists a generic 286 s core burn."
+      },
+      "separation_s": {
+        "value": 287.419,
+        "src": "https://www.russianspaceweb.com/progress-ms-19.html (Stage II separation 287.419 s, about 143 km). BORROWED."
+      }
+    },
+    {
+      "name": "Block I (RD-0124)",
+      "propellant_kg": {
+        "value": 25400,
+        "derived": "LOX 17,800 kg + RP-1 7,600 kg (https://en.wikipedia.org/wiki/Soyuz-2 Block I). The same tanks are on 2.1a and 2.1b."
+      },
+      "dry_kg": {
+        "value": 2355,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (Block I empty mass 2,355 kg)"
+      },
+      "thrust_sl_N": {
+        "value": 294300,
+        "assumption": "Set equal to the vacuum thrust. RD-0124 lights after core separation, above the atmosphere. A sea-level figure is not used."
+      },
+      "thrust_vac_N": {
+        "value": 294300,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (2.1b RD-0124 294.3 kN)"
+      },
+      "isp_vac_s": {
+        "value": 359,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (2.1b third-stage Isp 359 s)"
+      },
+      "diameter_m": {
+        "value": 2.66,
+        "src": "https://en.wikipedia.org/wiki/Soyuz-2 (Block I diameter 2.66 m)"
+      },
+      "ignition_s": {
+        "value": 286.159,
+        "src": "https://www.russianspaceweb.com/progress-ms-19.html (Stage III ignition 286.159 s, before core cutoff: hot staging). BORROWED from a Soyuz-2.1a Progress flight. No Soyuz-2.1b Progress timeline was found."
+      },
+      "cutoff_s": {
+        "value": 556.159,
+        "derived": "Ignition 286.159 s plus the Wikipedia generic RD-0124 burn of 270 s (https://en.wikipedia.org/wiki/Soyuz-2). The Progress MS-19 cutoff 525.45 s is an RD-0110 time and is not used as this stage's cutoff."
+      }
+    }
+  ],
+  "fairing": {
+    "mass_kg": {
+      "value": 1500,
+      "assumption": "No Progress MS fairing mass was found on Roscosmos, Energia, or the Soyuz-2 Wikipedia tables. 1,500 kg is a round stand-in in the Soyuz payload-fairing class. It is not a measured Progress shroud mass."
+    },
+    "jettison_time_s": {
+      "value": 183.079,
+      "src": "https://www.russianspaceweb.com/progress-ms-19.html (payload fairing separation 183.079 s, about 91 km). BORROWED from a Soyuz-2.1a Progress flight."
+    }
+  },
+  "guidance": {
+    "kick_duration_s": {
+      "value": 10,
+      "assumption": "Soyuz pitch-kick duration is not on the Progress timeline used here."
+    },
+    "linear_tangent_from_stage": 2
+  },
+  "header_notes": [
+    "Stage masses, thrust and Isp are the Soyuz-2 Wikipedia tables (2.1b third stage is RD-0124). Empty+propellant does not equal the table gross masses; the gaps are not added.",
+    "Event times are BORROWED from the Progress MS-19 Soyuz-2.1a sequence on RussianSpaceWeb, because no Soyuz-2.1b Progress timeline with times was found. Wikipedia's generic burns are 118 / 286 / 270 s."
+  ],
+  "fixed_params": {
+    "cd": {
+      "value": 0.4,
+      "assumption": "Not published. Same generic slender-launcher Cd used for Falcon 9 in this repo. Not fitted."
+    }
+  },
+  "fit": {
+    "vertical_rise_s": {
+      "x0": 9.7,
+      "bounds": [2, 20],
+      "basis": "ASSUMPTION bound (Soyuz pitch-over time unpublished for this flight)"
+    },
+    "kick_deg": {
+      "x0": 5,
+      "bounds": [0.2, 8],
+      "basis": "ASSUMPTION bound"
+    },
+    "tan0": {
+      "x0": 0.2,
+      "bounds": [-1, 3],
+      "basis": "guidance law"
+    },
+    "tan_rate": {
+      "x0": 0.001,
+      "bounds": [-0.02, 0.02],
+      "basis": "guidance law"
+    }
+  }
+}

@@ -1,0 +1,218 @@
+{
+ "slug": "ussf-266",
+ "title": "Falcon 9 USSF-266 (SLC-4E)",
+ "vehicle": "falcon9",
+ "t0_utc": "2026-11-24T15:55:00Z",
+ "pad": {
+  "lat": 34.632,
+  "lon": -120.611,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/460d9db7-eaf6-4cd9-b095-cff433534c09/ (SLC-4E, Vandenberg SFB)"
+ },
+ "azimuth_deg": {
+  "value": 193.41,
+  "derived": "Great-circle bearing from the LL2 SLC-4E pad to the vertex-average centroid of NOTAM NTTT A1483/26 (space debris return of SpaceX USSF266-TH3). Vertices 30-00S 135-51W, 27-48S 136-13W, 27-19S 133-10W, 30-00S 132-35W. Centroid 28.779S 134.454W. Bearing 193.41 deg, 7199 km. Non-rotating inclination 101.00 deg. The 24 Nov period on that notice is 1740-2218Z, which starts 1 h 45 min after the 15:55Z window open. No nearer ascent polygon (a ZLA Area A) was found.",
+  "src": "https://space-notices.com/notice/notam-NTTT-A1483%2F26"
+ },
+ "payload_kg": {
+  "fit": true,
+  "value": null,
+  "note": "FITTED inside the Falcon 9 config bounds (13.0-21.6 t, themselves a Starlink V2 mini band) so the BORROWED SECO-1 time can reach the BORROWED parking altitude. USSF-266 mass is unpublished. The fitted number is an ASSUMPTION of the fit, not an estimate of the payload. No satellite count is used."
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 177.3,
+   "assumption": "USSF-266 orbit is unpublished. 177.3 km perigee is borrowed from the Starlink Group 15-18 parking orbit used for USSF-317, because this flight's published times through fairing match the sl-15-16 family timeline that produced that orbit (MECO 2:26, SES-1 2:36, fairing 2:56, SECO-1 8:39). It is not a USSF-266 element. Inclination is not tuned; the 193.41 deg debris azimuth stands."
+  },
+  "apoapsis_alt_km": {
+   "value": 266.2,
+   "assumption": "Same borrowed Group 15-18 parking apogee. Not a USSF-266 source."
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 2,
+  "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude"
+ },
+ "header_notes": [
+  "ILLUSTRATIVE. PRE-FLIGHT. USSF-266, Falcon 9, SLC-4E. T0 is the window open 2026-11-24T15:55:00Z (Tue 24 Nov 7:55 a.m. PT). SpaceX https://www.spacex.com/launches/ussf266: four-hour window to 19:55Z. Backup Wed 25 Nov 7:46 a.m. PT = 2026-11-25T15:46:00Z. 29th flight of the first stage. Landing on Of Course I Still Love You. LL2 id 460d9db7-eaf6-4cd9-b095-cff433534c09 status Go at 15:55Z.",
+  "Published timeline (SpaceX ussf266): Max-Q 1:07, MECO 2:26, stage sep 2:29, SES-1 2:36, fairing 2:56, entry burn 6:03-6:27, landing burn 8:01, landing 8:23. SECO, orbit and deploy are not published. Payload is classified. No unofficial satellite count is used.",
+  "AZIMUTH CONFLICT recorded, not averaged. NOTAM MMFO B4504/26 is the stage-1 reentry box (centroid bearing about 169.4 deg, 672 km). A constant-azimuth rhumb at 193.41 deg does not pass through that box (about 280 km cross-track at 670 km). The stage-1 box was not used for the azimuth, the same rule as NROL-136. Its 24 Nov period is 1555-2038Z, the older FAA backup close, not the current 1955Z window close.",
+  "INFERRED/ASSUMED: SECO-1 at T+519 s and a 177 x 266 km parking orbit are borrowed from the sl-15-16 / Group 15 family, not from USSF-266. File ends 2 revs after cutoff (deploy unpublished). Booster entry and landing are not modelled."
+ ],
+ "final_cutoff_s": {
+  "value": 519,
+  "assumption": "USSF-266 SECO-1 is unpublished. T+8:39 is borrowed from https://www.spacex.com/launches/sl-15-16 because MECO, SES-1 and fairing on the USSF-266 page match that timeline. Stage separation here is 2:29, one second earlier than sl-15-16's 2:30."
+ },
+ "knots": [
+  {
+   "event": "MECO (F9 family telemetry, Iridium NEXT-7)",
+   "t_s": 146,
+   "alt_km": 63.98,
+   "range_km": 58.6,
+   "alt_sigma_km": 3,
+   "range_sigma_km": 10,
+   "src": "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207 (SpaceX webcast telemetry; FAMILY stand-in, not this flight). This flight's published MECO is also T+146 s."
+  },
+  {
+   "event": "SES-1 (F9 family telemetry)",
+   "t_s": 156,
+   "alt_km": 73.78,
+   "range_km": 74.8,
+   "alt_sigma_km": 3,
+   "range_sigma_km": 10,
+   "src": "same. This flight's published SES-1 is also T+156 s."
+  },
+  {
+   "event": "Fairing sep (F9 family telemetry)",
+   "t_s": 176,
+   "alt_km": 91.15,
+   "range_km": 108.7,
+   "alt_sigma_km": 3,
+   "range_sigma_km": 10,
+   "src": "same. This flight's published fairing separation is also T+176 s."
+  }
+ ],
+ "post_cutoff": {
+  "drag": {
+   "cd": {
+    "value": 0.4,
+    "assumption": "same Cd as the ascent fit (fixed 0.4)"
+   },
+   "area_m2": {
+    "value": 10.75,
+    "derived": "pi*(3.7 m/2)^2, Falcon 9 diameter (vehicle config)"
+   }
+  },
+  "deploy": {
+   "t_s": null,
+   "note": "SpaceX publishes no SECO, restart or deploy time for USSF-266 (classified payload). Propagated 2 revs on the inferred insertion orbit. The insertion altitude is borrowed, not a USSF-266 element."
+  }
+ },
+ "fairing_jettison_s": {
+  "value": 176,
+  "src": "https://www.spacex.com/launches/ussf266 fairing separation T+00:02:56"
+ },
+ "stage_event_overrides": {
+  "0": {
+   "cutoff_s": {
+    "value": 146,
+    "src": "https://www.spacex.com/launches/ussf266 MECO T+00:02:26"
+   },
+   "separation_s": {
+    "value": 149,
+    "src": "https://www.spacex.com/launches/ussf266 stage separation T+00:02:29"
+   }
+  },
+  "1": {
+   "ignition_s": {
+    "value": 156,
+    "src": "https://www.spacex.com/launches/ussf266 SES-1 T+00:02:36"
+   }
+  }
+ },
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "vertical_rise_s": {
+    "value": 10.160863,
+    "bounds": [
+     4,
+     30
+    ],
+    "basis": "ASSUMPTION bound (F9 pitch-over time unpublished)"
+   },
+   "kick_deg": {
+    "value": 3.807119,
+    "bounds": [
+     0.2,
+     10
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "payload_kg": {
+    "value": 15020.901023,
+    "bounds": [
+     13000,
+     21600
+    ],
+    "basis": "27 V2 Mini Optimized: ~575 kg each community-reported (spacex.com.pl) = 15.5 t; MaxQ lists 800 kg each = 21.6 t (upper bound). Mass not published by SpaceX"
+   },
+   "tan0": {
+    "value": 0.556138,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": 0.001364,
+    "bounds": [
+     -0.05,
+     0.05
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "cd": 0.4
+  },
+  "knot_residuals": [
+   {
+    "event": "MECO (F9 family telemetry, Iridium NEXT-7)",
+    "t_pub": 146,
+    "t_sim": 146.0,
+    "alt_pub": 63.98,
+    "alt_sim": 67.08,
+    "rng_pub": 58.6,
+    "rng_sim": 86.5
+   },
+   {
+    "event": "SES-1 (F9 family telemetry)",
+    "t_pub": 156,
+    "t_sim": 156.0,
+    "alt_pub": 73.78,
+    "alt_sim": 77.17,
+    "rng_pub": 74.8,
+    "rng_sim": 108.6
+   },
+   {
+    "event": "Fairing sep (F9 family telemetry)",
+    "t_pub": 176,
+    "t_sim": 176.0,
+    "alt_pub": 91.15,
+    "alt_sim": 95.43,
+    "rng_pub": 108.7,
+    "rng_sim": 153.9
+   }
+  ],
+  "final": {
+   "alt_km": 177.2987071605688,
+   "fpa_deg": 0.0007735731473553762,
+   "sma_err_km": 0.030025177653878927,
+   "mass_kg": 22174.9
+  },
+  "cost": 22.00971098548918,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "Stage 1 (9x Merlin 1D)",
+     "loaded_kg": 410900,
+     "burned_kg": 392572,
+     "residual_kg": 18328,
+     "dry_kg": 22200,
+     "flag": null
+    },
+    {
+     "name": "Stage 2 (1x Merlin Vacuum)",
+     "loaded_kg": 107500,
+     "burned_kg": 104346,
+     "residual_kg": 3154,
+     "dry_kg": 4000,
+     "flag": null
+    }
+   ],
+   "glow_kg": 561521
+  }
+ }
+}
