@@ -1,0 +1,146 @@
+{
+ "slug": "shenzhou-24",
+ "title": "Long March 2F/G Shenzhou-24 (Jiuquan LA-91 / SLS-1)",
+ "vehicle": "lm2fg",
+ "t0_utc": "2026-11-25T00:18:00Z",
+ "pad": {
+  "lat": 40.957893,
+  "lon": 100.290944,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/c9605b67-8a53-4239-a8ae-577fe3b79799/ (Launch Area 91, SLS-1 / 921). Elevation is not on that record; 0 m is an ASSUMPTION. The site is about 1 km above sea level and that height is not applied."
+ },
+ "azimuth_deg": {
+  "value": 97.16,
+  "derived": "Non-rotating east-southeast azimuth for the published Tiangong inclination 41.47 deg from this pad: sin(az)=cos(41.47)/cos(40.957893), and the supplement greater than 90 deg (97.16; the 82.84 deg supplement heads east-northeast and was not used). No Shenzhou-24 hazard polygon for 25 Nov 2026 00:08-00:48Z was found. Not retuned after the sim.",
+  "src": "https://en.wikipedia.org/wiki/Tiangong_space_station"
+ },
+ "payload_kg": {
+  "value": 7840,
+  "src": "https://en.wikipedia.org/wiki/Shenzhou_(spacecraft)",
+  "note": "Wikipedia infobox launch mass 7,840 kg, citing Zhu Guangchen, 2022, Aerospace Spacecraft Engineering 31(6). Fixed, not fitted. It is not a weighed Shenzhou-24 mass. The same article's spacecraft table lists 8,000 kg, with the note that those figures apply to Shenzhou 12. China News reported 8,082 kg for Shenzhou-8. Next Spaceflight lists 8,100 kg for Shenzhou-24. Those three figures are not used."
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 200,
+   "src": "https://www.cmse.gov.cn/kpjy/htzs/ttsj/201509/t20150911_37314.html",
+   "note": "CMSA: the Long March 2F can send 8 t to a 200 x 350 km orbit. 200 km is that design perigee, used as the geodetic altitude at vernier cutoff. CMSA Shenzhou-5 measured perigee 199.14 km. CMSA Shenzhou-8 was about 200 km. Not a Shenzhou-24 element."
+  },
+  "apoapsis_alt_km": {
+   "value": 350,
+   "src": "https://www.cmse.gov.cn/kpjy/htzs/ttsj/201509/t20150911_37314.html",
+   "note": "CMSA design apogee 350 km on the same page. Shenzhou-5 was 347.8 km. Shenzhou-8 was about 329 km. Tiangong's own orbit on 25 Apr 2024 was 386.4 x 391.8 km and is not the insertion orbit."
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 5,
+  "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude"
+ },
+ "header_notes": [
+  "ILLUSTRATIVE. PRE-FLIGHT. Shenzhou-24, Long March 2F/G, Jiuquan Launch Area 91 / SLS-1 (921), crewed flight to Tiangong. T0 is the LL2 NET 2026-11-25T00:18:00Z, status Go, window 00:08-00:48Z, minute precision, last_updated 2026-11-20T09:07:56Z. https://ll.thespacedevs.com/2.3.0/launches/c9605b67-8a53-4239-a8ae-577fe3b79799/",
+  "TIME CONFLICT, not silent. CMSA and Xinhua have not published a clock time. Xinhua 21 Nov 2026 (English and Chinese) reports the final rehearsal and gives no liftoff time. The CMSA flight-list page still ends at Shenzhou-23. Wikipedia EN lists NET 25 Nov 2026 00:19 UTC and cites Next Spaceflight; the Next Spaceflight page lists 00:18 UTC. 00:19 was not used. 05:18 AM Pakistan Standard Time equals 00:18Z because PKT is UTC+5; no Pakistani post stating 05:18 was retrieved for this file, so that wording is not an independent source.",
+  "Azimuth 97.16 deg is the east-southeast supplement for Tiangong's published 41.47 deg inclination. No NOTAM or debris notice covering 25 Nov 2026 00:08-00:48Z was found (space-notices ZBPE danger areas checked; the November 5 and November 9 polygons do not cover this window). The 82.84 deg supplement was not used.",
+  "Event times are the Baidu encyclopedia theoretical crewed sequence, not a Shenzhou-24 timeline: booster sep 154.8 s, S1 cutoff 159 s, stage sep and S2 ignition 159.5 s, fairing 212.5 s, S2 main cutoff 463.1 s, vernier cutoff 582.1 s, ship separation 585.1 s. Conflicts recorded and not used as the hard times: English Wikipedia rounds the 2F/G booster burn to 153 s (was 140 s). CMSA Shenzhou-5, basic rocket: escape tower 120 s, boosters 137 s, stage sep and S2 ignition 159 s, fairing 200 s, main cutoff 460 s, separation 587 s, orbit 199.14 x 347.8 km at 42.4 deg. CMSA Shenzhou-14: separation about 577 s. Wikipedia Shenzhou profile: about 12 s pitch, 120 s tower at about 40 km, boosters about 152 s, fairing about 205 s, main cutoff about 460 s, separation about 580 s. zh.wikipedia Shenzhou-23 clocks, no footnote on that bullet: liftoff 23:08:36, separation 23:18:21, which is 585 s and matches 585.1 s rather than 577 s. CMSA Shenzhou-23 and Xinhua say only about 10 minutes. The 577 s figure was tried as an exact cutoff and left the published stage-2 load partly unburned with SMA about 218 km short of 200 x 350 km, so the hard times are the theoretical sequence.",
+  "Target 200 x 350 km is the CMSA design orbit, not Shenzhou-24's elements. Inclination is Tiangong's 41.47 deg (Wikipedia infobox, statistics as of 25 Apr 2024), not the 42 deg of Shenzhou-8 or the 42.4 deg of Shenzhou-5, and not the station's 386 x 392 km altitude. Payload 7,840 kg is the Wikipedia spacecraft figure, not a Shenzhou-24 weigh-in."
+ ],
+ "knots": [],
+ "post_cutoff": {
+  "drag": {
+   "cd": {
+    "value": 2.2,
+    "assumption": "free-molecular Cd 2.2, the same assumption as the other Long March coasts. The coast from vernier cutoff to separation is about 3 s, so the value barely moves the state."
+   },
+   "area_m2": {
+    "value": 8.814,
+    "derived": "pi*(3.35 m/2)^2, Long March 2F second-stage diameter (https://en.wikipedia.org/wiki/Long_March_2F)"
+   }
+  },
+  "deploy": {
+   "t_s": {
+    "value": 585.1,
+    "src": "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320",
+    "note": "BORROWED theoretical crewed timeline: ship separation +585.1 s, 3 s after vernier cutoff. Shenzhou-24 has not published its own time. CMSA Shenzhou-14 says about 577 s (https://www.cmse.gov.cn/xwzx/202206/t20220605_50061.html). That about-figure is not this deploy time. zh.wikipedia's uncited Shenzhou-23 clocks give 585 s."
+   },
+   "src": "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320",
+   "label": "Shenzhou separation (borrowed theoretical timeline)"
+  },
+  "notes": [
+   "Shenzhou-23 CMSA and Xinhua say only that separation was about 10 minutes after liftoff. 577 s and 585.1 s both sit inside that phrase. The file uses 585.1 s."
+  ]
+ },
+ "fairing_jettison_s": {
+  "value": 212.5,
+  "src": "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320 theoretical fairing jettison +212.5 s. CMSA Shenzhou-5 says 200 s and is not used."
+ },
+ "t0_note": "LL2 NET 2026-11-25T00:18:00Z. CMSA has not published a clock time. Wikipedia EN 00:19 UTC was not used.",
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "kick_deg": {
+    "value": 1.445821,
+    "bounds": [
+     0.3,
+     12
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "tan0": {
+    "value": 0.731959,
+    "bounds": [
+     -1,
+     3
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": 0.002377,
+    "bounds": [
+     -0.02,
+     0.02
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "vertical_rise_s": 12.0,
+   "cd": 0.66658,
+   "payload_kg": 7840.0
+  },
+  "knot_residuals": [],
+  "final": {
+   "alt_km": 188.29567203739566,
+   "fpa_deg": 0.477190547189684,
+   "sma_err_km": -88.53068315394782,
+   "mass_kg": 14900.3
+  },
+  "cost": 270.791447387633,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "Boosters",
+     "loaded_kg": 179324,
+     "burned_kg": 179324,
+     "residual_kg": 0,
+     "dry_kg": 12800,
+     "flag": "published load 151200 kg < burned 179324 kg; load raised to burned"
+    },
+    {
+     "name": "Stage 1",
+     "loaded_kg": 187000,
+     "burned_kg": 184190,
+     "residual_kg": 2810,
+     "dry_kg": 9500,
+     "flag": null
+    },
+    {
+     "name": "Stage 2",
+     "loaded_kg": 86000,
+     "burned_kg": 84440,
+     "residual_kg": 1560,
+     "dry_kg": 5500,
+     "flag": null
+    }
+   ],
+   "glow_kg": 489464
+  }
+ }
+}

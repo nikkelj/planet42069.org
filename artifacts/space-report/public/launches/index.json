@@ -663,7 +663,7 @@
     },
     {
       "id": "ll2-nrol-136",
-      "title": "Launch Library 2: Falcon 9 Block 5 | NROL-136, Go, NET 2026-11-21T12:30:00Z, window to 13:00Z",
+      "title": "Launch Library 2: Falcon 9 Block 5 | NROL-136, Launch Successful, liftoff 2026-11-22T12:23:56Z, window 12:16-12:46Z, second precision, last_updated 2026-11-22T14:41:24Z",
       "url": "https://ll.thespacedevs.com/2.3.0/launches/951a341f-236b-42fe-a667-4ab2fcf36eac/"
     },
     {
@@ -885,6 +885,101 @@
       "id": "ria-progress-ms-28",
       "title": "RIA Novosti: Progress MS-28 separated at 8 min 49 s on Soyuz-2.1a",
       "url": "https://ria.ru/20240815/korabl-1966304630.html"
+    },
+    {
+      "id": "nro-nrol136-x",
+      "title": "NRO post: NROL-136 MISSION SUCCESS",
+      "url": "https://x.com/NRO_gov/status/2124514497050050808"
+    },
+    {
+      "id": "spacex-nrol136-x",
+      "title": "SpaceX post: NROL-136 liftoff and LZ-4 landing",
+      "url": "https://x.com/SpaceX/status/2124479235779637392"
+    },
+    {
+      "id": "sfn-nrol136-x",
+      "title": "Spaceflight Now post: NROL-136 liftoff 4:23 a.m. PST",
+      "url": "https://x.com/SpaceflightNow/status/2124479451878830301"
+    },
+    {
+      "id": "ll2-shenzhou-24",
+      "title": "Launch Library 2: Long March 2F/G | Shenzhou 24, Go, NET 2026-11-25T00:18:00Z, window 00:08-00:48Z, minute precision, last_updated 2026-11-20T09:07:56Z",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/c9605b67-8a53-4239-a8ae-577fe3b79799/"
+    },
+    {
+      "id": "xinhua-sz24-en",
+      "title": "Xinhua English, 21 Nov 2026: Shenzhou-24 launch site ready. No liftoff clock",
+      "url": "https://english.news.cn/20261121/d3c0ee0ac8b448408f681c35f60a3a22/c.html"
+    },
+    {
+      "id": "xinhua-sz24-zh",
+      "title": "Xinhua, 21 Nov 2026: Shenzhou-24 final joint rehearsal. No liftoff clock",
+      "url": "https://www.news.cn/20261121/d4bd6cd543cb4b2daf8958afce468550/c.html"
+    },
+    {
+      "id": "chinanews-sz24",
+      "title": "China News / CNR, 22 Nov 2026: Shenzhou-24 full-system rehearsal. No liftoff clock",
+      "url": "https://www.chinanews.com.cn/gn/2026/11-22/10735952.shtml"
+    },
+    {
+      "id": "cmse-sz14",
+      "title": "CMSA: Shenzhou-14 separation about 577 s after liftoff",
+      "url": "https://www.cmse.gov.cn/xwzx/202206/t20220605_50061.html"
+    },
+    {
+      "id": "cmse-sz14-en",
+      "title": "CMSA English: Shenzhou-14, about 577 seconds to separation",
+      "url": "https://en.cmse.gov.cn/missions/shenzhouXIV/"
+    },
+    {
+      "id": "cmse-sz5",
+      "title": "CMSA English: Shenzhou-5 timeline (120/137/159/200/460/587 s) and 199.14 x 347.8 km at 42.4 deg. Basic Long March 2F",
+      "url": "https://en.cmse.gov.cn/missions/shenzhouv/"
+    },
+    {
+      "id": "cmse-sz23",
+      "title": "CMSA: Shenzhou-23 separation about 10 minutes after liftoff. No second count",
+      "url": "https://www.cmse.gov.cn/xwzx/202605/t20260525_57561.html"
+    },
+    {
+      "id": "cmse-lm2f",
+      "title": "CMSA, 2015: Long March 2F, YF-20 sea-level 740.4 kN, stage-2 vacuum about 746.97 kN, design orbit 200 x 350 km",
+      "url": "https://www.cmse.gov.cn/kpjy/htzs/ttsj/201509/t20150911_37314.html"
+    },
+    {
+      "id": "wp-lm2f",
+      "title": "Wikipedia: Long March 2F (2F/G liftoff mass 479.8 t, booster burn 153 s, stage masses)",
+      "url": "https://en.wikipedia.org/wiki/Long_March_2F"
+    },
+    {
+      "id": "zh-wp-lm2f",
+      "title": "Chinese Wikipedia: Long March 2F (YF-20B 740.4 kN, SL Isp 260.7 s, vernier 47.1 kN / 296.8 s)",
+      "url": "https://zh.wikipedia.org/wiki/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F%E8%BF%90%E8%BD%BD%E7%81%AB%E7%AE%AD"
+    },
+    {
+      "id": "wp-shenzhou",
+      "title": "Wikipedia: Shenzhou spacecraft (launch mass 7,840 kg; pitch about T+12 s; tower about 40 km at T+120 s)",
+      "url": "https://en.wikipedia.org/wiki/Shenzhou_(spacecraft)"
+    },
+    {
+      "id": "wp-tiangong",
+      "title": "Wikipedia: Tiangong space station, inclination 41.47 deg, 386.4 x 391.8 km (statistics as of 25 Apr 2024)",
+      "url": "https://en.wikipedia.org/wiki/Tiangong_space_station"
+    },
+    {
+      "id": "zh-wp-sz23",
+      "title": "Chinese Wikipedia: Shenzhou-23 clocks 23:08:36 liftoff and 23:18:21 separation (585 s), no footnote on that bullet",
+      "url": "https://zh.wikipedia.org/wiki/%E7%A5%9E%E8%88%9F%E4%BA%8C%E5%8D%81%E4%B8%89%E5%8F%B7"
+    },
+    {
+      "id": "baidu-cz2f",
+      "title": "Baidu encyclopedia: Long March 2F theoretical crewed timeline (154.8/159/159.5/212.5/463.1/582.1/585.1 s)",
+      "url": "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320"
+    },
+    {
+      "id": "nsf-shenzhou-24",
+      "title": "Next Spaceflight: Shenzhou 24, 25 Nov 2026 00:18 UTC. Wikipedia EN cites this page for 00:19 UTC",
+      "url": "https://nextspaceflight.com/launches/details/8429"
     }
   ],
   "launches": [
@@ -1967,13 +2062,13 @@
       "slug": "nrol-136",
       "name": "NROL-136",
       "vehicle": "Falcon 9 Block 5",
-      "t0_utc": "2026-11-22T12:16:00Z",
-      "t0_kind": "window_open",
+      "t0_utc": "2026-11-22T12:23:56Z",
+      "t0_kind": "actual",
       "window_open_utc": "2026-11-22T12:16:00Z",
       "window_close_utc": "2026-11-22T12:46:00Z",
       "backup_utc": "2026-11-23T12:02:00Z",
-      "status": "Go",
-      "phase": "upcoming",
+      "status": "Success",
+      "phase": "flown",
       "files": {
         "csv": "/launches/nrol-136/nrol-136_2026-11-22_trajectory.csv",
         "kml": "/launches/nrol-136/nrol-136_2026-11-22_trajectory.kml",
@@ -1993,11 +2088,14 @@
         "https://www.notamify.com/notams/MMFR/b88795c4-a1ff-4e2f-a802-fc51a2519d6d",
         "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
         "https://sattrackcam.blogspot.com/2024/05/the-nrol-146-payloads-observing-train.html",
-        "https://en.wikipedia.org/wiki/NRO_Proliferated_Architecture_Mission"
+        "https://en.wikipedia.org/wiki/NRO_Proliferated_Architecture_Mission",
+        "https://x.com/SpaceX/status/2124479235779637392",
+        "https://x.com/SpaceflightNow/status/2124479451878830301",
+        "https://x.com/NRO_gov/status/2124514497050050808"
       ],
       "method": {
-        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, the same Iridium NEXT-7 rows as USSF-317, laid on this flight's azimuth); SpaceX nrol136 timeline MECO 2:11 / sep 2:14 / SES-1 2:22 / fairing 2:59, unchanged on the 2026-11-21 check, so the surrogate knots were not moved; azimuth 155.15 deg = bearing from SLC-4E to the far-edge midpoint of USCG LNM 58668 Hazard Area A (30.9833N 118.6500W, 445 km). That notice lists 22 Nov 1216-1311Z on the same polygon (it had been a backup day). Ends at T+508 s (telemetry end) because SECO is unpublished. T0 is the window open 2026-11-22T12:16:00Z (Sun 22 Nov 4:16 a.m. PT, 30-minute window to 12:46Z; backup Mon 23 Nov 4:02 a.m. PT = 2026-11-23T12:02:00Z). RETIMED +85560 s from 2026-11-21T12:30:00Z; ECEF unchanged. ILLUSTRATIVE",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX nrol136 MECO 131 s, sep 134 s, SES-1 142 s, fairing 179 s as hard events; SECO-1 fixed at an ASSUMED T+510 s (unpublished; near the stage-2 propellant limit of about 516 s); target 310 x 425 km ASSUMED, borrowed from prior proliferated batches, not this flight; azimuth 155.15 deg from LNM 58668 Hazard Area A (non-rotating i=69.77 deg; not retuned); steering fitted, payload FIXED at 8000 kg because the shared F9 fit floor of 13 t cannot reach that orbit after MECO at 131 s; result geodetic alt 310.01 km, FPA 0.000 deg, SMA error +0.04 km, osculating 305.9 x 429.2 km, i=69.046 deg; pad->insertion bearing 160.45 deg vs commanded 155.15 deg (+5.30 deg); family-loft knots at the earlier MECO are not matched (sim 75 km and 14 km downrange vs the droneship loft's 50 km and 37 km at T+131 s) and were given wide sigmas; deploy unpublished, so +2 revs on the inferred insertion orbit, file ends T+11538 s; RETIMED 2026-11-21 by utc shift +85560 s only; sim not re-run. ILLUSTRATIVE"
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, the same Iridium NEXT-7 rows as USSF-317, laid on this flight's azimuth); SpaceX nrol136 timeline MECO 2:11 / sep 2:14 / SES-1 2:22 / fairing 2:59, unchanged on the 2026-11-21 check, so the surrogate knots were not moved; azimuth 155.15 deg = bearing from SLC-4E to the far-edge midpoint of USCG LNM 58668 Hazard Area A (30.9833N 118.6500W, 445 km). That notice lists 22 Nov 1216-1311Z on the same polygon (it had been a backup day). Ends at T+508 s (telemetry end) because SECO is unpublished. T0 is the window open 2026-11-22T12:16:00Z (Sun 22 Nov 4:16 a.m. PT, 30-minute window to 12:46Z; backup Mon 23 Nov 4:02 a.m. PT = 2026-11-23T12:02:00Z). RETIMED +85560 s from 2026-11-21T12:30:00Z; ECEF unchanged. ILLUSTRATIVE FLOWN 2026-11-22: utc shifted +476 s to the actual liftoff 2026-11-22T12:23:56Z. ECEF unchanged. Sim not re-run. Post-flight SpaceX timeline MECO 2:10 / fairing 2:58 / landing 7:37 was not applied over the pre-flight 2:11 / 2:59 / 7:34.",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX nrol136 MECO 131 s, sep 134 s, SES-1 142 s, fairing 179 s as hard events; SECO-1 fixed at an ASSUMED T+510 s (unpublished; near the stage-2 propellant limit of about 516 s); target 310 x 425 km ASSUMED, borrowed from prior proliferated batches, not this flight; azimuth 155.15 deg from LNM 58668 Hazard Area A (non-rotating i=69.77 deg; not retuned); steering fitted, payload FIXED at 8000 kg because the shared F9 fit floor of 13 t cannot reach that orbit after MECO at 131 s; result geodetic alt 310.01 km, FPA 0.000 deg, SMA error +0.04 km, osculating 305.9 x 429.2 km, i=69.046 deg; pad->insertion bearing 160.45 deg vs commanded 155.15 deg (+5.30 deg); family-loft knots at the earlier MECO are not matched (sim 75 km and 14 km downrange vs the droneship loft's 50 km and 37 km at T+131 s) and were given wide sigmas; deploy unpublished, so +2 revs on the inferred insertion orbit, file ends T+11538 s; RETIMED 2026-11-21 by utc shift +85560 s only; sim not re-run. ILLUSTRATIVE FLOWN 2026-11-22: utc shifted +476 s to the actual liftoff 2026-11-22T12:23:56Z. ECEF unchanged. Sim not re-run. Post-flight SpaceX timeline MECO 2:10 / fairing 2:58 / landing 7:37 was not applied over the pre-flight 2:11 / 2:59 / 7:34."
       },
       "reference_ids": [
         "spacex-nrol136",
@@ -2013,7 +2111,10 @@
         "wp-falcon9",
         "wp-falcon9-b5",
         "ll2",
-        "kml"
+        "kml",
+        "spacex-nrol136-x",
+        "sfn-nrol136-x",
+        "nro-nrol136-x"
       ],
       "assumptions": [
         "SECO-1 time T+510 s is ASSUMED. SpaceX publishes MECO, separation, SES-1 and fairing for NROL-136 and does not publish SECO, a restart or deploy. 510 s is inside the stage-2 propellant limit implied by the vehicle file (SES-1 at 142 s, about 287 kg/s, 107.5 t load, burnout near 516 s).",
@@ -2025,9 +2126,10 @@
         "Known sim ground-track azimuth residual, same sign and size as USSF-317: pad->insertion bearing 160.45 deg vs commanded 155.15 deg (+5.30 deg). Achieved inclination 69.046 deg versus 69.77 deg non-rotating from the azimuth and versus 69.7 deg for the prior batches. Azimuth kept on the hazard area.",
         "The osculating 305.9 x 429.2 km versus the assumed 310 x 425 km is the equatorial-radius definition of perigee/apogee against a geodetic altitude of 310.01 km at 26 N. SMA error against the assumed orbit is +0.04 km and flight-path angle is 0.000 deg.",
         "Stage-1 residual propellant after the T+131 s MECO stands in for the boostback, entry and landing burns. The vehicle file was built for a droneship recovery; this flight lands on LZ-4. The burns themselves are not modelled.",
-        "RETIMED 2026-11-21 from 2026-11-21T12:30:00Z to the window open 2026-11-22T12:16:00Z (+85560 s). SpaceX nrol136: Sunday 22 Nov, 30-minute window opens 4:16 a.m. PT, backup Monday 23 Nov 4:02 a.m. PT. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac agrees on 12:16Z, last_updated 2026-11-20T17:43:00Z. The earlier Saturday-versus-Sunday conflict is closed and is not repeated here. Published ascent events still match the file (MECO 131 s, sep 134 s, SES-1 142 s, fairing 179 s), so knots were not moved. ECEF geometry unchanged. Sim not re-run. 14th flight of the booster, landing LZ-4. LNM 58668 Area A is the same polygon; 22 Nov 1216-1311Z is a listed day on that notice. FAA advisory primary is now 22 Nov 1216-1329Z, which is the airspace window, longer than the 30-minute launch window."
+        "RETIMED 2026-11-21 from 2026-11-21T12:30:00Z to the window open 2026-11-22T12:16:00Z (+85560 s). SpaceX nrol136: Sunday 22 Nov, 30-minute window opens 4:16 a.m. PT, backup Monday 23 Nov 4:02 a.m. PT. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac agrees on 12:16Z, last_updated 2026-11-20T17:43:00Z. The earlier Saturday-versus-Sunday conflict is closed and is not repeated here. Published ascent events still match the file (MECO 131 s, sep 134 s, SES-1 142 s, fairing 179 s), so knots were not moved. ECEF geometry unchanged. Sim not re-run. 14th flight of the booster, landing LZ-4. LNM 58668 Area A is the same polygon; 22 Nov 1216-1311Z is a listed day on that notice. FAA advisory primary is now 22 Nov 1216-1329Z, which is the airspace window, longer than the 30-minute launch window.",
+        "FLOWN 2026-11-22. T0 is the actual liftoff 2026-11-22T12:23:56Z. LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac, Launch Successful, second precision, last_updated 2026-11-22T14:41:24Z. SpaceX's post-flight page says Sunday 22 Nov at 4:23 a.m. PT, 14th flight, landing LZ-4. Spaceflight Now says 4:23 a.m. PST. The second is LL2's. LL2 still lists the window as 12:16-12:46Z; that window is kept and is not the liftoff. Files utc-shifted +476 s. ECEF unchanged. Sim not re-run. The post-flight timeline's MECO 2:10, fairing 2:58 and landing 7:37 differ by 1 s, 1 s and 3 s from the pre-flight 2:11, 2:59 and 7:34 still in the files. Knots were not moved. No satellite count, no Starshield label and no booster serial are recorded."
       ],
-      "note": "Pre-flight ILLUSTRATIVE. NROL-136, the fifteenth NRO proliferated-architecture batch, Falcon 9 from SLC-4E. T0 is the window open 2026-11-22T12:16:00Z (Sun 22 Nov 4:16 a.m. PST), 30-minute window to 12:46Z. Backup Monday 23 Nov 4:02 a.m. PT (2026-11-23T12:02:00Z). SpaceX and LL2 agree (LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac, last_updated 2026-11-20T17:43:00Z). The Saturday 21 Nov 12:30Z conflict is closed. Files utc-shifted +85560 s; ECEF unchanged; sim not re-run. Ascent events unchanged (MECO 2:11, sep 2:14, SES-1 2:22, fairing 2:59), so knots were not moved. 14th flight, landing LZ-4. Azimuth 155.15 deg is still the bearing to the far-edge midpoint of USCG LNM 58668 Hazard Area A; 22 Nov 1216-1311Z is a listed day on that same polygon. Sim insertion unchanged: 305.9 x 429.2 km, i=69.046 deg, pad->insertion bearing 160.45 deg vs commanded 155.15 deg. Deploy unpublished, so the sim ends two revolutions later (T+11538 s)."
+      "note": "FLOWN. NROL-136, Falcon 9 from SLC-4E, lifted off at 2026-11-22T12:23:56Z (Sun 22 Nov 4:23:56 a.m. PST). LL2 id 951a341f-236b-42fe-a667-4ab2fcf36eac is Launch Successful, net to the second, last_updated 2026-11-22T14:41:24Z. SpaceX's post-flight page says Sunday 22 Nov at 4:23 a.m. PT, the 14th flight of the first stage, landing on Landing Zone 4. SpaceX's liftoff post and Spaceflight Now's 4:23 a.m. PST post agree to the minute. NRO posted MISSION SUCCESS. Both trajectory types were utc-shifted +476 s from the window open 2026-11-22T12:16:00Z. ECEF geometry unchanged. Sim not re-run. LL2 still lists the window as 12:16-12:46Z. The post-flight SpaceX timeline reads MECO 2:10, stage separation 2:14, SES-1 2:22, fairing 2:58 and landing 7:37. The files still use the pre-flight 2:11, 2:59 and 7:34 marks. Those 1 s, 1 s and 3 s differences were not applied. Payload is classified. No satellite count, no Starshield label, no booster serial. Sim insertion unchanged: geodetic 310.01 km, FPA 0.000 deg, SMA error +0.04 km, osculating 305.9 x 429.2 km, i=69.046 deg, pad-to-insertion bearing 160.45 deg versus commanded 155.15 deg. Deploy unpublished, so the sim ends two revolutions later (T+11538 s). ILLUSTRATIVE."
     },
     {
       "slug": "ariane64-le04-2026-11-23",
@@ -2223,6 +2325,83 @@
         "Sim track bias left in place. Pad->insertion bearing 69.99 deg versus commanded 63.39 deg (+6.6 deg). Achieved inclination 49.083 deg versus 51.6 deg. Geodetic altitude 191.77 km versus 193 km. Osculating 179.3 x 218.0 km versus the borrowed 193 x 240 km (SMA error -17.7 km). Knot altitudes run high: booster +7.6 km, fairing +20.6 km, core separation +30.1 km. Those 'around' figures were not retuned, and the azimuth was not retuned."
       ],
       "note": "Pre-flight ILLUSTRATIVE. Progress MS-36 (97P) from Baikonur Site 31/6. T0 is the LL2 NET 2026-11-24T05:03:00Z (Mon 23 Nov 9:03 p.m. PST), status To Be Confirmed, minute precision, window start and end both 05:03Z, last_updated 2026-06-08T21:46:36Z. Next Spaceflight agrees on 05:03Z. VEHICLE CONFLICT: this file flies Soyuz-2.1b. LL2 and Next Spaceflight say 2.1b. Interfax (22 September, year not printed) quotes Roscosmos that 2.1b has been adapted for Progress and first flew one on 16 September, while 2.1a continues for crew and satellites. Roscosmos TV lists the launch and does not name the variant. Wikipedia EN says Soyuz-2.1a, 09:03 UTC and Zvezda, which also disagree with 05:03Z and with Poisk. The booster, core and fairing times, and the 193 x 240 km target, are borrowed from Soyuz-2.1a Progress flights. Block I runs Wikipedia's 270 s RD-0124 burn because the 2.1a cutoff left this model suborbital. Separation is T+560.159 s. Azimuth 63.39 deg is ASSUMED from 51.6 deg. No hazard polygon was found. Sim at cutoff: geodetic 191.77 km, FPA -0.034 deg, SMA error -17.7 km, osculating 179.3 x 218.0 km, i=49.083 deg. Pad->insertion bearing 69.99 deg versus 63.39 deg. Payload 7,280 kg is the Wikipedia figure, not a Roscosmos mass for this ship."
+    },
+    {
+      "slug": "shenzhou-24",
+      "name": "Shenzhou-24",
+      "vehicle": "Long March 2F/G",
+      "t0_utc": "2026-11-25T00:18:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-25T00:08:00Z",
+      "window_close_utc": "2026-11-25T00:48:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/shenzhou-24/shenzhou-24_2026-11-25_trajectory.csv",
+        "kml": "/launches/shenzhou-24/shenzhou-24_2026-11-25_trajectory.kml",
+        "csv_sim": "/launches/shenzhou-24/shenzhou-24_2026-11-25_trajectory_sim.csv",
+        "kml_sim": "/launches/shenzhou-24/shenzhou-24_2026-11-25_trajectory_sim.kml",
+        "track_lite": "/launches/shenzhou-24/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://ll.thespacedevs.com/2.3.0/launches/c9605b67-8a53-4239-a8ae-577fe3b79799/",
+        "https://english.news.cn/20261121/d3c0ee0ac8b448408f681c35f60a3a22/c.html",
+        "https://www.news.cn/20261121/d4bd6cd543cb4b2daf8958afce468550/c.html",
+        "https://www.chinanews.com.cn/gn/2026/11-22/10735952.shtml",
+        "https://www.cmse.gov.cn/xwzx/202206/t20220605_50061.html",
+        "https://en.cmse.gov.cn/missions/shenzhouXIV/",
+        "https://en.cmse.gov.cn/missions/shenzhouv/",
+        "https://www.cmse.gov.cn/xwzx/202605/t20260525_57561.html",
+        "https://www.cmse.gov.cn/kpjy/htzs/ttsj/201509/t20150911_37314.html",
+        "https://en.wikipedia.org/wiki/Long_March_2F",
+        "https://zh.wikipedia.org/wiki/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F%E8%BF%90%E8%BD%BD%E7%81%AB%E7%AE%AD",
+        "https://en.wikipedia.org/wiki/Shenzhou_(spacecraft)",
+        "https://en.wikipedia.org/wiki/Tiangong_space_station",
+        "https://zh.wikipedia.org/wiki/%E7%A5%9E%E8%88%9F%E4%BA%8C%E5%8D%81%E4%B8%89%E5%8F%B7",
+        "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320",
+        "https://nextspaceflight.com/launches/details/8429",
+        "https://en.wikipedia.org/wiki/YF-20"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: Baidu encyclopedia theoretical crewed Long March 2F times (booster sep 154.8 s, stage sep 159.5 s, fairing 212.5 s, S2 main cutoff 463.1 s), altitudes and ranges taken from this board's sim at those times, linear between knots, on a constant-azimuth spherical rhumb (R=6371.0088 km) at 97.16 deg. Ends at S2 main cutoff. Vernier cutoff and ship separation are only in the sim. Azimuth 97.16 deg is the east-southeast supplement for Tiangong's 41.47 deg inclination; no hazard polygon for the window was found. T0 LL2 NET 2026-11-25T00:18:00Z. ILLUSTRATIVE",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: vehicles/lm2fg.json. Hard times are the Baidu theoretical crewed sequence (booster 154.8 s, S1 cutoff 159 s, sep and S2 ignition 159.5 s, fairing 212.5 s, S2 main 463.1 s, vernier 582.1 s). Deploy 585.1 s is that sequence's ship separation. Target 200 x 350 km is the CMSA design orbit. Azimuth 97.16 deg from Tiangong's 41.47 deg, not retuned. Vertical rise fixed at the published about-12 s pitch start. Cd 0.667 transferred from the LM-3B fit. Payload fixed at 7,840 kg. Steering fitted: kick 1.446 deg over 10 s, tan(theta)=0.7320-0.002377*(t-t_ign). Result at vernier cutoff: geodetic alt 188.30 km versus 200 km, FPA +0.477 deg, SMA error -88.53 km. At separation T+585.1 s: osculating 131.7 x 241.3 km versus 200 x 350, i=41.78 deg versus 41.47 deg. Early track bearing about 127.8 deg; pad-to-insertion bearing 114.11 deg versus commanded 97.16 deg (+16.95 deg). Wikipedia's about-40 km tower jettison compares with the sim's 32.7 km at T+120 s (-7.3 km) and was not a fit knot. Booster propellant raised from 151,200 kg to 179,324 kg so the 154.8 s burn closes. Cost 270.79. ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "ll2-shenzhou-24",
+        "xinhua-sz24-en",
+        "xinhua-sz24-zh",
+        "chinanews-sz24",
+        "cmse-sz14",
+        "cmse-sz14-en",
+        "cmse-sz5",
+        "cmse-sz23",
+        "cmse-lm2f",
+        "wp-lm2f",
+        "zh-wp-lm2f",
+        "wp-shenzhou",
+        "wp-tiangong",
+        "zh-wp-sz23",
+        "baidu-cz2f",
+        "nsf-shenzhou-24",
+        "wp-yf20",
+        "ll2",
+        "kml"
+      ],
+      "assumptions": [
+        "T0 is the LL2 NET 2026-11-25T00:18:00Z, not a liftoff. CMSA and Xinhua have not published a clock. Xinhua on 21 Nov 2026 (English and Chinese) and China News on 22 Nov 2026 describe the rehearsal and give no time. TIME CONFLICT: Wikipedia EN lists 00:19 UTC and cites Next Spaceflight, whose page lists 00:18 UTC. 00:19 was not used. 05:18 AM Pakistan Standard Time equals 00:18Z because PKT is UTC+5. No Pakistani post stating 05:18 was retrieved, so that wording is not an independent source.",
+        "AZIMUTH 97.16 deg is derived, and the east-southeast choice is an assumption. sin(az)=cos(41.47)/cos(40.957893) gives 82.84 deg or 97.16 deg. 97.16 deg is the supplement south of east. No NOTAM or debris notice covering 25 Nov 2026 00:08-00:48Z was found. The November 5 and November 9 ZBPE danger areas do not cover this window and were not used. Not retuned after the sim.",
+        "TARGET ORBIT is the CMSA 2015 design orbit, 200 x 350 km, not Shenzhou-24 elements. Inclination is Tiangong's published 41.47 deg (Wikipedia infobox, statistics as of 25 Apr 2024), so the launch is aimed at the station plane. Shenzhou-5's measured 199.14 x 347.8 km at 42.4 deg and Shenzhou-8's about 200 x 329 km at 42 deg are recorded and were not the target. Tiangong's own 386.4 x 391.8 km is the station, not the insertion.",
+        "EVENT TIMES are Baidu encyclopedia's theoretical crewed sequence, borrowed, not Shenzhou-24's. Booster separation 154.8 s, first-stage cutoff 159 s, stage separation and second-stage ignition 159.5 s, fairing 212.5 s, main cutoff 463.1 s, vernier cutoff 582.1 s, ship separation 585.1 s. Conflicts not used as the hard times: English Wikipedia rounds the 2F/G booster burn to 153 s, from 140 s. CMSA Shenzhou-5, on the basic rocket: tower 120 s, boosters 137 s, stage separation and ignition 159 s, fairing 200 s, main cutoff 460 s, separation 587 s. CMSA Shenzhou-14: separation about 577 s. Wikipedia's Shenzhou profile: pitch about 12 s, tower about 40 km at about 120 s, boosters about 152 s, fairing about 205 s, main cutoff about 460 s, separation about 580 s. Chinese Wikipedia's Shenzhou-23 clocks, with no footnote on that bullet, give 585 s and agree with 585.1 s rather than 577 s. CMSA Shenzhou-23 and Xinhua say only about 10 minutes, which covers both. Using 577 s as an exact vernier cutoff left the stage-2 load partly unburned and the semi-major axis about 218 km short of 200 x 350 km, so the hard times are the theoretical sequence.",
+        "PAYLOAD 7,840 kg is the Wikipedia Shenzhou infobox, citing Zhu Guangchen, 2022, and is fixed, not fitted. It is not a weighed Shenzhou-24 mass. The same article's spacecraft table lists 8,000 kg and says those figures apply to Shenzhou 12. China News reported 8,082 kg for Shenzhou-8. Next Spaceflight lists 8,100 kg for Shenzhou-24. Those three were not used.",
+        "BOOSTER PROPELLANT: the English Wikipedia infobox load, 4 x 37,800 kg = 151,200 kg, is short of mdot times the 154.8 s burn. The sim raises the load to 179,324 kg and flags it. The article says the 2F/G tanks were enlarged and does not give the new load. That raise is the enlargement stand-in, not a measured G-variant mass. Modelled GLOW 489,464 kg. The same article's prose says 479.8 t for the 2F/G and the infobox says 464,000 kg.",
+        "FAIRING 1,500 kg is an ASSUMPTION. No shroud mass was found. The escape tower's mass was not found and is not dropped at 120 s. Drag uses the 3.35 m core diameter and the transferred LM-3B Cd 0.667, not the booster span. The 10 s kick length is an ASSUMPTION. The 12 s vertical rise is the published pitch start and was not fitted.",
+        "SURROGATE altitudes and ranges are this sim's, not published. Wikipedia's about 40 km at T+120 s compares with the sim's 32.7 km and was not substituted. The rhumb ends at main-engine cutoff because the vernier and the separation are in the sim file.",
+        "Pad elevation 0 m. LL2 Launch Area 91 gives 40.957893N 100.290944E and no height. The site is about 1 km above sea level and that height is not applied.",
+        "Sim track bias left in place. Early bearing about 127.8 deg through booster separation. Pad-to-insertion bearing 114.11 deg versus commanded 97.16 deg (+16.95 deg). Achieved inclination 41.78 deg versus 41.47 deg. Geodetic altitude 188.30 km versus 200 km. Flight-path angle +0.477 deg. SMA error -88.53 km. Osculating at separation 131.7 x 241.3 km versus the design 200 x 350 km. Azimuth kept on the inclination-derived heading."
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. Shenzhou-24, Long March 2F/G, from Jiuquan Launch Area 91 / SLS-1 (921), a crewed flight to Tiangong, with a Pakistani astronaut expected. T0 is the LL2 NET 2026-11-25T00:18:00Z (Tue 24 Nov 4:18 p.m. PST; Wed 25 Nov 08:18 Beijing), status Go, window 00:08-00:48Z, minute precision, last_updated 2026-11-20T09:07:56Z. CMSA and Xinhua have not published a clock. Wikipedia EN's 00:19 UTC, cited to Next Spaceflight, disagrees with Next Spaceflight's own 00:18 UTC and was not used. No Pakistani post stating 05:18 AM PKT was retrieved; that clock equals 00:18Z only because PKT is UTC+5. No hazard polygon for the window was found. Azimuth 97.16 deg is the east-southeast heading for Tiangong's 41.47 deg inclination. The target 200 x 350 km is the CMSA design orbit, not this flight's elements and not the station's 386 x 392 km. Event times are Baidu's theoretical crewed sequence. CMSA Shenzhou-14's about 577 s and CMSA Shenzhou-5's basic-rocket timeline are recorded and were not the hard times. Payload 7,840 kg is the Wikipedia spacecraft figure. Sim at separation T+585.1 s: geodetic 188.46 km, osculating 131.7 x 241.3 km, i=41.78 deg versus 41.47 deg. At vernier cutoff: geodetic 188.30 km versus 200 km, FPA +0.477 deg, SMA error -88.53 km. Pad-to-insertion bearing 114.11 deg versus commanded 97.16 deg. Early track bearing about 127.8 deg. Tower altitude at T+120 s is 32.7 km versus Wikipedia's about 40 km. ILLUSTRATIVE."
     }
   ],
   "globe": {
