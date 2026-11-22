@@ -1,0 +1,209 @@
+{
+ "id": "lm2fg",
+ "name": "Long March 2F/G (crewed, escape tower not in the mass)",
+ "timeline": true,
+ "cd": {
+  "value": null,
+  "note": "transferred from the LM-3B fit (same 3.35 m YF-20B core family), see fixed_params"
+ },
+ "glow_kg": {
+  "value": 479800,
+  "src": "https://en.wikipedia.org/wiki/Long_March_2F",
+  "note": "Prose: Long March 2F/G liftoff mass 479.8 t. The same article's infobox lists 464,000 kg. Check only; the sim does not force this total. Booster propellant below is the infobox load and is short of a 153 s burn, so the run raises it."
+ },
+ "stages": [
+  {
+   "name": "Boosters",
+   "count": 4,
+   "parallel": true,
+   "diameter_m": {
+    "value": 2.25,
+    "src": "https://en.wikipedia.org/wiki/Long_March_2F"
+   },
+   "propellant_kg": {
+    "value": 37800,
+    "derived": "English Wikipedia infobox gross 41,000 kg minus empty 3,200 kg, per booster. This is short of mdot times the 153 s 2F/G burn; the sim raises the load to burned and flags it. The article says the 2F/G booster tanks were enlarged, and that extra propellant is not a separate published number."
+   },
+   "dry_kg": {
+    "value": 3200,
+    "src": "https://en.wikipedia.org/wiki/Long_March_2F",
+    "note": "infobox empty mass, per booster"
+   },
+   "thrust_sl_N": {
+    "value": 740400,
+    "src": "https://www.cmse.gov.cn/kpjy/htzs/ttsj/201509/t20150911_37314.html",
+    "note": "CMSA: each DaFY11-1 / YF-20 engine sea-level thrust about 740.4 kN. English Wikipedia lists maximum thrust 816.285 kN, the YF-20 vacuum class, and that figure is not used as sea-level thrust."
+   },
+   "thrust_vac_N": {
+    "value": 826232,
+    "derived": "SL 740.4 kN x YF-20 vac/SL thrust ratio 816.3/731.5 (https://en.wikipedia.org/wiki/YF-20), same method as vehicles/lm3b.json. Per booster, one engine."
+   },
+   "isp_vac_s": {
+    "value": 290.92,
+    "derived": "SL Isp 260.7 s (https://zh.wikipedia.org/wiki/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F%E8%BF%90%E8%BD%BD%E7%81%AB%E7%AE%AD) x the same 816.3/731.5 ratio, so mdot is unchanged from the sea-level pair. English Wikipedia prints 261 s."
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "https://en.wikipedia.org/wiki/Long_March_2F"
+   },
+   "cutoff_s": {
+    "value": 154.8,
+    "src": "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320",
+    "note": "Baidu encyclopedia theoretical crewed timeline: booster separation +154.8 s. A separate shutdown instant is not given; cutoff is set at separation. English Wikipedia rounds the 2F/G booster burn to 153 s and says separation moved from 140 s to 153 s. CMSA Shenzhou-5 says 137 s on the basic rocket. The 154.8 s figure is the one that belongs to the same theoretical sequence as the stage times below."
+   },
+   "separation_s": {
+    "value": 154.8,
+    "src": "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320",
+    "note": "same theoretical instant; shutdown and separation are not published as two times"
+   }
+  },
+  {
+   "name": "Stage 1",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://en.wikipedia.org/wiki/Long_March_2F"
+   },
+   "propellant_kg": {
+    "value": 187000,
+    "derived": "English Wikipedia infobox gross 196,500 kg minus empty 9,500 kg"
+   },
+   "dry_kg": {
+    "value": 9500,
+    "src": "https://en.wikipedia.org/wiki/Long_March_2F"
+   },
+   "thrust_sl_N": {
+    "value": 2961600,
+    "derived": "4 x 740.4 kN, the CMSA per-engine sea-level figure. The infobox maximum thrust 3,265.143 kN is 4 x 816.285 kN and is not used as sea-level thrust."
+   },
+   "thrust_vac_N": {
+    "value": 3304928,
+    "derived": "4 x 826232 N, the per-engine vacuum figure above"
+   },
+   "isp_vac_s": {
+    "value": 290.92,
+    "derived": "same YF-20B vacuum Isp as the boosters"
+   },
+   "ignition_s": {
+    "value": 0,
+    "src": "https://en.cmse.gov.cn/missions/shenzhouv/"
+   },
+   "cutoff_s": {
+    "value": 159,
+    "src": "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320",
+    "note": "Theoretical crewed timeline: first-stage cutoff +159 s. CMSA Shenzhou-5 also puts separation and second-stage ignition at 159 s. The English Wikipedia infobox burn of 166 s exceeds the infobox propellant at this mdot and is not the hard event."
+   },
+   "separation_s": {
+    "value": 159.5,
+    "src": "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320",
+    "note": "Theoretical crewed timeline: stage separation +159.5 s. CMSA Shenzhou-5 does not split cutoff and separation."
+   }
+  },
+  {
+   "name": "Stage 2",
+   "diameter_m": {
+    "value": 3.35,
+    "src": "https://en.wikipedia.org/wiki/Long_March_2F"
+   },
+   "propellant_kg": {
+    "value": 86000,
+    "derived": "English Wikipedia infobox gross 91,500 kg minus empty 5,500 kg. Main engine plus verniers draw this load."
+   },
+   "dry_kg": {
+    "value": 5500,
+    "src": "https://en.wikipedia.org/wiki/Long_March_2F"
+   },
+   "thrust_vac_N": {
+    "value": 746970,
+    "src": "https://www.cmse.gov.cn/kpjy/htzs/ttsj/201509/t20150911_37314.html",
+    "note": "CMSA: DaFY21-2 vacuum thrust about 746.97 kN. zh.wikipedia prints 741.5 kN. The English Wikipedia infobox maximum 831.005 kN is not used. No separate sea-level figure; it lights after staging, so thrust_sl is set equal to vacuum."
+   },
+   "thrust_sl_N": {
+    "value": 746970,
+    "assumption": "set equal to the CMSA vacuum thrust because the stage lights after first-stage separation and a sea-level figure is not the operating point"
+   },
+   "isp_vac_s": {
+    "value": 298,
+    "src": "https://en.wikipedia.org/wiki/Long_March_2F",
+    "note": "infobox 298 s; zh.wikipedia also prints 298 s for the main engine"
+   },
+   "ignition_s": {
+    "value": 159.5,
+    "src": "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320",
+    "note": "Ignition set at theoretical stage separation. The timeline lists separation, not a separate ignition. CMSA Shenzhou-5 says the second stage ignited as the first stage separated."
+   },
+   "cutoff_s": {
+    "value": 463.1,
+    "src": "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320",
+    "note": "Theoretical crewed timeline: second-stage main cutoff +463.1 s. CMSA Shenzhou-5 says 460 s. Wikipedia's Shenzhou profile says around 460 s. The infobox burn of 295 s is not a flight event. 463.1 s is kept so the sequence stays one published timeline."
+   },
+   "tail": {
+    "thrust_vac_N": {
+     "value": 47100,
+     "src": "https://zh.wikipedia.org/wiki/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F%E8%BF%90%E8%BD%BD%E7%81%AB%E7%AE%AD",
+     "note": "vernier total 47.1 kN (YF-24B). Same 47.1 kN family figure as vehicles/lm3b.json."
+    },
+    "isp_vac_s": {
+     "value": 296.8,
+     "src": "https://zh.wikipedia.org/wiki/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F%E8%BF%90%E8%BD%BD%E7%81%AB%E7%AE%AD",
+     "note": "vernier 296.8 s"
+    },
+    "cutoff_s": {
+     "value": 582.1,
+     "src": "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320",
+     "note": "Theoretical crewed timeline: vernier cutoff +582.1 s. CMSA has not published a vernier time. Using CMSA Shenzhou-14's about-577 s separation as the cutoff leaves this stage's published propellant unburned and the design orbit out of reach, so 582.1 s is the hard cutoff."
+    },
+    "runs_with_main": true
+   }
+  }
+ ],
+ "fairing": {
+  "mass_kg": {
+   "value": 1500,
+   "assumption": "Shenzhou fairing mass and escape-tower mass were not found. 1,500 kg is a round stand-in for the 3.8 m shroud. The escape tower is not a separate mass and is not dropped at 120 s."
+  },
+  "jettison_time_s": {
+   "value": 212.5,
+   "src": "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320",
+   "note": "Theoretical crewed timeline: fairing +212.5 s. CMSA Shenzhou-5 says 200 s. Wikipedia's Shenzhou profile says about 205 s. 212.5 s stays with the same theoretical sequence."
+  }
+ },
+ "guidance": {
+  "kick_duration_s": {
+   "value": 10,
+   "assumption": "pitch-kick length is not published. The 12 s program turn is the vertical-rise time, fixed below."
+  },
+  "linear_tangent_from_stage": 2
+ },
+ "fixed_params": {
+  "vertical_rise_s": {
+   "value": 12,
+   "src": "https://en.wikipedia.org/wiki/Shenzhou_(spacecraft)",
+   "note": "programmed pitch begins at approximately T+12 s. Baidu's theoretical timeline also lists +12 s. Not fitted."
+  },
+  "cd": {
+   "value": null,
+   "derived": "FITTED LM-3B value transferred (3.35 m hypergolic core). Drag uses the 3.35 m core diameter, not the booster span. Filled at run time from vehicles/lm3b.json fitted_family."
+  }
+ },
+ "fit": {
+  "kick_deg": {
+   "x0": 2.0,
+   "bounds": [0.3, 12],
+   "basis": "ASSUMPTION bound"
+  },
+  "tan0": {
+   "x0": 0.5,
+   "bounds": [-1, 3],
+   "basis": "guidance law"
+  },
+  "tan_rate": {
+   "x0": 0.002,
+   "bounds": [-0.02, 0.02],
+   "basis": "guidance law"
+  }
+ },
+ "header_notes": [
+  "LM-2F/G TIMELINE mode. Hard event times are Baidu encyclopedia's theoretical crewed sequence (booster 154.8 s, S1 cutoff 159 s, separation 159.5 s, fairing 212.5 s, S2 main 463.1 s, vernier 582.1 s). CMSA Shenzhou-5 (137/159/200/460/587 s) and CMSA Shenzhou-14 (about 577 s) are recorded on the launch file and are not these hard times."
+ ],
+ "family_from": "lm3b"
+}
