@@ -1,8 +1,8 @@
 {
- "slug": "ariane64-le04-2026-11-23",
+ "slug": "ariane64-le04-2026-11-24",
  "title": "Ariane 64 Block 2 VA271 / Amazon Leo LE-04 (ELA-4)",
  "vehicle": "ariane64_block2",
- "t0_utc": "2026-11-23T11:09:00Z",
+ "t0_utc": "2026-11-24T10:45:00Z",
  "pad": {
   "lat": 5.256319,
   "lon": -52.786838,
@@ -36,8 +36,8 @@
   "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude"
  },
  "header_notes": [
-  "ILLUSTRATIVE. PRE-FLIGHT. Ariane 64 Block 2, flight VA271, Amazon Leo LE-04, 36 satellites, ELA-4. T0 is the window open 2026-11-23T11:09:00Z (t0_kind window_open), window to 11:38:00Z. Arianespace: 11:09-11:38 UTC, which is 12:09-12:38 Paris. LL2 id 7bdc412b-c965-4517-a131-f57a01189803 is Go, net 2026-11-23T11:09:00Z, window 11:09-11:38Z, last_updated 2026-11-20T14:23:25Z.",
-  "TIME CONFLICT: ESA's VA271 timeline labels its clock column 'CET' but the liftoff row 11:09:22 matches UTC, not Paris. Arianespace lists 12:09-12:38 Paris and 11:09-11:38 UTC. ESA also writes the window as 11:09-11:38 GMT / 12:09-12:38 CET, so the timeline's 11:09:22 liftoff is the UTC/GMT figure with a CET label. Both are recorded. This file uses 11:09:00Z, the window open, not ESA's 11:09:22.",
+  "ILLUSTRATIVE. PRE-FLIGHT. Ariane 64 Block 2, flight VA271, Amazon Leo LE-04, 36 satellites, ELA-4. T0 is the window open 2026-11-24T10:45:00Z (t0_kind window_open), window to 11:14:00Z. RETIMED +84960 s from 2026-11-23T11:09:00Z. Arianespace press release 24 Nov: 10:45-11:14 UTC (07:45-08:14 Kourou, 11:45-12:14 Paris), final satellite separation approximately 2 h 4 min after liftoff. The 23 Nov window 11:09-11:38 UTC was scrubbed: a technical event on the launcher's ground support systems, chronology stopped before mobile-gantry removal. LL2 id 7bdc412b-c965-4517-a131-f57a01189803 is Go, net 2026-11-24T10:45:00Z, window 10:45-11:14Z, last_updated 2026-11-23T13:40:20Z. ECEF geometry unchanged. Sim not re-run.",
+  "TIME CONFLICT: ESA's VA271 timeline labels its clock column 'CET' but the liftoff row 11:09:22 matches UTC, not Paris. Arianespace lists 12:09-12:38 Paris and 11:09-11:38 UTC. ESA also writes the window as 11:09-11:38 GMT / 12:09-12:38 CET, so the timeline's 11:09:22 liftoff is the UTC/GMT figure with a CET label. Both are recorded for the scrubbed 23 Nov window. This file's T0 is the 24 Nov window open 2026-11-24T10:45:00Z, not ESA's 11:09:22.",
   "Published timeline (ESA, offsets from that liftoff): booster sep T+2:23, fairing sep T+3:12, core MECO T+7:45, core sep T+7:51, Vinci ignition 1 T+7:59, Vinci cutoff 1 T+17:51, Vinci ignition 2 T+1:06:52, Vinci cutoff 2 T+1:07:10, deployment starts T+1:39:29, ends T+2:08:39.",
   "Azimuth 37.23 deg from NAVAREA IV 1118/26 areas A and B. The Vinci-cutoff-1 fit target (geodetic 150 km, apogee parameter 445 km, FPA -0.55 deg) is an ASSUMPTION chosen so the open-loop 18 s Vinci burn finishes near the borrowed 465 km. Payload 20,855 kg is a provisional estimate. ILLUSTRATIVE."
  ],
@@ -99,13 +99,14 @@
     "value": 5969,
     "src": "https://www.esa.int/articles/about-us/directorates/space-transportation/ariane/watch-live-ariane-6-launches-another-set-of-amazon-leo-satellites-to-orbit Amazon Leo deployment starts T+1:39:29"
    },
-   "src": "ESA VA271 timeline: deployment starts T+1:39:29 (5969 s). Deployment ends T+2:08:39 (7719 s); the file ends at the start.",
+   "src": "ESA VA271 timeline: deployment starts T+1:39:29 (5969 s). Deployment ends T+2:08:39 (7719 s); the file ends at the start. Arianespace's 24 Nov release says final separation about 2 h 4 min (~T+7440 s); that figure was not substituted.",
    "label": "Amazon Leo deployment starts"
   },
   "notes": [
    "Deployment ends at T+2:08:39 (7719 s) per the same ESA timeline. This file ends when deployment starts.",
    "ESA labels the timeline column CET, but 11:09:22 matches the UTC/GMT liftoff (Arianespace: 12:09 Paris). Offsets are counted from that liftoff row.",
-   "No deorbit burn is published on this timeline (LE-01 had a third burn near T+2:42). It is not modelled."
+   "No deorbit burn is published on this timeline (LE-01 had a third burn near T+2:42). It is not modelled.",
+   "Arianespace 24 Nov press release: final satellite separation approximately 2 hours and 4 minutes after liftoff (~T+7440 s). That figure was not substituted. deploy.t_s stays 5969 s, ESA's deployment start. ESA's deployment end stays T+2:08:39 (7719 s)."
   ]
  },
  "fairing_jettison_s": {
@@ -140,7 +141,7 @@
    }
   }
  },
- "t0_note": "Window open 2026-11-23T11:09:00Z. Arianespace and LL2 agree. ESA timeline liftoff 11:09:22 is recorded and not used as T0.",
+ "t0_note": "Window open 2026-11-24T10:45:00Z. RETIMED +84960 s from 2026-11-23T11:09:00Z after the 23 Nov scrub. Arianespace and LL2 agree on 10:45-11:14Z. ESA timeline liftoff 11:09:22 is the old timeline's liftoff row and is not T0.",
  "fitted": {
   "status": "FITTED",
   "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",

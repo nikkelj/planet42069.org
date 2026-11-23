@@ -2,7 +2,7 @@
  "slug": "progress-ms-36",
  "title": "Soyuz-2.1b Progress MS-36 (97P, Baikonur 31/6)",
  "vehicle": "soyuz21b",
- "t0_utc": "2026-11-24T05:03:00Z",
+ "t0_utc": "2026-11-24T10:13:00Z",
  "pad": {
   "lat": 45.996034,
   "lon": 63.564003,
@@ -11,7 +11,7 @@
  },
  "azimuth_deg": {
   "value": 63.39,
-  "assumption": "No Baikonur hazard polygon for 24 Nov 2026 05:03Z was found. 63.39 deg is the non-rotating northeast azimuth for a 51.6 deg inclination from this pad: sin(az)=cos(51.6)/cos(45.996034). The southeast supplement (116.61 deg) was not used; Progress ISS launches head northeast. Not retuned after the sim. RussianSpaceWeb's prior Progress insertions were 51.67 deg, not 51.6."
+  "assumption": "No Baikonur hazard polygon for 24 Nov 2026 10:13Z was found. 63.39 deg is the non-rotating northeast azimuth for a 51.6 deg inclination from this pad: sin(az)=cos(51.6)/cos(45.996034). The southeast supplement (116.61 deg) was not used; Progress ISS launches head northeast. Not retuned after the sim. RussianSpaceWeb's prior Progress insertions were 51.67 deg, not 51.6."
  },
  "payload_kg": {
   "value": 7280,
@@ -31,7 +31,7 @@
   "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude"
  },
  "header_notes": [
-  "ILLUSTRATIVE. Progress MS-36 (97P), Baikonur Site 31/6, T0 2026-11-24T05:03:00Z. LL2 id 8dd5de11-831b-445f-86f0-bffefe0550d9, status To Be Confirmed, net precision Minute, window start=end 05:03Z, last_updated 2026-06-08T21:46:36Z. Next Spaceflight lists the same 05:03Z.",
+  "ILLUSTRATIVE. Progress MS-36 (97P), Baikonur Site 31/6, T0 2026-11-24T10:13:00Z. LL2 id 8dd5de11-831b-445f-86f0-bffefe0550d9, status To Be Confirmed, net precision Minute, window start=end 10:13Z, last_updated 2026-11-22T19:47:17Z, update 'Updated tentative T-0'. RETIMED +18600 s from 2026-11-24T05:03:00Z. ECEF geometry unchanged. Sim not re-run. Not refit. SOURCE CONFLICT: LL2's update cites https://x.com/russianspaceweb/status/2124586343107842235 , not a Roscosmos release. No Roscosmos confirmation of 10:13Z was found. Stale public pages still show 05:03Z (EveryLaunch, data as of 2026-11-13; Space Launch Hub, as of 2026-11-20).",
   "VEHICLE CONFLICT, not silent: this file flies Soyuz-2.1b (RD-0124). LL2 and Next Spaceflight name Soyuz-2.1b. Interfax, dateline 22 September with no year printed, quotes Roscosmos: Soyuz-2.1b was adapted for Progress MS, the first such launch was 16 September, and Soyuz-2.1a continues for satellites and crewed flights (https://www.interfax.ru/russia/1117752). Roscosmos TV http://www.tvroscosmos.ru/2833/ lists Progress MS-36 from Baikonur 31 on 24 Nov 2026 and does not name 2.1a or 2.1b. Wikipedia EN says Soyuz-2.1a, 09:03 UTC and Zvezda aft. Prior Progress flights cited here (MS-19, MS-23, MS-27, MS-28) flew Soyuz-2.1a.",
   "Event times and the 193 x 240 km parking orbit are BORROWED from those Soyuz-2.1a flights. No MS-36 or Soyuz-2.1b Progress timeline was found. Docking target is Poisk (task / Next Spaceflight class of reports). Wikipedia says Zvezda. Docking is not modelled.",
   "Stage-3 cutoff is ignition 286.159 s plus Wikipedia's 270 s RD-0124 burn (556.159 s). The Soyuz-2.1a cutoff 525.45 s and the 8 min 49 s separation are recorded and are not the hard events: that shorter burn left this model suborbital. Separation is 4 s after the 2.1b cutoff (560.159 s), the same gap as MS-19's 525.45 s to 529 s."
