@@ -1,0 +1,126 @@
+{
+ "slug": "lm2d-xichang-2026-11-26",
+ "title": "Long March 2D / Unknown Payload (Xichang LC-3)",
+ "vehicle": "lm2d",
+ "t0_utc": "2026-11-26T09:35:00Z",
+ "pad": {
+  "lat": 28.247059,
+  "lon": 102.029008,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/b00f0e9a-48d6-4f26-9cb5-7d19169ff7c4/ Launch Complex 3 (LC-3/LA-1), latitude 28.247059, longitude 102.029008. Same pad point as lm2c-xichang. Elevation is not on the LL2 record; 0 m is an ASSUMPTION. The site is well above sea level and that height is not applied."
+ },
+ "azimuth_deg": {
+  "value": 105.51,
+  "src": "https://space-notices.com/notice/notam-ZPKM-A6099%2F26",
+  "note": "Mean of the great-circle bearings from the LL2 LC-3 pad to the two NOTAM Q-line centres. ZPKM A6099/26 Q) 2649N10743E = 26 deg 49 min N, 107 deg 43 min E, bearing 104.51 deg, 583 km, valid 2026-11-26T09:30:00Z-09:52:00Z. ZGZU A6100/26 Q) 2510N11208E = 25 deg 10 min N, 112 deg 08 min E, bearing 106.52 deg, 1060 km, valid 2026-11-26T09:31:00Z-09:57:00Z (https://space-notices.com/notice/notam-ZGZU-A6100%2F26). Mean of the unrounded bearings is 105.51 deg. Non-rotating inclination from this pad and azimuth is 31.91 deg. Not an SSO heading. Boxes: A6099 N265800E1073200-N265200E1075800-N264000E1075400-N264700E1072800; A6100 N252600E1115100-N251300E1123100-N245600E1122500-N251000E1114500."
+ },
+ "payload_kg": {
+  "fit": true,
+  "value": null,
+  "note": "FITTED to reach the ASSUMED orbit at the typical vernier cutoff. Payload is unknown (LL2 'Unknown Payload'); the fitted value is NOT an estimate."
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 500,
+   "assumption": "Altitude is NOT published. LL2 orbit is Unknown. 500 km circular is an ASSUMED round LEO altitude, the same stand-in as lm2c-xichang when the orbit was unknown and as the reused Taiyuan LM-2D config. It is not an SSO target: the NOTAM azimuth gives a non-rotating inclination of 31.91 deg, and SSO at 500 km is about 97.4 deg. Not a mission altitude."
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 5
+ },
+ "header_notes": [
+  "ILLUSTRATIVE. PRE-FLIGHT. Unknown payload, Long March 2D, Xichang Launch Complex 3 (LC-3/LA-1). T0 is the LL2 NET 2026-11-26T09:35:00Z (Thu 26 Nov 1:35 a.m. PST; 17:35 BJT), status Go, window 09:30-09:52Z, net precision Hour. LL2 id b00f0e9a-48d6-4f26-9cb5-7d19169ff7c4, last_updated 2026-11-20T09:12:38Z, update 'Added launch per NOTAMs; Payload and launch vehicle identities uncertain.'",
+  "Vehicle and stage data reused from the lm2d-taiyuan entry (vehicles/lm2d.json): configuration-2 masses and the SAST TYPICAL sequence via huijiwiki, S1 vacuum via the YF-20 ratio, verniers ASSUMED to run from S2 ignition to 705.1 s, 3.35 m fairing 860 kg ASSUMED, Cd transferred from the LM-3B fit. Event times are the typical sequence, not this flight's. No altitude/range knots are published.",
+  "AZIMUTH 105.51 deg from NOTAM Q-line centres (ZPKM A6099/26 104.51 deg, ZGZU A6100/26 106.52 deg). TARGET ASSUMED: 500 km circular. The azimuth is southeast, non-rotating inclination 31.91 deg, so this is not the SSO shell used for the Taiyuan LM-2D. No deploy time is published. VEHICLE IDENTITY: LL2 names Long March 2D and flags the vehicle as uncertain. A Chinese Wikipedia future-launch row lists a Long March 2C to GTO from Xichang on 26 Nov with no clock; that row was not used."
+ ],
+ "post_cutoff": {
+  "deploy": {
+   "t_s": null,
+   "note": "No payload-deploy time is published (LL2 payload and orbit Unknown). The SAST typical sequence lists separation at 737.1 s, but that time is not this flight's, so it is not used."
+  },
+  "drag": {
+   "cd": {
+    "value": 2.2,
+    "assumption": "free-molecular Cd 2.2, same assumption as lm2d-taiyuan and lm2d-jiuquan"
+   },
+   "area_m2": {
+    "value": 8.81,
+    "derived": "pi x (3.35 m / 2)^2, LM-2D S2 diameter, same derivation as lm2d-taiyuan"
+   }
+  },
+  "notes": [
+   "Typical-sequence residual-propellant venting after separation is not modelled."
+  ]
+ },
+ "t0_note": "LL2 NET 2026-11-26T09:35:00Z. id b00f0e9a-48d6-4f26-9cb5-7d19169ff7c4, Go, window 09:30-09:52Z, net precision Hour, last_updated 2026-11-20T09:12:38Z.",
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "kick_deg": {
+    "value": 1.639611,
+    "bounds": [
+     0.3,
+     15
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "payload_kg": {
+    "value": 1281.29972,
+    "bounds": [
+     200,
+     4000
+    ],
+    "basis": "upper bound LM-2D LEO capability 4 t (huijiwiki); payload unknown"
+   },
+   "tan0": {
+    "value": 0.705037,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": 0.002835,
+    "bounds": [
+     -0.05,
+     0.05
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "vertical_rise_s": 17.0,
+   "cd": 0.66658
+  },
+  "knot_residuals": [],
+  "final": {
+   "alt_km": 500.0000000070436,
+   "fpa_deg": -3.001466272738239e-12,
+   "sma_err_km": 8.986331522464751e-09,
+   "mass_kg": 6517.1
+  },
+  "cost": 2.6422983426082556e-17,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "Stage 1",
+     "loaded_kg": 182000,
+     "burned_kg": 178742,
+     "residual_kg": 3258,
+     "dry_kg": 11000,
+     "flag": null
+    },
+    {
+     "name": "Stage 2",
+     "loaded_kg": 53000,
+     "burned_kg": 51764,
+     "residual_kg": 1236,
+     "dry_kg": 4000,
+     "flag": null
+    }
+   ],
+   "glow_kg": 252141
+  }
+ }
+}
