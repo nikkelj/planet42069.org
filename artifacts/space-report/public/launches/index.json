@@ -728,7 +728,7 @@
     },
     {
       "id": "ll2-ariane64-le04",
-      "title": "LL2: Ariane 64 Block 2 | Amazon Leo (LE-04), id 7bdc412b-c965-4517-a131-f57a01189803",
+      "title": "LL2: Ariane 64 Block 2 | Amazon Leo (LE-04), Launch Successful, net 2026-11-24T11:14:52Z, id 7bdc412b-c965-4517-a131-f57a01189803, last_updated 2026-11-24T13:51:20Z",
       "url": "https://ll.thespacedevs.com/2.3.0/launches/7bdc412b-c965-4517-a131-f57a01189803/"
     },
     {
@@ -823,7 +823,7 @@
     },
     {
       "id": "ll2-ussf-266",
-      "title": "Launch Library 2: USSF-266 (460d9db7-eaf6-4cd9-b095-cff433534c09)",
+      "title": "Launch Library 2: USSF-266, Go, net 2026-11-24T16:08:59Z, second precision, window fields still 15:55-19:55Z, last_updated 2026-11-24T15:56:16Z (re-queried 16:09Z, still Go)",
       "url": "https://ll.thespacedevs.com/2.3.0/launches/460d9db7-eaf6-4cd9-b095-cff433534c09/"
     },
     {
@@ -838,7 +838,7 @@
     },
     {
       "id": "ll2-progress-ms-36",
-      "title": "Launch Library 2: Progress MS-36 (8dd5de11-831b-445f-86f0-bffefe0550d9)",
+      "title": "Launch Library 2: Soyuz 2.1b | Progress MS-36, Launch Successful, net 2026-11-24T10:17:46Z, second precision, last_updated 2026-11-24T10:35:14Z",
       "url": "https://ll.thespacedevs.com/2.3.0/launches/8dd5de11-831b-445f-86f0-bffefe0550d9/"
     },
     {
@@ -903,7 +903,7 @@
     },
     {
       "id": "ll2-shenzhou-24",
-      "title": "Launch Library 2: Long March 2F/G | Shenzhou 24, Go, NET 2026-11-25T00:18:00Z, window 00:08-00:48Z, minute precision, last_updated 2026-11-20T09:07:56Z",
+      "title": "Launch Library 2: Long March 2F/G | Shenzhou 24, still Go, NET 2026-11-25T00:18:00Z, window fields still 00:08-00:48Z, minute precision, last_updated 2026-11-20T09:07:56Z, no result on the 24 Nov re-query",
       "url": "https://ll.thespacedevs.com/2.3.0/launches/c9605b67-8a53-4239-a8ae-577fe3b79799/"
     },
     {
@@ -1045,6 +1045,76 @@
       "id": "zhwiki-cn-launch-list",
       "title": "Chinese Wikipedia: future Chinese launches (a 26 Nov Xichang row names Long March 2C to GTO, no clock; not used)",
       "url": "https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%9B%BD%E8%BF%90%E8%BD%BD%E7%81%AB%E7%AE%AD%E5%8F%91%E5%B0%84%E5%88%97%E8%A1%A8"
+    },
+    {
+      "id": "tvzvezda-progress-ms-36",
+      "title": "TV Zvezda: Soyuz-2.1b with Progress MS-36 launched from Baikonur; the broadcast was Roscosmos's",
+      "url": "https://tvzvezda.ru/news/202611241319-gfXuX.html"
+    },
+    {
+      "id": "lenta-progress-ms-36",
+      "title": "Lenta, quoting Roscosmos: Progress MS-36 insertion on the assigned orbit, separation from the third stage, and antenna and solar-array deployment were nominal; vehicle Soyuz-2.1b",
+      "url": "https://lenta.ru/news/2026/11/24/raketa-s-teledroidom-startovala/"
+    },
+    {
+      "id": "rsw-progress-ms-36",
+      "title": "RussianSpaceWeb: Progress MS-36 liftoff 13:17:46 Moscow Time (10:17:46Z) on Soyuz-2.1b, ship release 13:26:59 Moscow Time, initial orbit 193.1 x 240.0 km at 51.67 deg, docking Poisk zenith",
+      "url": "https://www.russianspaceweb.com/progress-ms-36.html"
+    },
+    {
+      "id": "arianespace-va271-success",
+      "title": "Arianespace: VA271 success, 24 Nov 2026 at 8:14 am Kourou local time, 36 Amazon Leo satellites to about 460 km, last separation 2 h 4 min after liftoff",
+      "url": "https://newsroom.arianespace.com/arianespace-successfully-launches-another-36-amazon-leo-satellites-on-ariane-6s-10th-flight/?lang=eng"
+    },
+    {
+      "id": "xinhua-sz24-t0",
+      "title": "Xinhua, 24 Nov 2026: Shenzhou-24 targeted for 08:18 Beijing on 25 Nov; crew Tang Hongbo (commander), Wu Yi, Muhammad Zeeshan Ali; 3.5-hour fast rendezvous to the Tianhe forward port",
+      "url": "https://www.news.cn/20261124/18101736be3f4ef098c062ec82fb2a2a/c.html"
+    },
+    {
+      "id": "casc-sz24-t0",
+      "title": "CASC, citing CMSA, 24 Nov 2026: Shenzhou-24 targeted for 08:18 Beijing on 25 Nov; Tang Hongbo commander, Wu Yi flight engineer, Muhammad Zeeshan Ali payload specialist",
+      "url": "https://www.spacechina.com/n25/n2014789/n2014804/c4764137/content.html"
+    },
+    {
+      "id": "rl-night-owls",
+      "title": "Rocket Lab: Night Owls Never Sleep, window open 1:00 p.m. NZDT / 00:00 UTC 27 Nov 2026, one StriX, 569 km LEO, 38 deg",
+      "url": "https://rocketlabcorp.com/missions/launches/night-owls-never-sleep/"
+    },
+    {
+      "id": "navarea-xiv-338-26",
+      "title": "NAVAREA XIV 338/26 (Night Owls Never Sleep space-debris areas A and B, daily 1615-0130Z, 26 Nov-10 Dec 2026)",
+      "url": "https://www.sealagom.com/navarea/14/message/26090/338-26-area-bounded/"
+    },
+    {
+      "id": "nz-coastal-306-26",
+      "title": "NZ Coastal Navigation Warning 306/26 (Mahia near-field and downrange debris areas, daily 1615-0130Z, 26 Nov-10 Dec 2026)",
+      "url": "https://maritimenz.govt.nz/navigational-warnings/"
+    },
+    {
+      "id": "ll2-electron-strix14",
+      "title": "Launch Library 2: Electron | Night Owls Never Sleep (StriX Launch 14), Go, NET 2026-11-27T00:05:00Z, window 00:00-00:05Z, last_updated 2026-11-20T06:34:05Z",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/2093e4fc-ac8c-4296-a1b5-deececee6a72/"
+    },
+    {
+      "id": "synspective-strix",
+      "title": "Synspective: StriX is a 100 kg-class X-band SAR satellite",
+      "url": "https://www.synspective.com/satellite/satellite-strix/"
+    },
+    {
+      "id": "ll2-lm6a-taiyuan-1127",
+      "title": "Launch Library 2: Long March 6A | Unknown Payload, Taiyuan LC-9A, Go, NET 2026-11-27T13:00:00Z, window 12:53-13:15Z, hour precision, last_updated 2026-11-20T17:15:10Z",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/a6421db3-7c8a-4cf7-a659-cec195140f7f/"
+    },
+    {
+      "id": "nsf-lm6a-taiyuan-1127",
+      "title": "NASASpaceflight forum (the post LL2 cites for the 27 Nov Taiyuan NOTAMs). This run got HTTP 403, so no coordinates were read from it",
+      "url": "https://forum.nasaspaceflight.com/index.php?topic=57867.msg2843569#msg2843569"
+    },
+    {
+      "id": "space-notices-lm6a-1127",
+      "title": "Space Notices: Long March 6A unknown payload, Taiyuan LC-9A. No notices linked",
+      "url": "https://space-notices.com/entry/launch-long-march-6a-unknown-payload-a6421db3"
     }
   ],
   "launches": [
@@ -2200,12 +2270,12 @@
       "slug": "ariane64-le04-2026-11-24",
       "name": "Amazon Leo LE-04 (Ariane 64 Block 2, VA271)",
       "vehicle": "Ariane 64 Block 2",
-      "t0_utc": "2026-11-24T10:45:00Z",
-      "t0_kind": "window_open",
+      "t0_utc": "2026-11-24T11:14:52Z",
+      "t0_kind": "actual",
       "window_open_utc": "2026-11-24T10:45:00Z",
       "window_close_utc": "2026-11-24T11:14:00Z",
-      "status": "Go",
-      "phase": "upcoming",
+      "status": "Success",
+      "phase": "flown",
       "files": {
         "csv": "/launches/ariane64-le04-2026-11-24/ariane64-le04-2026-11-24_2026-11-24_trajectory.csv",
         "kml": "/launches/ariane64-le04-2026-11-24/ariane64-le04-2026-11-24_2026-11-24_trajectory.kml",
@@ -2236,13 +2306,15 @@
         "https://newsroom.arianespace.com/mission-va271le-04-ariane-6-launch-rescheduled-for-november-24-2026/",
         "https://newsroom.arianespace.com/mission-va271le-04-launch-update/",
         "https://x.com/arianespace/status/2124751667795022008",
-        "https://x.com/arianespace/status/2124858698530980085"
+        "https://x.com/arianespace/status/2124858698530980085",
+        "https://newsroom.arianespace.com/arianespace-successfully-launches-another-36-amazon-leo-satellites-on-ariane-6s-10th-flight/?lang=eng"
       ],
       "method": {
-        "csv": "event-surrogate parametric: ESA VA271 times (booster sep 143 s, fairing 192 s, core MECO 465 s, Vinci cutoff 1 1071 s) with borrowed or assumed altitudes (143 s: 87 km from NASASpaceflight LE-01; 192 s: 127 km from the same LE-01 note; 465 s: 275 km generic ArianeGroup Vulcain altitude; 1071 s: 150 km ASSUMED transfer height), linear between knots, on a constant-azimuth spherical rhumb at 37.23 deg (mean bearing to NAVAREA IV 1118/26 area A and B centroids). Horizontal speed ASSUMED linear to 7.527 km/s at T+1071. Ends at Vinci cutoff 1; the second burn and deployment are not on this rhumb. T0 window open 2026-11-24T10:45:00Z, window to 11:14Z. RETIMED +84960 s from 2026-11-23T11:09:00Z after the 23 Nov scrub (ground support systems, before gantry removal). ECEF unchanged. Arianespace now says final satellite separation about 2 h 4 min after liftoff (~T+7440 s); this rhumb still ends at Vinci cutoff 1. ILLUSTRATIVE",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: ESA times are hard events (P160C cutoff 137 s from the published burn, separation 143 s, fairing 192 s, MECO 465 s, core sep 471 s, Vinci-1 479-1071 s). Second Vinci burn open-loop T+4012-4030 at rated 180 kN. Fit target ASSUMED geodetic 150 km, apogee parameter 445 km, FPA -0.55 deg so that burn finishes near the borrowed 465 km. Result: cutoff-1 alt 150.00 km, FPA -0.550 deg, SMA error -0.019 km; osculating at second-burn ignition 124.1 x 465.6 km; after the 18 s burn 451.7 x 481.9 km (mean 466.8 km, +1.8 km vs 465), i=51.089 deg. Deploy start kept at T+5969 s per ESA (deployment ends T+7719 s, not in the file). Arianespace 24 Nov says final separation about 2 h 4 min (~T+7440 s); that figure was not substituted. RETIMED +84960 s from 2026-11-23T11:09:00Z; ECEF unchanged; sim not re-run: osculating 463.9 x 489.1 km, geodetic alt 488.4 km, i=51.122 deg. Knot residuals: booster sep +0.51 km vs borrowed 87 km; fairing +23.7 km vs borrowed 127 km. Early track heading 35.7 deg vs commanded 37.23 deg (-1.5 deg). Payload fixed at the provisional 20,855 kg. ILLUSTRATIVE"
+        "csv": "event-surrogate parametric: ESA VA271 times (booster sep 143 s, fairing 192 s, core MECO 465 s, Vinci cutoff 1 1071 s) with borrowed or assumed altitudes (143 s: 87 km from NASASpaceflight LE-01; 192 s: 127 km from the same LE-01 note; 465 s: 275 km generic ArianeGroup Vulcain altitude; 1071 s: 150 km ASSUMED transfer height), linear between knots, on a constant-azimuth spherical rhumb at 37.23 deg (mean bearing to NAVAREA IV 1118/26 area A and B centroids). Horizontal speed ASSUMED linear to 7.527 km/s at T+1071. Ends at Vinci cutoff 1; the second burn and deployment are not on this rhumb. T0 window open 2026-11-24T10:45:00Z, window to 11:14Z. RETIMED +84960 s from 2026-11-23T11:09:00Z after the 23 Nov scrub (ground support systems, before gantry removal). ECEF unchanged. Arianespace now says final satellite separation about 2 h 4 min after liftoff (~T+7440 s); this rhumb still ends at Vinci cutoff 1. ILLUSTRATIVE FLOWN 2026-11-24: utc shifted +1792 s to the actual liftoff 2026-11-24T11:14:52Z. The published window 10:45-11:14Z is kept; liftoff is 52 s after that close. ECEF unchanged. Arianespace: 36 satellites to about 460 km, last separation 2 h 4 min after liftoff. The rhumb still ends at Vinci cutoff 1.",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: ESA times are hard events (P160C cutoff 137 s from the published burn, separation 143 s, fairing 192 s, MECO 465 s, core sep 471 s, Vinci-1 479-1071 s). Second Vinci burn open-loop T+4012-4030 at rated 180 kN. Fit target ASSUMED geodetic 150 km, apogee parameter 445 km, FPA -0.55 deg so that burn finishes near the borrowed 465 km. Result: cutoff-1 alt 150.00 km, FPA -0.550 deg, SMA error -0.019 km; osculating at second-burn ignition 124.1 x 465.6 km; after the 18 s burn 451.7 x 481.9 km (mean 466.8 km, +1.8 km vs 465), i=51.089 deg. Deploy start kept at T+5969 s per ESA (deployment ends T+7719 s, not in the file). Arianespace 24 Nov says final separation about 2 h 4 min (~T+7440 s); that figure was not substituted. RETIMED +84960 s from 2026-11-23T11:09:00Z; ECEF unchanged; sim not re-run: osculating 463.9 x 489.1 km, geodetic alt 488.4 km, i=51.122 deg. Knot residuals: booster sep +0.51 km vs borrowed 87 km; fairing +23.7 km vs borrowed 127 km. Early track heading 35.7 deg vs commanded 37.23 deg (-1.5 deg). Payload fixed at the provisional 20,855 kg. ILLUSTRATIVE FLOWN 2026-11-24: utc shifted +1792 s to the actual liftoff 2026-11-24T11:14:52Z. ECEF unchanged. Sim not re-run. Deploy time not moved: the file still ends at ESA's deployment start T+5969 s. Arianespace's flown last separation is 2 h 4 min (T+7440 s). The published insertion is about 460 km; the unmoved sim mean after the second burn is 466.8 km."
       },
       "reference_ids": [
+        "arianespace-va271-success",
         "arianespace-va271",
         "arianespace-va271-x-reschedule",
         "arianespace-va271-x-scrub",
@@ -2277,18 +2349,20 @@
         "No VA271 deploy-end state is modelled. deploy.t_s is 5969 s, ESA's deployment start. Deployment ends at T+2:08:39 (7719 s). The APU (a CNES slide quotes about 250 N) and the deorbit burn LE-01 flew near T+2:42 are not on this timeline and are not modelled. Post-cutoff Cd 0.4 and area 22.902 m2 (pi*(5.4/2)^2) are assumptions.",
         "Pad elevation 0 m. LL2's ELA-4 record gives latitude and longitude and no height.",
         "Sim track bias left in place: early heading 35.7 deg versus commanded 37.23 deg (-1.5 deg). Achieved inclination 51.09 deg versus 52.95 deg non-rotating from the azimuth and versus 51.9 deg for the Amazon Leo shell. Azimuth kept on the hazard areas.",
-        "DEPLOY TIME NOT MOVED. The sim still ends at ESA's deployment start T+5969 s (T+1:39:29). Arianespace's 24 Nov press release says the final satellite separation is expected approximately 2 hours and 4 minutes after liftoff (~T+7440 s). ESA's published deployment end remains T+2:08:39 (7719 s). The ~2 h 4 min figure differs from both and was not substituted. Surrogate and sim were utc-shifted only."
+        "DEPLOY TIME NOT MOVED. The sim still ends at ESA's deployment start T+5969 s (T+1:39:29). Arianespace's 24 Nov press release says the final satellite separation is expected approximately 2 hours and 4 minutes after liftoff (~T+7440 s). ESA's published deployment end remains T+2:08:39 (7719 s). The ~2 h 4 min figure differs from both and was not substituted. Surrogate and sim were utc-shifted only.",
+        "FLOWN 2026-11-24. T0 is the actual liftoff 2026-11-24T11:14:52Z (+1792 s from the window open 2026-11-24T10:45:00Z). Arianespace: 24 November 2026 at 8:14 am local time in Kourou (UTC-3), 36 Amazon Leo satellites, about 460 km, last satellite separation 2 hours and 4 minutes after liftoff. The minute is Arianespace's. The second is LL2's (id 7bdc412b-c965-4517-a131-f57a01189803, Launch Successful, last_updated 2026-11-24T13:51:20Z). The published window remains 10:45-11:14Z. Liftoff is 52 s after 11:14:00Z. LL2's window_end field was rewritten to 11:14:52Z; that is the liftoff, and the published close 11:14:00Z is what this entry keeps. Files utc-shifted only. ECEF unchanged. Sim not re-run.",
+        "PUBLISHED 460 km AND THE 2 h 4 min SEPARATION WERE NOT SUBSTITUTED. The fit target and the 465 km prior-flight figure stay in the file. Arianespace now says this flight's delivery altitude was approximately 460 km. The unmoved sim is 451.7 x 481.9 km after the second burn (mean 466.8 km) and 463.9 x 489.1 km at the file's deploy start. The sim still ends at ESA's deployment start T+5969 s. The flown last separation is 2 h 4 min (7440 s). ESA's deployment end remains T+7719 s. None of those was substituted."
       ],
-      "note": "Pre-flight ILLUSTRATIVE. Ariane 64 Block 2, flight VA271, 36 Amazon Leo satellites (LE-04), four P160C boosters, ELA-4. RETIMED from 2026-11-23T11:09:00Z to the window open 2026-11-24T10:45:00Z (+84960 s; Tue 24 Nov 2:45 a.m. PST), window to 11:14Z. Arianespace rescheduled the launch after a 23 Nov scrub: a technical event on the ground support systems stopped the chronology before the mobile gantry was removed. The rocket and the 36 satellites stayed safe. LL2 id 7bdc412b-c965-4517-a131-f57a01189803 is Go at 10:45Z, last_updated 2026-11-23T13:40:20Z. Surrogate and sim were utc-shifted only. ECEF geometry unchanged. Sim not re-run. Azimuth 37.23 deg is unchanged (NAVAREA IV 1118/26 areas A and B). Sim, unchanged: Vinci cutoff 1 at geodetic 150.00 km, FPA -0.550 deg, SMA error -0.019 km; after the open-loop 18 s second burn, 451.7 x 481.9 km (mean 466.8 km) at i=51.089 deg. Booster-sep altitude 87.5 km versus 87 km borrowed from LE-01; fairing 150.7 km versus 127 km borrowed (+23.7 km). Early track heading 35.7 deg versus commanded 37.23 deg. The file still ends at ESA's deployment start T+5969 s (T+1:39:29). Arianespace now says final satellite separation about 2 h 4 min after liftoff (~T+7440 s). ESA's deployment end remains T+2:08:39 (7719 s). The new figure was not substituted. ILLUSTRATIVE."
+      "note": "FLOWN. Ariane 64 Block 2, flight VA271, 36 Amazon Leo satellites (LE-04), four P160C boosters, ELA-4, lifted off at 2026-11-24T11:14:52Z (Tue 24 Nov 3:14:52 a.m. PST; 8:14 am Kourou). Arianespace: delivered to about 460 km, last satellite separation 2 hours and 4 minutes after liftoff. The minute is Arianespace's; the second is LL2's. LL2 id 7bdc412b-c965-4517-a131-f57a01189803 is Launch Successful, last_updated 2026-11-24T13:51:20Z. The published window was 10:45-11:14Z and is kept. Liftoff is 52 s after that close. Both trajectory types were utc-shifted +1792 s from the window open 2026-11-24T10:45:00Z. ECEF geometry unchanged. Sim not re-run. Azimuth 37.23 deg is unchanged. Sim, unchanged: Vinci cutoff 1 at geodetic 150.00 km, FPA -0.550 deg, SMA error -0.019 km; after the open-loop 18 s second burn, 451.7 x 481.9 km (mean 466.8 km) at i=51.089 deg. The file still ends at ESA's deployment start T+5969 s. The flown last separation is 2 h 4 min and was not substituted. ILLUSTRATIVE."
     },
     {
       "slug": "ussf-266",
       "name": "USSF-266",
       "vehicle": "Falcon 9 Block 5",
-      "t0_utc": "2026-11-24T15:55:00Z",
+      "t0_utc": "2026-11-24T16:08:59Z",
       "t0_kind": "window_open",
-      "window_open_utc": "2026-11-24T15:55:00Z",
-      "window_close_utc": "2026-11-24T19:55:00Z",
+      "window_open_utc": "2026-11-24T16:08:59Z",
+      "window_close_utc": "2026-11-24T20:08:59Z",
       "backup_utc": "2026-11-25T15:46:00Z",
       "status": "Go",
       "phase": "upcoming",
@@ -2310,8 +2384,8 @@
         "https://www.spacex.com/launches/sl-15-16"
       ],
       "method": {
-        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, the same Iridium NEXT-7 rows as USSF-317, laid on this azimuth). SpaceX ussf266 times match the loft samples: MECO 2:26, SES-1 2:36, fairing 2:56. Azimuth 193.41 deg is the bearing from SLC-4E to the centroid of NOTAM NTTT A1483/26 (USSF266-TH3 debris return, 28.779S 134.454W, 7199 km). Ends at T+508 s because SECO is unpublished. T0 window open 2026-11-24T15:55:00Z, four-hour window to 19:55Z, backup 2026-11-25T15:46:00Z. ILLUSTRATIVE",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf266 MECO 146 s, sep 149 s, SES-1 156 s, fairing 176 s as hard events. SECO-1 fixed at a BORROWED T+519 s (sl-15-16) and the target 177.3 x 266.2 km is BORROWED from the Group 15 analog, not this flight. Azimuth 193.41 deg from NTTT A1483/26 (non-rotating i=101.00 deg; not retuned). Result: geodetic alt 177.30 km, FPA +0.001 deg, SMA error +0.030 km, osculating 174.7 x 268.6 km, i=99.47 deg. Pad->insertion bearing 195.11 deg vs commanded 193.41 deg (+1.70 deg). Family-knot residuals: MECO alt 63.98 vs 67.08 km, range 58.6 vs 86.5 km; SES-1 alt 73.78 vs 77.17 km, range 74.8 vs 108.6 km; fairing alt 91.15 vs 95.43 km, range 108.7 vs 153.9 km. Event times match exactly. Payload fitted 15.02 t inside the Starlink-band bounds and is not an estimate. Deploy unpublished, so +2 revs, file ends T+11191 s. Cost 22.010. ILLUSTRATIVE"
+        "csv": "event-surrogate (Falcon 9 family webcast telemetry loft, the same Iridium NEXT-7 rows as USSF-317, laid on this azimuth). SpaceX ussf266 times match the loft samples: MECO 2:26, SES-1 2:36, fairing 2:56. Azimuth 193.41 deg is the bearing from SLC-4E to the centroid of NOTAM NTTT A1483/26 (USSF266-TH3 debris return, 28.779S 134.454W, 7199 km). Ends at T+508 s because SECO is unpublished. T0 window open 2026-11-24T15:55:00Z, four-hour window to 19:55Z, backup 2026-11-25T15:46:00Z. ILLUSTRATIVE RETIMED 2026-11-24: T0 window open 2026-11-24T16:08:59Z, four-hour window to 20:08:59Z. utc shifted +839 s from 15:55:00Z. Not launched on the live LL2 re-query (still Go at 16:09Z). ECEF unchanged.",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf266 MECO 146 s, sep 149 s, SES-1 156 s, fairing 176 s as hard events. SECO-1 fixed at a BORROWED T+519 s (sl-15-16) and the target 177.3 x 266.2 km is BORROWED from the Group 15 analog, not this flight. Azimuth 193.41 deg from NTTT A1483/26 (non-rotating i=101.00 deg; not retuned). Result: geodetic alt 177.30 km, FPA +0.001 deg, SMA error +0.030 km, osculating 174.7 x 268.6 km, i=99.47 deg. Pad->insertion bearing 195.11 deg vs commanded 193.41 deg (+1.70 deg). Family-knot residuals: MECO alt 63.98 vs 67.08 km, range 58.6 vs 86.5 km; SES-1 alt 73.78 vs 77.17 km, range 74.8 vs 108.6 km; fairing alt 91.15 vs 95.43 km, range 108.7 vs 153.9 km. Event times match exactly. Payload fitted 15.02 t inside the Starlink-band bounds and is not an estimate. Deploy unpublished, so +2 revs, file ends T+11191 s. Cost 22.010. ILLUSTRATIVE RETIMED 2026-11-24 by utc shift +839 s only, to the window open 2026-11-24T16:08:59Z, window to 20:08:59Z. Sim not re-run. Not launched."
       },
       "reference_ids": [
         "spacex-ussf266",
@@ -2333,20 +2407,21 @@
         "Family Iridium NEXT-7 webcast telemetry is the surrogate loft and the sim knots. This flight's MECO, SES-1 and fairing times happen to be the same sample times. The loft is still not this flight.",
         "Deploy time unpublished -> deploy.t_s null; coast +2 revs on the inferred insertion orbit. Post-cutoff Cd 0.4 and area 10.75 m2 are the same assumptions as the other Falcon 9 coasts. Entry burn, landing burn and the droneship are not modelled. Unburned stage-1 residual stands in for that propellant.",
         "Sim track bias left in place: pad->insertion bearing 195.11 deg versus commanded 193.41 deg (+1.70 deg). Achieved inclination 99.47 deg versus 101.00 deg non-rotating from the azimuth. Azimuth kept on the debris-return notice.",
-        "Booster serial is not taken from SpaceX. The page says the 29th flight and names earlier missions. A serial such as B1081 appears only on secondary sites and is not recorded here."
+        "Booster serial is not taken from SpaceX. The page says the 29th flight and names earlier missions. A serial such as B1081 appears only on secondary sites and is not recorded here.",
+        "RETIMED 2026-11-24 from 2026-11-24T15:55:00Z to 2026-11-24T16:08:59Z (+839 s). Not a liftoff. Live LL2 id 460d9db7-eaf6-4cd9-b095-cff433534c09, re-queried at 2026-11-24T16:09:36Z: status Go for Launch, net 2026-11-24T16:08:59Z, second precision, last_updated still 2026-11-24T15:56:16Z. It had not been marked launched. SOURCE CONFLICT on the window: LL2 window_start and window_end are still 15:55:00Z and 19:55:00Z. SpaceX's page says the four-hour window opens at 8:08 a.m. PT, which is 16:08Z. The close used here is that open plus four hours, 2026-11-24T20:08:59Z, not LL2's 19:55Z. Backup stays 2026-11-25T15:46:00Z (SpaceX: Wednesday 25 Nov, 7:46 a.m. PT). Files utc-shifted only. ECEF unchanged. Sim not re-run. Azimuth, knots and the borrowed 177 x 266 km target were not touched."
       ],
-      "note": "Pre-flight ILLUSTRATIVE. USSF-266, Falcon 9 from SLC-4E. T0 is the window open 2026-11-24T15:55:00Z (Tue 24 Nov 7:55 a.m. PST), four-hour window to 19:55Z. Backup Wednesday 25 Nov 7:46 a.m. PT (2026-11-25T15:46:00Z). SpaceX: 29th flight of the first stage, landing on Of Course I Still Love You. LL2 id 460d9db7-eaf6-4cd9-b095-cff433534c09 is Go at 15:55Z. Payload is classified. No satellite count. Azimuth 193.41 deg is the bearing to the centroid of NOTAM NTTT A1483/26. The stage-1 box MMFO B4504/26 (about 169.4 deg) was not used; a rhumb at 193.41 deg misses it by about 280 km. SECO and the 177 x 266 km target are borrowed from the Group 15 / sl-15-16 family. Sim insertion: geodetic 177.30 km, FPA +0.001 deg, SMA error +0.030 km, osculating 174.7 x 268.6 km, i=99.47 deg versus 101.00 deg non-rotating. Pad->insertion bearing 195.11 deg versus commanded 193.41 deg. Payload fitted 15,021 kg is not an estimate. Deploy unpublished, so the sim ends two revolutions later (T+11191 s)."
+      "note": "Pre-flight ILLUSTRATIVE. USSF-266, Falcon 9 from SLC-4E. RETIMED +839 s. T0 is the window open 2026-11-24T16:08:59Z (Tue 24 Nov 8:08:59 a.m. PST), four-hour window to 20:08:59Z. Live LL2 id 460d9db7-eaf6-4cd9-b095-cff433534c09, re-queried at 16:09:36Z, is still Go, net 16:08:59Z, last_updated 15:56:16Z. Not marked launched, so this is not a liftoff and not a success. LL2's window fields are still 15:55-19:55Z. SpaceX says the four-hour window opens at 8:08 a.m. PT. The close 20:08:59Z is that open plus four hours. Backup Wednesday 25 Nov 7:46 a.m. PT (2026-11-25T15:46:00Z). Surrogate and sim were utc-shifted only. ECEF geometry unchanged. Sim not re-run. Azimuth 193.41 deg is unchanged. Sim insertion, unchanged: geodetic 177.30 km, FPA +0.001 deg, SMA error +0.030 km, osculating 174.7 x 268.6 km, i=99.47 deg. Pad->insertion bearing 195.11 deg versus commanded 193.41 deg. Payload classified. Deploy unpublished, so the sim still ends at T+11191 s."
     },
     {
       "slug": "progress-ms-36",
       "name": "Progress MS-36 (97P)",
       "vehicle": "Soyuz-2.1b",
-      "t0_utc": "2026-11-24T10:13:00Z",
-      "t0_kind": "net",
-      "window_open_utc": "2026-11-24T10:13:00Z",
-      "window_close_utc": "2026-11-24T10:13:00Z",
-      "status": "TBC",
-      "phase": "upcoming",
+      "t0_utc": "2026-11-24T10:17:46Z",
+      "t0_kind": "actual",
+      "window_open_utc": "2026-11-24T10:17:46Z",
+      "window_close_utc": "2026-11-24T10:17:46Z",
+      "status": "Success",
+      "phase": "flown",
       "files": {
         "csv": "/launches/progress-ms-36/progress-ms-36_2026-11-24_trajectory.csv",
         "kml": "/launches/progress-ms-36/progress-ms-36_2026-11-24_trajectory.kml",
@@ -2369,11 +2444,14 @@
         "https://ria.ru/20240815/korabl-1966304630.html",
         "https://x.com/russianspaceweb/status/2124586343107842235",
         "https://www.everylaunch.space/launches/soyuz-21b-progress-ms-36-97p",
-        "https://spacelaunchhub.com/launches/soyuz-2-1b-progress-ms-36-97p-2026-11-24"
+        "https://spacelaunchhub.com/launches/soyuz-2-1b-progress-ms-36-97p-2026-11-24",
+        "https://tvzvezda.ru/news/202611241319-gfXuX.html",
+        "https://lenta.ru/news/2026/11/24/raketa-s-teledroidom-startovala/",
+        "https://www.russianspaceweb.com/progress-ms-36.html"
       ],
       "method": {
-        "csv": "event-surrogate parametric: linear altitude and range between borrowed Soyuz-2.1a Progress knots (booster sep 117.848 s / ~43 km; fairing 183.079 s / ~91 km / ~200 km; core sep 287.419 s / ~143 km / ~500 km), on a constant-azimuth spherical rhumb at 63.39 deg. Booster-sep range 128.7 km is ASSUMED (linear in time to the fairing knot). Ends at core separation. The third stage is only in the sim. Azimuth 63.39 deg is ASSUMED (no hazard polygon): non-rotating northeast heading for 51.6 deg from the LL2 pad. T0 LL2 NET 2026-11-24T10:13:00Z. RETIMED +18600 s from 05:03Z. Status stays TBC. SOURCE CONFLICT: LL2 last_updated 2026-11-22T19:47:17Z cites a RussianSpaceWeb post ('Updated tentative T-0'), not Roscosmos. Stale pages still show 05:03Z. ECEF unchanged. Not refit. ILLUSTRATIVE",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode, vehicles/soyuz21b.json (Wikipedia Soyuz-2 masses and RD-0124). Booster, core and fairing times are the Progress MS-19 Soyuz-2.1a sequence, borrowed. Block I cutoff is ignition 286.159 s plus Wikipedia's 270 s RD-0124 burn (556.159 s). The 2.1a cutoff 525.45 s was tried and left this model suborbital (161 km, FPA -1.5 deg), so it is not the hard cutoff. Separation T+560.159 s is that cutoff plus the 4 s MS-19 gap from 525.45 s to 529 s. Target 193 x 240 km is borrowed from MS-19 / MS-27. Azimuth 63.39 deg ASSUMED for 51.6 deg, not retuned. Result: geodetic alt 191.77 km (target 193, -1.2 km), FPA -0.034 deg, SMA error -17.7 km, osculating 179.3 x 218.0 km versus 193 x 240, i=49.083 deg versus 51.6 deg. Knot residuals, times exact: booster alt 43 vs 50.6 km; fairing 91 vs 111.6 km and range 200 vs 172 km; core sep 143 vs 173.1 km and range 500 vs 480 km. Pad->insertion bearing 69.99 deg vs commanded 63.39 deg (+6.6 deg). Payload fixed at 7,280 kg (Wikipedia). Core propellant load raised 553 kg so mdot times the borrowed burn closes. Cost 18.42. RETIMED 2026-11-23 by utc shift +18600 s only, to NET 2026-11-24T10:13:00Z. Status stays TBC. Sim not re-run. Not refit. ECEF unchanged. ILLUSTRATIVE"
+        "csv": "event-surrogate parametric: linear altitude and range between borrowed Soyuz-2.1a Progress knots (booster sep 117.848 s / ~43 km; fairing 183.079 s / ~91 km / ~200 km; core sep 287.419 s / ~143 km / ~500 km), on a constant-azimuth spherical rhumb at 63.39 deg. Booster-sep range 128.7 km is ASSUMED (linear in time to the fairing knot). Ends at core separation. The third stage is only in the sim. Azimuth 63.39 deg is ASSUMED (no hazard polygon): non-rotating northeast heading for 51.6 deg from the LL2 pad. T0 LL2 NET 2026-11-24T10:13:00Z. RETIMED +18600 s from 05:03Z. Status stays TBC. SOURCE CONFLICT: LL2 last_updated 2026-11-22T19:47:17Z cites a RussianSpaceWeb post ('Updated tentative T-0'), not Roscosmos. Stale pages still show 05:03Z. ECEF unchanged. Not refit. ILLUSTRATIVE FLOWN 2026-11-24: utc shifted +286 s to the actual liftoff 2026-11-24T10:17:46Z. ECEF unchanged. Not refit. Knots not moved.",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode, vehicles/soyuz21b.json (Wikipedia Soyuz-2 masses and RD-0124). Booster, core and fairing times are the Progress MS-19 Soyuz-2.1a sequence, borrowed. Block I cutoff is ignition 286.159 s plus Wikipedia's 270 s RD-0124 burn (556.159 s). The 2.1a cutoff 525.45 s was tried and left this model suborbital (161 km, FPA -1.5 deg), so it is not the hard cutoff. Separation T+560.159 s is that cutoff plus the 4 s MS-19 gap from 525.45 s to 529 s. Target 193 x 240 km is borrowed from MS-19 / MS-27. Azimuth 63.39 deg ASSUMED for 51.6 deg, not retuned. Result: geodetic alt 191.77 km (target 193, -1.2 km), FPA -0.034 deg, SMA error -17.7 km, osculating 179.3 x 218.0 km versus 193 x 240, i=49.083 deg versus 51.6 deg. Knot residuals, times exact: booster alt 43 vs 50.6 km; fairing 91 vs 111.6 km and range 200 vs 172 km; core sep 143 vs 173.1 km and range 500 vs 480 km. Pad->insertion bearing 69.99 deg vs commanded 63.39 deg (+6.6 deg). Payload fixed at 7,280 kg (Wikipedia). Core propellant load raised 553 kg so mdot times the borrowed burn closes. Cost 18.42. RETIMED 2026-11-23 by utc shift +18600 s only, to NET 2026-11-24T10:13:00Z. Status stays TBC. Sim not re-run. Not refit. ECEF unchanged. ILLUSTRATIVE FLOWN 2026-11-24: utc shifted +286 s to the actual liftoff 2026-11-24T10:17:46Z. ECEF unchanged. Sim not re-run. Not refit. Knots not moved."
       },
       "reference_ids": [
         "ll2-progress-ms-36",
@@ -2390,7 +2468,10 @@
         "kml",
         "rsw-progress-ms-36-t0",
         "everylaunch-progress-ms-36",
-        "slh-progress-ms-36"
+        "slh-progress-ms-36",
+        "tvzvezda-progress-ms-36",
+        "lenta-progress-ms-36",
+        "rsw-progress-ms-36"
       ],
       "assumptions": [
         "VEHICLE CONFLICT, recorded, not silent. This trajectory uses Soyuz-2.1b (RD-0124). LL2 (id 8dd5de11-831b-445f-86f0-bffefe0550d9, last_updated 2026-06-08T21:46:36Z) and Next Spaceflight name Soyuz-2.1b. Interfax, dateline 22 September with no year printed on the page, quotes Roscosmos: Soyuz-2.1b was adapted for Progress MS, the first such launch was 16 September, and Soyuz-2.1a continues for satellites and crewed flights. Roscosmos TV lists Progress MS-36 from Baikonur Site 31 on 24 Nov 2026 and does not name 2.1a or 2.1b. Wikipedia EN says Soyuz-2.1a, and also says 09:03 UTC and a Zvezda docking, which disagree with LL2's 05:03Z and with Poisk. Progress MS-19, MS-23, MS-27 and MS-28 flew Soyuz-2.1a.",
@@ -2403,18 +2484,20 @@
         "CORE PROPELLANT: Wikipedia's 90,100 kg is 553 kg short of mdot times the 286.399 s burn at the published vacuum thrust and Isp. The sim raises the load to 90,653 kg. Booster and Block I loads cover their burns (residuals 3,307 kg and 2,830 kg). Modelled GLOW 305,509 kg against Wikipedia's round 312,000 kg.",
         "Pad elevation 0 m. LL2 Site 31/6 gives 45.996034N 63.564003E and no height.",
         "Sim track bias left in place. Pad->insertion bearing 69.99 deg versus commanded 63.39 deg (+6.6 deg). Achieved inclination 49.083 deg versus 51.6 deg. Geodetic altitude 191.77 km versus 193 km. Osculating 179.3 x 218.0 km versus the borrowed 193 x 240 km (SMA error -17.7 km). Knot altitudes run high: booster +7.6 km, fairing +20.6 km, core separation +30.1 km. Those 'around' figures were not retuned, and the azimuth was not retuned.",
-        "RETIMED 2026-11-23 from 2026-11-24T05:03:00Z to 2026-11-24T10:13:00Z (+18600 s). Status stays TBC. LL2 id 8dd5de11-831b-445f-86f0-bffefe0550d9, net precision Minute, window start and end both 10:13Z, last_updated 2026-11-22T19:47:17Z, update text 'Updated tentative T-0', info URL a RussianSpaceWeb post (https://x.com/russianspaceweb/status/2124586343107842235). That post is not a Roscosmos release. No Roscosmos confirmation of 10:13Z was found. SOURCE CONFLICT: EveryLaunch still shows 05:03Z from an LL2 cache dated 2026-11-13, and Space Launch Hub still showed 05:03Z as of 2026-11-20. Wikipedia's 09:03 UTC figure is the older conflict and was still not used. Surrogate and sim utc shift only. ECEF geometry unchanged. Sim not re-run. Azimuth, knots, cutoff and the fitted steering were not touched."
+        "RETIMED 2026-11-23 from 2026-11-24T05:03:00Z to 2026-11-24T10:13:00Z (+18600 s). Status stays TBC. LL2 id 8dd5de11-831b-445f-86f0-bffefe0550d9, net precision Minute, window start and end both 10:13Z, last_updated 2026-11-22T19:47:17Z, update text 'Updated tentative T-0', info URL a RussianSpaceWeb post (https://x.com/russianspaceweb/status/2124586343107842235). That post is not a Roscosmos release. No Roscosmos confirmation of 10:13Z was found. SOURCE CONFLICT: EveryLaunch still shows 05:03Z from an LL2 cache dated 2026-11-13, and Space Launch Hub still showed 05:03Z as of 2026-11-20. Wikipedia's 09:03 UTC figure is the older conflict and was still not used. Surrogate and sim utc shift only. ECEF geometry unchanged. Sim not re-run. Azimuth, knots, cutoff and the fitted steering were not touched.",
+        "FLOWN 2026-11-24. T0 is the actual liftoff 2026-11-24T10:17:46Z. LL2 id 8dd5de11-831b-445f-86f0-bffefe0550d9, Launch Successful, second precision, last_updated 2026-11-24T10:35:14Z, window start and end both 10:17:46Z. Vehicle confirmed Soyuz-2.1b: that is the LL2 configuration name, TV Zvezda's report of the Roscosmos broadcast, Lenta's quotation of Roscosmos, and RussianSpaceWeb's post-flight page. The earlier 2.1a conflict is closed for this flight. Wikipedia EN still says Soyuz-2.1a, 09:03 UTC and a Zvezda-aft docking; that page was not used. Files utc-shifted +286 s from 10:13:00Z. ECEF unchanged. Sim not re-run.",
+        "POST-FLIGHT TIMES NOT APPLIED. RussianSpaceWeb gives booster separation at 13:19:43 Moscow Time (T+117 s, prose also says 1 min 58 s) at about 43 km, which matches the borrowed knot; second-stage separation at 13:22:31 (T+285 s); fairing at 13:22:39 at about 165 km (T+293 s); third-stage cutoff and ship release together at 13:26:59 (T+553 s). The file still has the borrowed fairing at 183.079 s / about 91 km and ship separation at 560.159 s. Those differences were not applied. The same page's initial orbit is 193.1 x 240.0 km at 51.67 deg, which is the orbit class already used (193 x 240, 51.6). Docking is Poisk zenith on 26 Nov at 15:11 Moscow Time. Not modelled. Azimuth not retuned."
       ],
-      "note": "Pre-flight ILLUSTRATIVE. Progress MS-36 (97P) from Baikonur Site 31/6. T0 is the LL2 NET 2026-11-24T10:13:00Z (Tue 24 Nov 2:13 a.m. PST), status To Be Confirmed, minute precision, window start and end both 10:13Z, last_updated 2026-11-22T19:47:17Z. RETIMED +18600 s from 05:03Z. LL2's update says 'Updated tentative T-0' and cites a RussianSpaceWeb post, not Roscosmos. No Roscosmos confirmation was found. SOURCE CONFLICT: EveryLaunch (LL2 cache as of 2026-11-13) and Space Launch Hub (as of 2026-11-20) still show 05:03Z. Wikipedia EN still says 09:03 UTC, which was already a conflict and was not used. Surrogate and sim were utc-shifted only. ECEF geometry unchanged. Sim not re-run. Not refit. VEHICLE CONFLICT is unchanged: this file flies Soyuz-2.1b. The booster, core and fairing times, and the 193 x 240 km target, are still borrowed from Soyuz-2.1a Progress flights. Block I still runs Wikipedia's 270 s RD-0124 burn. Separation is still T+560.159 s. Azimuth 63.39 deg is still the ASSUMED 51.6 deg heading. Sim at cutoff, unchanged: geodetic 191.77 km, FPA -0.034 deg, SMA error -17.7 km, osculating 179.3 x 218.0 km, i=49.083 deg. Pad->insertion bearing 69.99 deg versus 63.39 deg. Payload 7,280 kg is still the Wikipedia figure, not a Roscosmos mass for this ship."
+      "note": "FLOWN. Progress MS-36 (97P) lifted off from Baikonur Site 31/6 at 2026-11-24T10:17:46Z (Tue 24 Nov 2:17:46 a.m. PST; 13:17:46 Moscow Time) on a Soyuz-2.1b. LL2 id 8dd5de11-831b-445f-86f0-bffefe0550d9 is Launch Successful, net to the second, last_updated 2026-11-24T10:35:14Z. TV Zvezda reports the Roscosmos broadcast of the Soyuz-2.1b launch. Lenta quotes Roscosmos: insertion on the assigned orbit, separation from the third stage, and antenna and solar-array deployment were nominal. RussianSpaceWeb gives the same 13:17:46 Moscow Time and Soyuz-2.1b, ship release at 13:26:59 Moscow Time (T+553 s), and an initial orbit of 193.1 x 240.0 km at 51.67 deg, with docking at the Poisk zenith port on 26 Nov. Both trajectory types were utc-shifted +286 s from the tentative 2026-11-24T10:13:00Z. ECEF geometry unchanged. Sim not re-run. Not refit. The file still separates the ship at T+560.159 s and still has the borrowed fairing at 183 s / about 91 km. RussianSpaceWeb's fairing is T+293 s at about 165 km. Those knots were not moved. Wikipedia EN still says Soyuz-2.1a, 09:03 UTC and a Zvezda docking; that page was not used. Sim at cutoff, unchanged: geodetic 191.77 km, FPA -0.034 deg, SMA error -17.7 km, osculating 179.3 x 218.0 km, i=49.083 deg. Pad->insertion bearing 69.99 deg versus commanded 63.39 deg. ILLUSTRATIVE."
     },
     {
       "slug": "shenzhou-24",
       "name": "Shenzhou-24",
       "vehicle": "Long March 2F/G",
       "t0_utc": "2026-11-25T00:18:00Z",
-      "t0_kind": "net",
-      "window_open_utc": "2026-11-25T00:08:00Z",
-      "window_close_utc": "2026-11-25T00:48:00Z",
+      "t0_kind": "target",
+      "window_open_utc": "2026-11-25T00:18:00Z",
+      "window_close_utc": "2026-11-25T00:18:00Z",
       "status": "Go",
       "phase": "upcoming",
       "files": {
@@ -2443,14 +2526,18 @@
         "https://zh.wikipedia.org/wiki/%E7%A5%9E%E8%88%9F%E4%BA%8C%E5%8D%81%E4%B8%89%E5%8F%B7",
         "https://baike.baidu.com/item/%E9%95%BF%E5%BE%81%E4%BA%8C%E5%8F%B7F/53504320",
         "https://nextspaceflight.com/launches/details/8429",
-        "https://en.wikipedia.org/wiki/YF-20"
+        "https://en.wikipedia.org/wiki/YF-20",
+        "https://www.news.cn/20261124/18101736be3f4ef098c062ec82fb2a2a/c.html",
+        "https://www.spacechina.com/n25/n2014789/n2014804/c4764137/content.html"
       ],
       "method": {
-        "csv": "event-surrogate parametric: Baidu encyclopedia theoretical crewed Long March 2F times (booster sep 154.8 s, stage sep 159.5 s, fairing 212.5 s, S2 main cutoff 463.1 s), altitudes and ranges taken from this board's sim at those times, linear between knots, on a constant-azimuth spherical rhumb (R=6371.0088 km) at 97.16 deg. Ends at S2 main cutoff. Vernier cutoff and ship separation are only in the sim. Azimuth 97.16 deg is the east-southeast supplement for Tiangong's 41.47 deg inclination; no hazard polygon for the window was found. T0 LL2 NET 2026-11-25T00:18:00Z. ILLUSTRATIVE",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: vehicles/lm2fg.json. Hard times are the Baidu theoretical crewed sequence (booster 154.8 s, S1 cutoff 159 s, sep and S2 ignition 159.5 s, fairing 212.5 s, S2 main 463.1 s, vernier 582.1 s). Deploy 585.1 s is that sequence's ship separation. Target 200 x 350 km is the CMSA design orbit. Azimuth 97.16 deg from Tiangong's 41.47 deg, not retuned. Vertical rise fixed at the published about-12 s pitch start. Cd 0.667 transferred from the LM-3B fit. Payload fixed at 7,840 kg. Steering fitted: kick 1.446 deg over 10 s, tan(theta)=0.7320-0.002377*(t-t_ign). Result at vernier cutoff: geodetic alt 188.30 km versus 200 km, FPA +0.477 deg, SMA error -88.53 km. At separation T+585.1 s: osculating 131.7 x 241.3 km versus 200 x 350, i=41.78 deg versus 41.47 deg. Early track bearing about 127.8 deg; pad-to-insertion bearing 114.11 deg versus commanded 97.16 deg (+16.95 deg). Wikipedia's about-40 km tower jettison compares with the sim's 32.7 km at T+120 s (-7.3 km) and was not a fit knot. Booster propellant raised from 151,200 kg to 179,324 kg so the 154.8 s burn closes. Cost 270.79. ILLUSTRATIVE"
+        "csv": "event-surrogate parametric: Baidu encyclopedia theoretical crewed Long March 2F times (booster sep 154.8 s, stage sep 159.5 s, fairing 212.5 s, S2 main cutoff 463.1 s), altitudes and ranges taken from this board's sim at those times, linear between knots, on a constant-azimuth spherical rhumb (R=6371.0088 km) at 97.16 deg. Ends at S2 main cutoff. Vernier cutoff and ship separation are only in the sim. Azimuth 97.16 deg is the east-southeast supplement for Tiangong's 41.47 deg inclination; no hazard polygon for the window was found. T0 LL2 NET 2026-11-25T00:18:00Z. ILLUSTRATIVE CONFIRMED 2026-11-24: CMSA targeted instant, no utc shift. The LL2 window 00:08-00:48Z is not the clock used here.",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: vehicles/lm2fg.json. Hard times are the Baidu theoretical crewed sequence (booster 154.8 s, S1 cutoff 159 s, sep and S2 ignition 159.5 s, fairing 212.5 s, S2 main 463.1 s, vernier 582.1 s). Deploy 585.1 s is that sequence's ship separation. Target 200 x 350 km is the CMSA design orbit. Azimuth 97.16 deg from Tiangong's 41.47 deg, not retuned. Vertical rise fixed at the published about-12 s pitch start. Cd 0.667 transferred from the LM-3B fit. Payload fixed at 7,840 kg. Steering fitted: kick 1.446 deg over 10 s, tan(theta)=0.7320-0.002377*(t-t_ign). Result at vernier cutoff: geodetic alt 188.30 km versus 200 km, FPA +0.477 deg, SMA error -88.53 km. At separation T+585.1 s: osculating 131.7 x 241.3 km versus 200 x 350, i=41.78 deg versus 41.47 deg. Early track bearing about 127.8 deg; pad-to-insertion bearing 114.11 deg versus commanded 97.16 deg (+16.95 deg). Wikipedia's about-40 km tower jettison compares with the sim's 32.7 km at T+120 s (-7.3 km) and was not a fit knot. Booster propellant raised from 151,200 kg to 179,324 kg so the 154.8 s burn closes. Cost 270.79. ILLUSTRATIVE CONFIRMED 2026-11-24: CMSA targeted instant 2026-11-25T00:18:00Z already matched the file. No utc shift. Sim not re-run. LL2 re-query had no result."
       },
       "reference_ids": [
         "ll2-shenzhou-24",
+        "casc-sz24-t0",
+        "xinhua-sz24-t0",
         "xinhua-sz24-en",
         "xinhua-sz24-zh",
         "chinanews-sz24",
@@ -2471,7 +2558,7 @@
         "kml"
       ],
       "assumptions": [
-        "T0 is the LL2 NET 2026-11-25T00:18:00Z, not a liftoff. CMSA and Xinhua have not published a clock. Xinhua on 21 Nov 2026 (English and Chinese) and China News on 22 Nov 2026 describe the rehearsal and give no time. TIME CONFLICT: Wikipedia EN lists 00:19 UTC and cites Next Spaceflight, whose page lists 00:18 UTC. 00:19 was not used. 05:18 AM Pakistan Standard Time equals 00:18Z because PKT is UTC+5. No Pakistani post stating 05:18 was retrieved, so that wording is not an independent source.",
+        "T0 is the CMSA targeted instant 2026-11-25T00:18:00Z (Beijing 08:18 on 25 Nov), confirmed 24 Nov 2026 by Xinhua and by CASC citing the CMSA press conference. It is instantaneous: window open and close are both that instant. The earlier LL2 window 00:08-00:48Z is not the clock used here. LL2 id c9605b67-8a53-4239-a8ae-577fe3b79799, re-queried 24 Nov 2026, is still Go, net 00:18:00Z, minute precision, window fields still 00:08-00:48Z, last_updated 2026-11-20T09:07:56Z, and has no result. No utc shift: the files were already at 00:18:00Z. The older Wikipedia EN 00:19 UTC conflict was not revived.",
         "AZIMUTH 97.16 deg is derived, and the east-southeast choice is an assumption. sin(az)=cos(41.47)/cos(40.957893) gives 82.84 deg or 97.16 deg. 97.16 deg is the supplement south of east. No NOTAM or debris notice covering 25 Nov 2026 00:08-00:48Z was found. The November 5 and November 9 ZBPE danger areas do not cover this window and were not used. Not retuned after the sim.",
         "TARGET ORBIT is the CMSA 2015 design orbit, 200 x 350 km, not Shenzhou-24 elements. Inclination is Tiangong's published 41.47 deg (Wikipedia infobox, statistics as of 25 Apr 2024), so the launch is aimed at the station plane. Shenzhou-5's measured 199.14 x 347.8 km at 42.4 deg and Shenzhou-8's about 200 x 329 km at 42 deg are recorded and were not the target. Tiangong's own 386.4 x 391.8 km is the station, not the insertion.",
         "EVENT TIMES are Baidu encyclopedia's theoretical crewed sequence, borrowed, not Shenzhou-24's. Booster separation 154.8 s, first-stage cutoff 159 s, stage separation and second-stage ignition 159.5 s, fairing 212.5 s, main cutoff 463.1 s, vernier cutoff 582.1 s, ship separation 585.1 s. Conflicts not used as the hard times: English Wikipedia rounds the 2F/G booster burn to 153 s, from 140 s. CMSA Shenzhou-5, on the basic rocket: tower 120 s, boosters 137 s, stage separation and ignition 159 s, fairing 200 s, main cutoff 460 s, separation 587 s. CMSA Shenzhou-14: separation about 577 s. Wikipedia's Shenzhou profile: pitch about 12 s, tower about 40 km at about 120 s, boosters about 152 s, fairing about 205 s, main cutoff about 460 s, separation about 580 s. Chinese Wikipedia's Shenzhou-23 clocks, with no footnote on that bullet, give 585 s and agree with 585.1 s rather than 577 s. CMSA Shenzhou-23 and Xinhua say only about 10 minutes, which covers both. Using 577 s as an exact vernier cutoff left the stage-2 load partly unburned and the semi-major axis about 218 km short of 200 x 350 km, so the hard times are the theoretical sequence.",
@@ -2480,9 +2567,10 @@
         "FAIRING 1,500 kg is an ASSUMPTION. No shroud mass was found. The escape tower's mass was not found and is not dropped at 120 s. Drag uses the 3.35 m core diameter and the transferred LM-3B Cd 0.667, not the booster span. The 10 s kick length is an ASSUMPTION. The 12 s vertical rise is the published pitch start and was not fitted.",
         "SURROGATE altitudes and ranges are this sim's, not published. Wikipedia's about 40 km at T+120 s compares with the sim's 32.7 km and was not substituted. The rhumb ends at main-engine cutoff because the vernier and the separation are in the sim file.",
         "Pad elevation 0 m. LL2 Launch Area 91 gives 40.957893N 100.290944E and no height. The site is about 1 km above sea level and that height is not applied.",
-        "Sim track bias left in place. Early bearing about 127.8 deg through booster separation. Pad-to-insertion bearing 114.11 deg versus commanded 97.16 deg (+16.95 deg). Achieved inclination 41.78 deg versus 41.47 deg. Geodetic altitude 188.30 km versus 200 km. Flight-path angle +0.477 deg. SMA error -88.53 km. Osculating at separation 131.7 x 241.3 km versus the design 200 x 350 km. Azimuth kept on the inclination-derived heading."
+        "Sim track bias left in place. Early bearing about 127.8 deg through booster separation. Pad-to-insertion bearing 114.11 deg versus commanded 97.16 deg (+16.95 deg). Achieved inclination 41.78 deg versus 41.47 deg. Geodetic altitude 188.30 km versus 200 km. Flight-path angle +0.477 deg. SMA error -88.53 km. Osculating at separation 131.7 x 241.3 km versus the design 200 x 350 km. Azimuth kept on the inclination-derived heading.",
+        "CREW, from the 24 Nov CMSA press conference as carried by Xinhua and CASC: Tang Hongbo, commander and spacecraft pilot (previously Shenzhou-12 and Shenzhou-17); Wu Yi, flight engineer, first flight, from the third astronaut group; Muhammad Zeeshan Ali (Pakistan), payload specialist, the first foreign astronaut planned to visit Tiangong. Xinhua also says the rocket is Long March 2F Y24. Docking is not modelled. The plan is a 3.5-hour fast autonomous rendezvous to the Tianhe forward port. CASC's wording is that this strategy is the one to be used preferentially."
       ],
-      "note": "Pre-flight ILLUSTRATIVE. Shenzhou-24, Long March 2F/G, from Jiuquan Launch Area 91 / SLS-1 (921), a crewed flight to Tiangong, with a Pakistani astronaut expected. T0 is the LL2 NET 2026-11-25T00:18:00Z (Tue 24 Nov 4:18 p.m. PST; Wed 25 Nov 08:18 Beijing), status Go, window 00:08-00:48Z, minute precision, last_updated 2026-11-20T09:07:56Z. CMSA and Xinhua have not published a clock. Wikipedia EN's 00:19 UTC, cited to Next Spaceflight, disagrees with Next Spaceflight's own 00:18 UTC and was not used. No Pakistani post stating 05:18 AM PKT was retrieved; that clock equals 00:18Z only because PKT is UTC+5. No hazard polygon for the window was found. Azimuth 97.16 deg is the east-southeast heading for Tiangong's 41.47 deg inclination. The target 200 x 350 km is the CMSA design orbit, not this flight's elements and not the station's 386 x 392 km. Event times are Baidu's theoretical crewed sequence. CMSA Shenzhou-14's about 577 s and CMSA Shenzhou-5's basic-rocket timeline are recorded and were not the hard times. Payload 7,840 kg is the Wikipedia spacecraft figure. Sim at separation T+585.1 s: geodetic 188.46 km, osculating 131.7 x 241.3 km, i=41.78 deg versus 41.47 deg. At vernier cutoff: geodetic 188.30 km versus 200 km, FPA +0.477 deg, SMA error -88.53 km. Pad-to-insertion bearing 114.11 deg versus commanded 97.16 deg. Early track bearing about 127.8 deg. Tower altitude at T+120 s is 32.7 km versus Wikipedia's about 40 km. ILLUSTRATIVE."
+      "note": "Pre-flight ILLUSTRATIVE. Shenzhou-24, Long March 2F/G (Xinhua: Y24), Jiuquan Launch Area 91 / SLS-1. T0 is the CMSA targeted instant 2026-11-25T00:18:00Z (Tue 24 Nov 4:18 p.m. PST; Wed 25 Nov 08:18 Beijing). Instantaneous: not a window. Xinhua and CASC, 24 Nov 2026, quoting the CMSA press conference at Jiuquan: crew Tang Hongbo (commander), Wu Yi, and Muhammad Zeeshan Ali (Pakistan). After insertion the plan is a 3.5-hour fast autonomous rendezvous, docking at the Tianhe core module's forward port. The files were already at 00:18:00Z, so there is no utc shift and the sim was not re-run. LL2 id c9605b67-8a53-4239-a8ae-577fe3b79799, re-queried this run, is still Go at 00:18Z with no result, last_updated 2026-11-20T09:07:56Z. Its 00:08-00:48Z window was not used. Sim at separation T+585.1 s, unchanged: geodetic 188.46 km, osculating 131.7 x 241.3 km, i=41.78 deg versus 41.47 deg. Pad-to-insertion bearing 114.11 deg versus commanded 97.16 deg. ILLUSTRATIVE."
     },
     {
       "slug": "lm2d-xichang-2026-11-26",
@@ -2548,6 +2636,120 @@
         "T0 is the LL2 NET 2026-11-26T09:35:00Z, not a liftoff. Window 09:30-09:52Z matches NOTAM A6099/26. Net precision is Hour. No CASC or Xinhua clock was found."
       ],
       "note": "Pre-flight ILLUSTRATIVE. Long March 2D, unknown payload, Xichang LC-3 (LC-3/LA-1). LL2 id b00f0e9a-48d6-4f26-9cb5-7d19169ff7c4, status Go, NET 2026-11-26T09:35:00Z (Thu 26 Nov 1:35 a.m. PST; 17:35 BJT), window 09:30-09:52Z, orbit Unknown, net precision Hour, last_updated 2026-11-20T09:12:38Z. LL2 update: Added launch per NOTAMs; payload and launch vehicle identities uncertain. Azimuth 105.51 deg is the mean bearing to the Q-line centres of NOTAM ZPKM A6099/26 (104.51 deg, 583 km, 09:30-09:52Z) and ZGZU A6100/26 (106.52 deg, 1060 km, 09:31-09:57Z). Non-rotating inclination from that azimuth is 31.91 deg. Target 500 km circular is ASSUMED; it is not an SSO. Vehicle file reused from lm2d-taiyuan. Chinese Wikipedia lists a Long March 2C to GTO from Xichang on 26 Nov with no clock; that row was not used. Sim at vernier cutoff T+705.1 s: geodetic 500.01 km, FPA 0.00 deg, SMA error ~0, osculating 498.6 x 501.5 km, i=33.892 deg. Pad->insertion bearing 116.39 deg versus commanded 105.51 deg. The sim misses the two Q-line centres by about 191 km and 241 km. Fitted payload 1,281 kg is not an estimate. No deploy time, so the sim ends two revolutions later (T+12059 s). ILLUSTRATIVE."
+    },
+    {
+      "slug": "electron-strix14-2026-11-27",
+      "name": "Night Owls Never Sleep (StriX Launch 14)",
+      "vehicle": "Electron",
+      "t0_utc": "2026-11-27T00:00:00Z",
+      "t0_kind": "window_open",
+      "window_open_utc": "2026-11-27T00:00:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/electron-strix14-2026-11-27/electron-strix14-2026-11-27_2026-11-27_trajectory.csv",
+        "kml": "/launches/electron-strix14-2026-11-27/electron-strix14-2026-11-27_2026-11-27_trajectory.kml",
+        "csv_sim": "/launches/electron-strix14-2026-11-27/electron-strix14-2026-11-27_2026-11-27_trajectory_sim.csv",
+        "kml_sim": "/launches/electron-strix14-2026-11-27/electron-strix14-2026-11-27_2026-11-27_trajectory_sim.kml",
+        "track_lite": "/launches/electron-strix14-2026-11-27/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://rocketlabcorp.com/missions/launches/night-owls-never-sleep/",
+        "https://rocketlabcorp.com/launch/launch-safety/",
+        "https://ll.thespacedevs.com/2.3.0/launches/2093e4fc-ac8c-4296-a1b5-deececee6a72/",
+        "https://www.sealagom.com/navarea/14/message/26090/338-26-area-bounded/",
+        "https://maritimenz.govt.nz/navigational-warnings/",
+        "https://rocketlabcorp.com/assets/Rocket-Lab-Electron-Payload-User-Guide-8.0.pdf",
+        "https://www.synspective.com/satellite/satellite-strix/",
+        "https://en.wikipedia.org/wiki/Rocket_Lab_Electron"
+      ],
+      "method": {
+        "csv": "event-surrogate parametric: Electron User Guide 8.0 GENERIC knots (0 s / 0 km, 155 s / 78 km, 162 s / 82 km, 184 s / 126 km, 535 s / the published 569 km), linear between knots, on a constant-azimuth spherical rhumb at 81.97 deg. Horizontal speed ASSUMED linear to 7.218 km/s at T+535 s. Ends at S2 cutoff. Azimuth 81.97 deg is the mean bearing from LC-1 to the centroids of NAVAREA XIV 338/26 debris areas A (80.85 deg, 626 km) and B (83.10 deg, 1716 km). T0 is the Rocket Lab mission-page window open 2026-11-27T00:00:00Z. SOURCE CONFLICT: launch-safety page prints NET 00:05 UTC and 13:00 NZDT; LL2 NET is 00:05Z with window 00:00-00:05Z. ILLUSTRATIVE",
+        "csv_sim": "first-principles 3DOF sim, energy-cutoff mode (no published timeline): vehicles/electron.json. Azimuth 81.97 deg from NAVAREA XIV 338/26 (non-rotating i=39.94 deg; not retuned). Target perigee 230 km ASSUMED, apogee 569 km published. Vertical rise 8 s, kick 3.453 deg over 10 s, tan(theta)=0.9457-0.002954*(t-t_ign). Cutoff T+527.0 s: geodetic 230.0 km, FPA 0.0 deg, osculating 223.5 x 638.5 km versus 230 x 569, i=39.845 deg versus 39.94 deg non-rotating and versus the published 38 deg. Pad->insertion bearing 72.92 deg versus commanded 81.97 deg (-9.05 deg). Course from T+30 s to T+60 s is 70.00 deg (-11.97 deg). Guide knots: S1 cutoff 66.8 km versus 78 km; fairing 91.4 km versus 126 km. Payload 190 kg ASSUMED, not fitted. Deploy unpublished, so +2 revs, file ends T+11710 s at 223.5 x 638.7 km, i=39.846 deg. Cost -0.020. ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "rl-night-owls",
+        "rl-launch-safety",
+        "ll2-electron-strix14",
+        "navarea-xiv-338-26",
+        "nz-coastal-306-26",
+        "rl-ug",
+        "synspective-strix",
+        "wp-electron",
+        "ll2",
+        "kml"
+      ],
+      "assumptions": [
+        "T0 is the Rocket Lab mission-page window open 2026-11-27T00:00:00Z (1:00 p.m. NZDT 27 Nov). SOURCE CONFLICT, recorded. The launch-safety page prints 'NET 00:05 UTC | 13:00 NZDT'. 13:00 NZDT is 00:00Z, so the two clocks on that page disagree with each other, and 00:05Z is 13:05 NZDT. LL2 id 2093e4fc-ac8c-4296-a1b5-deececee6a72 is Go, NET 2026-11-27T00:05:00Z, window 00:00-00:05Z, minute precision, last_updated 2026-11-20T06:34:05Z. The 00:05Z figures were not used as T0. No window close is published on the mission page, so window_close_utc is omitted. Backup days on the launch-safety page are 28 Nov through 10 Dec 2026 NZDT, not a single instant.",
+        "AZIMUTH 81.97 deg is from NAVAREA XIV 338/26, not an assumption. Mean of great-circle bearings from the LL2 pad (-39.260881, 177.865826) to the vertex-average centroids. Area A: 37-42.00S 177-18.00W, 37-00.00S 173-12.00W, 38-36.00S 172-48.00W, 39-18.00S 176-57.00W; centroid 38.1500S 175.0625W; bearing 80.85 deg; 626 km. Area B: 35-36.00S 165-48.00W, 34-24.00S 161-00.00W, 36-00.00S 160-18.00W, 37-18.00S 165-24.00W; centroid 35.8250S 163.1250W; bearing 83.10 deg; 1716 km. Mean of the unrounded bearings is 81.97 deg. Daily 1615-0130Z from 26 Nov to 10 Dec 2026, which covers 00:00Z on 27 Nov. The near-field marine box on NZ Coastal 306/26 and on the launch-safety page (about 25 km from the pad) was not used. Non-rotating inclination is 39.94 deg. Not retuned.",
+        "PUBLISHED 38 deg IS BELOW THE PAD LATITUDE. sin(az)=cos(38)/cos(39.260881) is 1.018, so 38 deg is not a non-rotating heading from Mahia (the floor is the site latitude, 39.26 deg, due east). The hazard azimuth was kept. Achieved inclination 39.845 deg is 0.10 deg from the non-rotating 39.94 deg and 1.85 deg from the published 38 deg.",
+        "INSERTION PERIGEE 230 km IS ASSUMED. The Electron user guide says the second stage inserts the Kick Stage into a low elliptical orbit and does not give the perigee. 230 km is the same assumption as electron-iqps10 and electron-hawkeye360. Apogee 569 km is the mission page's orbit altitude, used as the energy-cutoff apoapsis parameter. It is not a published state vector.",
+        "PAYLOAD 190 kg IS ASSUMED, not fitted. Synspective lists StriX as a 100 kg-class satellite, not a weighed mass for Launch 14. Kick Stage dry mass 40 kg is the user-guide figure used on electron-iqps10. Kick propellant about 50 kg is assumed. 100+40+50=190.",
+        "EVENT TIMES are the Electron Payload User Guide 8.0 generic profile, not this mission's. Rocket Lab has published no timeline for Night Owls Never Sleep. S1 cutoff altitude in the sim is 66.8 km versus the guide's about 78 km. Fairing is 91.4 km versus the guide's about 126 km.",
+        "The osculating 223.5 x 638.5 km versus 230 x 569 km is the energy-cutoff result, the same class of residual as electron-iqps10 (221 x 640 versus 230 x 575). Geodetic altitude at cutoff is 230.0 km and the flight-path angle is 0.0 deg. The Kick Stage circularization is not modelled, so the high apogee is the sim's parking ellipse, not Rocket Lab's 569 km circle.",
+        "No deploy time and no Kick Stage burn time are published. deploy.t_s is null. The sim coasts two revolutions on the inferred insertion orbit and ends at T+11710 s. Post-cutoff Cd 2.2 and area 1.13 m2 are the same assumptions as electron-iqps10.",
+        "Pad elevation 0 m. LL2's pad record for this launch gives -39.260881, 177.865826 and no height. The launch-safety page says Launch Complex 1 and does not say pad A or B.",
+        "Sim track bias left in place. Pad->insertion bearing 72.92 deg versus commanded 81.97 deg (-9.05 deg). Course from T+30 s to T+60 s is 70.00 deg (-11.97 deg). Azimuth kept on the hazard areas."
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. Electron 'Night Owls Never Sleep', StriX Launch 14, one Synspective StriX SAR satellite, from Rocket Lab LC-1, Mahia. T0 is the mission-page window open 2026-11-27T00:00:00Z (Thu 26 Nov 4:00 p.m. PST; Fri 27 Nov 1:00 p.m. NZDT). SOURCE CONFLICT: the launch-safety page prints NET 00:05 UTC and 13:00 NZDT, which are not the same instant, and LL2 id 2093e4fc-ac8c-4296-a1b5-deececee6a72 is Go at 00:05Z with window 00:00-00:05Z, last_updated 2026-11-20T06:34:05Z. Those were not used as T0. Orbit on the mission page is 569 km at 38 deg. Azimuth 81.97 deg is the mean bearing to NAVAREA XIV 338/26 debris areas A and B. Non-rotating inclination from that azimuth is 39.94 deg. 38 deg is below the pad latitude and was not used as a heading. Sim at cutoff T+527 s: geodetic 230.0 km, FPA 0.0 deg, osculating 223.5 x 638.5 km versus the assumed 230 x 569, i=39.845 deg. Pad->insertion bearing 72.92 deg versus commanded 81.97 deg. No deploy time, so the sim ends two revolutions later (T+11710 s). ILLUSTRATIVE."
+    },
+    {
+      "slug": "lm6a-taiyuan-2026-11-27",
+      "name": "Unknown Payload (Long March 6A, Taiyuan LC-9A)",
+      "vehicle": "Long March 6A",
+      "t0_utc": "2026-11-27T13:00:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-27T12:53:00Z",
+      "window_close_utc": "2026-11-27T13:15:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/lm6a-taiyuan-2026-11-27/lm6a-taiyuan-2026-11-27_2026-11-27_trajectory.csv",
+        "kml": "/launches/lm6a-taiyuan-2026-11-27/lm6a-taiyuan-2026-11-27_2026-11-27_trajectory.kml",
+        "csv_sim": "/launches/lm6a-taiyuan-2026-11-27/lm6a-taiyuan-2026-11-27_2026-11-27_trajectory_sim.csv",
+        "kml_sim": "/launches/lm6a-taiyuan-2026-11-27/lm6a-taiyuan-2026-11-27_2026-11-27_trajectory_sim.kml",
+        "track_lite": "/launches/lm6a-taiyuan-2026-11-27/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://ll.thespacedevs.com/2.3.0/launches/a6421db3-7c8a-4cf7-a659-cec195140f7f/",
+        "https://forum.nasaspaceflight.com/index.php?topic=57867.msg2843569#msg2843569",
+        "https://space-notices.com/entry/launch-long-march-6a-unknown-payload-a6421db3",
+        "https://space-notices.com/notice/notam-ZBPE-A5722%2F26",
+        "https://space-notices.com/notice/notam-ZBPE-A5723%2F26",
+        "https://space-notices.com/notice/notam-ZBPE-A5798%2F26",
+        "https://space-notices.com/notice/notam-ZBPE-A5799%2F26",
+        "http://www.georing.biz/usefull/LM-3A%20Series%20Launch%20Vehicles%20User's%20Manual%20Issue%202011.pdf",
+        "https://en.wikipedia.org/wiki/Long_March_6A"
+      ],
+      "method": {
+        "csv": "event-surrogate: the same CALT LM-3B typical GTO loft as lm6a-yaogan50-03 (2011 manual Tables 3-5/3-6, cut at stage-3 first shutdown T+615.7 s, 204.3 km, 2466.2 km), laid on a constant-azimuth rhumb at 190 deg. Family stand-in: no LM-6A time/altitude table is published, and LM-6A has no third stage. Azimuth 190 deg is an ASSUMPTION. No hazard polygon for 27 Nov 12:53-13:15Z was retrieved. T0 is the LL2 NET 2026-11-27T13:00:00Z. ILLUSTRATIVE",
+        "csv_sim": "first-principles 3DOF sim, energy-cutoff mode (no published LM-6A timeline): vehicles/lm6a.json; Cd 0.667 from the LM-3B fit (aero only); TARGET ASSUMED 500 km circular; payload 3000 kg ASSUMED and not fitted; azimuth 190 deg ASSUMED; vertical rise until 60 m/s (pitch-over at 14.0 s on this run), kick 6.862 deg over 10 s, tan(theta)=0.1238-0.000093*(t-t_ign); insertion T+743.5 s, geodetic alt 500.0 km, FPA 0.0 deg, osculating 499.0 x 505.6 km, i=96.927 deg versus 97.77 deg non-rotating from the assumed azimuth; pad->insertion bearing 193.29 deg versus commanded 190.00 deg (+3.29 deg); course from T+30 s to T+60 s is 190.75 deg (+0.75 deg); deploy unpublished (deploy.t_s null), so +2 revs, file ends T+12103 s at 499.0 x 505.7 km, i=96.927 deg; cost -0.168. ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "ll2-lm6a-taiyuan-1127",
+        "nsf-lm6a-taiyuan-1127",
+        "space-notices-lm6a-1127",
+        "calt-lm3a",
+        "wp-lm6a",
+        "ll2",
+        "kml"
+      ],
+      "assumptions": [
+        "T0 is the LL2 NET 2026-11-27T13:00:00Z, not a liftoff. Window 12:53-13:15Z. Net precision is Hour. LL2 id a6421db3-7c8a-4cf7-a659-cec195140f7f, status Go, last_updated 2026-11-20T17:15:10Z. No CASC or Xinhua clock was found.",
+        "AZIMUTH 190 deg IS ASSUMED. No NOTAM or hazard polygon covering 27 Nov 2026 12:53-13:15Z was retrieved. The space-notices entry for this launch has no linked notices. ZBPE A5722/26 and A5723/26 are 5 Nov 2026. ZBPE A5798/26 and A5799/26 are 9 Nov 2026. None of those windows is this launch. The NSF post LL2 cites (topic 57867, msg2843569) returned HTTP 403, so any coordinates in that post were not read and were not used. 190 deg is the same guess as lm6a-yaogan50-03. It is not an SSO derivation. Non-rotating inclination from 190 deg at LC-9A is 97.77 deg. Not retuned after the sim.",
+        "TARGET ORBIT ASSUMED: 500 km circular. LL2 orbit is Unknown and publishes no altitude. 500 km is the same stand-in as lm6a-yaogan50-03. LL2's update says the payload is probably a Yaogan-50 series satellite. That sentence was not used as an orbit or as an inclination.",
+        "PAYLOAD 3000 kg IS ASSUMED, not fitted. No mass is published. 3000 kg is the figure used to close the LM-6A vehicle budget and the figure used for lm6a-yaogan50-03. Energy-cutoff mode does not fit payload.",
+        "No LM-6A ignition, cutoff or fairing times are published, so the sim stays in energy-cutoff mode. The 3 s coast before stage 2, the pitch-over rule (vertical rise until 60 m/s) and the 10 s kick are the vehicle file's assumptions. Cd 0.667 is the fitted LM-3B value, transferred for aero only. Stage masses in vehicles/lm6a.json are budget closures or assumptions, not this flight's.",
+        "Surrogate loft is the CALT LM-3B typical GTO table, the same family stand-in as lm6a-yaogan50-03, not an LM-6A profile. It ends at stage-3 first shutdown (T+615.7 s, 204.3 km). LM-6A has no third stage. The one horizontal assumption is that the published ground range lies on this flight's constant-azimuth rhumb. Numeric rows match the yaogan50-03 surrogate because the pad and the assumed azimuth are the same; only the UTC tags differ.",
+        "Pad elevation 0 m. LL2 Launch Complex 9A gives 38.8583N 111.5802E and no elevation. Same pad point as lm6a-yaogan50-03.",
+        "No payload-deploy time is published. deploy.t_s is null, and the sim coasts two revolutions on the inferred insertion orbit, ending at T+12103 s. Post-cutoff drag Cd 2.2 and area 8.8 m2 are the same assumptions as lm6a-yaogan50-03.",
+        "Sim track bias left in place. Pad->insertion bearing 193.29 deg versus commanded 190.00 deg (+3.29 deg). Early course from T+30 s to T+60 s is 190.75 deg (+0.75 deg). Achieved inclination 96.927 deg versus 97.77 deg non-rotating from the assumed azimuth. Osculating insertion is 499.0 x 505.6 km rather than a 500 km circle. Geodetic altitude is 500.0 km and flight-path angle is 0.0 deg."
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. Long March 6A, unknown payload, Taiyuan LC-9A. LL2 id a6421db3-7c8a-4cf7-a659-cec195140f7f, status Go, NET 2026-11-27T13:00:00Z (Fri 27 Nov 5:00 a.m. PST; 21:00 BJT), window 12:53-13:15Z, orbit Unknown, net precision Hour, last_updated 2026-11-20T17:15:10Z. LL2 update: added per NOTAMs; payload and vehicle identity uncertain, probably Yaogan-50. That 'probably' was not used as an orbit. No hazard coordinates for this window were retrieved (space-notices has no linked notices; the public ZBPE boxes found are 5 Nov and 9 Nov; the NSF post returned 403). Azimuth 190 deg is the same ASSUMPTION as lm6a-yaogan50-03. Target 500 km circular is ASSUMED. Payload 3000 kg is ASSUMED. Sim insertion T+743.5 s: geodetic 500.0 km, FPA 0.0 deg, osculating 499.0 x 505.6 km, i=96.927 deg versus 97.77 deg non-rotating. Pad->insertion bearing 193.29 deg versus commanded 190 deg. No deploy time, so the sim ends two revolutions later (T+12103 s). ILLUSTRATIVE."
     }
   ],
   "globe": {

@@ -2,7 +2,8 @@
  "slug": "ariane64-le04-2026-11-24",
  "title": "Ariane 64 Block 2 VA271 / Amazon Leo LE-04 (ELA-4)",
  "vehicle": "ariane64_block2",
- "t0_utc": "2026-11-24T10:45:00Z",
+ "t0_utc": "2026-11-24T11:14:52Z",
+ "t0_retime": "FLOWN 2026-11-24. Actual liftoff 2026-11-24T11:14:52Z, +1792 s from the window open 2026-11-24T10:45:00Z. Public files utc-shifted. Sim not re-run. Deploy time not moved.",
  "pad": {
   "lat": 5.256319,
   "lon": -52.786838,

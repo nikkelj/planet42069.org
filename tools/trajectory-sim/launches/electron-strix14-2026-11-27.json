@@ -1,0 +1,51 @@
+{
+  "slug": "electron-strix14-2026-11-27",
+  "title": "Electron 'Night Owls Never Sleep' (StriX Launch 14)",
+  "vehicle": "electron",
+  "t0_utc": "2026-11-27T00:00:00Z",
+  "t0_note": "Rocket Lab mission page window open / NET 1:00 p.m. NZDT = 2026-11-27T00:00:00Z. SOURCE CONFLICT recorded in index.json: the same company's launch-safety page prints NET 00:05 UTC | 13:00 NZDT (those two clocks disagree with each other; 13:00 NZDT is 00:00Z), and LL2 2093e4fc-ac8c-4296-a1b5-deececee6a72 lists NET 00:05Z, window 00:00-00:05Z, last_updated 2026-11-20T06:34:05Z. T0 is the mission-page 00:00Z.",
+  "pad": {
+    "lat": -39.260881,
+    "lon": 177.865826,
+    "alt_m": 0,
+    "src": "https://ll.thespacedevs.com/2.3.0/launches/2093e4fc-ac8c-4296-a1b5-deececee6a72/ (LL2 'Unknown Pad', Rocket Lab LC-1 Mahia). Elevation is not on that record; 0 m is an ASSUMPTION. Launch-safety page says Launch Complex 1 and does not say pad A or B."
+  },
+  "azimuth_deg": {
+    "value": 81.97,
+    "derived": "Mean of great-circle bearings from this pad to the vertex-average centroids of NAVAREA XIV 338/26 space-debris areas A and B (daily 1615-0130Z, 26 Nov-10 Dec 2026, which covers 2026-11-27T00:00Z). Area A vertices 37-42.00S 177-18.00W, 37-00.00S 173-12.00W, 38-36.00S 172-48.00W, 39-18.00S 176-57.00W: centroid 38.1500S 175.0625W, bearing 80.85 deg, 626 km. Area B vertices 35-36.00S 165-48.00W, 34-24.00S 161-00.00W, 36-00.00S 160-18.00W, 37-18.00S 165-24.00W: centroid 35.8250S 163.1250W, bearing 83.10 deg, 1716 km. Mean of the unrounded bearings is 81.97 deg. The near-field marine box on NZ Coastal 306/26 and the Rocket Lab launch-safety page (around the pad, ~25 km) was not used. Non-rotating inclination from 81.97 deg is 39.94 deg. Rocket Lab publishes 38 deg. sin(az)=cos(38)/cos(39.260881) is 1.018, so 38 deg is below the non-rotating floor set by the pad latitude (39.26 deg) and was not used to replace the hazard azimuth.",
+    "src": "https://www.sealagom.com/navarea/14/message/26090/338-26-area-bounded/"
+  },
+  "payload_kg": {
+    "value": 190,
+    "assumption": "Synspective's StriX page lists the satellite as '100kg class', not a weighed mass for Launch 14. Kick Stage dry 40 kg is the Electron user-guide figure used on electron-iqps10. Kick propellant ~50 kg is ASSUMED. 100+40+50=190, the same stack accounting as electron-iqps10. Not fitted and not an estimate of this flight."
+  },
+  "target": {
+    "insertion_alt_km": {
+      "value": 230,
+      "assumption": "S2 inserts the Kick Stage into a 'low elliptical orbit' (Electron user guide). Perigee ASSUMED 230 km, the same assumption as electron-iqps10 and electron-hawkeye360. Not this flight's element."
+    },
+    "apoapsis_alt_km": {
+      "value": 569,
+      "src": "https://rocketlabcorp.com/missions/launches/night-owls-never-sleep/ (Orbit 569km LEO, Inclination 38 degrees)"
+    },
+    "cutoff": "energy"
+  },
+  "header_notes": [
+    "UNTUNED: Rocket Lab has published no mission timeline for Night Owls Never Sleep. Electron Payload User Guide 8.0 generic event times are the hard times (S1 cutoff L+155 s, S2 ignition L+162 s, fairing L+184 s, S2 cutoff L+535 s).",
+    "T0 is the mission-page window open 2026-11-27T00:00:00Z (1:00 p.m. NZDT). SOURCE CONFLICT: launch-safety page prints NET 00:05 UTC and 13:00 NZDT, which are not the same instant; LL2 NET is 00:05Z with window 00:00-00:05Z. Those were not used as T0.",
+    "Inclination 38 deg is published by Rocket Lab. Azimuth 81.97 deg is the mean bearing to NAVAREA XIV 338/26 debris areas A and B. Non-rotating inclination from that azimuth is 39.94 deg. 38 deg is below the pad latitude, so it is not a reachable non-rotating heading. Azimuth was not retuned.",
+    "Single StriX SAR satellite for Synspective. Payload 190 kg is the ASSUMED stack (100 kg class + Kick Stage), not a fit.",
+    "File ends 2 revs after S2 cutoff on the inferred insertion orbit. Rocket Lab publishes no deploy time and no Kick Stage burn time for this mission. Kick Stage circularization is not modelled."
+  ],
+  "post_cutoff": {
+    "deploy": {
+      "t_s": null,
+      "note": "Rocket Lab's Night Owls Never Sleep mission page and launch-safety page publish no deploy time and no Kick Stage burn time (orbit, inclination, window and hazard areas only, checked 2026-11-24); propagated 2 revs on the inferred insertion orbit"
+    },
+    "drag": {
+      "cd": 2.2,
+      "area_m2": 1.13,
+      "basis": "ASSUMPTION: free-molecular Cd 2.2, frontal area of the 1.2 m-diameter upper stage, the same coast drag as electron-iqps10"
+    }
+  }
+}

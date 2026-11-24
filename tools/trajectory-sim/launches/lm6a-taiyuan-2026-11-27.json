@@ -1,0 +1,46 @@
+{
+  "slug": "lm6a-taiyuan-2026-11-27",
+  "title": "Long March 6A / Unknown Payload (Taiyuan LC-9A)",
+  "vehicle": "lm6a",
+  "t0_utc": "2026-11-27T13:00:00Z",
+  "t0_note": "LL2 a6421db3-7c8a-4cf7-a659-cec195140f7f, Go, NET 2026-11-27T13:00:00Z, window 12:53-13:15Z, hour precision, last_updated 2026-11-20T17:15:10Z. Not a liftoff.",
+  "pad": {
+    "lat": 38.8583,
+    "lon": 111.5802,
+    "alt_m": 0,
+    "src": "https://ll.thespacedevs.com/2.3.0/launches/a6421db3-7c8a-4cf7-a659-cec195140f7f/ (Launch Complex 9A). Same pad point as lm6a-yaogan50-03. LL2 gives no elevation; alt_m 0 is an ASSUMPTION."
+  },
+  "azimuth_deg": {
+    "value": 190,
+    "assumption": "No hazard polygon covering 2026-11-27 12:53-13:15Z was retrieved. space-notices has no notices linked to this launch. Public ZBPE danger areas found for early November (A5722/26 and A5723/26 on 5 Nov, A5798/26 and A5799/26 on 9 Nov) do not cover this window. The NSF post LL2 cites (topic 57867 msg2843569) returned 403, so any coordinates in that post were not used. 190 deg is the same guess as lm6a-yaogan50-03, not a NOTAM bearing and not an SSO derivation. Not retuned after the sim."
+  },
+  "payload_kg": {
+    "value": 3000,
+    "assumption": "Payload is unannounced (LL2 'Unknown Payload'). 3000 kg is the mass used to close the LM-6A vehicle budget in vehicles/lm6a.json and the mass used for lm6a-yaogan50-03. It is not an estimate of this payload and it is not fitted (energy-cutoff mode)."
+  },
+  "target": {
+    "insertion_alt_km": {
+      "value": 500,
+      "assumption": "LL2 orbit is Unknown and publishes no altitude. 500 km circular is the same ASSUMPTION as lm6a-yaogan50-03. LL2's update text says the payload is probably a Yaogan-50 series satellite; that sentence was not used as an orbit."
+    },
+    "cutoff": "energy"
+  },
+  "header_notes": [
+    "PRE-FLIGHT. Payload not announced. LL2 id a6421db3-7c8a-4cf7-a659-cec195140f7f, Go, NET 2026-11-27T13:00:00Z, window 12:53-13:15Z, orbit Unknown, hour precision, last_updated 2026-11-20T17:15:10Z.",
+    "No published LM-6A timeline. Energy-cutoff mode. Cd 0.667 is the fitted LM-3B value, transferred for aero only.",
+    "AZIMUTH 190 deg is ASSUMED. No NOTAM coordinates for 27 Nov 12:53-13:15Z were retrieved. Same guess as lm6a-yaogan50-03. Not an SSO azimuth.",
+    "TARGET 500 km circular is ASSUMED. Payload 3000 kg is the vehicle-budget figure, not an estimate.",
+    "Deploy time unpublished. deploy.t_s null. Coast +2 revs on the inferred insertion orbit."
+  ],
+  "post_cutoff": {
+    "deploy": {
+      "t_s": null,
+      "note": "No payload-separation time is published for this flight (LL2 mission description is 'Details TBD'; no CASC or Xinhua clock). Propagated 2 revs on the inferred insertion orbit."
+    },
+    "drag": {
+      "cd": 2.2,
+      "area_m2": 8.8,
+      "basis": "ASSUMPTION: free-molecular Cd 2.2, frontal area of the 3.35 m-diameter upper stage, the same coast drag as lm6a-yaogan50-03"
+    }
+  }
+}
