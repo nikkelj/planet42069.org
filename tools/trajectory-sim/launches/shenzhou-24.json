@@ -3,6 +3,7 @@
  "title": "Long March 2F/G Shenzhou-24 (Jiuquan LA-91 / SLS-1)",
  "vehicle": "lm2fg",
  "t0_utc": "2026-11-25T00:18:00Z",
+ "t0_note": "CMSA confirmed this instant on 2026-11-24 (Beijing 08:18 on 25 Nov; Xinhua and CASC). Already the file T0, so no retime. LL2 re-queried the same run: still Go, no result, last_updated 2026-11-20T09:07:56Z.",
  "pad": {
   "lat": 40.957893,
   "lon": 100.290944,

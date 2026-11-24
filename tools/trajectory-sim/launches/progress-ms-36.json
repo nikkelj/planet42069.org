@@ -2,7 +2,8 @@
  "slug": "progress-ms-36",
  "title": "Soyuz-2.1b Progress MS-36 (97P, Baikonur 31/6)",
  "vehicle": "soyuz21b",
- "t0_utc": "2026-11-24T10:13:00Z",
+ "t0_utc": "2026-11-24T10:17:46Z",
+ "t0_retime": "FLOWN 2026-11-24. Actual liftoff 2026-11-24T10:17:46Z, +286 s from the tentative 2026-11-24T10:13:00Z. Public files utc-shifted. Sim not re-run.",
  "pad": {
   "lat": 45.996034,
   "lon": 63.564003,
