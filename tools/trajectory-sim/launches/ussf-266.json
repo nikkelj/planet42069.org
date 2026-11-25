@@ -3,7 +3,7 @@
  "title": "Falcon 9 USSF-266 (SLC-4E)",
  "vehicle": "falcon9",
  "t0_utc": "2026-11-24T16:08:59Z",
- "t0_retime": "RETIMED 2026-11-24. Window open 2026-11-24T16:08:59Z, +839 s from 2026-11-24T15:55:00Z. Not launched on the live LL2 re-query. Public files utc-shifted. Sim not re-run.",
+ "t0_retime": "FLOWN 2026-11-24. Liftoff 2026-11-24T16:08:59Z, already the file T0 (the window open). No further utc shift. Sim not re-run. LL2 Launch Successful, last_updated 2026-11-25T02:45:38Z.",
  "pad": {
   "lat": 34.632,
   "lon": -120.611,
