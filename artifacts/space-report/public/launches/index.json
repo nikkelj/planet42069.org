@@ -1018,7 +1018,7 @@
     },
     {
       "id": "ll2-lm2d-xichang",
-      "title": "Launch Library 2: Long March 2D | Unknown Payload, Xichang LC-3, Go, NET 2026-11-26T09:35:00Z, window 09:30-09:52Z, added per NOTAMs, vehicle identity uncertain",
+      "title": "Launch Library 2: Long March 2D | Yaogan 49 Group 01, Xichang LC-3, Launch Successful, net 2026-11-26T09:38:00Z, minute precision, last_updated 2026-11-26T11:20:00Z",
       "url": "https://ll.thespacedevs.com/2.3.0/launches/b00f0e9a-48d6-4f26-9cb5-7d19169ff7c4/"
     },
     {
@@ -1125,6 +1125,56 @@
       "id": "mnd-xichang-1126",
       "title": "Taiwan MND Military News Agency, 24 Nov 2026: PLA announced a 26 Nov Xichang launch toward the western Pacific through Taiwan's ADIZ. No clock",
       "url": "https://mna.mnd.gov.tw/news/detail/?UserKey=54fa8ee5-e179-4852-9956-1eeed57a46f7"
+    },
+    {
+      "id": "xinhua-yaogan49",
+      "title": "Xinhua, 26 Nov 2026 18:02:36: Long March 2D launched Yaogan-49 Group 01 from Xichang at 17:38 Beijing; satellites reached the planned orbit; Long March flight 681",
+      "url": "http://www.news.cn/20261126/a0282f982c184654872225d3ccb64539/c.html"
+    },
+    {
+      "id": "ll2-ussf-380",
+      "title": "Launch Library 2: Falcon 9 Block 5 | USSF-380, SLC-4E, Go, NET 2026-11-29T04:39:00Z, window 04:39-08:39Z, minute precision, last_updated 2026-11-26T11:45:38Z",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/b0d27def-0a88-44c3-a947-1fd5b8503e2c/"
+    },
+    {
+      "id": "spacex-ussf380",
+      "title": "SpaceX USSF-380: four-hour window opens 8:39 p.m. PT 28 Nov 2026 (page header 23:39 ET to 03:39 ET), backup 6:26 p.m. PT 29 Nov, 27th flight, OCISLY",
+      "url": "https://www.spacex.com/launches/ussf380"
+    },
+    {
+      "id": "navarea-xii-836-26",
+      "title": "NAVAREA XII 836/26: hazardous rocket launching off California, Areas A/B/C, primary 29 Nov 04:39Z, USSF-380",
+      "url": "https://www.sealagom.com/navarea/12/message/26135/836-26-north-pacific/"
+    },
+    {
+      "id": "ll2-cygnus-ng25",
+      "title": "Launch Library 2: Falcon 9 Block 5 | Cygnus CRS-2 NG-25, SLC-40, Go, NET 2026-11-29T15:47:00Z, window fields both 15:47Z, minute precision, last_updated 2026-11-26T11:44:54Z",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/d74afbc7-0de5-491c-be05-4e9c31f736ac/"
+    },
+    {
+      "id": "spacex-ng25",
+      "title": "SpaceX NG-25: header window 29 Nov 10:40-11:00 ET, prose targets 10:47 a.m. ET, backup 30 Nov 10:24 a.m. ET, LZ-40, SECO-1 8:32, Cygnus XL deploy 14:35",
+      "url": "https://www.spacex.com/launches/ng25"
+    },
+    {
+      "id": "navarea-iv-1141-26",
+      "title": "NAVAREA IV 1141/26: hazardous rocket launching off Florida, Areas A and B, 29 Nov 15:40-16:43Z, Cygnus NG-25",
+      "url": "https://www.sealagom.com/navarea/4/message/26132/1141-26-north-atlantic/"
+    },
+    {
+      "id": "ng-ng25-factsheet",
+      "title": "Northrop Grumman NG-25 factsheet G26-22496-FS (public release NG26-1913): initial orbit 245 x 245 km at 51.64 deg, Cygnus XL launch mass 10,500 kg, spacecraft S.S. Jim Lovell",
+      "url": "https://sky-brokers.com/wp-content/uploads/2026/11/NG-25-Mission-factsheet.pdf"
+    },
+    {
+      "id": "nasa-crs25",
+      "title": "NASA, 24 Nov 2026: Northrop Grumman CRS-25 overview. Cygnus XL from SLC-40, about 11,000 lb of cargo, Unity Earth-facing port, named for James A. Lovell Jr.",
+      "url": "https://www.nasa.gov/missions/station/nasas-northrop-grumman-crs-25-mission-overview/"
+    },
+    {
+      "id": "wp-cygnus-ng25",
+      "title": "Wikipedia: Cygnus NG-25. Inclination 51.66 deg is listed and no altitude is given",
+      "url": "https://en.wikipedia.org/wiki/Cygnus_NG-25"
     }
   ],
   "launches": [
@@ -2588,14 +2638,14 @@
     },
     {
       "slug": "lm2d-xichang-2026-11-26",
-      "name": "Unknown Payload (Long March 2D, Xichang LC-3)",
+      "name": "Yaogan-49 Group 01 (遥感四十九号01组卫星) (Long March 2D, Xichang LC-3)",
       "vehicle": "Long March 2D",
-      "t0_utc": "2026-11-26T09:35:00Z",
-      "t0_kind": "net",
+      "t0_utc": "2026-11-26T09:38:00Z",
+      "t0_kind": "actual",
       "window_open_utc": "2026-11-26T09:30:00Z",
       "window_close_utc": "2026-11-26T09:52:00Z",
-      "status": "Go",
-      "phase": "upcoming",
+      "status": "Success",
+      "phase": "flown",
       "files": {
         "csv": "/launches/lm2d-xichang-2026-11-26/lm2d-xichang-2026-11-26_2026-11-26_trajectory.csv",
         "kml": "/launches/lm2d-xichang-2026-11-26/lm2d-xichang-2026-11-26_2026-11-26_trajectory.kml",
@@ -2616,13 +2666,15 @@
         "https://en.wikipedia.org/wiki/YF-20",
         "https://en.wikipedia.org/wiki/Long_March_3B",
         "https://zh.wikipedia.org/wiki/%E4%B8%AD%E5%9B%BD%E8%BF%90%E8%BD%BD%E7%81%AB%E7%AE%AD%E5%8F%91%E5%B0%84%E5%88%97%E8%A1%A8",
-        "https://mna.mnd.gov.tw/news/detail/?UserKey=54fa8ee5-e179-4852-9956-1eeed57a46f7"
+        "https://mna.mnd.gov.tw/news/detail/?UserKey=54fa8ee5-e179-4852-9956-1eeed57a46f7",
+        "http://www.news.cn/20261126/a0282f982c184654872225d3ccb64539/c.html"
       ],
       "method": {
-        "csv": "event-surrogate parametric: SAST TYPICAL LM-2D sequence times (pitch-over 17.0 s, S1 cutoff 153.9 s, sep 155.1 s, fairing 185.1 s, S2 main cutoff 324.1 s, vernier cutoff 705.1 s), reused from the lm2d-taiyuan vehicle file; altitudes unpublished, so knot altitudes ASSUMED from this board's sim rounded to 0.1 km and the final altitude is the ASSUMED 500 km orbit; azimuth 105.51 deg = mean bearing from Xichang LC-3 to the A6099/26 and A6100/26 Q-line centres (104.51 deg and 106.52 deg); ends at vernier cutoff; T0 LL2 NET 2026-11-26T09:35:00Z; ILLUSTRATIVE",
-        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SAST typical sequence as hard events (vehicles/lm2d.json, same stage data as lm2d-taiyuan); configuration-2 stage data (World Launch Vehicles 2007 via huijiwiki), S1 vac via YF-20 ratio; verniers ASSUMED to run from S2 ignition to 705.1 s; 3.35 m fairing 860 kg ASSUMED; Cd 0.667 from the LM-3B fit; TARGET ASSUMED 500 km circular (LL2 orbit Unknown, no altitude; not an SSO — the NOTAM azimuth's non-rotating inclination is 31.91 deg); azimuth 105.51 deg from NOTAM A6099/26 (104.51 deg, 583 km) and A6100/26 (106.52 deg, 1060 km) Q-line centres; kick 1.640 deg over 10 s, tan(theta)=0.7050-0.002835*(t-t_ign); vernier cutoff geodetic alt 500.01 km, FPA 0.00 deg, SMA error ~0; osculating 498.6 x 501.5 km, i=33.892 deg vs 31.91 deg non-rotating from the commanded azimuth; pad->insertion bearing 116.39 deg vs commanded 105.51 deg (+10.88 deg); at the NOTAM downranges the sim course is about 118-119 deg and misses the Q-line centres by about 191 km and 241 km; fitted payload 1281 kg is NOT an estimate (payload unknown); deploy unpublished, so +2 revs on the inferred insertion orbit, file ends T+12059 s at 498.7 x 501.8 km, i=33.893 deg; cost ~0; ILLUSTRATIVE"
+        "csv": "FLOWN. utc shift +180 s to the actual liftoff 2026-11-26T09:38:00Z; ECEF geometry unchanged. event-surrogate parametric: SAST TYPICAL LM-2D sequence times (pitch-over 17.0 s, S1 cutoff 153.9 s, sep 155.1 s, fairing 185.1 s, S2 main cutoff 324.1 s, vernier cutoff 705.1 s), reused from the lm2d-taiyuan vehicle file; altitudes unpublished, so knot altitudes ASSUMED from this board's sim rounded to 0.1 km and the final altitude is the ASSUMED 500 km orbit; azimuth 105.51 deg = mean bearing from Xichang LC-3 to the A6099/26 and A6100/26 Q-line centres (104.51 deg and 106.52 deg); ends at vernier cutoff; T0 ACTUAL liftoff 2026-11-26T09:38:00Z (was the LL2 NET 09:35:00Z); ILLUSTRATIVE",
+        "csv_sim": "FLOWN. utc shift +180 s to the actual liftoff 2026-11-26T09:38:00Z; sim not re-run; ECEF geometry unchanged. first-principles 3DOF sim, TIMELINE mode: SAST typical sequence as hard events (vehicles/lm2d.json, same stage data as lm2d-taiyuan); configuration-2 stage data (World Launch Vehicles 2007 via huijiwiki), S1 vac via YF-20 ratio; verniers ASSUMED to run from S2 ignition to 705.1 s; 3.35 m fairing 860 kg ASSUMED; Cd 0.667 from the LM-3B fit; TARGET ASSUMED 500 km circular (LL2 orbit Unknown, no altitude; not an SSO — the NOTAM azimuth's non-rotating inclination is 31.91 deg); azimuth 105.51 deg from NOTAM A6099/26 (104.51 deg, 583 km) and A6100/26 (106.52 deg, 1060 km) Q-line centres; kick 1.640 deg over 10 s, tan(theta)=0.7050-0.002835*(t-t_ign); vernier cutoff geodetic alt 500.01 km, FPA 0.00 deg, SMA error ~0; osculating 498.6 x 501.5 km, i=33.892 deg vs 31.91 deg non-rotating from the commanded azimuth; pad->insertion bearing 116.39 deg vs commanded 105.51 deg (+10.88 deg); at the NOTAM downranges the sim course is about 118-119 deg and misses the Q-line centres by about 191 km and 241 km; fitted payload 1281 kg is NOT an estimate (payload unknown); deploy unpublished, so +2 revs on the inferred insertion orbit, file ends T+12059 s at 498.7 x 501.8 km, i=33.893 deg; cost ~0; ILLUSTRATIVE"
       },
       "reference_ids": [
+        "xinhua-yaogan49",
         "ll2-lm2d-xichang",
         "mnd-xichang-1126",
         "nsf-lm2d-xichang",
@@ -2650,9 +2702,10 @@
         "No deploy time is published. The typical-sequence separation at 737.1 s is not this flight's and is not used. deploy.t_s null; coast +2 revs on the inferred insertion orbit. Post-cutoff drag Cd 2.2 and area 8.81 m2 are the same ASSUMPTIONS as lm2d-taiyuan.",
         "Sim track bias left in place. Pad->insertion bearing 116.39 deg versus commanded 105.51 deg (+10.88 deg). Achieved inclination 33.892 deg versus 31.91 deg non-rotating from the azimuth. At the NOTAM downranges the sim misses the A6099 and A6100 Q-line centres by about 191 km and 241 km. Known class of sim track bias; azimuth kept NOTAM-first.",
         "T0 is the LL2 NET 2026-11-26T09:35:00Z, not a liftoff. Window 09:30-09:52Z matches NOTAM A6099/26. Net precision is Hour. No CASC or Xinhua clock was found.",
-        "Taiwan MND (Military News Agency, 24 Nov 2026) reports a PLA announcement of a launch-vehicle flight on 26 Nov from Xichang Satellite Launch Center toward the western Pacific, passing through Taiwan's ADIZ. No clock is in that report. It supports the existing east-southeast NOTAM azimuth (105.51 deg) and was not used to move T0, the window, or the azimuth."
+        "Taiwan MND (Military News Agency, 24 Nov 2026) reports a PLA announcement of a launch-vehicle flight on 26 Nov from Xichang Satellite Launch Center toward the western Pacific, passing through Taiwan's ADIZ. No clock is in that report. It supports the existing east-southeast NOTAM azimuth (105.51 deg) and was not used to move T0, the window, or the azimuth.",
+        "FLOWN 2026-11-26. T0 is the actual liftoff 2026-11-26T09:38:00Z (+180 s from the pre-flight NET 2026-11-26T09:35:00Z). Xinhua, 26 Nov 2026 18:02:36, dateline Xichang: at 17:38 on 26 Nov a Long March 2D from Xichang Satellite Launch Center put Yaogan-49 Group 01 (遥感四十九号01组卫星) into the planned orbit, and the launch was a complete success. This was the 681st Long March flight. LL2 id b00f0e9a-48d6-4f26-9cb5-7d19169ff7c4 is Launch Successful, net 2026-11-26T09:38:00Z, minute precision, last_updated 2026-11-26T11:20:00Z. Both trajectory files were utc-shifted +180 s. Elapsed times and ECEF geometry were not moved. The sim was not re-run. Knots were not moved. The window 09:30-09:52Z is unchanged. Xinhua and LL2 still publish no altitude, so the assumed 500 km circle was not replaced. LL2's orbit field is now Low Earth Orbit. The pre-flight vehicle-identity caution is closed for the rocket: Xinhua names Long March 2D. The Chinese Wikipedia Long March 2C / GTO row was still not used."
       ],
-      "note": "Pre-flight ILLUSTRATIVE. Long March 2D, unknown payload, Xichang LC-3 (LC-3/LA-1). LL2 id b00f0e9a-48d6-4f26-9cb5-7d19169ff7c4, status Go, NET 2026-11-26T09:35:00Z (Thu 26 Nov 1:35 a.m. PST; 17:35 BJT), window 09:30-09:52Z, orbit Unknown, net precision Hour, last_updated 2026-11-20T09:12:38Z. LL2 update: Added launch per NOTAMs; payload and launch vehicle identities uncertain. Azimuth 105.51 deg is the mean bearing to the Q-line centres of NOTAM ZPKM A6099/26 (104.51 deg, 583 km, 09:30-09:52Z) and ZGZU A6100/26 (106.52 deg, 1060 km, 09:31-09:57Z). Non-rotating inclination from that azimuth is 31.91 deg. Taiwan MND, 24 Nov 2026, says the PLA announced a 26 Nov launch from Xichang toward the western Pacific that would pass through Taiwan's ADIZ. That direction agrees with the existing 105.51 deg azimuth. T0 09:35Z was not changed. Target 500 km circular is ASSUMED; it is not an SSO. Vehicle file reused from lm2d-taiyuan. Chinese Wikipedia lists a Long March 2C to GTO from Xichang on 26 Nov with no clock; that row was not used. Sim at vernier cutoff T+705.1 s: geodetic 500.01 km, FPA 0.00 deg, SMA error ~0, osculating 498.6 x 501.5 km, i=33.892 deg. Pad->insertion bearing 116.39 deg versus commanded 105.51 deg. The sim misses the two Q-line centres by about 191 km and 241 km. Fitted payload 1,281 kg is not an estimate. No deploy time, so the sim ends two revolutions later (T+12059 s). ILLUSTRATIVE."
+      "note": "FLOWN. Long March 2D lifted Yaogan-49 Group 01 (遥感四十九号01组卫星) from Xichang at 2026-11-26T09:38:00Z (Thu 26 Nov 1:38 a.m. PST; 17:38 BJT). Xinhua, 26 Nov 2026 18:02:36: the satellites reached the planned orbit and the launch was a complete success. Long March flight 681. LL2 id b00f0e9a-48d6-4f26-9cb5-7d19169ff7c4 is Launch Successful, net 2026-11-26T09:38:00Z, minute precision, last_updated 2026-11-26T11:20:00Z. Both trajectory types were utc-shifted +180 s from the pre-flight NET 2026-11-26T09:35:00Z. ECEF geometry unchanged. Sim not re-run. Knots not moved. Window stays 09:30-09:52Z. Altitude is still unpublished, so the 500 km circle remains ASSUMED. Sim at vernier cutoff is unchanged: geodetic 500.01 km, FPA 0.00 deg, osculating 498.6 x 501.5 km, i=33.892 deg. Pad->insertion bearing 116.39 deg versus commanded 105.51 deg. No deploy time, so the sim still ends two revolutions later (T+12059 s). ILLUSTRATIVE, not flight data."
     },
     {
       "slug": "electron-strix14-2026-11-27",
@@ -2767,6 +2820,122 @@
         "Sim track bias left in place. Pad->insertion bearing 193.29 deg versus commanded 190.00 deg (+3.29 deg). Early course from T+30 s to T+60 s is 190.75 deg (+0.75 deg). Achieved inclination 96.927 deg versus 97.77 deg non-rotating from the assumed azimuth. Osculating insertion is 499.0 x 505.6 km rather than a 500 km circle. Geodetic altitude is 500.0 km and flight-path angle is 0.0 deg."
       ],
       "note": "Pre-flight ILLUSTRATIVE. Long March 6A, unknown payload, Taiyuan LC-9A. LL2 id a6421db3-7c8a-4cf7-a659-cec195140f7f, status Go, NET 2026-11-27T13:00:00Z (Fri 27 Nov 5:00 a.m. PST; 21:00 BJT), window 12:53-13:15Z, orbit Unknown, net precision Hour, last_updated 2026-11-20T17:15:10Z. LL2 update: added per NOTAMs; payload and vehicle identity uncertain, probably Yaogan-50. That 'probably' was not used as an orbit. No hazard coordinates for this window were retrieved (space-notices has no linked notices; the public ZBPE boxes found are 5 Nov and 9 Nov; the NSF post returned 403). Azimuth 190 deg is the same ASSUMPTION as lm6a-yaogan50-03. Target 500 km circular is ASSUMED. Payload 3000 kg is ASSUMED. Sim insertion T+743.5 s: geodetic 500.0 km, FPA 0.0 deg, osculating 499.0 x 505.6 km, i=96.927 deg versus 97.77 deg non-rotating. Pad->insertion bearing 193.29 deg versus commanded 190 deg. No deploy time, so the sim ends two revolutions later (T+12103 s). ILLUSTRATIVE."
+    },
+    {
+      "slug": "ussf-380-2026-11-29",
+      "name": "USSF-380",
+      "vehicle": "Falcon 9 Block 5",
+      "t0_utc": "2026-11-29T04:39:00Z",
+      "t0_kind": "window_open",
+      "window_open_utc": "2026-11-29T04:39:00Z",
+      "window_close_utc": "2026-11-29T08:39:00Z",
+      "backup_utc": "2026-11-30T02:26:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/ussf-380-2026-11-29/ussf-380-2026-11-29_2026-11-29_trajectory.csv",
+        "kml": "/launches/ussf-380-2026-11-29/ussf-380-2026-11-29_2026-11-29_trajectory.kml",
+        "csv_sim": "/launches/ussf-380-2026-11-29/ussf-380-2026-11-29_2026-11-29_trajectory_sim.csv",
+        "kml_sim": "/launches/ussf-380-2026-11-29/ussf-380-2026-11-29_2026-11-29_trajectory_sim.kml",
+        "track_lite": "/launches/ussf-380-2026-11-29/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://www.spacex.com/launches/ussf380",
+        "https://ll.thespacedevs.com/2.3.0/launches/b0d27def-0a88-44c3-a947-1fd5b8503e2c/",
+        "https://www.sealagom.com/navarea/12/message/26135/836-26-north-pacific/",
+        "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
+        "https://www.spacex.com/launches/sl-15-16",
+        "https://en.wikipedia.org/wiki/Falcon_9",
+        "https://en.wikipedia.org/wiki/Falcon_9_Block_5"
+      ],
+      "method": {
+        "csv": "event-surrogate: Falcon 9 family webcast telemetry loft (Iridium NEXT-7 altitude and downrange, the same rows as USSF-266 / USSF-317), laid on a constant-azimuth rhumb at 153.18 deg. SpaceX ussf380 times: MECO 2:26 and SES-1 2:36 match the family samples. Fairing on that page is T+177 s; the family loft samples fairing at T+176 s. File ends at T+508 s (telemetry end) because SECO is unpublished. Azimuth 153.18 deg is the bearing from SLC-4E to the midpoint of the downrange edge of NAVAREA XII 836/26 Area A (32-05.00N 119-08.00W to 32-30.00N 119-18.00W; unrounded 153.184 deg, 290.6 km). T0 is the window open 2026-11-29T04:39:00Z. ILLUSTRATIVE",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ussf380 MECO 146 s, sep 149 s, SES-1 156 s, fairing 177 s as hard events. SECO-1 519 s and the 177.3 x 266.2 km parking orbit are ASSUMED, borrowed from the USSF-317 / Starlink Group 15 config (LL2 says the drop zones match previous Group 15 launches), not USSF-380 sources. Azimuth 153.18 deg from NAVAREA XII 836/26 Area A, non-rotating inclination 68.21 deg, not retuned. Areas B and C (centroid bearings about 154.32 and 155.11 deg) were not used. No ZLA CARF polygon for 29 Nov was retrieved. Fit cost 21.438. Geodetic alt 177.28 km, FPA -0.0002 deg, SMA error -0.034 km. Osculating at cutoff 174.5 x 268.6 km, i=68.016 deg versus 68.21 deg non-rotating. Pad->insertion bearing 158.61 deg versus commanded 153.18 deg (+5.43 deg). Course from T+30 s to T+60 s is 159.94 deg (+6.76 deg). Family-knot residuals: MECO alt 63.98 vs 66.64 km, range 58.6 vs 85.5 km; SES-1 alt 73.78 vs 76.70 km, range 74.8 vs 107.4 km; fairing sample is T+176 s and the hard event is T+177 s, alt 91.15 vs 95.79 km, range 108.7 vs 154.4 km. Fitted payload 16,868 kg is not an estimate. Steering: vertical rise 9.635 s, kick 3.459 deg over 10 s, tan(theta)=0.5410-0.001321*(t-t_ign). Deploy unpublished (deploy.t_s null), so +2 revs, file ends T+11191 s at 174.5 x 268.8 km, i=68.016 deg. Booster entry and the OCISLY landing are not modelled. ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "spacex-ussf380",
+        "ll2-ussf-380",
+        "navarea-xii-836-26",
+        "shahar603-tel",
+        "spacex-sl-15-16",
+        "wp-falcon9",
+        "wp-falcon9-b5",
+        "ll2",
+        "kml"
+      ],
+      "assumptions": [
+        "T0 is the window open 2026-11-29T04:39:00Z (Sat 28 Nov 8:39 p.m. PT). SpaceX ussf380 page header is 28 Nov 23:39 ET to 29 Nov 03:39 ET, which is 04:39Z to 08:39Z, so window_close_utc is that published close, not a close derived by adding four hours to an open-only sentence. The page also says the four-hour window opens at 8:39 p.m. PT. Backup Sunday 29 Nov at 6:26 p.m. PT is 2026-11-30T02:26:00Z. LL2 id b0d27def-0a88-44c3-a947-1fd5b8503e2c is Go, NET 2026-11-29T04:39:00Z, window 04:39-08:39Z, minute precision, last_updated 2026-11-26T11:45:38Z. NAVAREA XII 836/26 Area A primary period is 29 Nov 04:39-09:02Z, which starts at this open and runs past 08:39Z.",
+        "AZIMUTH 153.18 deg is sourced, not assumed. Great-circle bearing from the LL2 pad (34.632N, 120.611W) to the midpoint of the downrange edge of NAVAREA XII 836/26 Area A. Edge 32-05.00N 119-08.00W to 32-30.00N 119-18.00W. Midpoint 32.2917N 119.2167W. Unrounded bearing 153.184 deg, rounded to 153.18. Distance 290.6 km. Non-rotating inclination 68.21 deg. Areas B and C of the same notice are further downrange. Their centroid bearings are about 154.32 deg (530.9 km) and 155.11 deg (667.0 km). They were not used, the same rule as keeping the near ascent box's far edge. No FAA/ZLA CARF polygon covering 29 Nov 04:39-08:39Z was retrieved. This Area A polygon is the same shape USSF-317 recorded for NAVAREA XII 785/26 and did not use (that flight used a tighter ZLA box at 153.56 deg). It is used here because it is the notice in force. Not retuned after the sim.",
+        "SECO-1 T+519 s and parking orbit 177.3 x 266.2 km are BORROWED from the USSF-317 config, itself the Starlink Group 15 analog (sl-15-16 SECO-1 T+8:39). USSF-380 publishes neither. LL2's mission text says the drop zones match previous Starlink Group 15 launches and that the payload is possibly a Starshield batch. That sentence is why the Group 15 parking orbit was borrowed. It is not a satellite count, and no count is used. Inclination was not tuned to anything.",
+        "PAYLOAD mass FITTED at 16,868 kg inside the Falcon 9 config bounds 13.0-21.6 t so the borrowed SECO time can reach the borrowed parking altitude. Those bounds are a Starlink V2 mini band, not a USSF-380 mass. The fitted number is not an estimate. SpaceX does not name the booster. LL2's launcher record says B1082 on its 27th flight, landing on OCISLY. That serial is LL2's record, not a quotation from the SpaceX page, and it is not used as a mass.",
+        "Family Iridium NEXT-7 webcast telemetry is the surrogate loft and the comparison knots (not this flight). MECO T+146 s and SES-1 T+156 s match this page. Fairing on this page is T+177 s, one second later than the family sample at T+176 s. The hard event is 177 s. The knot stays at 176 s. The surrogate ends at T+508 s, the telemetry end.",
+        "No deploy time is published. deploy.t_s is null. The sim coasts two revolutions on the inferred insertion orbit and ends at T+11191 s. Post-cutoff Cd 0.4 and area 10.75 m2 are the Falcon 9 vehicle-config assumptions. Entry burn, landing burn, and the droneship are not modelled. The unburned stage-1 residual stands in for that propellant.",
+        "Pad elevation 0 m. LL2 SLC-4E gives 34.632N 120.611W and no height. Same pad point as USSF-266 and USSF-317.",
+        "Sim track bias left in place. Pad->insertion bearing 158.61 deg versus commanded 153.18 deg (+5.43 deg). Course from T+30 s to T+60 s is 159.94 deg (+6.76 deg). Achieved inclination 68.016 deg versus 68.21 deg non-rotating from the azimuth. Osculating insertion 174.5 x 268.6 km versus the borrowed 177.3 x 266.2 km. Geodetic altitude 177.28 km, flight-path angle -0.0002 deg, SMA error -0.034 km. Azimuth kept on the hazard edge."
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. Falcon 9 USSF-380 from SLC-4E. T0 is the window open 2026-11-29T04:39:00Z (Sat 28 Nov 8:39 p.m. PT). SpaceX page header: 28 Nov 23:39 ET to 29 Nov 03:39 ET (04:39-08:39Z). Backup Sun 29 Nov 6:26 p.m. PT (2026-11-30T02:26:00Z). 27th flight, landing on Of Course I Still Love You. LL2 id b0d27def-0a88-44c3-a947-1fd5b8503e2c is Go at 04:39Z, window 04:39-08:39Z, last_updated 2026-11-26T11:45:38Z. Payload is classified. No satellite count. Azimuth 153.18 deg is the bearing to the downrange edge of NAVAREA XII 836/26 Area A. Non-rotating inclination 68.21 deg. SECO and the 177.3 x 266.2 km orbit are borrowed from the Group 15 / USSF-317 config because LL2 says the drop zones match Group 15. Sim at cutoff T+519 s: geodetic 177.28 km, FPA -0.0002 deg, SMA error -0.034 km, osculating 174.5 x 268.6 km, i=68.016 deg. Pad->insertion bearing 158.61 deg versus commanded 153.18 deg. Fitted payload 16,868 kg is not an estimate. No deploy time, so the sim ends two revolutions later (T+11191 s). ILLUSTRATIVE."
+    },
+    {
+      "slug": "cygnus-ng25-2026-11-29",
+      "name": "Cygnus NG-25 (S.S. Jim Lovell)",
+      "vehicle": "Falcon 9 Block 5",
+      "t0_utc": "2026-11-29T15:47:00Z",
+      "t0_kind": "net",
+      "window_open_utc": "2026-11-29T15:40:00Z",
+      "window_close_utc": "2026-11-29T16:00:00Z",
+      "backup_utc": "2026-11-30T15:24:00Z",
+      "status": "Go",
+      "phase": "upcoming",
+      "files": {
+        "csv": "/launches/cygnus-ng25-2026-11-29/cygnus-ng25-2026-11-29_2026-11-29_trajectory.csv",
+        "kml": "/launches/cygnus-ng25-2026-11-29/cygnus-ng25-2026-11-29_2026-11-29_trajectory.kml",
+        "csv_sim": "/launches/cygnus-ng25-2026-11-29/cygnus-ng25-2026-11-29_2026-11-29_trajectory_sim.csv",
+        "kml_sim": "/launches/cygnus-ng25-2026-11-29/cygnus-ng25-2026-11-29_2026-11-29_trajectory_sim.kml",
+        "track_lite": "/launches/cygnus-ng25-2026-11-29/track_lite.json"
+      },
+      "illustrative": true,
+      "confidence": "low",
+      "sources": [
+        "https://www.spacex.com/launches/ng25",
+        "https://ll.thespacedevs.com/2.3.0/launches/d74afbc7-0de5-491c-be05-4e9c31f736ac/",
+        "https://www.sealagom.com/navarea/4/message/26132/1141-26-north-atlantic/",
+        "https://sky-brokers.com/wp-content/uploads/2026/11/NG-25-Mission-factsheet.pdf",
+        "https://www.nasa.gov/missions/station/nasas-northrop-grumman-crs-25-mission-overview/",
+        "https://en.wikipedia.org/wiki/Cygnus_NG-25",
+        "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207",
+        "https://en.wikipedia.org/wiki/Falcon_9",
+        "https://en.wikipedia.org/wiki/Falcon_9_Block_5"
+      ],
+      "method": {
+        "csv": "event-surrogate: Falcon 9 family webcast telemetry loft (Iridium NEXT-7 altitude and downrange), laid on a constant-azimuth rhumb at 46.36 deg. That loft's MECO is T+146 s; this flight's published MECO is T+133 s (LZ-40). The loft is a family stand-in. File ends at T+508 s (telemetry end), before the published SECO-1 at T+512 s. Azimuth 46.36 deg is the bearing from SLC-40 to the far-edge midpoint of NAVAREA IV 1141/26 Area B (31-57.00N 076-28.00W to 31-51.00N 076-17.00W; unrounded 46.364 deg, 548.3 km). T0 is 2026-11-29T15:47:00Z. SOURCE CONFLICT: SpaceX page header window is 10:40-11:00 ET (15:40-16:00Z); the prose and LL2 are the instant 15:47Z. ILLUSTRATIVE",
+        "csv_sim": "first-principles 3DOF sim, TIMELINE mode: SpaceX ng25 MECO 133 s, sep 137 s, SES-1 144 s, fairing 173 s, SECO-1 512 s as hard events. Target 245 x 245 km is the Northrop Grumman factsheet initial orbit (51.64 deg printed there). Azimuth 46.36 deg from NAVAREA IV 1141/26 Area B, non-rotating inclination 50.53 deg, not retuned to 51.64 deg or to 51.6 deg. Area A (near-shore, downrange-edge bearing about 52.04 deg) was not used. Payload fixed at the factsheet launch mass 10,500 kg, not fitted. Steering: vertical rise 8.802 s, kick 1.819 deg over 10 s, tan(theta)=0.1867-0.000127*(t-t_ign). Cutoff T+512 s: geodetic 244.98 km, FPA +0.001 deg, SMA error +0.017 km, osculating 238.2 x 251.6 km, i=47.177 deg versus 50.53 deg non-rotating and versus the factsheet 51.64 deg. Pad->insertion bearing 50.24 deg versus commanded 46.36 deg (+3.88 deg). Course from T+30 s to T+60 s is 59.71 deg (+13.35 deg). Family-knot residuals, droneship loft against this RTLS profile: MECO alt 51.65 vs 75.48 km, range 39.84 vs 23.9 km; SES-1 alt 62.04 vs 92.89 km, range 55.15 vs 31.6 km; fairing alt 88.64 vs 134.02 km, range 102.55 vs 54.9 km. Deploy is the published Cygnus XL separation T+875 s (14:35). No second burn is on the SpaceX timeline, so the coast is ballistic. At deploy, geodetic 249.54 km, osculating 237.3 x 245.2 km, i=47.162 deg. File ends at T+875 s. Cost 30.424. Boostback, entry, and the LZ-40 landing are not modelled. ILLUSTRATIVE"
+      },
+      "reference_ids": [
+        "spacex-ng25",
+        "ll2-cygnus-ng25",
+        "navarea-iv-1141-26",
+        "ng-ng25-factsheet",
+        "nasa-crs25",
+        "wp-cygnus-ng25",
+        "shahar603-tel",
+        "wp-falcon9",
+        "wp-falcon9-b5",
+        "ll2",
+        "kml"
+      ],
+      "assumptions": [
+        "T0 is 2026-11-29T15:47:00Z. LL2 id d74afbc7-0de5-491c-be05-4e9c31f736ac is Go, NET 2026-11-29T15:47:00Z, minute precision, window_start and window_end both 2026-11-29T15:47:00Z, last_updated 2026-11-26T11:44:54Z. SpaceX ng25 prose: liftoff is targeted for 10:47 a.m. ET, which is the same instant. SOURCE CONFLICT, recorded: the same page's header is the window 29 Nov 10:40-11:00 ET (15:40-16:00Z). window_open_utc and window_close_utc are that header. T0 is the 15:47Z instant inside it, not the window open. Backup Monday 30 Nov at 10:24 a.m. ET is 2026-11-30T15:24:00Z. NAVAREA IV 1141/26 primary period is 29 Nov 15:40-16:43Z, which starts at the header open and runs past the header close. The 30 Nov alternate on that notice is 15:14-16:18Z, which contains the backup.",
+        "AZIMUTH 46.36 deg is sourced, not assumed. Great-circle bearing from the LL2 SLC-40 pad (28.561941N, 80.577357W) to the midpoint of the far edge of NAVAREA IV 1141/26 Area B. Vertices 31-57.00N 076-28.00W and 31-51.00N 076-17.00W. Midpoint 31.9000N 76.3750W. Unrounded bearing 46.364 deg, rounded to 46.36. Distance 548.3 km. Non-rotating inclination 50.53 deg. Area A of the same notice is a near-shore box within about 49 km of the pad and includes a vertex northwest of the pad. Its downrange-edge bearing is about 52.04 deg. It was not used as the orbital heading. The northeast heading for 51.6 deg from this pad is 45.01 deg. That convention was not used, because Area B is a published downrange hazard. Not retuned after the sim.",
+        "TARGET ORBIT is the Northrop Grumman NG-25 factsheet (G26-22496-FS, public release NG26-1913): initial orbit 245 km x 245 km, inclination 51.64 deg. The factsheet was retrieved at the sky-brokers.com copy of that PDF. Wikipedia lists 51.66 deg and gives no altitude. 51.66 deg was not used as a heading or as a replacement altitude. The azimuth was not retuned to 51.64 deg. The ISS altitude is not the insertion orbit. Berthing is not modelled. NASA (24 Nov 2026) says the Unity Earth-facing port and names the spacecraft for James A. Lovell Jr. The factsheet names it S.S. Jim Lovell.",
+        "PAYLOAD 10,500 kg is the factsheet line 'Cygnus XL Launch Mass: 10,500 kg', fixed, not fitted. The same sheet lists ascent cargo 'up to 5,000 kg' on a separate line. That capacity was not added on top of 10,500 kg. NASA's 'about 11,000 pounds' is the cargo, not the spacecraft launch mass, and was not used as the sim mass. The Starlink fit bounds 13.0-21.6 t were not applied.",
+        "DEPLOY T+875 s is published. SpaceX ng25: Cygnus XL Deploys at T+14:35. SECO-1 is T+8:32 on the same table. No SES-2 is listed between them, so no coast burn is modelled. deploy.t_s is 875, not null.",
+        "EVENT KNOT altitudes are the Iridium NEXT-7 family loft interpolated at this flight's MECO, SES-1 and fairing times. That flight was a droneship profile with MECO at T+146 s. This flight is RTLS with MECO at T+133 s. The knot misses (MECO about +24 km high and short on range, fairing about +45 km high) are that mismatch. They were not retuned, and the family loft was not replaced.",
+        "Pad elevation 0 m. LL2 SLC-40 gives 28.56194122N 80.57735736W and no height. Post-cutoff Cd 0.4 and area 10.75 m2 are the Falcon 9 vehicle-config assumptions. The drag reference stays that area after fairing jettison. Boostback, entry, and the LZ-40 landing are not modelled. SpaceX does not name the booster. LL2's launcher record says B1096 on its 9th flight, landing at LZ-40. That serial is LL2's record and is not used as a mass.",
+        "Sim track bias left in place. Pad->insertion bearing 50.24 deg versus commanded 46.36 deg (+3.88 deg). Course from T+30 s to T+60 s is 59.71 deg (+13.35 deg). Achieved inclination 47.177 deg versus 50.53 deg non-rotating from the azimuth and versus the factsheet 51.64 deg. Osculating at cutoff 238.2 x 251.6 km versus the factsheet 245 km circle. Geodetic altitude 244.98 km, flight-path angle +0.001 deg, SMA error +0.017 km. At the published deploy, geodetic 249.54 km, osculating 237.3 x 245.2 km, i=47.162 deg. Azimuth kept on Area B."
+      ],
+      "note": "Pre-flight ILLUSTRATIVE. Falcon 9 Cygnus XL NG-25 (S.S. Jim Lovell) from SLC-40 to the ISS. T0 is 2026-11-29T15:47:00Z (Sun 29 Nov 7:47 a.m. PST; 10:47 a.m. ET). LL2 id d74afbc7-0de5-491c-be05-4e9c31f736ac is Go at 15:47Z, and its window fields are both 15:47Z, last_updated 2026-11-26T11:44:54Z. SpaceX prose also targets 10:47 a.m. ET. SOURCE CONFLICT: the SpaceX page header is the window 10:40-11:00 ET (15:40-16:00Z). That window is recorded. T0 is the 15:47Z instant inside it. Backup Mon 30 Nov 10:24 a.m. ET (2026-11-30T15:24:00Z). Ninth flight, landing at LZ-40. Azimuth 46.36 deg is the bearing to the far edge of NAVAREA IV 1141/26 Area B. Non-rotating inclination 50.53 deg. The factsheet initial orbit is 245 x 245 km at 51.64 deg. The azimuth was not retuned to that inclination. Sim at SECO-1 T+512 s: geodetic 244.98 km, FPA +0.001 deg, SMA error +0.017 km, osculating 238.2 x 251.6 km, i=47.177 deg. Pad->insertion bearing 50.24 deg versus commanded 46.36 deg. SpaceX publishes Cygnus XL deployment at T+14:35, so the sim ends there (T+875 s), not after two revolutions. ILLUSTRATIVE."
     }
   ],
   "globe": {
