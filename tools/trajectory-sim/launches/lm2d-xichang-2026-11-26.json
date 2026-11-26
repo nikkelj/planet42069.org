@@ -2,7 +2,8 @@
  "slug": "lm2d-xichang-2026-11-26",
  "title": "Long March 2D / Unknown Payload (Xichang LC-3)",
  "vehicle": "lm2d",
- "t0_utc": "2026-11-26T09:35:00Z",
+ "t0_utc": "2026-11-26T09:38:00Z",
+ "t0_retime": "FLOWN 2026-11-26. Liftoff 2026-11-26T09:38:00Z (+180 s from the pre-flight NET 2026-11-26T09:35:00Z). Xinhua 17:38 Beijing. Public files utc-shifted. ECEF unchanged. Sim not re-run.",
  "pad": {
   "lat": 28.247059,
   "lon": 102.029008,

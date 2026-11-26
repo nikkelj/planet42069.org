@@ -1,0 +1,217 @@
+{
+ "slug": "ussf-380-2026-11-29",
+ "title": "Falcon 9 USSF-380 (SLC-4E)",
+ "vehicle": "falcon9",
+ "t0_utc": "2026-11-29T04:39:00Z",
+ "pad": {
+  "lat": 34.632,
+  "lon": -120.611,
+  "alt_m": 0,
+  "src": "https://ll.thespacedevs.com/2.3.0/launches/b0d27def-0a88-44c3-a947-1fd5b8503e2c/ (SLC-4E, Vandenberg SFB)"
+ },
+ "azimuth_deg": {
+  "value": 153.18,
+  "derived": "Great-circle bearing from the LL2 SLC-4E pad to the midpoint of the downrange edge of NAVAREA XII 836/26 Area A (hazardous rocket launching, USSF-380). Edge vertices 32-05.00N 119-08.00W and 32-30.00N 119-18.00W. Midpoint 32.2917N 119.2167W. Unrounded bearing 153.184 deg, rounded to 153.18. Distance 290.6 km. Non-rotating inclination 68.21 deg. Areas B and C of the same notice are further downrange (centroid bearings about 154.32 and 155.11 deg) and were not used. No ZLA CARF polygon for 29 Nov 2026 was retrieved. This Area A polygon is the same shape USSF-317 recorded for NAVAREA XII 785/26 and did not use; it is used here because it is the notice in force for this flight.",
+  "src": "https://www.sealagom.com/navarea/12/message/26135/836-26-north-pacific/"
+ },
+ "payload_kg": {
+  "fit": true,
+  "value": null,
+  "note": "FITTED inside the Falcon 9 config bounds (13.0-21.6 t, themselves a Starlink V2 mini band) so the BORROWED SECO-1 time can reach the BORROWED parking altitude. USSF-380 mass is unpublished. The fitted number is an ASSUMPTION of the fit, not an estimate of the payload. No satellite count is used."
+ },
+ "target": {
+  "insertion_alt_km": {
+   "value": 177.3,
+   "assumption": "USSF-380 orbit is unpublished. 177.3 km perigee is borrowed from the Starlink Group 15 parking orbit used for USSF-317. LL2 says this flight's drop zones match previous Starlink Group 15 launches, and the published times through SES-1 match the sl-15-16 family timeline that produced that orbit (MECO 2:26, SES-1 2:36, SECO-1 8:39). Fairing here is 2:57, one second later than that family's 2:56. It is not a USSF-380 element. Inclination is not tuned; the 153.18 deg hazard azimuth stands."
+  },
+  "apoapsis_alt_km": {
+   "value": 266.2,
+   "assumption": "Same borrowed Group 15 parking apogee used for USSF-317. Not a USSF-380 source."
+  },
+  "cutoff": "energy",
+  "sma_sigma_km": 2,
+  "altitude_reference": "equatorial-radius (r - 6378.137 km) for SMA; insertion altitude residual uses geodetic altitude"
+ },
+ "header_notes": [
+  "ILLUSTRATIVE. PRE-FLIGHT. USSF-380, Falcon 9, SLC-4E. T0 is the window open 2026-11-29T04:39:00Z (Sat 28 Nov 8:39 p.m. PT). SpaceX https://www.spacex.com/launches/ussf380 header: 28 Nov 23:39 ET to 29 Nov 03:39 ET, a four-hour window to 08:39Z. Backup Sun 29 Nov 6:26 p.m. PT = 2026-11-30T02:26:00Z. 27th flight of the first stage. Landing on Of Course I Still Love You. LL2 id b0d27def-0a88-44c3-a947-1fd5b8503e2c status Go at 04:39Z, window 04:39-08:39Z, last_updated 2026-11-26T11:45:38Z.",
+  "Published timeline (SpaceX ussf380): Max-Q 1:07, MECO 2:26, stage sep 2:29, SES-1 2:36, fairing 2:57, entry burn 6:04-6:27, landing burn 8:02, landing 8:25. SECO, orbit and deploy are not published. Payload is classified. No unofficial satellite count is used. SpaceX does not name the booster.",
+  "INFERRED/ASSUMED: SECO-1 at T+519 s and a 177.3 x 266.2 km parking orbit are borrowed from the Group 15 / USSF-317 config, not from USSF-380. LL2's mission text says the drop zones match previous Starlink Group 15 launches. File ends 2 revs after cutoff (deploy unpublished). Booster entry and landing are not modelled."
+ ],
+ "final_cutoff_s": {
+  "value": 519,
+  "assumption": "USSF-380 SECO-1 is unpublished. T+8:39 is borrowed from https://www.spacex.com/launches/sl-15-16 because MECO and SES-1 on the USSF-380 page match that timeline. Fairing here is 2:57, one second later than sl-15-16's 2:56. Stage separation here is 2:29, one second earlier than sl-15-16's 2:30."
+ },
+ "knots": [
+  {
+   "event": "MECO (F9 family telemetry, Iridium NEXT-7)",
+   "t_s": 146,
+   "alt_km": 63.98,
+   "range_km": 58.6,
+   "alt_sigma_km": 3,
+   "range_sigma_km": 10,
+   "src": "https://github.com/shahar603/Telemetry-Data/tree/master/Iridium%20NEXT%207 (SpaceX webcast telemetry; FAMILY stand-in, not this flight). This flight's published MECO is also T+146 s."
+  },
+  {
+   "event": "SES-1 (F9 family telemetry)",
+   "t_s": 156,
+   "alt_km": 73.78,
+   "range_km": 74.8,
+   "alt_sigma_km": 3,
+   "range_sigma_km": 10,
+   "src": "same. This flight's published SES-1 is also T+156 s."
+  },
+  {
+   "event": "Fairing sep (F9 family telemetry)",
+   "t_s": 176,
+   "alt_km": 91.15,
+   "range_km": 108.7,
+   "alt_sigma_km": 3,
+   "range_sigma_km": 10,
+   "src": "same. This flight's published fairing separation is T+177 s, one second later; the family sample stays at T+176 s."
+  }
+ ],
+ "post_cutoff": {
+  "drag": {
+   "cd": {
+    "value": 0.4,
+    "assumption": "same Cd as the ascent fit (fixed 0.4)"
+   },
+   "area_m2": {
+    "value": 10.75,
+    "derived": "pi*(3.7 m/2)^2, Falcon 9 diameter (vehicle config)"
+   }
+  },
+  "deploy": {
+   "t_s": null,
+   "note": "SpaceX publishes no SECO, restart or deploy time for USSF-380 (classified payload). Propagated 2 revs on the inferred insertion orbit. The insertion altitude is borrowed, not a USSF-380 element."
+  }
+ },
+ "fairing_jettison_s": {
+  "value": 177,
+  "src": "https://www.spacex.com/launches/ussf380 fairing separation T+00:02:57"
+ },
+ "stage_event_overrides": {
+  "0": {
+   "cutoff_s": {
+    "value": 146,
+    "src": "https://www.spacex.com/launches/ussf380 MECO T+00:02:26"
+   },
+   "separation_s": {
+    "value": 149,
+    "src": "https://www.spacex.com/launches/ussf380 stage separation T+00:02:29"
+   }
+  },
+  "1": {
+   "ignition_s": {
+    "value": 156,
+    "src": "https://www.spacex.com/launches/ussf380 SES-1 T+00:02:36"
+   }
+  }
+ },
+ "fitted": {
+  "status": "FITTED",
+  "method": "scipy least_squares (TRF, bounded) vs published knots + target orbit",
+  "params": {
+   "vertical_rise_s": {
+    "value": 9.634762,
+    "bounds": [
+     4,
+     30
+    ],
+    "basis": "ASSUMPTION bound (F9 pitch-over time unpublished)"
+   },
+   "kick_deg": {
+    "value": 3.458846,
+    "bounds": [
+     0.2,
+     10
+    ],
+    "basis": "ASSUMPTION bound"
+   },
+   "payload_kg": {
+    "value": 16868.007772,
+    "bounds": [
+     13000,
+     21600
+    ],
+    "basis": "27 V2 Mini Optimized: ~575 kg each community-reported (spacex.com.pl) = 15.5 t; MaxQ lists 800 kg each = 21.6 t (upper bound). Mass not published by SpaceX"
+   },
+   "tan0": {
+    "value": 0.54097,
+    "bounds": [
+     -2,
+     5
+    ],
+    "basis": "guidance law"
+   },
+   "tan_rate": {
+    "value": 0.001321,
+    "bounds": [
+     -0.05,
+     0.05
+    ],
+    "basis": "guidance law"
+   }
+  },
+  "fixed": {
+   "cd": 0.4
+  },
+  "knot_residuals": [
+   {
+    "event": "MECO (F9 family telemetry, Iridium NEXT-7)",
+    "t_pub": 146,
+    "t_sim": 146.0,
+    "alt_pub": 63.98,
+    "alt_sim": 66.64,
+    "rng_pub": 58.6,
+    "rng_sim": 85.5
+   },
+   {
+    "event": "SES-1 (F9 family telemetry)",
+    "t_pub": 156,
+    "t_sim": 156.0,
+    "alt_pub": 73.78,
+    "alt_sim": 76.7,
+    "rng_pub": 74.8,
+    "rng_sim": 107.4
+   },
+   {
+    "event": "Fairing sep (F9 family telemetry)",
+    "t_pub": 176,
+    "t_sim": 177.0,
+    "alt_pub": 91.15,
+    "alt_sim": 95.79,
+    "rng_pub": 108.7,
+    "rng_sim": 154.4
+   }
+  ],
+  "final": {
+   "alt_km": 177.27841584724655,
+   "fpa_deg": -0.0001647668489619222,
+   "sma_err_km": -0.03448282806947827,
+   "mass_kg": 24022.0
+  },
+  "cost": 21.437553667293578,
+  "mass_budget": {
+   "stages": [
+    {
+     "name": "Stage 1 (9x Merlin 1D)",
+     "loaded_kg": 410900,
+     "burned_kg": 392572,
+     "residual_kg": 18328,
+     "dry_kg": 22200,
+     "flag": null
+    },
+    {
+     "name": "Stage 2 (1x Merlin Vacuum)",
+     "loaded_kg": 107500,
+     "burned_kg": 104346,
+     "residual_kg": 3154,
+     "dry_kg": 4000,
+     "flag": null
+    }
+   ],
+   "glow_kg": 563368
+  }
+ }
+}
