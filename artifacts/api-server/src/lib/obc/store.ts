@@ -1,4 +1,4 @@
-import { db } from "@workspace/db";
+import { db, runOnSharedPool } from "@workspace/db";
 import { obcObjects, obcLaunches, obcSyncLog } from "@workspace/db/schema";
 import { desc, eq, and } from "drizzle-orm";
 import { logger } from "../logger";
@@ -113,7 +113,15 @@ async function loadCatalog(): Promise<CatalogCache> {
  */
 export function primeCache(): void {
   if (inflight) return; // load already in progress — don't start a second one
-  const p = loadCatalog()
+  // The cache is process-wide. The hourly RPOD scan reaches here through
+  // loadCatalogMeta inside runWithDbClient(lockClient); without exit() the
+  // whole obc_objects + obc_launches reload ran on the scan's advisory-lock
+  // socket, in parallel with the latest-elset read. node-pg runs one query
+  // per client, so the elset read sat behind the ~72k-row catalog select
+  // until its 30s client deadline destroyed the socket ("latest-elset fetch
+  // exceeded 30000ms client deadline", live 2026-11-26 17:25Z onward). The
+  // retry then queued behind the retried catalog load on the rebound client.
+  const p = runOnSharedPool(() => loadCatalog())
     .then((c) => {
       if (c.entries.length === 0 && cache && cache.entries.length > 0) return cache;
       if (c.entries.length === 0) {
