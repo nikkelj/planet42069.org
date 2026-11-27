@@ -2,8 +2,9 @@
   "slug": "electron-strix14-2026-11-27",
   "title": "Electron 'Night Owls Never Sleep' (StriX Launch 14)",
   "vehicle": "electron",
-  "t0_utc": "2026-11-27T00:00:00Z",
-  "t0_note": "Rocket Lab mission page window open / NET 1:00 p.m. NZDT = 2026-11-27T00:00:00Z. SOURCE CONFLICT recorded in index.json: the same company's launch-safety page prints NET 00:05 UTC | 13:00 NZDT (those two clocks disagree with each other; 13:00 NZDT is 00:00Z), and LL2 2093e4fc-ac8c-4296-a1b5-deececee6a72 lists NET 00:05Z, window 00:00-00:05Z, last_updated 2026-11-20T06:34:05Z. T0 is the mission-page 00:00Z.",
+  "t0_utc": "2026-11-27T00:15:00Z",
+  "t0_retime": "FLOWN 2026-11-27. Liftoff 2026-11-27T00:15:00Z (+900 s from the pre-flight window open 2026-11-27T00:00:00Z). LL2 Launch Successful, last_updated 2026-11-27T04:48:55Z. Rocket Lab 1:15 p.m. NZDT, 101st launch overall. Public files utc-shifted. ECEF unchanged. Sim not re-run.",
+  "t0_note": "FLOWN. File T0 is the actual liftoff 2026-11-27T00:15:00Z. Pre-flight T0 was the Rocket Lab mission-page window open 2026-11-27T00:00:00Z (1:00 p.m. NZDT). SOURCE CONFLICT recorded in index.json: the launch-safety page printed NET 00:05 UTC | 13:00 NZDT (those two clocks disagree; 13:00 NZDT is 00:00Z), and LL2 then listed NET 00:05Z, window 00:00-00:05Z, last_updated 2026-11-20T06:34:05Z. Post-flight LL2 is Launch Successful at 00:15Z, minute precision, window 00:00-01:00Z, last_updated 2026-11-27T04:48:55Z. Rocket Lab's mission page now says 1:15 p.m. NZDT and 101st launch overall.",
   "pad": {
     "lat": -39.260881,
     "lon": 177.865826,
