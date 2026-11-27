@@ -2,8 +2,9 @@
   "slug": "lm6a-taiyuan-2026-11-27",
   "title": "Long March 6A / Unknown Payload (Taiyuan LC-9A)",
   "vehicle": "lm6a",
-  "t0_utc": "2026-11-27T13:00:00Z",
-  "t0_note": "LL2 a6421db3-7c8a-4cf7-a659-cec195140f7f, Go, NET 2026-11-27T13:00:00Z, window 12:53-13:15Z, hour precision, last_updated 2026-11-20T17:15:10Z. Not a liftoff.",
+  "t0_utc": "2026-11-27T13:05:00Z",
+  "t0_retime": "FLOWN 2026-11-27. Liftoff 2026-11-27T13:05:00Z (+300 s from the pre-flight NET 2026-11-27T13:00:00Z). Xinhua 21:05 Beijing, Yaogan-50 04, planned orbit, Long March flight 682. LL2 still Go/Unknown Payload, last_updated 2026-11-20T17:15:10Z, and was not used. Public files utc-shifted. ECEF unchanged. Sim not re-run.",
+  "t0_note": "File T0 is the Xinhua liftoff 2026-11-27T13:05:00Z. Pre-flight NET was LL2 2026-11-27T13:00:00Z, window 12:53-13:15Z, hour precision. LL2 a6421db3-7c8a-4cf7-a659-cec195140f7f, re-queried 2026-11-27, is still Go for Launch, Unknown Payload, net 13:00:00Z, last_updated 2026-11-20T17:15:10Z. That record was not used for the outcome.",
   "pad": {
     "lat": 38.8583,
     "lon": 111.5802,
