@@ -76,6 +76,17 @@ export function runWithDbClient<T>(client: PoolClient, fn: () => Promise<T>): Pr
 }
 
 /**
+ * Run `fn` on the shared pool even when called from inside
+ * `runWithDbClient`. AsyncLocalStorage otherwise carries the scan's lock
+ * client into any background work the scan happens to start (and into every
+ * promise continuation of that work), so a process-wide job such as the
+ * catalog cache reload ends up queued on the scan's single socket.
+ */
+export function runOnSharedPool<T>(fn: () => T): T {
+  return dbBinding.exit(fn);
+}
+
+/**
  * Point the active scan at a replacement lock client.
  * No-op outside `runWithDbClient` (TLE workers hold a lock but query the pool).
  * The store object is mutated so a query that starts after this returns sees
